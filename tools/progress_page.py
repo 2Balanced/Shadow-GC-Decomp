@@ -130,6 +130,78 @@ def write_progress_page(report_path, out_path, history_path, verified=None):
     page = TEMPLATE.replace("/*DATA*/", payload)
     Path(out_path).write_text(page, encoding="utf-8", newline="\n")
     write_badge(Path(history_path).parent / "badge.json", summary)
+    write_card(Path(history_path).parent / "progress.svg", summary)
+
+
+CARD_STYLE = """
+.bg { fill: #fcfcfb; stroke: #e1e0d9; }
+.title { fill: #0b0b0b; font: 600 18px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.sub, .label, .nums, .key { font: 13px system-ui, -apple-system, "Segoe UI", sans-serif; }
+.sub, .key { fill: #6f6d68; }
+.label { fill: #52514e; font-weight: 600; }
+.nums { fill: #52514e; font-variant-numeric: tabular-nums; }
+.track { fill: #e1e0d9; }
+.linked { fill: #2a78d6; }
+.matched { fill: #74a9f0; }
+@media (prefers-color-scheme: dark) {
+  .bg { fill: #1a1a19; stroke: #2c2c2a; }
+  .title { fill: #f0efec; }
+  .sub, .key { fill: #9a988f; }
+  .label, .nums { fill: #c3c2b7; }
+  .track { fill: #2c2c2a; }
+  .linked { fill: #4a94ec; }
+  .matched { fill: #2260b0; }
+}
+"""
+
+
+def write_card(path, summary):
+    """An SVG progress card for the README, which cannot embed the HTML page itself."""
+    width, bar_x, bar_w = 760, 112, 360
+
+    def pct(part, total):
+        return 100.0 * part / max(1, total)
+
+    def bar(y, linked, matched):
+        # Linked is drawn from the left; matched-but-not-linked follows after a 2px gap.
+        lw = bar_w * linked / 100.0
+        mw = bar_w * max(0.0, matched - linked) / 100.0
+        parts = [f'<rect class="track" x="{bar_x}" y="{y}" width="{bar_w}" height="12" rx="4"/>']
+        if lw > 0:
+            parts.append(f'<rect class="linked" x="{bar_x}" y="{y}" width="{lw:.1f}" height="12" rx="4"/>')
+        if mw > 2:
+            parts.append(f'<rect class="matched" x="{bar_x + lw + 2:.1f}" y="{y}" width="{mw - 2:.1f}" '
+                         f'height="12" rx="4"/>')
+        return "".join(parts)
+
+    code = (pct(summary["linked_code"], summary["total_code"]),
+            pct(summary["matched_code"], summary["total_code"]))
+    data = (pct(summary["linked_data"], summary["total_data"]),
+            pct(summary["matched_data"], summary["total_data"]))
+    funcs = pct(summary["matched_functions"], summary["total_functions"])
+    rows = [
+        ("Code", code, f"{code[1]:.2f}% matched · {code[0]:.2f}% linked"),
+        ("Data", data, f"{data[1]:.2f}% matched · {data[0]:.2f}% linked"),
+        ("Functions", (funcs, funcs),
+         f"{summary['matched_functions']:,} of {summary['total_functions']:,} matched"),
+    ]
+    body = []
+    for i, (label, (linked, matched), nums) in enumerate(rows):
+        y = 104 + 34 * i
+        body.append(f'<text class="label" x="24" y="{y + 11}">{label}</text>')
+        body.append(bar(y, linked, matched))
+        body.append(f'<text class="nums" x="{bar_x + bar_w + 16}" y="{y + 11}">{nums}</text>')
+    svg = f"""<svg xmlns="http://www.w3.org/2000/svg" width="{width}" height="216" viewBox="0 0 {width} 216" role="img" aria-label="Decompilation progress: {code[1]:.2f}% of code matched, {code[0]:.2f}% linked">
+<style>{CARD_STYLE}</style>
+<rect class="bg" x="0.5" y="0.5" width="{width - 1}" height="215" rx="8"/>
+<text class="title" x="24" y="36">Shadow the Hedgehog (GUPE8P)</text>
+<text class="sub" x="24" y="58">{summary['linked_units']} of {summary['units_with_source']} units linked · rebuilt main.dol matches retail</text>
+<rect class="linked" x="24" y="72" width="10" height="10" rx="2"/><text class="key" x="40" y="81">Linked into the DOL</text>
+<rect class="matched" x="184" y="72" width="10" height="10" rx="2"/><text class="key" x="200" y="81">Matched, not yet linked</text>
+{''.join(body)}
+</svg>
+"""
+    path.write_text(svg, encoding="utf-8", newline="\n")
 
 
 def write_badge(path, summary):
