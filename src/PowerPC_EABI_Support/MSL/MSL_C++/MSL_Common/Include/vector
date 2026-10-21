@@ -23,6 +23,13 @@ template <class T> inline const T &__vec_ref(const T &x) {
     return x;
 }
 
+/* Where MSL_VECTOR_DESTROY_ALL_LATE is defined before this header (Game/GadgetParticle.cpp),
+ * destroy_all is only declared here and defined by <vector_impl>, which the unit includes after its
+ * own code: the game then emits destroy_all with the vector's last members, not after clear. */
+#ifdef MSL_VECTOR_DESTROY_ALL_LATE
+inline void __vec_nothing() {}
+#endif
+
 /* The capacity stored with the (empty) allocator. */
 template <class A, class S> struct __vec_cap_storage : public A {
     __vec_cap_storage(S n) : second_(n) {}
@@ -105,6 +112,9 @@ template <class T, class A> class __vec_base {
     pointer &data() {
         return __vec_ref(data_);
     }
+#ifdef MSL_VECTOR_DESTROY_ALL_LATE
+    void destroy_all();
+#else
     void destroy_all() {
         pointer first = data_;
         pointer last = first + size_;
@@ -113,6 +123,7 @@ template <class T, class A> class __vec_base {
         }
         size_ = 0;
     }
+#endif
     void insert_n(iterator position, size_type n, const T &x);
 
     __vec_cap_pair<A, size_type> cap_;
@@ -240,7 +251,14 @@ template <class T, class A = allocator<T> > class vector : public __vec_base<T, 
         base::reserve(n);
     }
     void clear() {
+#ifdef MSL_VECTOR_DESTROY_ALL_LATE
+        /* destroy_all is defined after the unit's code (<vector_impl>), so it does not keep clear
+         * out of line; the inline call does. */
         base::destroy_all();
+        __vec_nothing();
+#else
+        base::destroy_all();
+#endif
     }
 };
 

@@ -9,8 +9,8 @@ namespace Desire {
 
 /* DesireBase (class name from RTTI; vtable 0x8055CF20, constructor 0x80329640, destructor
  * 0x803295F8): how much a boss wants to start one of its behaviors. The boss's AI raises the
- * desires each frame and starts the behavior of the strongest. Its code is in the unsplit unit at
- * 0x80329524. Member names are inferred. */
+ * desires each frame and starts the behavior of the strongest. Its code is in Game/BossDesire.cpp.
+ * Member names are inferred. */
 class DesireBase {
   public:
     /* name is the desire's name; the meaning of arg is unknown. */

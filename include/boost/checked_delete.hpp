@@ -11,6 +11,15 @@ template <class T> inline void checked_delete(T *x) {
     delete x;
 }
 
+/* Units that use boost::scoped_array define BOOST_CHECKED_ARRAY_DELETE before their includes: a
+ * template added for every unit renumbers their compiler-generated @N locals. */
+#ifdef BOOST_CHECKED_ARRAY_DELETE
+template <class T> inline void checked_array_delete(T *x) {
+    typedef char type_must_be_complete[sizeof(T)];
+    delete[] x;
+}
+#endif
+
 template <class T> struct checked_deleter {
     typedef void result_type;
     typedef T *argument_type;

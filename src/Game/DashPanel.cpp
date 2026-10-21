@@ -73,7 +73,7 @@ class DashPanel : public Gadget {
 
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
-    /* 0x40 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x40 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x48 */ DashPanelParams m_params;
 };
 
@@ -81,7 +81,7 @@ class DashPanel : public Gadget {
 struct DashPanelHitContext {
     DashPanelHitContext() : m_params(0), m_launched(false) {}
 
-    /* 0x00 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x00 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x08 */ boost::weak_ptr<GadgetCharInfo> m_chara;
     /* 0x10 */ DashPanelParams *m_params;
     /* 0x14 */ bool m_launched;
@@ -104,7 +104,7 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     if (self.get() == 0) {
         return;
     }
-    if (context->m_hitList->fn_801697CC(boost::weak_ptr<CharInfo>(hit))) {
+    if (context->m_hitList->Check(boost::weak_ptr<CharInfo>(hit))) {
         return;
     }
 
@@ -184,7 +184,7 @@ DashPanel::~DashPanel() {
 
 void DashPanel::Behave(float dt) {
     if (m_hitList.get() != 0) {
-        m_hitList->fn_801697F0();
+        m_hitList->Update(dt);
     }
     if (m_model.get() != 0) {
         m_model->fn_80162FB0(dt);

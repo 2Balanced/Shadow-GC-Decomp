@@ -200,7 +200,7 @@ class Gong : public Gadget {
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_stand;
     /* 0x40 */ boost::shared_ptr<GadgetModelInfo> m_gong;
     /* 0x48 */ boost::shared_ptr<GadgetModelInfo> m_striker;
-    /* 0x50 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x50 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x58 */ GongParams m_params;
     /* 0x5C */ s32 m_state;
     /* 0x60 */ s32 m_gongHits;   /* the times the gong was hit (inferred) */
@@ -211,7 +211,7 @@ class Gong : public Gadget {
 struct GongHitContext {
     GongHitContext() : m_params(0), m_gongHits(0), m_rangFlags(0), m_hit(false) {}
 
-    /* 0x00 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x00 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x08 */ boost::weak_ptr<GadgetCharInfo> m_chara;
     /* 0x10 */ GongParams *m_params;
     /* 0x14 */ Vec3f m_position;
@@ -276,7 +276,7 @@ static void HitGong(boost::shared_ptr<CharInfo> hit, void *user) {
     if (self.get() == 0) {
         return;
     }
-    if (context->m_hitList->fn_801697CC(boost::weak_ptr<CharInfo>(hit))) {
+    if (context->m_hitList->Check(boost::weak_ptr<CharInfo>(hit))) {
         return;
     }
 
@@ -396,7 +396,7 @@ Gong::~Gong() {
 
 void Gong::Behave(float dt) {
     if (m_hitList.get() != 0) {
-        m_hitList->fn_801697F0();
+        m_hitList->Update(dt);
     }
     if (m_stand.get() != 0) {
         m_stand->fn_80162FB0(dt);

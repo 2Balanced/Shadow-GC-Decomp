@@ -20,6 +20,7 @@
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
 #include "Game/SetAdapterState.h"
+#include "Game/TrigerCounter.h"
 #include "Game/FileQueue.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -48,18 +49,6 @@ struct UnkDebrisParam_8015F0B8 {
 };
 SIZE_ASSERT(UnkDebrisParam_8015F0B8, 0x5C);
 
-/* The counter of the lit candlesticks of each switch (class name unknown; names and behaviour
- * inferred from the candlestick's calls). It is constructed and destroyed out of line. */
-class UnkCandleSwitchManager_801660A0 {
-  public:
-    UnkCandleSwitchManager_801660A0();
-    ~UnkCandleSwitchManager_801660A0();
-
-    static UnkCandleSwitchManager_801660A0 *s_cached;
-
-    /* 0x00 */ u8 field_0x0[0x14];
-};
-
 extern "C" {
 /* A 32-bit flag word: fn_80014E04 constructs it cleared, fn_80014E10 clears it, fn_80014E1C sets
  * bit, fn_8006127C clears bit and fn_80014E34 tests bit (behaviour from their bodies). */
@@ -68,13 +57,6 @@ void fn_80014E10(u32 *flags);
 void fn_80014E1C(u32 *flags, int bit);
 void fn_8006127C(u32 *flags, int bit);
 bool fn_80014E34(u32 *flags, int bit);
-/* The switch manager's calls (behaviour inferred): whether switch id is registered, registering it
- * with the number of candlesticks it needs, counting a lit one, and the stage load and unload. */
-bool fn_80165944(UnkCandleSwitchManager_801660A0 *manager, u8 id);
-void fn_80165A08(UnkCandleSwitchManager_801660A0 *manager, u8 id, s32 count, int arg3);
-void fn_801658AC(UnkCandleSwitchManager_801660A0 *manager, u8 id, int arg2);
-void fn_80165F3C(UnkCandleSwitchManager_801660A0 *manager);
-void fn_80165EFC(UnkCandleSwitchManager_801660A0 *manager);
 /* Loads a gadget model (see GadgetUtil.h). */
 boost::shared_ptr<GadgetModelInfo> fn_8015F800(int arg0, const char *fileName);
 /* Attaches a character info to the collision of a model variant, and returns the attack of a
@@ -269,11 +251,11 @@ CandleStick::~CandleStick() {
 
 extern "C" void fn_8012D678(void) {
     fn_8006B474("CANDLESTICK.BIN", 1);
-    fn_80165F3C(GetCandleSwitchManager());
+    GetCandleSwitchManager()->Enable();
 }
 
 extern "C" void fn_8012D654(void) {
-    fn_80165EFC(GetCandleSwitchManager());
+    GetCandleSwitchManager()->Disable();
 }
 
 void CandleStick::Instantiate(UnkPlacement_800C9CD0 *owner) {
@@ -302,7 +284,7 @@ void CandleStick::Behave(float dt) {
             s_flameDirection.Get(), 0x19);
         fn_801D54F4(fn_80053164(), 0x7431, m_chara.get(), 0, 1);
         m_sound = fn_801D3E58(0x7430, m_chara.get(), this);
-        fn_801658AC(GetCandleSwitchManager(), m_switchId, 1);
+        GetCandleSwitchManager()->Add(m_switchId, 1);
         m_state->m_flags.Set(1);
         m_flags.Reset(1);
     }
@@ -362,8 +344,8 @@ void CandleStick::SetupModel() {
             fn_80096B64(collision.get(), 1, boost::bind(&CandleStick::OnAttack, this, _1));
         }
     }
-    if (!fn_80165944(GetCandleSwitchManager(), m_switchId)) {
-        fn_80165A08(GetCandleSwitchManager(), m_switchId, m_params.count, 0);
+    if (!GetCandleSwitchManager()->IsRegistered(m_switchId)) {
+        GetCandleSwitchManager()->Register(m_switchId, m_params.count, 0);
     }
 }
 

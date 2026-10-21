@@ -27,7 +27,9 @@ struct UnkRenderOwner_80046178 {
     /* 0x0 */ u32 field_0x0;
     /* 0x4 */ u32 field_0x4;
     /* 0x8 */ void *field_0x8;
-    /* 0xC */ u8 field_0xC[0x28 - 0xC];
+    /* 0xC */ u8 field_0xC[0x18 - 0xC];
+    /* 0x18 */ void *field_0x18; /* passed by TPjsEventActionFade (meaning unknown) */
+    /* 0x1C */ u8 field_0x1C[0x28 - 0x1C];
     /* 0x28 */ void *field_0x28; /* passed instead by ElecCoreWall (meaning unknown) */
     /* 0x2C */ u8 field_0x2C[0x38 - 0x2C];
     /* 0x38 */ void *field_0x38; /* passed by SavePointSelect (meaning unknown) */

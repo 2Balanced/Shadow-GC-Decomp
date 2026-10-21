@@ -86,11 +86,20 @@ class WeaponBase {
     virtual void Tick(float dt);
     virtual void Show();
     virtual void Hide();
-    virtual s32 vf_0x1C();
+    virtual float vf_0x1C();
     virtual Vec3f vf_0x20();
-    virtual s32 vf_0x24();
+    virtual float vf_0x24();
     virtual s32 vf_0x28();
-    virtual s32 vf_0x2C();
+    virtual bool vf_0x2C();
+
+    /* The type, and the kind of weapon (Player::Shadow::ShadowWeapon picks its control by it;
+     * names inferred). */
+    int TypeId() const {
+        return m_type;
+    }
+    int Kind() const {
+        return field_0x18;
+    }
 
     /* 0x04 */ boost::weak_ptr<WeaponBase> m_self;
     /* 0x0C */ boost::weak_ptr<CharInfo> m_owner;
@@ -122,6 +131,11 @@ class WeaponGunBase : public WeaponBase {
     /* Starts the firing animation (0x8005EB94; behaviour inferred). */
     void fn_8005EB94(int arg);
 
+    /* The shots fired this frame (name inferred from Player::Shadow's gun control). */
+    int ShotCount() const {
+        return field_0x38;
+    }
+
     /* 0x38 */ s32 field_0x38;
 };
 SIZE_ASSERT(WeaponGunBase, 0x3C);
@@ -133,6 +147,16 @@ class WeaponLaserBase : public WeaponGunBase {
   public:
     WeaponLaserBase(const boost::weak_ptr<CharInfo> &owner, int type) : WeaponGunBase(owner, type) {}
     virtual ~WeaponLaserBase() {}
+
+#ifdef WEAPON_LASER_SET_HIT_CALLBACK
+    /* Sets the bullets' hit callback (name inferred). Compiled only where
+     * WEAPON_LASER_SET_HIT_CALLBACK is defined (Game/PlayerShadowWeaponGun.cpp), so that other
+     * units' @N locals keep their numbers. */
+    void SetHitCallback(
+        const boost::function1<Bullet::BulletState, const Bullet::HitContext &> &callback) {
+        m_hitCallback = callback;
+    }
+#endif
 
     /* 0x3C */ Bullet::HitCallback m_hitCallback;
 };
@@ -161,7 +185,9 @@ struct UnkWeaponTypeInfo {
     /* 0x00 */ const char *name;
     /* 0x04 */ Weapon::WeaponBase *(*create)(const boost::weak_ptr<CharInfo> &owner);
     /* 0x08 */ Weapon::Item *(*createItem)(void);
-    /* 0x0C */ u32 field_0xC;
+    /* Plays the weapon's firing sound at a muzzle matrix (Game/WeaponWormShooter.cpp; meaning
+     * inferred). */
+    /* 0x0C */ void (*fireEffect)(const Mtx34f *muzzle);
     /* 0x10 */ float field_0x10;
     /* 0x14 */ float field_0x14;
     /* 0x18 */ s32 field_0x18;

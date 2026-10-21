@@ -1,0 +1,366 @@
+#ifndef MSL_MAP_
+#define MSL_MAP_
+
+#include <cstddef>
+#include <functional>
+#include <memory>
+#include <utility>
+
+/* Stand-in for the MSL <map>, reconstructed from the instances the game's code emits (first
+ * Game/TrigerCounter.cpp, 0x80165770..0x8016690C): a red-black tree whose node links come first
+ * (left, right, then the parent with the colour in its low bit) and whose value follows at 0xC,
+ * and the tree object laid out as {size, end node (the root hangs off its left link), comparison,
+ * leftmost node}. Rebalancing after an insertion and stepping an iterator are shared out-of-line
+ * code (0x8000CD64 and 0x80012E90). The tree is the one Game/ElecBar.cpp reconstructs for its
+ * std::set, generalised: values with destructors, find, and a value comparison that also orders a
+ * key against a value.
+ *
+ * Which members are written inline and which call an inline helper so that they stay out of line
+ * reproduces the game's call structure: with deferred inlining one level deep, only an inline
+ * function that calls no other inline function is expanded. The tree's larger members are not
+ * defined here but in <map_impl> (included after a unit's own code), since the game emits them
+ * after the code that uses them. Names are invented; the original MSL source is not used.
+ *
+ * Inserting a pair<Key, T> converts it to the value type with pair's converting constructor,
+ * which <utility> declares only where MSL_PAIR_CONVERTING_CONSTRUCTOR is defined before it is
+ * first included. */
+
+namespace std {
+
+struct __tree_node_base;
+
+extern "C" {
+/* Rebalances the tree under root after x was linked in, and steps an iterator to the next node
+ * (behaviour inferred from their bodies). */
+void fn_8000CD64(__tree_node_base *x, __tree_node_base *root);
+void fn_80012E90(__tree_node_base **iterator);
+}
+
+/* Returns x (an inline call that keeps its caller out of line). */
+template <class T> inline T __tree_id(T x) {
+    return x;
+}
+
+inline void __tree_nothing() {}
+
+/* The end node: the root hangs off its left link. */
+struct __tree_end_node {
+    __tree_end_node() : left_(__tree_id<__tree_node_base *>(0)) {}
+
+    /* 0x0 */ __tree_node_base *left_;
+};
+
+/* A node's links; the parent link keeps the colour in its low bit. */
+struct __tree_node_base : public __tree_end_node {
+    void set_parent(__tree_node_base *p) {
+        parent_ = reinterpret_cast<unsigned long>(p) | (parent_ & 1);
+    }
+
+    /* 0x4 */ __tree_node_base *right_;
+    /* 0x8 */ unsigned long parent_;
+};
+
+template <class T> struct __tree_node : public __tree_node_base {
+    /* 0xC */ T value_;
+};
+
+/* The allocators of the values and of the nodes (an allocation failure aborts). */
+template <class T> class __tree_value_allocator {
+  public:
+    __tree_value_allocator() {}
+
+    void construct(T *p, const T &value) {
+        new ((void *)p) T(value);
+    }
+    void destroy(T *p) {
+        p->~T();
+        __tree_nothing();
+    }
+};
+
+template <class N> class __tree_node_allocator {
+  public:
+    __tree_node_allocator() {}
+
+    N *allocate(size_t n, const void *hint = 0) {
+        N *p = static_cast<N *>(::operator new(n * sizeof(N)));
+        if (p == 0) {
+            __msl_error("Memory allocation failure");
+        }
+        return p;
+    }
+    void deallocate(N *p, size_t n) {
+        ::operator delete(__tree_id<void *>(p));
+    }
+};
+
+template <class T> class __tree_const_iterator;
+
+template <class T> class __tree_iterator {
+  public:
+    __tree_iterator() {}
+    __tree_iterator(__tree_node_base *n) : node_(n) {}
+    __tree_iterator(const __tree_iterator &x) : node_(x.node_) {}
+    __tree_iterator &operator=(const __tree_iterator &x) {
+        node_ = x.node_;
+        return *this;
+    }
+
+    T &operator*() const {
+        return static_cast<__tree_node<T> *>(node_)->value_;
+    }
+    T *operator->() const {
+        return &operator*();
+    }
+    __tree_iterator &operator++() {
+        fn_80012E90(&node_);
+        return *this;
+    }
+    __tree_iterator operator++(int) {
+        __tree_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator==(const __tree_iterator &x) const {
+        return node_ == x.node_;
+    }
+    bool operator!=(const __tree_iterator &x) const {
+        return node_ != x.node_;
+    }
+
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+template <class T> class __tree_const_iterator {
+  public:
+    __tree_const_iterator() {}
+    __tree_const_iterator(__tree_node_base *n) : node_(n) {}
+    __tree_const_iterator(const __tree_iterator<T> &x) : node_(x.node_) {}
+    __tree_const_iterator(const __tree_const_iterator &x) : node_(x.node_) {}
+    __tree_const_iterator &operator=(const __tree_const_iterator &x) {
+        node_ = x.node_;
+        return *this;
+    }
+
+    const T &operator*() const {
+        return static_cast<__tree_node<T> *>(node_)->value_;
+    }
+    const T *operator->() const {
+        return &operator*();
+    }
+    __tree_const_iterator &operator++() {
+        fn_80012E90(&node_);
+        return *this;
+    }
+    friend bool operator==(const __tree_const_iterator &x, const __tree_const_iterator &y) {
+        return x.node_ == y.node_;
+    }
+    friend bool operator!=(const __tree_const_iterator &x, const __tree_const_iterator &y) {
+        return x.node_ != y.node_;
+    }
+
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+/* The value allocator and the size. */
+template <class A, class S> struct __tree_size_base : public A {
+    __tree_size_base(const A &a, S n) : second_(__tree_id(n)) {}
+
+    /* 0x0 */ S second_;
+};
+
+template <class A, class S> struct __tree_size_pair : public __tree_size_base<A, S> {
+    __tree_size_pair(const A &a, S n) : __tree_size_base<A, S>(a, n) {}
+
+    A &first() {
+        return *this;
+    }
+    S &second() {
+        return this->second_;
+    }
+    const S &second() const {
+        return this->second_;
+    }
+};
+
+/* The node allocator and the end node. */
+template <class A> struct __tree_end_pair : public A {
+    __tree_end_pair(const A &a) {}
+
+    A &first() {
+        return *this;
+    }
+    __tree_end_node &second() {
+        return second_;
+    }
+    const __tree_end_node &second() const {
+        return second_;
+    }
+
+    /* 0x0 */ __tree_end_node second_;
+};
+
+/* The comparison and the leftmost node; K is what the comparison is built from. */
+template <class C> struct __tree_begin_pair : public C {
+    template <class K> __tree_begin_pair(const K &c) : C(c) {
+        __tree_nothing();
+    }
+
+    C &first() {
+        return *this;
+    }
+    __tree_node_base *&second() {
+        return second_;
+    }
+
+    /* 0x0 */ __tree_node_base *second_;
+};
+
+/* T is the value type and C its ordering; K is what C is built from (C itself for a set, the key
+ * comparison for a map). */
+template <class T, class C, class K = C> class __tree {
+  public:
+    typedef size_t size_type;
+    typedef __tree_node<T> node;
+    typedef __tree_iterator<T> iterator;
+    typedef __tree_const_iterator<T> const_iterator;
+    typedef __tree_value_allocator<T> value_allocator;
+    typedef __tree_node_allocator<node> node_allocator;
+
+    __tree(const K &comp, const value_allocator &a);
+    ~__tree() {
+        if (root() != 0) {
+            destroy(static_cast<node *>(root()));
+        }
+    }
+
+    iterator begin() {
+        return iterator(begin_node());
+    }
+    iterator end() {
+        return iterator(static_cast<__tree_node_base *>(header()));
+    }
+    const_iterator end() const {
+        return const_iterator(static_cast<__tree_node_base *>(const_cast<__tree_end_node *>(header())));
+    }
+    size_type size() const {
+        return size_ref();
+    }
+    size_type max_size() const {
+        return __max_size_t();
+    }
+    std::pair<iterator, bool> insert_unique(const T &v);
+    template <class Key> iterator find(const Key &k);
+    template <class Key> const_iterator find(const Key &k) const {
+        return const_cast<__tree *>(this)->find(k);
+    }
+    void clear();
+
+  private:
+    size_type &size_ref() {
+        return size_.second();
+    }
+    const size_type &size_ref() const {
+        return size_.second();
+    }
+    value_allocator &value_alloc() {
+        return size_.first();
+    }
+    node_allocator &node_alloc() {
+        return header_.first();
+    }
+    __tree_end_node *header() {
+        return &header_.second();
+    }
+    const __tree_end_node *header() const {
+        return &header_.second();
+    }
+    __tree_node_base *&root() {
+        return header()->left_;
+    }
+    __tree_node_base *&begin_node() {
+        return begin_.second();
+    }
+    C &comp() {
+        return begin_.first();
+    }
+
+    node *insert_node(__tree_node_base *parent, bool left, bool leftmost, const T &v);
+    void destroy(node *n);
+
+    /* 0x0 */ __tree_size_pair<value_allocator, size_type> size_;
+    /* 0x4 */ __tree_end_pair<node_allocator> header_;
+    /* 0x8 */ __tree_begin_pair<C> begin_;
+};
+
+template <class Key, class T, class Compare = less<Key> > class map {
+  public:
+    typedef Key key_type;
+    typedef T mapped_type;
+    typedef pair<const Key, T> value_type;
+    typedef Compare key_compare;
+    typedef size_t size_type;
+
+    /* Orders values by key, and a key against a value. */
+    class value_compare {
+      public:
+        value_compare(const key_compare &c) : comp(c) {
+            __tree_nothing();
+        }
+
+        bool operator()(const value_type &x, const value_type &y) const {
+            return comp(x.first, y.first);
+        }
+        bool operator()(const key_type &x, const value_type &y) const {
+            return comp(x, y.first);
+        }
+        bool operator()(const value_type &x, const key_type &y) const {
+            return comp(x.first, y);
+        }
+
+      protected:
+        /* 0x0 */ key_compare comp;
+    };
+
+  private:
+    typedef __tree<value_type, value_compare, key_compare> tree_type;
+
+  public:
+    typedef typename tree_type::iterator iterator;
+    typedef typename tree_type::const_iterator const_iterator;
+
+    map() : tree_(key_compare(), typename tree_type::value_allocator()) {}
+    ~map() {}
+
+    iterator begin() {
+        return tree_.begin();
+    }
+    iterator end() {
+        return tree_.end();
+    }
+    const_iterator end() const {
+        return tree_.end();
+    }
+    size_type size() const {
+        return tree_.size();
+    }
+    pair<iterator, bool> insert(const value_type &x) {
+        return tree_.insert_unique(x);
+    }
+    void clear() {
+        tree_.clear();
+    }
+    iterator find(const key_type &k) {
+        return tree_.find(k);
+    }
+    const_iterator find(const key_type &k) const {
+        return tree_.find(k);
+    }
+
+  private:
+    /* 0x0 */ tree_type tree_;
+};
+
+} // namespace std
+
+#endif

@@ -95,6 +95,14 @@ SIZE_ASSERT(HitContext, 0x84);
  * unknown). A struct around the boost::function: its implicit default and copy constructors,
  * assignment and destructor are out of line (0x80051EB4, 0x80221808, 0x80221160 and 0x80051DBC). */
 struct HitCallback : public boost::function1<BulletState, const HitContext &> {
+#ifdef WEAPON_LASER_SET_HIT_CALLBACK
+    /* Assignment from the plain function (a weak copy of its own; compiled only where
+     * WEAPON_LASER_SET_HIT_CALLBACK is defined, see WeaponLaserBase::SetHitCallback). */
+    HitCallback &operator=(const boost::function1<BulletState, const HitContext &> &function) {
+        boost::function1<BulletState, const HitContext &>::operator=(function);
+        return *this;
+    }
+#endif
     /* Whether a function is set (names inferred). Each calls an inline function, so both stay out
      * of line, emitted where they are used. */
     bool HasFunction() const {

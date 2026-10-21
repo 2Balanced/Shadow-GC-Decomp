@@ -1,0 +1,23 @@
+#ifndef MSL_VECTOR_IMPL_
+#define MSL_VECTOR_IMPL_
+
+#include <vector>
+
+/* The members of <vector> that a unit defines after its own code (see MSL_VECTOR_DESTROY_ALL_LATE
+ * there). */
+namespace std {
+
+#ifdef MSL_VECTOR_DESTROY_ALL_LATE
+template <class T, class A> inline void __vec_base<T, A>::destroy_all() {
+    pointer first = data_;
+    pointer last = first + size_;
+    while (last > first) {
+        cap_.first().destroy(--last);
+    }
+    size_ = 0;
+}
+#endif
+
+} // namespace std
+
+#endif

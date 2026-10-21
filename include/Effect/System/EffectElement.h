@@ -7,6 +7,22 @@
 namespace Effect {
 namespace System {
 
+#ifdef EFFECT_ELEMENT_POLYMORPHIC
+class EffectManager;
+
+/* The effect heap fn_8042A5D0 returns (class name unknown): its fourth virtual function frees
+ * memory (name inferred). */
+class UnkEffectHeap_8042A5D0 {
+  public:
+    virtual void vf08();
+    virtual void vf0C();
+    virtual void vf10();
+    virtual void Free(void *p);
+};
+
+extern "C" UnkEffectHeap_8042A5D0 *fn_8042A5D0(void);
+#endif
+
 /* EffectElement (class name from the RTTI of its shared_ptr control block,
  * boost::detail::sp_counted_base_impl<Effect::System::EffectElement *, ...>): a running effect
  * instance handed out by the effect manager. Only the members gadget code touches are known; their
@@ -65,10 +81,30 @@ class EffectElement {
         field_0x50 = value;
     }
 
+#ifdef EFFECT_ELEMENT_POLYMORPHIC
+    /* The class's own view of itself, for the units that define classes derived from it (see
+     * Effect/System/EffectGlobalParam.h): its virtual destructor (0x80425E8C) and its operator
+     * delete, which hands the memory back to the effect heap. Gadget code only reaches the members
+     * below, so the plain layout above stays the default. */
+    virtual ~EffectElement();
+    static void operator delete(void *p) {
+        fn_8042A5D0()->Free(p);
+    }
+
+    /* 0x04 */ u32 field_0x4;
+    /* 0x08 */ u32 m_size; /* the size of the most derived class (inferred) */
+    /* 0x0C */ u8 field_0xC[0x14 - 0xC];
+#else
     /* 0x00 */ u8 field_0x0[0x14];
+#endif
     /* 0x14 */ u32 field_0x14;
     /* 0x18 */ u32 m_flags; /* bit 0 is cleared to let the effect finish (inferred) */
+#ifdef EFFECT_ELEMENT_POLYMORPHIC
+    /* 0x1C */ EffectManager *m_manager; /* the manager that runs the effect (inferred) */
+    /* 0x20 */ u8 field_0x20[0x48 - 0x20];
+#else
     /* 0x1C */ u8 field_0x1C[0x48 - 0x1C];
+#endif
     /* 0x48 */ const Mtx34f *m_matrix; /* the owner's matrix the effect follows (inferred) */
     /* 0x4C */ u32 field_0x4C;
     /* 0x50 */ u32 field_0x50;

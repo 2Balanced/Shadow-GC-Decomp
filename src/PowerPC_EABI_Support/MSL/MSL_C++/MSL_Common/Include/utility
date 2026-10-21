@@ -10,6 +10,11 @@ template <class T1, class T2> struct pair {
 
     pair() : first(), second() {}
     pair(const T1 &a, const T2 &b) : first(a), second(b) {}
+#ifdef MSL_PAIR_CONVERTING_CONSTRUCTOR
+    /* Compiled only where MSL_PAIR_CONVERTING_CONSTRUCTOR is defined before this header
+     * (Game/TrigerCounter.cpp): every template declaration advances CodeWarrior's @N counter. */
+    template <class U1, class U2> pair(const pair<U1, U2> &p) : first(p.first), second(p.second) {}
+#endif
 
     T1 first;
     T2 second;

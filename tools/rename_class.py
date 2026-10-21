@@ -10,7 +10,11 @@ Usage: python tools/rename_class.py OldName NewName [--dry-run] [--version GUPE8
   enclosing template-id (e.g. 39shared_ptr<25Old> -> 33shared_ptr<19New>) are recomputed. A
   plain-text OldName in the rest of a line (comments) is replaced too.
 
-Old and New must be plain (unqualified) identifiers. After running it, reset and re-pair as
+Old and New are identifiers, optionally namespace-qualified (Ns::Class). A qualified name mangles
+as a Q-list (Q213GadgetUtility7Watcher); when the class sits inside an enclosing Q-list, the
+list's count is recomputed. In sources a qualified New is written as is at every use; the class
+declaration itself (`class Old`/`struct Old`) cannot be rewritten textually, so the tool leaves
+it and lists it for a manual edit (wrap it in `namespace Ns { ... }`). After running it, reset and re-pair as
 docs/matching-gadgets.md describes ("When a name has to change"); the symbols.txt rewrite here
 already gives the shared instances their new mangled names, so usually only a rebuild is needed.
 """
@@ -49,12 +53,65 @@ def _template_span_ok(s, start, n):
     return depth == 0
 
 
+def mangle(name):
+    """CodeWarrior's mangling of a class name: 7Watcher, or Q213GadgetUtility7Watcher."""
+    parts = name.split("::")
+    body = "".join(f"{len(p)}{p}" for p in parts)
+    return body if len(parts) == 1 else f"Q{len(parts)}{body}"
+
+
+def _components(name):
+    """(count, component string without the Q prefix) of a mangled class name."""
+    parts = name.split("::")
+    return len(parts), "".join(f"{len(p)}{p}" for p in parts)
+
+
+def _qlists(name):
+    """Every Q-list in name: (start of 'Q', end of its count digit, count, [(tok_start, tok_end)])."""
+    out = []
+    for m in re.finditer(r"Q(\d)", name):
+        n = int(m.group(1))
+        pos = m.end()
+        toks = []
+        ok = True
+        for _ in range(n):
+            d = re.match(r"\d+", name[pos:])
+            if not d:
+                ok = False
+                break
+            ln = int(d.group(0))
+            toks.append((pos, pos + len(d.group(0)) + ln))
+            pos += len(d.group(0)) + ln
+            if pos > len(name):
+                ok = False
+                break
+        if ok and n >= 2:
+            out.append((m.start(), m.end(), n, toks))
+    return out
+
+
 def rename_mangled(name, old, new):
     """Rewrite one mangled name. Returns the new name (unchanged when Old is absent)."""
-    tok_old = f"{len(old)}{old}"
+    old_n, old_comp = _components(old)
+    new_n, new_comp = _components(new)
+    tok_old = mangle(old)
+    tok_new = mangle(new)
+    if old_comp not in name:
+        return name
+    # A class inside an enclosing Q-list (Q2 5Outer 3Old) is spelled by its components, and the
+    # list's count changes with the number of components.
+    if old_n == 1:
+        for qs, qe, n, toks in _qlists(name):
+            for ts, te in toks:
+                if name[ts:te] == old_comp:
+                    inner = name[:qs] + f"Q{n - 1 + new_n}" + name[qe:ts] + new_comp + name[te:]
+                    # Re-run on the result for further hits and enclosing template lengths.
+                    fixed = _fix_template_lengths(name, inner, ts, len(new_comp) - len(old_comp)
+                                                  + len(str(n - 1 + new_n)) - len(str(n)))
+                    return rename_mangled(fixed, old, new)
     if tok_old not in name:
         return name
-    delta = len(new) - len(old)
+    delta = len(tok_new) - len(tok_old)
     # Positions of the class token itself (the digits plus the name).
     hits = []
     for m in re.finditer(re.escape(tok_old), name):
@@ -69,7 +126,7 @@ def rename_mangled(name, old, new):
         return name
     edits = []  # (start, end, replacement) on the original string
     for h in hits:
-        edits.append((h, h + len(tok_old), f"{len(new)}{new}"))
+        edits.append((h, h + len(tok_old), tok_new))
     # Enclosing template-id length prefixes.
     for m in re.finditer(r"\d+", name):
         run = m.group(0)
@@ -93,13 +150,35 @@ def rename_mangled(name, old, new):
     return out
 
 
+def _fix_template_lengths(orig, edited, at, delta):
+    """Adjust the length prefix of every template-id in orig that encloses position at by delta."""
+    if delta == 0:
+        return edited
+    edits = []
+    for m in re.finditer(r"\d+", orig):
+        run = m.group(0)
+        for k in range(len(run)):
+            n = int(run[k:])
+            if n == 0 or run[k] == "0":
+                continue
+            if _template_span_ok(orig, m.end(), n) and m.end() <= at < m.end() + n:
+                edits.append((m.start() + k, m.end(), str(n + delta)))
+                break
+    # Only prefixes before the edit point move nothing, so apply them to edited at the same offsets.
+    out = edited
+    for s0, e0, r in sorted(edits, reverse=True):
+        out = out[:s0] + r + out[e0:]
+    return out
+
+
 def rewrite_symbols(path, old, new, dry):
     data = path.read_bytes()
     lines = data.split(b"\n")
     word = re.compile(rb"\b" + re.escape(old.encode()) + rb"\b")
+    old_comp = _components(old)[1].encode()
     changed = 0
     for i, raw in enumerate(lines):
-        if old.encode() not in raw:
+        if old.encode() not in raw and old_comp not in raw:
             continue
         text = raw.decode("latin-1")
         sym, sep, rest = text.partition(" = ")
@@ -119,6 +198,8 @@ def rewrite_symbols(path, old, new, dry):
 
 def rewrite_sources(old, new, dry):
     word = re.compile(rb"\b" + re.escape(old.encode()) + rb"\b")
+    decl = re.compile(rb"\b(?:class|struct)\s+" + re.escape(old.encode()) + rb"\b")
+    qualified = "::" in new
     files = 0
     for top in ("src", "include"):
         for p in sorted((ROOT / top).rglob("*")):
@@ -127,7 +208,24 @@ def rewrite_sources(old, new, dry):
             data = p.read_bytes()
             if old.encode() not in data:
                 continue
-            new_data, n = word.subn(new.encode(), data)
+            if qualified:
+                for m in decl.finditer(data):
+                    line = data.count(b"\n", 0, m.start()) + 1
+                    print(f"{p.relative_to(ROOT)}:{line}: declaration of {old} left for a manual edit "
+                          f"(wrap it in its namespace)")
+                keep = [(m.start(), m.end()) for m in decl.finditer(data)]
+                pieces, last, n = [], 0, 0
+                for m in word.finditer(data):
+                    if any(a <= m.start() < b for a, b in keep):
+                        continue
+                    pieces.append(data[last:m.start()])
+                    pieces.append(new.encode())
+                    last = m.end()
+                    n += 1
+                pieces.append(data[last:])
+                new_data = b"".join(pieces)
+            else:
+                new_data, n = word.subn(new.encode(), data)
             if n:
                 files += 1
                 print(f"{p.relative_to(ROOT)}: {n} occurrence(s)")
@@ -144,8 +242,8 @@ def main():
     ap.add_argument("--dry-run", action="store_true")
     args = ap.parse_args()
     for n in (args.old, args.new):
-        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", n):
-            sys.exit(f"not a plain identifier: {n}")
+        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*(::[A-Za-z_][A-Za-z0-9_]*)*", n):
+            sys.exit(f"not an identifier: {n}")
     syms = ROOT / "config" / args.version / "symbols.txt"
     text = syms.read_text(encoding="latin-1")
     if re.search(r"\b" + re.escape(args.new) + r"\b", text) and args.old != args.new:

@@ -28,20 +28,34 @@ struct ColliDetectArgs {
     virtual ~ColliDetectArgs() {}
 };
 
-/* The characters a gadget has already hit, behind a pointer to its implementation (names and
- * behaviour inferred from the callers). fn_801695B8 creates one; fn_8016952C releases a gadget's
- * list when the gadget is destroyed. */
-class UnkHitList_801695B8 {
+/* The characters a gadget has hit recently (class name from the RTTI of its shared_ptr control
+ * block; member names inferred). It remembers up to two player numbers, each for a cooldown of one
+ * second, behind a pointer to its implementation (defined in Game/GadgetUtility.cpp).
+ * fn_801695B8 creates one; fn_8016952C releases a gadget's list when the gadget is destroyed. */
+namespace GadgetUtility {
+class Watcher {
   public:
-    /* True when target was already hit (inferred). */
-    bool fn_801697CC(const boost::weak_ptr<CharInfo> &target);
-    /* Per-frame update (inferred). */
-    void fn_801697F0();
+    /* True when target is to be ignored: already watched, gone, or no slot is free; otherwise
+     * starts watching it and returns false. */
+    bool Check(const boost::weak_ptr<CharInfo> &target);
+    /* Counts the cooldowns down by dt. */
+    void Update(float dt);
+#ifdef GADGET_UTILITY_WATCHER_MEMBERS
+    /* The members, seen only by Game/GadgetUtility.cpp: boost::scoped_ptr is a template the other
+     * units must not see (it would renumber their @N locals). */
+    class Impl;
+
+    Watcher();
+    ~Watcher();
+
+    /* 0x0 */ boost::scoped_ptr<Impl> m_impl;
+#endif
 };
+} // namespace GadgetUtility
 
 extern "C" {
-boost::shared_ptr<UnkHitList_801695B8> fn_801695B8(void);
-void fn_8016952C(boost::shared_ptr<UnkHitList_801695B8> *list);
+boost::shared_ptr<GadgetUtility::Watcher> fn_801695B8(void);
+void fn_8016952C(boost::shared_ptr<GadgetUtility::Watcher> *list);
 /* Rumbles the controller of the player behind target (behaviour inferred from the vibration code
  * it calls); the second argument picks the pattern. */
 boost::weak_ptr<Vibration::RequestHandle> fn_80169BB0(const boost::weak_ptr<CharInfo> &target, int arg1);

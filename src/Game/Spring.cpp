@@ -115,7 +115,7 @@ class Spring : public Gadget {
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x40 */ boost::shared_ptr<Target> m_target;
-    /* 0x48 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x48 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x50 */ SpringParams m_params;
     /* 0x58 */ Vec3f m_point;
     /* 0x64 */ UnkFlags_80014E04 m_flags; /* bit 0: the spring is enabled */
@@ -125,7 +125,7 @@ class Spring : public Gadget {
 struct SpringHitContext {
     SpringHitContext() : m_params(0), m_point(0), m_launched(false) {}
 
-    /* 0x00 */ boost::shared_ptr<UnkHitList_801695B8> m_hitList;
+    /* 0x00 */ boost::shared_ptr<GadgetUtility::Watcher> m_hitList;
     /* 0x08 */ boost::weak_ptr<GadgetCharInfo> m_chara;
     /* 0x10 */ SpringParams *m_params;
     /* 0x14 */ Vec3f *m_point;
@@ -154,7 +154,7 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     if (self.get() == 0) {
         return;
     }
-    if (context->m_hitList->fn_801697CC(boost::weak_ptr<CharInfo>(hit))) {
+    if (context->m_hitList->Check(boost::weak_ptr<CharInfo>(hit))) {
         return;
     }
 
@@ -241,7 +241,7 @@ Spring::~Spring() {
 
 void Spring::Behave(float dt) {
     if (m_hitList.get() != 0) {
-        m_hitList->fn_801697F0();
+        m_hitList->Update(dt);
     }
     if (m_model.get() != 0) {
         m_model->fn_80162FB0(dt);

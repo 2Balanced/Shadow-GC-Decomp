@@ -177,6 +177,18 @@ class RecoverCommand : public CharCommand {
 };
 SIZE_ASSERT(RecoverCommand, 0x20);
 
+/* AnnounceAttackCommand (class name from RTTI; vtable at 0x8053D230): the command of type 0x16,
+ * which tells a character it is being attacked (constructor 0x801DACE4; the attacker and the
+ * meaning of the arguments are inferred from Player::Shadow's gun control, which passes 4, 4). */
+class AnnounceAttackCommand : public CharCommand {
+  public:
+    AnnounceAttackCommand(const boost::weak_ptr<CharInfo> &attacker, int arg1, int arg2);
+
+    /* 0x14 */ boost::weak_ptr<CharInfo> m_attacker;
+    /* 0x1C */ s32 field_0x1C;
+};
+SIZE_ASSERT(AnnounceAttackCommand, 0x20);
+
 namespace Player {
 
 /* PlayerCommand (class name from RTTI): the base of the player-only commands. */

@@ -1,0 +1,147 @@
+#ifndef MSL_MAP_IMPL_
+#define MSL_MAP_IMPL_
+
+#include <map>
+
+/* The larger members of the tree behind <map>. A unit includes this after its own code: the game
+ * emits these instances after the code that uses them, as GC/2.7 does for templates defined after
+ * their first use. destroy's recursion is expanded once into itself in the game's code; GC/2.7
+ * either expands an inline function into itself or emits it last, not both, so the expanded level
+ * is written out (it calls the allocator members that the outer level inlines). */
+namespace std {
+
+/* insert_unique's result flags. The game's compiler places the constants a template function
+ * binds to a reference in .sdata in source order, where GC/2.7 adds them while generating code,
+ * after the RTTI records of the classes the unit instantiates. A unit that needs retail's order
+ * defines MSL_TREE_BOOL_OBJECTS: the flags are then named objects placed where this header is
+ * included (Game/TrigerCounter.cpp). */
+#ifdef MSL_TREE_BOOL_OBJECTS
+#pragma explicit_zero_data on
+static bool __tree_true = true;
+static bool __tree_false = false;
+#pragma explicit_zero_data reset
+#define __TREE_TRUE __tree_true
+#define __TREE_FALSE __tree_false
+#else
+#define __TREE_TRUE true
+#define __TREE_FALSE false
+#endif
+
+template <class T, class C, class K>
+__tree<T, C, K>::__tree(const K &comp, const value_allocator &a)
+    : size_(a, 0), header_(node_allocator()), begin_(comp) {
+    begin_node() = static_cast<__tree_node_base *>(header());
+}
+
+template <class T, class C, class K> void __tree<T, C, K>::destroy(node *n) {
+    node *child = static_cast<node *>(n->left_);
+    if (child != 0) {
+        if (child->left_ != 0) {
+            destroy(static_cast<node *>(child->left_));
+        }
+        if (child->right_ != 0) {
+            destroy(static_cast<node *>(child->right_));
+        }
+        value_alloc().destroy(&child->value_);
+        node_alloc().deallocate(child, 1);
+    }
+    child = static_cast<node *>(n->right_);
+    if (child != 0) {
+        if (child->left_ != 0) {
+            destroy(static_cast<node *>(child->left_));
+        }
+        if (child->right_ != 0) {
+            destroy(static_cast<node *>(child->right_));
+        }
+        value_alloc().destroy(&child->value_);
+        node_alloc().deallocate(child, 1);
+    }
+    /* The outer level's value destruction and deallocation, inlined. */
+    value_alloc();
+    n->value_.~T();
+    node_alloc();
+    ::operator delete(n);
+}
+
+template <class T, class C, class K> void __tree<T, C, K>::clear() {
+    if (root() != 0) {
+        destroy(static_cast<node *>(root()));
+        size_ref() = 0;
+        root() = 0;
+        begin_node() = static_cast<__tree_node_base *>(header());
+    }
+}
+
+template <class T, class C, class K>
+pair<typename __tree<T, C, K>::iterator, bool> __tree<T, C, K>::insert_unique(const T &v) {
+    __tree_node_base *last = 0;
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    __tree_node_base *x = root();
+    bool left = true;
+    bool leftmost = true;
+    while (x != 0) {
+        y = x;
+        if (comp()(v, static_cast<node *>(x)->value_)) {
+            x = x->left_;
+            left = true;
+        } else {
+            last = x;
+            x = x->right_;
+            left = false;
+            leftmost = false;
+        }
+    }
+    if (last == 0 || comp()(static_cast<node *>(last)->value_, v)) {
+        return pair<iterator, bool>(iterator(insert_node(y, left, leftmost, v)), __TREE_TRUE);
+    }
+    return pair<iterator, bool>(iterator(last), __TREE_FALSE);
+}
+
+template <class T, class C, class K>
+template <class Key>
+typename __tree<T, C, K>::iterator __tree<T, C, K>::find(const Key &k) {
+    __tree_node_base *x = root();
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    while (x != 0) {
+        if (!comp()(static_cast<node *>(x)->value_, k)) {
+            y = x;
+            x = x->left_;
+        } else {
+            x = x->right_;
+        }
+    }
+    if (y == static_cast<__tree_node_base *>(header()) || comp()(k, static_cast<node *>(y)->value_)) {
+        return end();
+    }
+    return iterator(y);
+}
+
+template <class T, class C, class K>
+typename __tree<T, C, K>::node *__tree<T, C, K>::insert_node(__tree_node_base *parent, bool left,
+                                                            bool leftmost, const T &v) {
+    if (size() > max_size() - 1) {
+        __msl_error("tree::insert length error\n");
+    }
+    node *n = node_alloc().allocate(1);
+    value_alloc().construct(&n->value_, v);
+    n->left_ = n->right_ = 0;
+    n->set_parent(parent);
+    if (left) {
+        parent->left_ = n;
+    } else {
+        parent->right_ = n;
+    }
+    ++size_ref();
+    fn_8000CD64(n, root());
+    if (leftmost) {
+        begin_node() = n;
+    }
+    return n;
+}
+
+#undef __TREE_TRUE
+#undef __TREE_FALSE
+
+} // namespace std
+
+#endif

@@ -680,6 +680,21 @@ Game/GadgetCrash3D.cpp:
 	.sbss       start:0x805EF1E0 end:0x805EF208
 	.sdata2     start:0x805F4AA0 end:0x805F4B10
 
+Game/TrigerCounter.cpp:
+	.text       start:0x80165770 end:0x8016690C
+	.rodata     start:0x804C2B58 end:0x804C2C38
+	.data       start:0x8052B558 end:0x8052B580
+	.sdata      start:0x805E6680 end:0x805E66A0
+	.sbss       start:0x805EF228 end:0x805EF230
+
+Game/GadgetParticle.cpp:
+	.text       start:0x8016690C end:0x80168584
+	.rodata     start:0x804C2C38 end:0x804C2DD0
+	.data       start:0x8052B580 end:0x8052B5B0
+	.sdata      start:0x805E66A0 end:0x805E66C0
+	.sbss       start:0x805EF230 end:0x805EF238
+	.sdata2     start:0x805F4B38 end:0x805F4B50
+
 Game/GadgetPickup.cpp:
 	.text       start:0x80168584 end:0x80168A50
 	.ctors      start:0x804A9D88 end:0x804A9D8C
@@ -703,6 +718,28 @@ Game/GadgetSwitch.cpp:
 	.rodata     start:0x804C2EC0 end:0x804C2F00
 	.data       start:0x8052B6C0 end:0x8052B6F8
 	.sdata2     start:0x805F4B70 end:0x805F4B80
+
+Game/GadgetUtility.cpp:
+	.text       start:0x8016952C end:0x8016A108
+	.rodata     start:0x804C2F00 end:0x804C2FD0
+	.data       start:0x8052B6F8 end:0x8052B720
+	.sdata      start:0x805E6700 end:0x805E6718
+	.sbss       start:0x805EF248 end:0x805EF250
+	.sdata2     start:0x805F4B80 end:0x805F4B88
+
+Game/FogTable.cpp:
+	.text       start:0x8016A108 end:0x8016A35C
+	.rodata     start:0x804C2FD0 end:0x804C2FE8
+	.sbss       start:0x805EF250 end:0x805EF258
+	.sdata2     start:0x805F4B88 end:0x805F4B90
+
+Game/TFogSet.cpp:
+	.text       start:0x8016A35C end:0x8016A9E0
+	.data       start:0x8052B720 end:0x8052B740
+	.bss        start:0x80580170 end:0x805801A0
+	.sdata      start:0x805E6718 end:0x805E6730
+	.sbss       start:0x805EF258 end:0x805EF260
+	.sdata2     start:0x805F4B90 end:0x805F4BC0
 
 Game/ElecCoreProgram.cpp:
 	.text       start:0x801F4498 end:0x801F6488
@@ -748,6 +785,27 @@ Game/ElecCristalWall.cpp:
 	.sdata      start:0x805E9068 end:0x805E9098
 	.sbss       start:0x805EFB70 end:0x805EFB90
 	.sdata2     start:0x805F6670 end:0x805F66C8
+
+Game/ElecCristalWallSwitch.cpp:
+	.text       start:0x801F9F9C end:0x801FA2DC
+	.rodata     start:0x804EBBE0 end:0x804EBC08
+	.data       start:0x80542528 end:0x805425E0
+	.sdata      start:0x805E9098 end:0x805E90B8
+	.sdata2     start:0x805F66C8 end:0x805F66E0
+
+Game/EffectGlobalParamUSA.cpp:
+	.text       start:0x801FA2DC end:0x801FA710
+	.rodata     start:0x804EBC08 end:0x804EBD18
+	.data       start:0x805425E0 end:0x80542650
+	.sdata      start:0x805E90B8 end:0x805E90F0
+	.sdata2     start:0x805F66E0 end:0x805F66F8
+
+Game/CameraModeFixLookChar.cpp:
+	.text       start:0x801FA710 end:0x801FAAA4
+	.rodata     start:0x804EBD18 end:0x804EBD88
+	.data       start:0x80542650 end:0x80542690
+	.sdata      start:0x805E90F0 end:0x805E9108
+	.sdata2     start:0x805F66F8 end:0x805F6700
 
 Game/ElecSmallCube.cpp:
 	.text       start:0x8021AD3C end:0x8021BCF0
@@ -905,6 +963,52 @@ Game/WeaponVacuumBase.cpp:
 	.sbss       start:0x805EFF10 end:0x805EFF18
 	.sdata2     start:0x805F72F0 end:0x805F7308
 
+Game/PlayerShadowWeapon.cpp:
+	.text       start:0x80239FB0 end:0x8023B734
+	.ctors      start:0x804A9EC8 end:0x804A9ECC
+	.rodata     start:0x804F2EF8 end:0x804F3038
+	.data       start:0x80547B10 end:0x80547BA0
+	.bss        start:0x80583D38 end:0x80583D48
+	.sdata      start:0x805E9ED8 end:0x805E9F00
+	.sbss       start:0x805EFF18 end:0x805EFF28
+	.sdata2     start:0x805F7308 end:0x805F7340
+
+Game/PlayerShadowWeaponCannon.cpp:
+	.text       start:0x8023B734 end:0x8023BEDC
+	.rodata     start:0x804F3038 end:0x804F3098
+	.data       start:0x80547BA0 end:0x80547BC0
+	.sdata      start:0x805E9F00 end:0x805E9F10
+	.sdata2     start:0x805F7340 end:0x805F7348
+
+Game/PlayerShadowWeaponGun.cpp:
+	.text       start:0x8023BEDC end:0x8023D150
+	.ctors      start:0x804A9ECC end:0x804A9ED0
+	.rodata     start:0x804F3098 end:0x804F32A8
+	.data       start:0x80547BC0 end:0x80547CA0
+	.sdata      start:0x805E9F10 end:0x805E9F48
+	.sbss       start:0x805EFF28 end:0x805EFF48
+	.sdata2     start:0x805F7348 end:0x805F7358
+
+Game/PlayerShadowWeaponLockon.cpp:
+	.text       start:0x8023D150 end:0x8023D560
+	.rodata     start:0x804F32A8 end:0x804F3308
+	.data       start:0x80547CA0 end:0x80547CC0
+	.sdata      start:0x805E9F48 end:0x805E9F58
+	.sdata2     start:0x805F7358 end:0x805F7360
+
+Game/PlayerShadowWeaponStick.cpp:
+	.text       start:0x8023D560 end:0x8023D7D0
+	.rodata     start:0x804F3308 end:0x804F3360
+	.data       start:0x80547CC0 end:0x80547CE0
+	.sdata      start:0x805E9F58 end:0x805E9F68
+
+Game/PlayerShadowWeaponVacuum.cpp:
+	.text       start:0x8023D7D0 end:0x8023DCE4
+	.rodata     start:0x804F3360 end:0x804F33C0
+	.data       start:0x80547CE0 end:0x80547D00
+	.sdata      start:0x805E9F68 end:0x805E9F78
+	.sdata2     start:0x805F7360 end:0x805F7368
+
 Game/DarkSpinEntrance.cpp:
 	.text       start:0x8025885C end:0x80258D48
 	.ctors      start:0x804A9EF8 end:0x804A9EFC
@@ -1036,6 +1140,34 @@ Game/EggBalloonController.cpp:
 	.sdata      start:0x805EA9D8 end:0x805EAA30
 	.sbss       start:0x805F01A8 end:0x805F01C0
 	.sdata2     start:0x805F7F00 end:0x805F7F20
+
+Game/WeaponWormShooter.cpp:
+	.text       start:0x80274DFC end:0x80275844
+	.ctors      start:0x804A9F20 end:0x804A9F24
+	.rodata     start:0x804F6DF0 end:0x804F7168
+	.data       start:0x8054D070 end:0x8054D200
+	.sdata      start:0x805EAA30 end:0x805EAA68
+	.sdata2     start:0x805F7F20 end:0x805F7F48
+
+Game/WeaponSpecialHealCannon.cpp:
+	.text       start:0x80275844 end:0x80275AC4
+	.ctors      start:0x804A9F24 end:0x804A9F28
+	.rodata     start:0x804F7168 end:0x804F72A0
+	.data       start:0x8054D200 end:0x8054D2C0
+	.sdata      start:0x805EAA68 end:0x805EAA88
+	.sdata2     start:0x805F7F48 end:0x805F7F60
+
+Game/WeaponSpecial.cpp:
+	.text       start:0x80275AC4 end:0x80275B2C
+
+Game/WeaponSpecialKatana.cpp:
+	.text       start:0x80275B2C end:0x80276284
+	.ctors      start:0x804A9F28 end:0x804A9F2C
+	.rodata     start:0x804F72A0 end:0x804F7390
+	.data       start:0x8054D2C0 end:0x8054D380
+	.sdata      start:0x805EAA88 end:0x805EAAA8
+	.sbss       start:0x805F01C0 end:0x805F01C8
+	.sdata2     start:0x805F7F60 end:0x805F7F88
 
 Game/CityBombBig.cpp:
 	.text       start:0x802F31DC end:0x802F46E4
@@ -1374,6 +1506,31 @@ Game/ClumpFrameEffects.cpp:
 	.rodata     start:0x8050D888 end:0x8050D8B0
 	.bss        start:0x80584F50 end:0x80585760
 	.sbss       start:0x805F0B50 end:0x805F0B58
+
+Game/PjsEventActionFade.cpp:
+	.text       start:0x803285EC end:0x80328F30
+	.rodata     start:0x8050D8B0 end:0x8050D988
+	.data       start:0x8055CE80 end:0x8055CEA8
+	.sdata      start:0x805ED3B8 end:0x805ED3D0
+	.sbss       start:0x805F0B58 end:0x805F0B68
+	.sdata2     start:0x805F9C80 end:0x805F9CA8
+
+Game/CenFile.cpp:
+	.text       start:0x80328F30 end:0x80329524
+	.data       start:0x8055CEA8 end:0x8055CF20
+	.sdata2     start:0x805F9CA8 end:0x805F9CB8
+
+Game/CenFileNumber.cpp:
+	.text       start:0x80329524 end:0x803295F4
+	.sdata      start:0x805ED3D0 end:0x805ED3D8
+	.sdata2     start:0x805F9CB8 end:0x805F9CC0
+
+Game/BossDesire.cpp:
+	.text       start:0x803295F4 end:0x803296D8
+	.rodata     start:0x8050D988 end:0x8050D9A8
+	.data       start:0x8055CF20 end:0x8055CF38
+	.sdata      start:0x805ED3D8 end:0x805ED3E0
+	.sdata2     start:0x805F9CC0 end:0x805F9CC8
 
 Game/FallRoad.cpp:
 	.text       start:0x803296D8 end:0x80329ED4

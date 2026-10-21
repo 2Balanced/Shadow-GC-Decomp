@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="760" height="216" viewBox="0 0 760 216" role="img" aria-label="Decompilation progress: 17.65% of code matched, 14.24% linked">
+<svg xmlns="http://www.w3.org/2000/svg" width="760" height="216" viewBox="0 0 760 216" role="img" aria-label="Decompilation progress: 18.58% of code matched, 14.95% linked">
 <style>
 .bg { fill: #fcfcfb; stroke: #e1e0d9; }
 .title { fill: #0b0b0b; font: 600 18px system-ui, -apple-system, "Segoe UI", sans-serif; }
@@ -21,8 +21,8 @@
 </style>
 <rect class="bg" x="0.5" y="0.5" width="759" height="215" rx="8"/>
 <text class="title" x="24" y="36">Shadow the Hedgehog (GUPE8P)</text>
-<text class="sub" x="24" y="58">151 of 182 units linked · rebuilt main.dol matches retail</text>
+<text class="sub" x="24" y="58">171 of 204 units linked · rebuilt main.dol matches retail</text>
 <rect class="linked" x="24" y="72" width="10" height="10" rx="2"/><text class="key" x="40" y="81">Linked into the DOL</text>
 <rect class="matched" x="184" y="72" width="10" height="10" rx="2"/><text class="key" x="200" y="81">Matched, not yet linked</text>
-<text class="label" x="24" y="115">Code</text><rect class="track" x="112" y="104" width="360" height="12" rx="4"/><rect class="linked" x="112" y="104" width="51.3" height="12" rx="4"/><rect class="matched" x="165.3" y="104" width="10.3" height="12" rx="4"/><text class="nums" x="488" y="115">17.65% matched · 14.24% linked</text><text class="label" x="24" y="149">Data</text><rect class="track" x="112" y="138" width="360" height="12" rx="4"/><rect class="linked" x="112" y="138" width="31.7" height="12" rx="4"/><rect class="matched" x="145.7" y="138" width="5.3" height="12" rx="4"/><text class="nums" x="488" y="149">10.84% matched · 8.82% linked</text><text class="label" x="24" y="183">Functions</text><rect class="track" x="112" y="172" width="360" height="12" rx="4"/><rect class="linked" x="112" y="172" width="74.4" height="12" rx="4"/><text class="nums" x="488" y="183">7,034 of 34,026 matched</text>
+<text class="label" x="24" y="115">Code</text><rect class="track" x="112" y="104" width="360" height="12" rx="4"/><rect class="linked" x="112" y="104" width="53.8" height="12" rx="4"/><rect class="matched" x="167.8" y="104" width="11.0" height="12" rx="4"/><text class="nums" x="488" y="115">18.58% matched · 14.95% linked</text><text class="label" x="24" y="149">Data</text><rect class="track" x="112" y="138" width="360" height="12" rx="4"/><rect class="linked" x="112" y="138" width="33.3" height="12" rx="4"/><rect class="matched" x="147.3" y="138" width="5.5" height="12" rx="4"/><text class="nums" x="488" y="149">11.32% matched · 9.24% linked</text><text class="label" x="24" y="183">Functions</text><rect class="track" x="112" y="172" width="360" height="12" rx="4"/><rect class="linked" x="112" y="172" width="78.8" height="12" rx="4"/><text class="nums" x="488" y="183">7,452 of 34,026 matched</text>
 </svg>
