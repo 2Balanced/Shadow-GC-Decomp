@@ -6,18 +6,19 @@
  * and member names are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * Not yet matching: every function matches, but the RTTI name of the bound callback type in
- * .rodata (0x804F30CC) names its classes Weapon::Bullet::BulletPosition and
- * Weapon::Bullet::LaserReflectEventArgs, passed by non-const reference: the classes Game/WeaponBullet.h
- * calls BulletState and HitContext (and passes as const HitContext &). Renaming them is a
- * project-wide change (their mangled names are in symbols.txt), so it is left to a separate pass.
- * The unused weak copy of dynamic_pointer_cast<WeaponGunBase> also leaves its tag object in .sbss. */
+ * The callback type's RTTI name (.rodata 0x804F30CC) gives the names Weapon::Bullet::BulletPosition
+ * and Weapon::Bullet::LaserReflectEventArgs and the non-const reference. The unused weak copy of
+ * dynamic_pointer_cast<WeaponGunBase> (kept at 0x801AB998) leaves a tag object in this unit's
+ * .sbss that the linker drops. */
 /* Enables boost::static_pointer_cast (see boost/shared_ptr.hpp), and
  * WeaponLaserBase::SetHitCallback (see Game/WeaponBase.h). */
 #define BOOST_SP_STATIC_POINTER_CAST
 /* Keeps the dead copy of bad_alloc's vtable in .data, as retail has it (see <new>). */
 #define MSL_NEW_INLINE_BAD_ALLOC
 #define WEAPON_LASER_SET_HIT_CALLBACK
+/* shared_ptr.hpp before bind.hpp: weak template instances come out in the order their templates
+ * were declared, and retail has static_pointer_cast ahead of boost::bind. */
+#include "boost/shared_ptr.hpp"
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -79,31 +80,10 @@ namespace {
 
 using Player::Shadow::ControlWeaponBase;
 using Player::Shadow::ShadowWeapon;
-using Weapon::Bullet::BulletState;
-using Weapon::Bullet::HitContext;
+using Weapon::Bullet::BulletPosition;
+using Weapon::Bullet::LaserReflectEventArgs;
 
-typedef boost::function1<BulletState, const HitContext &> HitFunction;
-
-/* Weapon::WeaponGunBase's slot 0x38 takes the aim, but its declaration in Game/WeaponBase.h has
- * no parameter and its symbol (0x8005C0CC) is named after that signature; the call goes through
- * this view of the vtable instead (name inferred). */
-class UnkGunVtableView {
-  public:
-    virtual void vf_0x08();
-    virtual void vf_0x0C();
-    virtual void vf_0x10();
-    virtual void vf_0x14();
-    virtual void vf_0x18();
-    virtual void vf_0x1C();
-    virtual void vf_0x20();
-    virtual void vf_0x24();
-    virtual void vf_0x28();
-    virtual void vf_0x2C();
-    virtual void vf_0x30();
-    virtual void vf_0x34();
-    /* Fires while the button is up (behaviour inferred). */
-    virtual float FireReleased(const Vec3f *aim);
-};
+typedef boost::function1<BulletPosition, LaserReflectEventArgs &> HitFunction;
 
 /* The bullet's velocity mirrored at the hit surface (name inferred). */
 #define Reflect(context)                                                                    \
@@ -128,8 +108,8 @@ class ControlGun : public ControlWeaponBase {
     /* Tells the locked-on target it is being attacked. */
     void AnnounceAttack();
     /* The laser hit callbacks: bounce, and bounce toward the nearest target. */
-    BulletState OnHitBounce(const HitContext &context);
-    BulletState OnHitHoming(const HitContext &context);
+    BulletPosition OnHitBounce(LaserReflectEventArgs &context);
+    BulletPosition OnHitHoming(LaserReflectEventArgs &context);
 
     /* 0x08 */ boost::shared_ptr<Weapon::WeaponGunBase> m_gun;
     /* 0x10 */ float m_reload;
@@ -200,8 +180,7 @@ void ControlGun::Update(float dt) {
         }
         if (!m_owner->m_flags.Test(0) && !fn_8006CD78(m_owner->m_player->m_stateBits, 0x11) &&
             !fn_8006CD78(m_owner->m_player->m_stateBits, 0x12)) {
-            m_reload = reinterpret_cast<UnkGunVtableView *>(m_gun.get())
-                           ->FireReleased(&m_owner->m_player->field_0x18);
+            m_reload = m_gun->vf_0x38(&m_owner->m_player->field_0x18);
         }
     }
     if (m_gun->ShotCount()) {
@@ -237,8 +216,8 @@ void ControlGun::AnnounceAttack() {
     }
 }
 
-BulletState ControlGun::OnHitBounce(const HitContext &context) {
-    BulletState next(context.m_after);
+BulletPosition ControlGun::OnHitBounce(LaserReflectEventArgs &context) {
+    BulletPosition next(context.m_after);
     if (context.m_result.m_struck) {
         fn_800091D0(&next.m_direction, &Reflect(context));
     } else {
@@ -247,8 +226,8 @@ BulletState ControlGun::OnHitBounce(const HitContext &context) {
     return next;
 }
 
-BulletState ControlGun::OnHitHoming(const HitContext &context) {
-    BulletState next(context.m_after);
+BulletPosition ControlGun::OnHitHoming(LaserReflectEventArgs &context) {
+    BulletPosition next(context.m_after);
     Vec3f direction;
     if (context.m_result.m_struck) {
         fn_800091D0(&direction, &Reflect(context));

@@ -8,6 +8,7 @@
  * emitted after Init, their first user. */
 #define BOOST_SP_CONVERTING_ASSIGNMENT
 #include "Game/BossCtrlUnit.h"
+#include "Game/BossDef.h"
 #include "Game/BossRootTask.h"
 #include "Game/DevilDoomCtrlUnit.h"
 #include "Game/EffectPJSLauncher.h"
@@ -40,15 +41,6 @@ inline void AssignVector(Vec3f &vector, const Vec3f &value) {
     fn_800091D0(&vector, &value);
 }
 
-/* A sphere (class name unknown): a centre and a radius. The constructor is out of line at
- * 0x80035CEC; the other bosses' units construct their spheres with it too. */
-struct UnkSphere_80035CEC {
-    UnkSphere_80035CEC(const Vec3f &center, float radius);
-
-    /* 0x0 */ Vec3f m_center;
-    /* 0xC */ float m_radius;
-};
-
 /* Never used; it starts the unit's .bss. */
 static u8 s_unused[0x30];
 /* The boss's collision spheres and its target (names inferred). */
@@ -58,57 +50,17 @@ static Vec3f s_target(0.0f, 0.0f, 0.0f);
 /* Never used; it ends the unit's .bss. */
 static u8 s_unused2[0x94];
 
-/* A collision shape (struct name unknown). */
-struct UnkBossColliShape {
-    /* 0x00 */ u32 field_0x0;
-    /* 0x04 */ UnkSphere_80035CEC *m_sphere;
-    /* 0x08 */ u32 field_0x8;
-    /* 0x0C */ u32 field_0xC;
-    /* 0x10 */ u32 field_0x10[4];
-};
-
-/* An entry of the boss's collision table (struct name unknown). */
-struct UnkBossColli {
-    /* 0x00 */ const UnkBossColliShape *m_shape;
-    /* 0x04 */ s32 field_0x4;
-    /* 0x08 */ s32 field_0x8;
-    /* 0x0C */ float field_0xC;
-    /* 0x10 */ s32 field_0x10;
-    /* 0x14 */ s32 field_0x14;
-    /* 0x18 */ s32 field_0x18;
-    /* 0x1C */ s32 field_0x1C;
-    /* 0x20 */ u8 field_0x20;
-};
-
-/* An entry of the boss's target table (struct name unknown). */
-struct UnkBossTargetEntry {
-    /* 0x0 */ u32 field_0x0;
-    /* 0x4 */ u32 field_0x4;
-    /* 0x8 */ Vec3f *m_target;
-};
-
-/* The tables a boss's BossVarParam points to (struct name unknown). */
-struct UnkBossDef {
-    /* 0x00 */ s32 field_0x0;
-    /* 0x04 */ s32 field_0x4;
-    /* 0x08 */ s32 field_0x8;
-    /* 0x0C */ s32 field_0xC;
-    /* 0x10 */ s32 field_0x10;
-    /* 0x14 */ UnkBossColli *m_collis;
-    /* 0x18 */ UnkBossTargetEntry *m_targets;
-    /* 0x1C */ u32 field_0x1C;
-};
-
-static const UnkBossColliShape s_colliShapes[3] = {
-    {0, &s_smallSphere, 0x100000, 0x403},
-    {0, &s_smallSphere, 0x100000, 0x3F9},
-    {0, &s_largeSphere, 0x80, 0x3E9},
+/* The shapes of the three collisions, each ended by an empty entry (see Game/BossDef.h). */
+static const UnkBossColliShape s_colliShapes[6] = {
+    {0, &s_smallSphere, 0x100000, 0x403}, {0},
+    {0, &s_smallSphere, 0x100000, 0x3F9}, {0},
+    {0, &s_largeSphere, 0x80, 0x3E9},     {0},
 };
 
 static UnkBossColli s_collis[4] = {
     {&s_colliShapes[0], -1, 4, 1.0f, 1, 1, 0, 1, 1},
-    {&s_colliShapes[1], -1, 4, 1.0f, 1, 1, 0, 1, 1},
     {&s_colliShapes[2], -1, 4, 1.0f, 1, 1, 0, 1, 1},
+    {&s_colliShapes[4], -1, 4, 1.0f, 1, 1, 0, 1, 1},
     {0, -1, 0, 1.0f, 6, 0, 0, 6, 0},
 };
 

@@ -31,16 +31,16 @@ using SonicteamUSA::System::CharaColli::AttackCallbackParam;
 using SonicteamUSA::System::CharaColli::CharaColliAttack;
 using Weapon::ShotInfo;
 using Weapon::Bullet::BulletBase;
-using Weapon::Bullet::BulletState;
-using Weapon::Bullet::HitContext;
+using Weapon::Bullet::BulletPosition;
+using Weapon::Bullet::LaserReflectEventArgs;
 using Weapon::Bullet::HitResult;
 
 extern "C" {
 /* The starting state of a bullet fired with info at speed (behaviour inferred). */
-BulletState fn_8005A228(const ShotInfo &info, float speed);
+BulletPosition fn_8005A228(const ShotInfo &info, float speed);
 /* Moves a bullet from before to after and tests what it hits on the way, and tests where a new
  * bullet starts (behaviour inferred). */
-HitResult fn_8005A9D0(int kind, const BulletState *before, const BulletState *after,
+HitResult fn_8005A9D0(int kind, const BulletPosition *before, const BulletPosition *after,
                       boost::shared_ptr<CharaColliAttack> *attack, int arg5);
 HitResult fn_8005B1F8(const ShotInfo &info, int kind, boost::shared_ptr<CharaColliAttack> *attack);
 /* Creates the attack collision of a bullet (behaviour inferred). */
@@ -94,7 +94,7 @@ struct UnkBulletType_80546018 {
 };
 SIZE_ASSERT(UnkBulletType_80546018, 0x14);
 
-static BulletState Propagate(const BulletState &state, float dt);
+static BulletPosition Propagate(const BulletPosition &state, float dt);
 
 namespace {
 
@@ -172,7 +172,7 @@ Laser::~Laser() {
 }
 
 void Laser::Tick(float dt) {
-    BulletState next = Propagate(m_state, dt);
+    BulletPosition next = Propagate(m_state, dt);
     m_distance += fn_8040D1B4(&next.m_position, &m_state.m_position);
     {
         HitResult result = fn_8005A9D0(m_attackKind, &m_state, &next, &m_attack, 1);
@@ -188,7 +188,7 @@ void Laser::Tick(float dt) {
                 }
             }
             if (m_hitCallback.IsSet()) {
-                HitContext context(result, m_state, next);
+                LaserReflectEventArgs context(result, m_state, next);
                 next = m_hitCallback.Call(context);
             } else {
                 const Vec3f &normal = (const Vec3f &)result.m_normal;
@@ -216,8 +216,8 @@ void Laser::Tick(float dt) {
 } // namespace
 
 /* The state of a bullet after flying for dt (name inferred). */
-static BulletState Propagate(const BulletState &state, float dt) {
-    return BulletState(fn_8040CDD0(state.m_position, fn_8040CDA8(state.m_direction, dt)), state.m_direction,
+static BulletPosition Propagate(const BulletPosition &state, float dt) {
+    return BulletPosition(fn_8040CDD0(state.m_position, fn_8040CDA8(state.m_direction, dt)), state.m_direction,
                        state.m_rotation);
 }
 

@@ -18,9 +18,14 @@ struct UnkSkeletonNode_800AA760 {
     /* 0x1C */ Vec3f m_up;
 };
 
-/* The fields of an NPC read by the part tasks (the NPC class's layout is not mapped). */
+/* The fields of an NPC read by the part tasks and Player::Behavior::FirstMeet (the NPC class's
+ * layout is not mapped). */
 struct UnkNpcFields_8032D0FC {
-    /* 0x000 */ u8 field_0x0[0x230];
+    /* 0x000 */ u8 field_0x0[0x64];
+    /* 0x064 */ s32 m_kind; /* which character the NPC is */
+    /* 0x068 */ u8 field_0x68[0x1E4 - 0x68];
+    /* 0x1E4 */ Mtx34f m_baseMatrix; /* (meaning inferred) */
+    /* 0x214 */ u8 field_0x214[0x230 - 0x214];
     /* 0x230 */ void *m_skeleton;
 };
 

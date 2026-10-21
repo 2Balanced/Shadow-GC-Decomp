@@ -180,13 +180,6 @@ class UnkCameraCtrl_8031A268 {
     /* 0x0 */ u32 field_0x0;
 };
 
-/* A camera path of the resource files (struct name unknown; names inferred). */
-struct UnkCameraData_80012510 {
-    /* 0x0 */ u32 field_0x0;
-    /* 0x4 */ float m_startTime;
-    /* 0x8 */ float m_endTime;
-};
-
 class CameraTask;
 
 /* EggLastMechCamera (class name from the RTTI of its bound callbacks): the boss's event camera, in

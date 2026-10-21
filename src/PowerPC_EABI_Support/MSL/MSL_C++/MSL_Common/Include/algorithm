@@ -43,6 +43,24 @@ inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, Bidire
     return __copy_backward(first, last, result);
 }
 
+#ifdef MSL_ALGORITHM_COPY
+/* Forward copy (only units that define MSL_ALGORITHM_COPY see it: another template here renumbers
+ * the compiler's @N local symbols in every unit that includes this header). */
+template <class InputIterator, class OutputIterator>
+inline OutputIterator __copy(InputIterator first, InputIterator last, OutputIterator result) {
+    for (; first < last; ++first, ++result) {
+        *result = *first;
+    }
+    return result;
+}
+
+/* Copies [first, last) to result. */
+template <class InputIterator, class OutputIterator>
+inline OutputIterator copy(InputIterator first, InputIterator last, OutputIterator result) {
+    return __copy(first, last, result);
+}
+#endif
+
 } // namespace std
 
 #endif

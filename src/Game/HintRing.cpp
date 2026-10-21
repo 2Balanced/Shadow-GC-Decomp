@@ -37,6 +37,7 @@ static const float s_zeros[7] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
 #include "Game/Render.h"
+#include "Game/UnkHintManager.h"
 #include "Game/UnkSwitchBank_800CB69C.h"
 #include "Game/FileQueue.h"
 #include "boost/shared_ptr.hpp"
@@ -140,72 +141,6 @@ class UnkUVAnimManager_801EB994 {
     /* 0x0 */ u8 field_0x0[0x10];
 };
 
-/* What the hint manager keeps for each hint (layout unknown). */
-struct UnkHintEntry_801FB180 {
-    /* 0x0 */ u8 field_0x0[0xC];
-};
-
-class UnkHintTarget_801FB180;
-
-/* A list of hints (names inferred): a vector-like container (capacity, size, storage) in three
- * class levels, as retail's destructors show. The base destructor is a template member defined out
- * of the class, so it is instantiated, with its helpers, at the end of the unit (0x8010B200); the
- * middle level's inline destructor is expanded, with its null test, into the list's (0x80109E2C). */
-template <class T> class UnkHintListBase : private std::allocator<T> {
-  public:
-    ~UnkHintListBase();
-
-    std::allocator<T> &Alloc() {
-        return *this;
-    }
-    T *&Data() {
-        return m_data;
-    }
-    u32 &Capacity() {
-        return m_capacity;
-    }
-
-    void Clear() {
-        T *first = m_data;
-        T *last = m_data + m_size;
-        while (last > first) {
-            Alloc().destroy(--last);
-        }
-        m_size = 0;
-    }
-
-    /* 0x0 */ u32 m_capacity;
-    /* 0x4 */ u32 m_size;
-    /* 0x8 */ T *m_data;
-};
-
-template <class T> UnkHintListBase<T>::~UnkHintListBase() {
-    Clear();
-    if (m_data != 0) {
-        Alloc().deallocate(Data(), Capacity());
-    }
-}
-
-template <class T> class UnkHintListMid : public UnkHintListBase<T> {
-  public:
-    ~UnkHintListMid() {}
-};
-
-template <class T> class UnkHintList : public UnkHintListMid<T> {};
-
-/* The hint manager (class name unknown): it shows hint messages. It is constructed out of line;
- * this unit holds its destructor. */
-class UnkHintManager_801FB180 {
-  public:
-    UnkHintManager_801FB180();
-
-    static UnkHintManager_801FB180 *s_cached;
-
-    /* 0x00 */ UnkHintList<UnkHintEntry_801FB180> m_hints;
-    /* 0x0C */ boost::weak_ptr<UnkHintTarget_801FB180> m_target;
-    /* 0x14 */ u8 field_0x14[0x38 - 0x14];
-};
-SIZE_ASSERT(UnkHintManager_801FB180, 0x38);
 
 extern "C" {
 /* The flag word helpers (behaviour from their bodies). */

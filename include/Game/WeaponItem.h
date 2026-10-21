@@ -15,6 +15,9 @@ class Item {
   public:
     /* Builds the item's model with effects (0x8005F380). */
     Item(const UnkWeaponEffectSet_80063428 *effects);
+    /* Builds the item's model from a model resource with effects (0x8005F314; it passes resource to
+     * UnkWeaponModel_80063428's resource constructor. Game/WeaponTorch.cpp passes 1). */
+    Item(void *resource, const UnkWeaponEffectSet_80063428 *effects);
     virtual ~Item();
     virtual void vf_0x0C(int arg);
     /* Per-frame work (slot 0x10). */

@@ -43,19 +43,20 @@ SIZE_ASSERT(Fn8040CopyVector3, 0xC);
 namespace Weapon {
 namespace Bullet {
 
-/* Where a bullet is and where it flies (struct name unknown; layout from its constructors and
+/* Where a bullet is and where it flies (struct name from the RTTI name of
+ * Game/PlayerShadowWeaponGun.cpp's bound callback, 0x804F30CC; layout from its constructors and
  * assignment, 0x80052390, 0x80052914, 0x80053878 and 0x8005246C; member names inferred). */
-struct BulletState {
-    BulletState();
-    BulletState(const BulletState &other);
-    BulletState(const Vec3f &position, const Vec3f &direction, const Vec3f &rotation);
-    BulletState &operator=(const BulletState &other);
+struct BulletPosition {
+    BulletPosition();
+    BulletPosition(const BulletPosition &other);
+    BulletPosition(const Vec3f &position, const Vec3f &direction, const Vec3f &rotation);
+    BulletPosition &operator=(const BulletPosition &other);
 
     /* 0x00 */ Vec3f m_position;
     /* 0x0C */ Vec3f m_direction; /* velocity per second */
     /* 0x18 */ Vec3f m_rotation;
 };
-SIZE_ASSERT(BulletState, 0x24);
+SIZE_ASSERT(BulletPosition, 0x24);
 
 /* What a bullet's move hit (struct name unknown; layout from its copy constructor 0x80052844 and
  * destructor 0x800528C4; member names inferred). Both are inline functions that call other inline
@@ -79,27 +80,28 @@ struct HitResult {
 SIZE_ASSERT(HitResult, 0x3C);
 
 /* What a bullet's hit callback receives: the hit and the bullet's state before and after the move
- * (struct name unknown; names inferred). Its constructor is an inline function emitted where it is
+ * (struct name from the same RTTI name, which also gives the non-const reference; member names
+ * inferred). Its constructor is an inline function emitted where it is
  * used. */
-struct HitContext {
-    HitContext(const HitResult &result, const BulletState &before, const BulletState &after)
+struct LaserReflectEventArgs {
+    LaserReflectEventArgs(const HitResult &result, const BulletPosition &before, const BulletPosition &after)
         : m_result(result), m_before(before), m_after(after) {}
 
     /* 0x00 */ HitResult m_result;
-    /* 0x3C */ BulletState m_before;
-    /* 0x60 */ BulletState m_after;
+    /* 0x3C */ BulletPosition m_before;
+    /* 0x60 */ BulletPosition m_after;
 };
-SIZE_ASSERT(HitContext, 0x84);
+SIZE_ASSERT(LaserReflectEventArgs, 0x84);
 
 /* The callback a bullet calls when it hits something; it returns the bullet's new state (struct name
  * unknown). A struct around the boost::function: its implicit default and copy constructors,
  * assignment and destructor are out of line (0x80051EB4, 0x80221808, 0x80221160 and 0x80051DBC). */
-struct HitCallback : public boost::function1<BulletState, const HitContext &> {
+struct HitCallback : public boost::function1<BulletPosition, LaserReflectEventArgs &> {
 #ifdef WEAPON_LASER_SET_HIT_CALLBACK
     /* Assignment from the plain function (a weak copy of its own; compiled only where
      * WEAPON_LASER_SET_HIT_CALLBACK is defined, see WeaponLaserBase::SetHitCallback). */
-    HitCallback &operator=(const boost::function1<BulletState, const HitContext &> &function) {
-        boost::function1<BulletState, const HitContext &>::operator=(function);
+    HitCallback &operator=(const boost::function1<BulletPosition, LaserReflectEventArgs &> &function) {
+        boost::function1<BulletPosition, LaserReflectEventArgs &>::operator=(function);
         return *this;
     }
 #endif
@@ -112,9 +114,9 @@ struct HitCallback : public boost::function1<BulletState, const HitContext &> {
         return HasFunction();
     }
     /* Calls the function, or returns a default state when none is set (name inferred). */
-    BulletState Call(const HitContext &context) const {
+    BulletPosition Call(LaserReflectEventArgs &context) const {
         if (empty()) {
-            return BulletState();
+            return BulletPosition();
         }
         return (*this)(context);
     }
@@ -168,7 +170,7 @@ class BulletBase {
     /* Per-frame work. */
     virtual void Tick(float dt) = 0;
 
-    /* 0x04 */ BulletState m_state;
+    /* 0x04 */ BulletPosition m_state;
     /* 0x28 */ s32 m_side;
     /* 0x2C */ boost::weak_ptr<CharInfo> m_owner;
     /* 0x34 */ s32 m_attackKind; /* 3 for a player's bullet, 6 otherwise */

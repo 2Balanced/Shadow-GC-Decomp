@@ -54,6 +54,9 @@ class BossCharInfo : public CharInfo {
     /* type is the character type, passed on to CharInfo's constructor. */
     BossCharInfo(int type);
     virtual ~BossCharInfo();
+    /* Gives command to the command unit, or deletes it when there is none (as GadgetCharInfo
+     * does). Defined inline in Game/BlackBull0210.cpp, which emits the linked copy. */
+    virtual void PushCommand(CharCommand *command);
 
     /* 0x64 */ boost::shared_ptr<CharCommandUnit> m_commandUnit;
 };

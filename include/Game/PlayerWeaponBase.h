@@ -41,7 +41,9 @@ class PlayerMotion : public Task {
   public:
     virtual ~PlayerMotion();
     virtual void Tick(float dt);
-    virtual void vf_0x10() = 0;
+    /* Plays motion, blending over blendTime (meaning inferred from Player::Behavior::FirstMeet,
+     * which passes 0x2E and 0). */
+    virtual void vf_0x10(int motion, float blendTime) = 0;
     virtual void vf_0x14() = 0;
     /* Selects the pose for a held weapon (0: none; the value comes from the weapon type). */
     virtual void SetWeaponPose(int pose);

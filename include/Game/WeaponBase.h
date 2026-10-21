@@ -49,6 +49,10 @@ class UnkWeaponModel_80063428 {
     /* A model without an owner, built from a model resource (0x80063484; Game/NpcTailsTail.cpp passes
      * the NPC's). */
     UnkWeaponModel_80063428(void *resource, const UnkWeaponEffectSet_80063428 *effects);
+    /* A model with an owner and a model number (0x800633C8; Game/WeaponTorch.cpp passes 1; meaning
+     * of arg inferred). */
+    UnkWeaponModel_80063428(const boost::weak_ptr<CharInfo> &owner, int arg,
+                            const UnkWeaponEffectSet_80063428 *effects);
     ~UnkWeaponModel_80063428();
 
     /* The matrix of node id (the muzzle for 0). */
@@ -124,7 +128,9 @@ class WeaponGunBase : public WeaponBase {
      * the weapon decides it itself; meaning inferred). */
     virtual float Fire(const Vec3f *aim) = 0;
     virtual float FireAt(const Vec3f *aim, const Vec3f *target) = 0;
-    virtual float vf_0x38();
+    /* Takes the aim, like the Fire slots (Player::Shadow's gun control calls it while the fire
+     * button is up; behaviour inferred). */
+    virtual float vf_0x38(const Vec3f *aim);
     virtual void vf_0x3C();
     virtual void vf_0x40();
 
@@ -153,7 +159,7 @@ class WeaponLaserBase : public WeaponGunBase {
      * WEAPON_LASER_SET_HIT_CALLBACK is defined (Game/PlayerShadowWeaponGun.cpp), so that other
      * units' @N locals keep their numbers. */
     void SetHitCallback(
-        const boost::function1<Bullet::BulletState, const Bullet::HitContext &> &callback) {
+        const boost::function1<Bullet::BulletPosition, Bullet::LaserReflectEventArgs &> &callback) {
         m_hitCallback = callback;
     }
 #endif

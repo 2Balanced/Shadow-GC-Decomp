@@ -680,6 +680,15 @@ Game/GadgetCrash3D.cpp:
 	.sbss       start:0x805EF1E0 end:0x805EF208
 	.sdata2     start:0x805F4AA0 end:0x805F4B10
 
+Game/GadgetModelInfo.cpp:
+	.text       start:0x8015F5D8 end:0x80165770
+	.ctors      start:0x804A9D84 end:0x804A9D88
+	.rodata     start:0x804C27B8 end:0x804C2B58
+	.data       start:0x8052B080 end:0x8052B558
+	.sdata      start:0x805E6648 end:0x805E6680
+	.sbss       start:0x805EF208 end:0x805EF228
+	.sdata2     start:0x805F4B10 end:0x805F4B38
+
 Game/TrigerCounter.cpp:
 	.text       start:0x80165770 end:0x8016690C
 	.rodata     start:0x804C2B58 end:0x804C2C38
@@ -740,6 +749,38 @@ Game/TFogSet.cpp:
 	.sdata      start:0x805E6718 end:0x805E6730
 	.sbss       start:0x805EF258 end:0x805EF260
 	.sdata2     start:0x805F4B90 end:0x805F4BC0
+
+Game/RingMission.cpp:
+	.text       start:0x8016ECF0 end:0x8016EEC0
+	.rodata     start:0x804C3620 end:0x804C3668
+	.data       start:0x8052B970 end:0x8052BA10
+	.sdata      start:0x805E67F0 end:0x805E6808
+
+Game/BossMotion.cpp:
+	.text       start:0x8017A34C end:0x8017A71C
+	.rodata     start:0x804C6070 end:0x804C6080
+	.data       start:0x8052BEA0 end:0x8052BEC0
+	.sdata      start:0x805E69F8 end:0x805E6A08
+	.sdata2     start:0x805F4EA0 end:0x805F4EB0
+
+Game/BossRender.cpp:
+	.text       start:0x8017A71C end:0x8017AC5C
+	.rodata     start:0x804C6080 end:0x804C6090
+	.data       start:0x8052BEC0 end:0x8052BEE0
+	.sdata      start:0x805E6A08 end:0x805E6A18
+	.sdata2     start:0x805F4EB0 end:0x805F4EC8
+
+Game/GoalMission.cpp:
+	.text       start:0x801F38F0 end:0x801F398C
+	.rodata     start:0x804D3180 end:0x804D31B0
+	.data       start:0x8053E438 end:0x8053E490
+	.sdata      start:0x805E8F10 end:0x805E8F20
+
+Game/EnemyMission.cpp:
+	.text       start:0x801F398C end:0x801F3C08
+	.rodata     start:0x804D31B0 end:0x804D31F8
+	.data       start:0x8053E490 end:0x8053E530
+	.sdata      start:0x805E8F20 end:0x805E8F38
 
 Game/ElecCoreProgram.cpp:
 	.text       start:0x801F4498 end:0x801F6488
@@ -806,6 +847,21 @@ Game/CameraModeFixLookChar.cpp:
 	.data       start:0x80542650 end:0x80542690
 	.sdata      start:0x805E90F0 end:0x805E9108
 	.sdata2     start:0x805F66F8 end:0x805F6700
+
+Game/MessageTask.cpp:
+	.text       start:0x801FAAA4 end:0x801FBEB4
+	.rodata     start:0x804EBD88 end:0x804EBE00
+	.data       start:0x80542690 end:0x80542720
+	.sdata      start:0x805E9108 end:0x805E9120
+	.sdata2     start:0x805F6700 end:0x805F6718
+
+Game/PlayerBehaviorFirstMeet.cpp:
+	.text       start:0x801FBEB4 end:0x801FCFD4
+	.rodata     start:0x804EBE00 end:0x804EC088
+	.data       start:0x80542720 end:0x80542768
+	.sdata      start:0x805E9120 end:0x805E9148
+	.sbss       start:0x805EFB90 end:0x805EFBB0
+	.sdata2     start:0x805F6718 end:0x805F6720
 
 Game/ElecSmallCube.cpp:
 	.text       start:0x8021AD3C end:0x8021BCF0
@@ -927,6 +983,32 @@ Game/MissionClearCollision.cpp:
 	.sbss       start:0x805EFEB8 end:0x805EFEC8
 	.sdata2     start:0x805F7188 end:0x805F71A0
 
+Game/BlackBull0210CtrlUnit.cpp:
+	.text       start:0x80231B08 end:0x80232328
+	.rodata     start:0x804F2608 end:0x804F26B0
+	.data       start:0x80547150 end:0x80547260
+	.sdata      start:0x805E9CE8 end:0x805E9D18
+	.sdata2     start:0x805F71A0 end:0x805F71B8
+
+Game/BlackBull0210.cpp:
+	.text       start:0x80232328 end:0x802336D8
+	.ctors      start:0x804A9EB4 end:0x804A9EB8
+	.rodata     start:0x804F26B0 end:0x804F28D0
+	.data       start:0x80547260 end:0x805474D8
+	.bss        start:0x80583BB8 end:0x80583CC8
+	.sdata      start:0x805E9D18 end:0x805E9D98
+	.sbss       start:0x805EFEC8 end:0x805EFED0
+	.sdata2     start:0x805F71B8 end:0x805F7230
+
+Game/BlackBull0210ModeCtrlUnit.cpp:
+	.text       start:0x802336D8 end:0x80236848
+	.ctors      start:0x804A9EB8 end:0x804A9EBC
+	.rodata     start:0x804F28D0 end:0x804F2B48
+	.data       start:0x805474D8 end:0x805478E8
+	.bss        start:0x80583CC8 end:0x80583D28
+	.sdata      start:0x805E9D98 end:0x805E9E30
+	.sdata2     start:0x805F7230 end:0x805F7280
+
 Game/GiantLantern.cpp:
 	.text       start:0x80236848 end:0x802379B8
 	.ctors      start:0x804A9EBC end:0x804A9EC0
@@ -1008,6 +1090,42 @@ Game/PlayerShadowWeaponVacuum.cpp:
 	.data       start:0x80547CE0 end:0x80547D00
 	.sdata      start:0x805E9F68 end:0x805E9F78
 	.sdata2     start:0x805F7360 end:0x805F7368
+
+Game/WeaponTorch.cpp:
+	.text       start:0x8023DCE4 end:0x8023F150
+	.ctors      start:0x804A9ED0 end:0x804A9ED4
+	.rodata     start:0x804F33C0 end:0x804F35D8
+	.data       start:0x80547D00 end:0x80547DE8
+	.sdata      start:0x805E9F78 end:0x805E9FB0
+	.sbss       start:0x805EFF48 end:0x805EFF60
+	.sdata2     start:0x805F7368 end:0x805F7388
+
+Game/GravityChangeSwitch.cpp:
+	.text       start:0x8024697C end:0x802476A8
+	.ctors      start:0x804A9ED8 end:0x804A9EDC
+	.rodata     start:0x804F3BD8 end:0x804F3CC8
+	.data       start:0x805488A8 end:0x80548968
+	.bss        start:0x80583E48 end:0x80583E58
+	.sdata      start:0x805EA130 end:0x805EA158
+	.sbss       start:0x805EFF60 end:0x805EFF70
+	.sdata2     start:0x805F7478 end:0x805F74A0
+
+Game/GravityChangeCollision.cpp:
+	.text       start:0x802476A8 end:0x80247B24
+	.rodata     start:0x804F3CC8 end:0x804F3D08
+	.data       start:0x80548968 end:0x80548A98
+	.sdata      start:0x805EA158 end:0x805EA178
+	.sdata2     start:0x805F74A0 end:0x805F74C8
+
+Game/GravityChangeZone.cpp:
+	.text       start:0x80247B24 end:0x8024898C
+	.ctors      start:0x804A9EDC end:0x804A9EE0
+	.rodata     start:0x804F3D08 end:0x804F3E10
+	.data       start:0x80548A98 end:0x80548B58
+	.bss        start:0x80583E58 end:0x80583E68
+	.sdata      start:0x805EA178 end:0x805EA1A0
+	.sbss       start:0x805EFF70 end:0x805EFF80
+	.sdata2     start:0x805F74C8 end:0x805F74F0
 
 Game/DarkSpinEntrance.cpp:
 	.text       start:0x8025885C end:0x80258D48
@@ -1168,6 +1286,31 @@ Game/WeaponSpecialKatana.cpp:
 	.sdata      start:0x805EAA88 end:0x805EAAA8
 	.sbss       start:0x805F01C0 end:0x805F01C8
 	.sdata2     start:0x805F7F60 end:0x805F7F88
+
+Game/WeaponSpecialOmochaoGun.cpp:
+	.text       start:0x80276284 end:0x8027698C
+	.ctors      start:0x804A9F2C end:0x804A9F30
+	.rodata     start:0x804F7390 end:0x804F7478
+	.data       start:0x8054D380 end:0x8054D460
+	.sdata      start:0x805EAAA8 end:0x805EAAD0
+	.sdata2     start:0x805F7F88 end:0x805F7FA0
+
+Game/WeaponSpecialSatelliteLaser.cpp:
+	.text       start:0x8027698C end:0x80276DF8
+	.ctors      start:0x804A9F30 end:0x804A9F34
+	.rodata     start:0x804F7478 end:0x804F7580
+	.data       start:0x8054D460 end:0x8054D518
+	.sdata      start:0x805EAAD0 end:0x805EAAF8
+	.sbss       start:0x805F01C8 end:0x805F01D0
+	.sdata2     start:0x805F7FA0 end:0x805F7FB8
+
+Game/WeaponSpecialShadowRifle.cpp:
+	.text       start:0x80276DF8 end:0x80277204
+	.ctors      start:0x804A9F34 end:0x804A9F38
+	.rodata     start:0x804F7580 end:0x804F76D8
+	.data       start:0x8054D518 end:0x8054D5B0
+	.sdata      start:0x805EAAF8 end:0x805EAB18
+	.sdata2     start:0x805F7FB8 end:0x805F7FD0
 
 Game/CityBombBig.cpp:
 	.text       start:0x802F31DC end:0x802F46E4

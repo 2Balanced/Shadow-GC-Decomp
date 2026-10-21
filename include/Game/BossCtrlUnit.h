@@ -17,15 +17,34 @@
 #include "size_assert.h"
 
 struct _stMtnPlayWork;
+struct RpClump;
+struct UnkClumpFade_80027D5C;
 struct _stMtnCallbackParam;
 
 struct UnkList_80179304;
+class BossCharInfo;
 struct UnkBossDef;
 namespace Effect {
 namespace System {
 class EffectLaunchInfo;
 } // namespace System
 } // namespace Effect
+
+#ifdef BOSSVARPARAM_CHARA_SHARED_PTR
+/* Defined by the unit that emits BossVarParam's constructor (Game/BlackBull0210.cpp): the members
+ * as the constructor sees them. m_chara is a shared_ptr<BossCharInfo>, which the other units
+ * read through its pointer, and the vector at 0x48 is copy-constructed out of line (fn_800091EC is
+ * Vec3f's copy constructor). */
+struct BossVarParamVector {
+    BossVarParamVector(const Vec3f &value) {
+        fn_800091EC(reinterpret_cast<Vec3f *>(this), &value);
+    }
+
+    float x;
+    float y;
+    float z;
+};
+#endif
 
 /* BossVarParam (class name from RTTI; vtable at 0x80547494, constructor 0x802332D4, destructor
  * 0x80232440): the state of a boss that its control units read and change. Only the members the
@@ -45,17 +64,28 @@ class BossVarParam {
     /* 0x19 */ u8 m_invincible;
     /* 0x1A */ u8 m_active;
     /* 0x1B */ u8 m_hidden;
+#ifdef BOSSVARPARAM_CHARA_SHARED_PTR
+    /* 0x1C */ boost::shared_ptr<BossCharInfo> m_charaPtr; /* m_chara, as the original declares it */
+#else
     /* 0x1C */ class EnemyCharInfo *m_chara;
     /* 0x20 */ u32 field_0x20;
+#endif
     /* 0x24 */ float m_health;
     /* 0x28 */ float m_time;
-    /* 0x2C */ u8 field_0x2C[0x3C - 0x2C];
+    /* 0x2C */ RpClump *m_clump; /* the boss's model (BossMotion attaches its motion to it) */
+    /* 0x30 */ UnkClumpFade_80027D5C *m_fade; /* the model's fade (BossRender) */
+    /* 0x34 */ u32 field_0x34;
+    /* 0x38 */ float m_alpha; /* the model's opacity, 0..1 (BossRender) */
     /* 0x3C */ _stMtnPlayWork *m_motion;
-    /* 0x40 */ u32 field_0x40;
+    /* 0x40 */ float field_0x40;
     /* 0x44 */ s32 m_motionBase; /* the first of the boss's motion ids */
+#ifdef BOSSVARPARAM_CHARA_SHARED_PTR
+    /* 0x48 */ BossVarParamVector field_0x48;
+#else
     /* 0x48 */ Vec3f field_0x48;
+#endif
     /* 0x54 */ UnkList_80179304 *m_colliders;
-    /* 0x58 */ u8 field_0x58[0x64 - 0x58];
+    /* 0x58 */ Vec3f field_0x58;
     /* 0x64 */ UnkList_80179304 *m_targets;
     /* 0x68 */ u32 field_0x68;
     /* 0x6C */ boost::shared_ptr<Effect::System::EffectLaunchInfo> m_effects;
@@ -142,6 +172,17 @@ class BossCtrlUnit_CheckFirstDamage : public BossCtrlUnit {
 
     /* 0x0C */ s32 field_0xC;
     /* 0x10 */ s32 field_0x10;
+};
+
+/* BossCtrlUnit_Shadow (class name from RTTI; vtable at 0x80552474, constructor 0x802904D8): the
+ * boss's shadow (meaning inferred from the name; size from its allocation). */
+class BossCtrlUnit_Shadow : public BossCtrlUnit {
+  public:
+    BossCtrlUnit_Shadow(BossVarParam *param, float size);
+    virtual ~BossCtrlUnit_Shadow();
+    virtual int Tick(float dt);
+
+    /* 0x0C */ u8 field_0xC[0x38 - 0xC];
 };
 
 /* Adds unit to the units the boss runs (behaviour inferred). */

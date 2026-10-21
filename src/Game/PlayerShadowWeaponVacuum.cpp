@@ -26,31 +26,6 @@ namespace {
 using Player::Shadow::ControlWeaponBase;
 using Player::Shadow::ShadowWeapon;
 
-/* Weapon::WeaponVacuumBase's slot 0x48 takes the ammo, but its declaration in
- * Game/WeaponVacuumBase.h has no parameter and its symbol (0x80225CA0) is named after that
- * signature; the call goes through this view of the vtable instead (name inferred). */
-class UnkVacuumVtableView {
-  public:
-    virtual void vf_0x08();
-    virtual void vf_0x0C();
-    virtual void vf_0x10();
-    virtual void vf_0x14();
-    virtual void vf_0x18();
-    virtual void vf_0x1C();
-    virtual void vf_0x20();
-    virtual void vf_0x24();
-    virtual void vf_0x28();
-    virtual void vf_0x2C();
-    virtual void vf_0x30();
-    virtual void vf_0x34();
-    virtual void vf_0x38();
-    virtual void vf_0x3C();
-    virtual void vf_0x40();
-    virtual void vf_0x44();
-    /* Tells the weapon the ammo left (behaviour inferred). */
-    virtual void SetAmmo(int ammo);
-};
-
 class ControlVacuum : public ControlWeaponBase {
   public:
     enum State {
@@ -77,7 +52,7 @@ ControlVacuum::ControlVacuum(ShadowWeapon *owner,
                              const boost::shared_ptr<Weapon::WeaponBase> &weapon)
     : ControlWeaponBase(owner) {
     m_vacuum = boost::dynamic_pointer_cast<Weapon::WeaponVacuumBase>(weapon);
-    reinterpret_cast<UnkVacuumVtableView *>(m_vacuum.get())->SetAmmo(m_owner->GetAmmo());
+    m_vacuum->vf_0x48(m_owner->GetAmmo());
     m_state = STATE_EMPTY;
 }
 

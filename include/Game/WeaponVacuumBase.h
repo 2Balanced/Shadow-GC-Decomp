@@ -51,7 +51,8 @@ class WeaponVacuumBase : public WeaponBase {
     virtual void LetGo(const Vec3f &velocity);
     /* The muzzle matrix. */
     virtual const Mtx34f *GetMuzzle() = 0;
-    virtual void vf_0x48() {}
+    /* Takes the ammo left (Player::Shadow's vacuum control passes it; behaviour inferred). */
+    virtual void vf_0x48(int ammo) {}
 
     /* The nearest target within range in front of the muzzle (0x80239604). */
     boost::weak_ptr<Target> FindTarget(float range);

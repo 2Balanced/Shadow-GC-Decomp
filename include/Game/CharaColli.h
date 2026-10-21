@@ -23,6 +23,13 @@ class CharaColliBase {
         reinterpret_cast<u8 *>(this)[0x2C] = value;
     }
 
+    /* The byte at 0x2A (meaning unknown; Game/WeaponTorch.cpp turns its attack collider on when
+     * it is clear). An inline function in the original: retail calls the shared_ptr's
+     * operator-> out of line before it. */
+    u8 GetField2A() {
+        return reinterpret_cast<u8 *>(this)[0x2A];
+    }
+
     /* The number of shapes in the collider (meaning inferred; slot 0x08). */
     virtual u16 GetShapeCount();
     /* Turns the collider back on and off (names inferred from RegularRing; arg is -1 there). */

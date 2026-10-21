@@ -22,6 +22,11 @@ class TVehicleBase;
 
 namespace Player {
 
+namespace Behavior {
+/* What runs a player's behaviors (class name unknown; fn_800A7F14 switches it to another). */
+class UnkBehaviorExecuter_800A7F14;
+} // namespace Behavior
+
 class PlayerMotion;
 class PlayerTargetBase;
 class WeaponBase;
@@ -50,7 +55,8 @@ class PlayerBase : public PlayerObject {
     /* 0x0A4 */ u32 field_0xA4;
     /* 0x0A8 */ u32 m_stateBits[2]; /* bit array (fn_8006CD78 tests, fn_80076CA8 sets, fn_80076CC8
                                       clears) */
-    /* 0x0B0 */ u8 field_0xB0[0x230 - 0xB0];
+    /* 0x0B0 */ u8 field_0xB0[0x22C - 0xB0];
+    /* 0x22C */ Behavior::UnkBehaviorExecuter_800A7F14 *m_behaviors; /* switches behaviors */
     /* 0x230 */ PlayerMotion *m_motion;
     /* 0x234 */ u32 field_0x234;
     /* 0x238 */ WeaponBase *m_weapon;

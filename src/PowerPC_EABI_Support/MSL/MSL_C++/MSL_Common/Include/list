@@ -1,0 +1,320 @@
+#ifndef MSL_LIST_
+#define MSL_LIST_
+
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <memory>
+
+/* Stand-in for the MSL <list>, reconstructed from the instances the game's code emits (first
+ * Game/GadgetModelInfo.cpp, 0x8015FB10..0x801656F0): a doubly linked list whose nodes hold their
+ * links first (previous, then next) and the value at 0x8, and whose object is {size, end node}.
+ * The end node links the first and the last node.
+ *
+ * Which members are written inline and which call an inline helper so that they stay out of line
+ * reproduces the game's call structure: with deferred inlining one level deep, only an inline
+ * function that calls no other inline function is expanded. insert, erase and the constructor of
+ * the list's storage are defined after the class: the game emits them at the end of a unit, after
+ * the code that uses them. A new node is held by __list_holder until it is linked in, so an
+ * exception thrown by the value's copy constructor would free it. The iterator keeps a pointer to
+ * the node type itself (the end node is cast to it): reaching the value through a cast from the
+ * link type would let the compiler share the value's address between a member read and a call,
+ * which retail does not. operator* goes through operator-> and so is called out of line. Units
+ * that use the list include <list> before <boost/function.hpp>: the game emits the list's
+ * instances before boost::function's. Names are invented; the original MSL source is not used. */
+
+namespace std {
+
+/* Returns x, and does nothing (inline calls that keep their callers out of line). */
+template <class T> inline T __list_id(T x) {
+    return x;
+}
+
+inline void __list_nothing() {}
+
+struct __list_node_base {
+    /* 0x0 */ __list_node_base *prev_;
+    /* 0x4 */ __list_node_base *next_;
+};
+
+template <class T> struct __list_node : public __list_node_base {
+    /* 0x8 */ T data_;
+};
+
+template <class T> class __list_iterator {
+  public:
+    __list_iterator() {}
+    explicit __list_iterator(__list_node_base *n) : node_(static_cast<__list_node<T> *>(n)) {}
+    __list_iterator(const __list_iterator &x) : node_(x.node_) {}
+
+    T *operator->() const {
+        return &node_->data_;
+    }
+    T &operator*() const {
+        return *operator->();
+    }
+    __list_iterator &operator++() {
+        node_ = static_cast<__list_node<T> *>(node_->next_);
+        return *this;
+    }
+    __list_iterator operator++(int) {
+        __list_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator==(const __list_iterator &x) const {
+        return node_ == x.node_;
+    }
+    bool operator!=(const __list_iterator &x) const {
+        return node_ != x.node_;
+    }
+
+    /* 0x0 */ __list_node<T> *node_;
+};
+
+/* The allocators of the values and of the nodes (an allocation failure aborts). */
+template <class T> class __list_value_allocator {
+  public:
+    __list_value_allocator() {}
+
+    void construct(T *p, const T &value) {
+        new ((void *)p) T(value);
+    }
+    void destroy(T *p) {
+        p->~T();
+        __list_nothing();
+    }
+};
+
+template <class N> class __list_node_allocator {
+  public:
+    __list_node_allocator() {}
+    __list_node_allocator(const __list_node_allocator &) {
+        __list_nothing();
+    }
+    template <class U> __list_node_allocator(const __list_value_allocator<U> &) {}
+
+    N *allocate(size_t n, const void *hint = 0) {
+        N *p = static_cast<N *>(::operator new(n * sizeof(N)));
+        if (p == 0) {
+            __msl_error("Memory allocation failure");
+        }
+        return p;
+    }
+    void deallocate(N *p, size_t) {
+        ::operator delete(p);
+    }
+};
+
+/* What frees a node that was never linked in (it holds nothing). */
+template <class N> struct __list_node_deleter {
+    void reset() {
+        __list_nothing();
+    }
+};
+
+/* The deleter and the node (the deleter is empty and takes no room). */
+template <class D, class P> struct __list_ptr_pair : public D {
+    __list_ptr_pair(const D &d, P p) : D(d), second_(__list_id(p)) {}
+    __list_ptr_pair(const __list_ptr_pair &x) : second_(__list_id(x.second_)) {}
+
+    D &first() {
+        return *this;
+    }
+    P &second() {
+        return second_;
+    }
+
+    /* 0x0 */ P second_;
+};
+
+/* Owns a new node until it is linked in. */
+template <class N, class A, class D> class __list_holder_imp {
+  public:
+    __list_holder_imp(A &a, const __list_ptr_pair<D, N *> &p) : alloc_(a), ptr_(p) {}
+
+    /* 0x0 */ A &alloc_;
+    /* 0x4 */ __list_ptr_pair<D, N *> ptr_;
+};
+
+template <class N, class A, class D> class __list_holder_base : public __list_holder_imp<N, A, D> {
+  public:
+    __list_holder_base(A &a, const __list_ptr_pair<D, N *> &p) : __list_holder_imp<N, A, D>(a, p) {}
+};
+
+template <class N, class A, class D> class __list_holder : public __list_holder_base<N, A, D> {
+  public:
+    __list_holder(N *p, A &a, D d)
+        : __list_holder_base<N, A, D>(a, __list_ptr_pair<D, N *>(d, p)) {}
+    ~__list_holder() {
+        if (get() != 0) {
+            reset_deleter();
+            alloc().deallocate(get(), 1);
+        }
+    }
+
+    N *get() {
+        return this->ptr_.second();
+    }
+    N *operator->() {
+        return get();
+    }
+    N *release() {
+        N *p = get();
+        this->ptr_.second() = 0;
+        return p;
+    }
+    A &alloc() {
+        return this->alloc_;
+    }
+    D &deleter() {
+        return this->ptr_.first();
+    }
+    bool reset_deleter() {
+        deleter().reset();
+        return true;
+    }
+};
+
+/* The value allocator and the size (the allocator is empty and takes no room). */
+template <class A, class S> struct __list_size_base : public A {
+    __list_size_base(S n) : second_(__list_id(n)) {}
+
+    /* 0x0 */ S second_;
+};
+
+template <class A, class S> struct __list_size_pair : public __list_size_base<A, S> {
+    __list_size_pair(S n) : __list_size_base<A, S>(n) {}
+
+    A &first() {
+        return *this;
+    }
+    S &second() {
+        return this->second_;
+    }
+};
+
+/* The node allocator and the end node. */
+template <class A> struct __list_end_pair : public A {
+    __list_end_pair(const A &a) : A(a) {}
+
+    A &first() {
+        return *this;
+    }
+    __list_node_base &second() {
+        return second_;
+    }
+
+    /* 0x0 */ __list_node_base second_;
+};
+
+template <class T> class __list_imp {
+  public:
+    typedef size_t size_type;
+    typedef __list_node<T> node;
+    typedef __list_iterator<T> iterator;
+    typedef __list_value_allocator<T> value_allocator;
+    typedef __list_node_allocator<node> node_allocator;
+
+    __list_imp();
+    ~__list_imp() {
+        erase(begin(), end());
+    }
+
+    iterator begin() {
+        return iterator(tail()->next_);
+    }
+    iterator end() {
+        return iterator(tail());
+    }
+    iterator insert(iterator position, const T &x);
+    iterator erase(iterator position);
+    iterator erase(iterator first, iterator last);
+
+    size_type &sz() {
+        return size_.second();
+    }
+    value_allocator &alloc() {
+        return size_.first();
+    }
+    node_allocator &node_alloc() {
+        return tail_.first();
+    }
+    __list_node_base *tail() {
+        return &tail_.second();
+    }
+
+    /* 0x0 */ __list_size_pair<value_allocator, size_type> size_;
+    /* 0x4 */ __list_end_pair<node_allocator> tail_;
+};
+
+template <class T> class __list_base : public __list_imp<T> {};
+
+template <class T> class list : public __list_base<T> {
+  public:
+    typedef typename __list_imp<T>::iterator iterator;
+
+    list() {}
+    ~list() {}
+
+    void push_back(const T &x) {
+        this->insert(this->end(), x);
+    }
+    void clear() {
+        this->erase(this->begin(), this->end());
+    }
+};
+
+template <class T> __list_imp<T>::__list_imp() : size_(0), tail_(node_allocator(alloc())) {
+    __list_node_base *t = tail();
+    t->prev_ = t->next_ = t;
+}
+
+template <class T>
+typename __list_imp<T>::iterator __list_imp<T>::insert(iterator position, const T &x) {
+    __list_holder<node, node_allocator, __list_node_deleter<node> > h(
+        node_alloc().allocate(1), node_alloc(), __list_node_deleter<node>());
+    alloc().construct(&h->data_, x);
+    node *p = h.release();
+    __list_node_base *n = position.node_;
+    n->prev_->next_ = p;
+    p->prev_ = n->prev_;
+    n->prev_ = p;
+    p->next_ = n;
+    ++sz();
+    return iterator(p);
+}
+
+template <class T> typename __list_imp<T>::iterator __list_imp<T>::erase(iterator position) {
+    __list_node_base *p = position.node_;
+    ++position;
+    p->prev_->next_ = p->next_;
+    p->next_->prev_ = p->prev_;
+    alloc().destroy(&static_cast<node *>(p)->data_);
+    node_alloc().deallocate(static_cast<node *>(p), 1);
+    --sz();
+    return position;
+}
+
+template <class T>
+typename __list_imp<T>::iterator __list_imp<T>::erase(iterator first, iterator last) {
+    if (first == last) {
+        return last;
+    }
+    __list_node_base *lp = last.node_->prev_;
+    __list_node_base *fp = first.node_;
+    fp->prev_->next_ = lp->next_;
+    lp->next_->prev_ = fp->prev_;
+    while (first != last) {
+        alloc().destroy(&static_cast<node *>(first.node_)->data_);
+        __list_node_base *p = first.node_;
+        ++first;
+        node_alloc().deallocate(static_cast<node *>(p), 1);
+        --sz();
+    }
+    return last;
+}
+
+} // namespace std
+
+#endif

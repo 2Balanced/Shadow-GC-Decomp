@@ -91,6 +91,14 @@ struct UnkCameraBlend_8000B2C0 {
 };
 SIZE_ASSERT(UnkCameraBlend_8000B2C0, 0x2C);
 
+/* A camera path of the resource files (struct name unknown; names inferred; fn_80012510 returns
+ * one). */
+struct UnkCameraData_80012510 {
+    /* 0x0 */ u32 field_0x0;
+    /* 0x4 */ float m_startTime;
+    /* 0x8 */ float m_endTime;
+};
+
 /* The camera manager (class name unknown): a function-local static object behind an accessor of
  * the player code (0x80099954). */
 class UnkCameraManager_80099954;
