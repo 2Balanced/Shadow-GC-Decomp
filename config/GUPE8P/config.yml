@@ -1,0 +1,14 @@
+# See config.example.yml for documentation.
+object_base: orig/GUPE8P
+object: sys/main.dol
+hash: 118ef49ebd45b371b6f514e0e1b6d1ba7cf12904
+symbols: config/GUPE8P/symbols.txt
+splits: config/GUPE8P/splits.txt
+# Change this to match the linker version.
+# See config.example.yml for a list.
+mw_comment_version: 11
+# The GC 2.7 linker deadstrips these unreferenced .ctors$10/.dtors$15 entries
+# from the compiled runtime object unless they are forced active.
+force_active:
+- __init_cpp_exceptions_reference
+- __fini_cpp_exceptions_reference

@@ -1,0 +1,21 @@
+#ifndef MSL_CSTDDEF_
+#define MSL_CSTDDEF_
+
+/* The few <cstddef> names this project needs, sized for the 32-bit PowerPC EABI. This is not the
+ * Metrowerks library header. */
+typedef long ptrdiff_t;
+typedef unsigned long size_t;
+
+#ifndef NULL
+#define NULL 0
+#endif
+
+/* Byte offset of `member` within `type`. */
+#define offsetof(type, member) ((size_t)&(((type *)0)->member))
+
+namespace std {
+using ::ptrdiff_t;
+using ::size_t;
+} // namespace std
+
+#endif

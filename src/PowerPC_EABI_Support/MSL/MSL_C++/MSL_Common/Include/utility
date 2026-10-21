@@ -1,0 +1,24 @@
+#ifndef MSL_UTILITY_
+#define MSL_UTILITY_
+
+/* Minimal stand-in for the MSL <utility>. */
+namespace std {
+
+template <class T1, class T2> struct pair {
+    typedef T1 first_type;
+    typedef T2 second_type;
+
+    pair() : first(), second() {}
+    pair(const T1 &a, const T2 &b) : first(a), second(b) {}
+
+    T1 first;
+    T2 second;
+};
+
+template <class T1, class T2> inline pair<T1, T2> make_pair(const T1 &a, const T2 &b) {
+    return pair<T1, T2>(a, b);
+}
+
+} // namespace std
+
+#endif

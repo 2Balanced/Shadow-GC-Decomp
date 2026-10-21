@@ -1,0 +1,48 @@
+#ifndef MSL_ALGORITHM_
+#define MSL_ALGORITHM_
+
+/* Minimal stand-in for the MSL <algorithm>: what boost's headers name, and the
+ * algorithms <vector> uses. */
+namespace std {
+
+template <class T> inline void swap(T &a, T &b) {
+    T tmp(a);
+    a = b;
+    b = tmp;
+}
+
+template <class T> inline const T &min(const T &a, const T &b) {
+    return b < a ? b : a;
+}
+
+template <class T> inline const T &max(const T &a, const T &b) {
+    return a < b ? b : a;
+}
+
+/* Assigns value to n elements from first. */
+template <class OutputIterator, class Size, class T>
+inline void fill_n(OutputIterator first, Size n, const T &value) {
+    for (; n != 0; ++first, --n) {
+        *first = value;
+    }
+}
+
+template <class BidirectionalIterator1, class BidirectionalIterator2>
+inline BidirectionalIterator2 __copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
+                                       BidirectionalIterator2 result) {
+    while (last > first) {
+        *--result = *--last;
+    }
+    return result;
+}
+
+/* Copies [first, last) backwards so that it ends at result. */
+template <class BidirectionalIterator1, class BidirectionalIterator2>
+inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
+                                     BidirectionalIterator2 result) {
+    return __copy_backward(first, last, result);
+}
+
+} // namespace std
+
+#endif

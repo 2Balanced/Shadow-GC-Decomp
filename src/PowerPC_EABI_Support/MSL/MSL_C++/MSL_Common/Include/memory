@@ -1,0 +1,218 @@
+#ifndef MSL_MEMORY_
+#define MSL_MEMORY_
+
+#include <cstddef>
+#include <cstdio>
+#include <cstdlib>
+#include <iterator>
+#include <new>
+
+/* Stand-in for the MSL <memory>: the default allocator (boost::function copies its targets with
+ * it), the uninitialized-storage algorithms, raw_storage_iterator and auto_ptr. The game is built
+ * without exceptions, so an allocation failure prints a message and aborts. */
+namespace std {
+
+/* Reports a fatal library error and stops (there are no exceptions to throw). */
+inline void __msl_error(const char *message) {
+    fprintf(stderr, message);
+    abort();
+}
+
+/* The largest size_t (an inline call, so allocator::max_size is not inlined itself). */
+inline size_t __max_size_t() {
+    return size_t(-1);
+}
+
+template <class T> class allocator;
+
+template <> class allocator<void> {
+  public:
+    typedef void *pointer;
+    typedef const void *const_pointer;
+    typedef void value_type;
+
+    template <class U> struct rebind {
+        typedef allocator<U> other;
+    };
+};
+
+template <class T> class allocator {
+  public:
+    typedef size_t size_type;
+    typedef ptrdiff_t difference_type;
+    typedef T *pointer;
+    typedef const T *const_pointer;
+    typedef T &reference;
+    typedef const T &const_reference;
+    typedef T value_type;
+
+    template <class U> struct rebind {
+        typedef allocator<U> other;
+    };
+
+    allocator() {}
+    template <class U> allocator(const allocator<U> &) {}
+
+    pointer address(reference x) const {
+        return &x;
+    }
+    const_pointer address(const_reference x) const {
+        return &x;
+    }
+
+    pointer allocate(size_type n, allocator<void>::const_pointer hint = 0) {
+        pointer p = static_cast<pointer>(::operator new(n * sizeof(T)));
+        if (p == 0) {
+            __msl_error("Memory allocation failure");
+        }
+        return p;
+    }
+
+    void deallocate(pointer p, size_type) {
+        ::operator delete(p);
+    }
+
+    size_type max_size() const {
+        return __max_size_t() / sizeof(T);
+    }
+
+    void construct(pointer p, const T &value) {
+        new ((void *)p) T(value);
+    }
+
+    void destroy(pointer p) {
+        p->~T();
+    }
+};
+
+/* All default allocators are interchangeable. */
+template <class T1, class T2> inline bool operator==(const allocator<T1> &, const allocator<T2> &) {
+    return true;
+}
+
+template <class T1, class T2> inline bool operator!=(const allocator<T1> &, const allocator<T2> &) {
+    return false;
+}
+
+/* Construction into raw storage. */
+template <class InputIterator, class ForwardIterator>
+ForwardIterator uninitialized_copy(InputIterator first, InputIterator last, ForwardIterator result) {
+    for (; first != last; ++first, ++result) {
+        new ((void *)&*result) typename iterator_traits<ForwardIterator>::value_type(*first);
+    }
+    return result;
+}
+
+template <class ForwardIterator, class T>
+void uninitialized_fill(ForwardIterator first, ForwardIterator last, const T &value) {
+    for (; first != last; ++first) {
+        new ((void *)&*first) typename iterator_traits<ForwardIterator>::value_type(value);
+    }
+}
+
+template <class ForwardIterator, class Size, class T>
+void uninitialized_fill_n(ForwardIterator first, Size n, const T &value) {
+    for (; n > 0; --n, ++first) {
+        new ((void *)&*first) typename iterator_traits<ForwardIterator>::value_type(value);
+    }
+}
+
+template <class OutputIterator, class T>
+class raw_storage_iterator : public iterator<output_iterator_tag, void, void, void, void> {
+  public:
+    explicit raw_storage_iterator(OutputIterator x) : iter_(x) {}
+
+    raw_storage_iterator &operator*() {
+        return *this;
+    }
+    raw_storage_iterator &operator=(const T &element) {
+        new ((void *)&*iter_) T(element);
+        return *this;
+    }
+    raw_storage_iterator &operator++() {
+        ++iter_;
+        return *this;
+    }
+    raw_storage_iterator operator++(int) {
+        raw_storage_iterator tmp = *this;
+        ++iter_;
+        return tmp;
+    }
+
+  private:
+    OutputIterator iter_;
+};
+
+/* Temporary buffers. */
+template <class T> pair<T *, ptrdiff_t> get_temporary_buffer(ptrdiff_t n) {
+    T *p = static_cast<T *>(::operator new(n * sizeof(T)));
+    return pair<T *, ptrdiff_t>(p, p != 0 ? n : 0);
+}
+
+template <class T> void return_temporary_buffer(T *p) {
+    ::operator delete(p);
+}
+
+/* auto_ptr, with the auto_ptr_ref helper that lets it pass through temporaries. */
+template <class Y> struct auto_ptr_ref {
+    explicit auto_ptr_ref(Y *p) : ptr_(p) {}
+
+    Y *ptr_;
+};
+
+template <class X> class auto_ptr {
+  public:
+    typedef X element_type;
+
+    explicit auto_ptr(X *p = 0) : ptr_(p) {}
+    auto_ptr(auto_ptr &a) : ptr_(a.release()) {}
+    template <class Y> auto_ptr(auto_ptr<Y> &a) : ptr_(a.release()) {}
+    auto_ptr(auto_ptr_ref<X> r) : ptr_(r.ptr_) {}
+    ~auto_ptr() {
+        delete ptr_;
+    }
+
+    auto_ptr &operator=(auto_ptr &a) {
+        reset(a.release());
+        return *this;
+    }
+    template <class Y> auto_ptr &operator=(auto_ptr<Y> &a) {
+        reset(a.release());
+        return *this;
+    }
+
+    X &operator*() const {
+        return *ptr_;
+    }
+    X *operator->() const {
+        return ptr_;
+    }
+    X *get() const {
+        return ptr_;
+    }
+    X *release() {
+        X *tmp = ptr_;
+        ptr_ = 0;
+        return tmp;
+    }
+    void reset(X *p = 0) {
+        if (p != ptr_) {
+            delete ptr_;
+            ptr_ = p;
+        }
+    }
+
+    template <class Y> operator auto_ptr_ref<Y>() {
+        return auto_ptr_ref<Y>(release());
+    }
+    template <class Y> operator auto_ptr<Y>() {
+        return auto_ptr<Y>(release());
+    }
+
+  private:
+    X *ptr_;
+};
+
+} // namespace std
+
+#endif

@@ -1,0 +1,40 @@
+#ifndef MSL_STDEXCEPT_H_
+#define MSL_STDEXCEPT_H_
+
+#include <exception>
+
+/* Declarations only (exceptions are off in the game); boost::bad_function_call derives from
+ * std::runtime_error. */
+namespace std {
+
+class logic_error : public exception {
+  public:
+    explicit logic_error(const char *) {}
+};
+
+class runtime_error : public exception {
+  public:
+    explicit runtime_error(const char *) {}
+#ifdef MSL_RUNTIME_ERROR_STRING
+    /* The library's runtime_error keeps its message in an 8-byte string member at 0x4 (its
+     * constructor, 0x8000A038, builds it). A unit whose code puts a runtime_error-derived object on
+     * the stack (boost::bad_function_call in boost::function's operator()) defines this macro to
+     * get the library's size. */
+  private:
+    char m_what[8];
+#endif
+};
+
+class invalid_argument : public logic_error {
+  public:
+    explicit invalid_argument(const char *what_arg) : logic_error(what_arg) {}
+};
+
+class out_of_range : public logic_error {
+  public:
+    explicit out_of_range(const char *what_arg) : logic_error(what_arg) {}
+};
+
+} // namespace std
+
+#endif

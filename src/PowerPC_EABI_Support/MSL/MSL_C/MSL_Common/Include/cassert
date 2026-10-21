@@ -1,0 +1,8 @@
+#ifndef MSL_CASSERT_H_
+#define MSL_CASSERT_H_
+
+/* Release builds only: the game is compiled with NDEBUG, so assert expands to nothing. */
+#undef assert
+#define assert(condition) ((void)0)
+
+#endif

@@ -1,0 +1,69 @@
+#ifndef MSL_STRING_
+#define MSL_STRING_
+
+/* Stand-in for the MSL <string>: boost's function_base.hpp includes it but uses nothing from it.
+ * Game code that builds strings (HintRing) uses the basic_string below, reduced to the members it
+ * calls. The game links one out-of-line copy of each (constructor 0x8004F888, destructor
+ * 0x80014EC0); a unit that constructs a string still compiles its own copy of the constructor,
+ * whose error message stays in a .rodata that is kept whole. The constructor body here only
+ * reproduces that message: the copy built from it is never linked. */
+#include <cstring>
+#include <memory>
+
+namespace std {
+
+template <class charT> struct char_traits;
+
+template <> struct char_traits<char> {
+    typedef char char_type;
+    typedef size_t size_type;
+
+    static size_t length(const char_type *s) {
+        return strlen(s);
+    }
+};
+
+template <class charT, class traits = char_traits<charT>, class Allocator = allocator<charT> >
+class basic_string {
+  public:
+    typedef size_t size_type;
+
+    basic_string(const charT *s, const Allocator &a = Allocator());
+    ~basic_string();
+
+#ifdef MSL_STRING_DEFAULT_CTOR
+    /* Declared only where a unit needs them (Game/StageSequenceMovieTest.cpp): a declaration here
+     * renumbers the compiler's @N labels of every unit. The game links one out-of-line copy of
+     * each (default constructor 0x80014D58 with its array wrapper 0x80329698, assignment
+     * 0x80014CF4, c_str 0x80014E50). */
+    explicit basic_string(const Allocator &a = Allocator());
+    basic_string &operator=(const charT *s);
+    const charT *c_str() const;
+#endif
+
+    size_type max_size() const {
+        return size_type(-1) / sizeof(charT) - 1;
+    }
+
+  private:
+    /* 0x0 */ size_type capacity_;
+    /* 0x4 */ size_type size_;
+    /* 0x8 */ charT *data_;
+};
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Allocator &a) {
+    size_type n = traits::length(s);
+    if (n > max_size()) {
+        __msl_error("string constructor: n > max_size\n");
+    }
+    capacity_ = n;
+    size_ = n;
+    data_ = const_cast<charT *>(s);
+}
+
+typedef basic_string<char> string;
+
+} // namespace std
+
+#endif

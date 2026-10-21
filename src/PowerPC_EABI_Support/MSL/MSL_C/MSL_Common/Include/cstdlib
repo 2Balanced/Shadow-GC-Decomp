@@ -1,0 +1,27 @@
+#ifndef MSL_CSTDLIB_
+#define MSL_CSTDLIB_
+
+#include <cstddef>
+
+/* Minimal stand-in for the MSL <cstdlib>. */
+extern "C" {
+void abort(void);
+void exit(int status);
+int abs(int x);
+long labs(long x);
+int atoi(const char *s);
+int rand(void);
+void srand(unsigned int seed);
+}
+
+namespace std {
+using ::abort;
+using ::exit;
+using ::abs;
+using ::labs;
+using ::atoi;
+using ::rand;
+using ::srand;
+} // namespace std
+
+#endif

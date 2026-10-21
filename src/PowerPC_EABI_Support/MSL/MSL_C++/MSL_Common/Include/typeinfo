@@ -1,0 +1,33 @@
+#ifndef MSL_TYPEINFO_H_
+#define MSL_TYPEINFO_H_
+
+#include <cstring>
+
+namespace std {
+
+/* The run-time type record MWCC emits for typeid: two words, the type's name and its base list
+ * (the __RTTI__ objects in .sdata/.data), with no vtable. Equality compares the names, which is
+ * the strcmp call boost::function's functor manager makes when it checks a target's type. */
+class type_info {
+  public:
+    const char *name() const {
+        return __type_name;
+    }
+    bool operator==(const type_info &rhs) const {
+        return strcmp(__type_name, rhs.__type_name) == 0;
+    }
+    bool operator!=(const type_info &rhs) const {
+        return strcmp(__type_name, rhs.__type_name) != 0;
+    }
+    bool before(const type_info &rhs) const {
+        return strcmp(__type_name, rhs.__type_name) < 0;
+    }
+
+  private:
+    const char *__type_name;
+    const void *__type_info_bases;
+};
+
+} // namespace std
+
+#endif

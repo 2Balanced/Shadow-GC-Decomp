@@ -1,0 +1,44 @@
+#ifndef MSL_NEW_
+#define MSL_NEW_
+
+#include <cstddef>
+#include <exception>
+
+/* Minimal stand-in for the MSL <new>. bad_alloc's members live in the library, so units only
+ * reference them; a unit that defines MSL_NEW_INLINE_BAD_ALLOC before including this header gets
+ * inline definitions instead, and with them local copies of the class's functions, vtable and
+ * RTTI (which BreakWall's retail .data holds). */
+namespace std {
+
+class bad_alloc : public exception {
+  public:
+#ifdef MSL_NEW_INLINE_BAD_ALLOC
+    bad_alloc() {}
+    virtual ~bad_alloc() {}
+    virtual const char *what() const {
+        return "bad_alloc";
+    }
+#else
+    bad_alloc();
+    virtual ~bad_alloc();
+    virtual const char *what() const;
+#endif
+};
+
+struct nothrow_t {};
+extern const nothrow_t nothrow;
+
+} // namespace std
+
+void *operator new(size_t size);
+void *operator new[](size_t size);
+void operator delete(void *ptr);
+void operator delete[](void *ptr);
+
+inline void *operator new(size_t, void *ptr) {
+    return ptr;
+}
+
+inline void operator delete(void *, void *) {}
+
+#endif

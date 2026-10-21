@@ -1,0 +1,38 @@
+#ifndef MSL_CSTRING_
+#define MSL_CSTRING_
+
+#include <cstddef>
+
+/* Minimal stand-in for the MSL <cstring>: declarations of the C string functions the game code
+ * and boost call. */
+extern "C" {
+void *memcpy(void *dst, const void *src, size_t n);
+void *memmove(void *dst, const void *src, size_t n);
+void *memset(void *dst, int c, size_t n);
+int memcmp(const void *a, const void *b, size_t n);
+size_t strlen(const char *s);
+char *strcpy(char *dst, const char *src);
+char *strncpy(char *dst, const char *src, size_t n);
+char *strcat(char *dst, const char *src);
+int strcmp(const char *a, const char *b);
+int strncmp(const char *a, const char *b, size_t n);
+char *strchr(const char *s, int c);
+char *strstr(const char *s, const char *sub);
+}
+
+namespace std {
+using ::memcpy;
+using ::memmove;
+using ::memset;
+using ::memcmp;
+using ::strlen;
+using ::strcpy;
+using ::strncpy;
+using ::strcat;
+using ::strcmp;
+using ::strncmp;
+using ::strchr;
+using ::strstr;
+} // namespace std
+
+#endif

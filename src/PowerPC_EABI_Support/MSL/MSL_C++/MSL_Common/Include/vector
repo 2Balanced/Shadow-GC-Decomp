@@ -1,0 +1,249 @@
+#ifndef MSL_VECTOR_
+#define MSL_VECTOR_
+
+#include <algorithm>
+#include <cstddef>
+#include <memory>
+
+/* Stand-in for the MSL <vector>, reconstructed from the vector<boost::shared_ptr<Target>> code that
+ * DEFENSE_SYSTEM's unit emits (0x80223FB8..0x80225284): only reserve, push_back (through the
+ * fill-insert), begin, end and destruction. The layout is the capacity (stored with the allocator,
+ * which takes no room), the size, then the data pointer. Which members are written inline is chosen
+ * to reproduce the game's call structure (the original MSL source is not used here); the class
+ * names below the vector are invented. */
+namespace std {
+
+/* Returns x. Accessors go through it, so that, inlining it, they are not inlined themselves
+ * (deferred inlining is one level deep) and come out as the game's small out-of-line copies. */
+template <class T> inline T &__vec_ref(T &x) {
+    return x;
+}
+
+template <class T> inline const T &__vec_ref(const T &x) {
+    return x;
+}
+
+/* The capacity stored with the (empty) allocator. */
+template <class A, class S> struct __vec_cap_storage : public A {
+    __vec_cap_storage(S n) : second_(n) {}
+    __vec_cap_storage(const A &a, S n) : A(a), second_(n) {}
+    void swap(__vec_cap_storage &x) {
+        std::swap(second_, x.second_);
+    }
+
+    S second_;
+};
+
+template <class A, class S> struct __vec_cap_pair : public __vec_cap_storage<A, S> {
+    __vec_cap_pair(S n) : __vec_cap_storage<A, S>(n) {}
+    __vec_cap_pair(const A &a, S n) : __vec_cap_storage<A, S>(a, n) {}
+
+    A &first() {
+        return __vec_ref<A>(*this);
+    }
+    const A &first() const {
+        return __vec_ref<A>(*this);
+    }
+    S &second() {
+        return __vec_ref(this->second_);
+    }
+    const S &second() const {
+        return __vec_ref(this->second_);
+    }
+    void swap(__vec_cap_pair &x) {
+        __vec_cap_storage<A, S>::swap(x);
+    }
+};
+
+template <class A, class S>
+inline void __vec_swap(__vec_cap_pair<A, S> &a, __vec_cap_pair<A, S> &b) {
+    a.swap(b);
+}
+
+/* The storage and the operations that do not depend on the vector's interface. */
+template <class T, class A> class __vec_base {
+  public:
+    typedef T value_type;
+    typedef T *pointer;
+    typedef T *iterator;
+    typedef const T &const_reference;
+    typedef size_t size_type;
+    typedef A allocator_type;
+
+    __vec_base() : cap_(0), size_(0), data_(0) {}
+    __vec_base(const A &a) : cap_(a, 0), size_(0), data_(0) {}
+    ~__vec_base();
+
+    iterator begin() {
+        return __vec_ref(data_);
+    }
+    iterator end() {
+        return __vec_ref(data_) + size_;
+    }
+    size_type size() const {
+        return __vec_ref(size_);
+    }
+    size_type capacity() const {
+        return cap_.second();
+    }
+    size_type max_size() const {
+        return cap_.first().max_size();
+    }
+    void reserve(size_type n);
+    void push_back(const T &x) {
+        insert_n(end(), 1, x);
+    }
+    void swap(__vec_base &x) {
+        if (this != &x) {
+            __vec_swap(cap_, x.cap_);
+            std::swap(data_, x.data_);
+            std::swap(size_, x.size_);
+        }
+    }
+
+  protected:
+    pointer &data() {
+        return __vec_ref(data_);
+    }
+    void destroy_all() {
+        pointer first = data_;
+        pointer last = first + size_;
+        while (last > first) {
+            cap_.first().destroy(--last);
+        }
+        size_ = 0;
+    }
+    void insert_n(iterator position, size_type n, const T &x);
+
+    __vec_cap_pair<A, size_type> cap_;
+    size_type size_;
+    pointer data_;
+};
+
+template <class T, class A> inline void __vec_swap(__vec_base<T, A> &a, __vec_base<T, A> &b) {
+    a.swap(b);
+}
+
+template <class T, class A> __vec_base<T, A>::~__vec_base() {
+    destroy_all();
+    if (data_ != 0) {
+        cap_.first().deallocate(data(), cap_.second());
+    }
+}
+
+template <class T, class A> void __vec_base<T, A>::reserve(size_type n) {
+    if (n > capacity()) {
+        if (n > max_size()) {
+            __msl_error("vector::reserve length error\n");
+        }
+        __vec_base tmp(cap_.first());
+        tmp.data_ = tmp.cap_.first().allocate(n, 0);
+        tmp.cap_.second() = n;
+        pointer dest = tmp.data_;
+        pointer src = begin();
+        pointer last = end();
+        for (; src < last; ++src, ++dest) {
+            tmp.cap_.first().construct(dest, *src);
+            ++tmp.size_;
+        }
+        __vec_swap(tmp, *this);
+    }
+}
+
+/* Inserts n copies of x before position. */
+template <class T, class A>
+void __vec_base<T, A>::insert_n(iterator position, size_type n, const T &x) {
+    if (n != 0) {
+        size_type ms = max_size();
+        if (n > ms || size_ > ms - n) {
+            __msl_error("vector::insert length error\n");
+        }
+        if (size_ + n <= capacity()) {
+            const T *xp = &x;
+            pointer old_end = end();
+            size_type after = old_end - position;
+            if (n > after) {
+                pointer dest = old_end;
+                for (; n > after; ++dest, --n) {
+                    cap_.first().construct(dest, *xp);
+                    ++size_;
+                }
+                for (pointer src = position; src < old_end; ++src, ++dest) {
+                    cap_.first().construct(dest, *src);
+                    ++size_;
+                }
+            } else {
+                pointer src = old_end - n;
+                for (pointer dest = old_end; src < old_end; ++src, ++dest) {
+                    cap_.first().construct(dest, *src);
+                    ++size_;
+                }
+                size_type moved = after - n;
+                if (old_end - moved <= xp && xp < old_end) {
+                    xp += n;
+                }
+                copy_backward(position, position + moved, old_end);
+            }
+            fill_n(position, n, *xp);
+        } else {
+            __vec_base tmp(cap_.first());
+            size_type new_size = size_ + n;
+            size_type cap = cap_.second() != 0 ? cap_.second() : 1;
+            const size_type limit = ms;
+            while (new_size > cap) {
+                if (cap < limit / 2) {
+                    cap *= 2;
+                } else {
+                    cap = limit;
+                }
+            }
+            tmp.data_ = tmp.cap_.first().allocate(cap, 0);
+            tmp.cap_.second() = cap;
+            pointer dest = tmp.data_;
+            pointer src = begin();
+            pointer last = end();
+            for (; src < position; ++src, ++dest) {
+                tmp.cap_.first().construct(dest, *src);
+                ++tmp.size_;
+            }
+            for (; n != 0; ++dest, --n) {
+                tmp.cap_.first().construct(dest, x);
+                ++tmp.size_;
+            }
+            for (; src < last; ++src, ++dest) {
+                tmp.cap_.first().construct(dest, *src);
+                ++tmp.size_;
+            }
+            __vec_swap(tmp, *this);
+        }
+    }
+}
+
+template <class T, class A = allocator<T> > class vector : public __vec_base<T, A> {
+  public:
+    typedef __vec_base<T, A> base;
+    typedef typename base::iterator iterator;
+    typedef typename base::size_type size_type;
+
+    vector() {}
+
+    iterator begin() {
+        return base::begin();
+    }
+    iterator end() {
+        return base::end();
+    }
+    void push_back(const T &x) {
+        base::push_back(x);
+    }
+    void reserve(size_type n) {
+        base::reserve(n);
+    }
+    void clear() {
+        base::destroy_all();
+    }
+};
+
+} // namespace std
+
+#endif

@@ -1,0 +1,21 @@
+#ifndef MSL_EXCEPTION_H_
+#define MSL_EXCEPTION_H_
+
+/* Declarations only: the game is built with C++ exceptions off, so nothing here is called. Boost's
+ * headers need the names. */
+namespace std {
+
+class exception {
+  public:
+    exception() {}
+    virtual ~exception() {}
+    virtual const char *what() const {
+        return "exception";
+    }
+};
+
+class bad_exception : public exception {};
+
+} // namespace std
+
+#endif

@@ -1,0 +1,249 @@
+#ifndef MSL_CMATH_
+#define MSL_CMATH_
+
+/* Stand-in for the MSL <cmath>. The double functions are library calls; the float forms are
+ * inline wrappers. The std:: float overloads go through the C float functions, so (under
+ * one-level deferred inlining) they are emitted out of line wherever they are called, with the C
+ * wrapper expanded inside them, as in the game. The C99 classification helpers read the IEEE bit
+ * patterns directly. */
+
+#define FP_NAN 1
+#define FP_INFINITE 2
+#define FP_ZERO 3
+#define FP_NORMAL 4
+#define FP_SUBNORMAL 5
+
+
+extern "C" {
+
+double sin(double x);
+double cos(double x);
+double tan(double x);
+double atan(double x);
+double atan2(double y, double x);
+double acos(double x);
+double asin(double x);
+double sinh(double x);
+double cosh(double x);
+double tanh(double x);
+double pow(double x, double y);
+double exp(double x);
+double log(double x);
+double log10(double x);
+double floor(double x);
+double ceil(double x);
+double fmod(double x, double y);
+double modf(double x, double *ip);
+double frexp(double x, int *exp);
+double ldexp(double x, int exp);
+double sqrt(double x);
+
+inline double fabs(double x) {
+    return __fabs(x);
+}
+
+inline float fabsf(float x) {
+    return (float)fabs((double)x);
+}
+
+inline float sinf(float x) {
+    return (float)sin((double)x);
+}
+
+inline float cosf(float x) {
+    return (float)cos((double)x);
+}
+
+inline float tanf(float x) {
+    return (float)tan((double)x);
+}
+
+inline float atan2f(float y, float x) {
+    return (float)atan2((double)y, (double)x);
+}
+
+inline float floorf(float x) {
+    return (float)floor((double)x);
+}
+
+inline float ceilf(float x) {
+    return (float)ceil((double)x);
+}
+
+inline float fmodf(float x, float y) {
+    return (float)fmod((double)x, (double)y);
+}
+
+/* Three Newton-Raphson steps from the hardware reciprocal square root estimate. */
+inline float sqrtf(float x) {
+    static const double _half = 0.5;
+    static const double _three = 3.0;
+    volatile float result;
+
+    if (x > 0.0f) {
+        double estimate = __frsqrte((double)x);
+        estimate = _half * estimate * (_three - estimate * estimate * x);
+        estimate = _half * estimate * (_three - estimate * estimate * x);
+        estimate = _half * estimate * (_three - estimate * estimate * x);
+        result = (float)(x * estimate);
+        return result;
+    }
+    return x;
+}
+
+/* C99 classification of a float: exponent all ones is an infinity or a NaN, all zeros a zero or a
+ * subnormal. */
+inline int __fpclassifyf(float x) {
+    unsigned long bits = *(unsigned long *)&x;
+    unsigned long exponent = bits & 0x7F800000;
+
+    if (exponent == 0x7F800000) {
+        if (bits & 0x007FFFFF) {
+            return FP_NAN;
+        }
+        return FP_INFINITE;
+    }
+    if (exponent == 0) {
+        if (bits & 0x007FFFFF) {
+            return FP_SUBNORMAL;
+        }
+        return FP_ZERO;
+    }
+    return FP_NORMAL;
+}
+
+/* The same for a double (big-endian: the high word comes first). */
+inline int __fpclassifyd(double x) {
+    unsigned long high = ((unsigned long *)&x)[0];
+    unsigned long low = ((unsigned long *)&x)[1];
+    unsigned long exponent = high & 0x7FF00000;
+
+    if (exponent == 0x7FF00000) {
+        if ((high & 0x000FFFFF) || low) {
+            return FP_NAN;
+        }
+        return FP_INFINITE;
+    }
+    if (exponent == 0) {
+        if ((high & 0x000FFFFF) || low) {
+            return FP_SUBNORMAL;
+        }
+        return FP_ZERO;
+    }
+    return FP_NORMAL;
+}
+
+/* long double has the double format here. */
+inline int __fpclassifyl(long double x) {
+    unsigned long high = ((unsigned long *)&x)[0];
+    unsigned long mantissa = (high & 0x000FFFFF) | ((unsigned long *)&x)[1];
+    unsigned long exponent = high & 0x7FF00000;
+
+    if (exponent == 0x7FF00000) {
+        if (mantissa != 0) {
+            return FP_NAN;
+        }
+        return FP_INFINITE;
+    }
+    if (exponent == 0) {
+        if (mantissa != 0) {
+            return FP_SUBNORMAL;
+        }
+        return FP_ZERO;
+    }
+    return FP_NORMAL;
+}
+
+inline int __signbitf(float x) {
+    return (int)(*(unsigned long *)&x >> 31);
+}
+
+inline int __signbitd(double x) {
+    return (int)(((unsigned long *)&x)[0] >> 31);
+}
+
+} // extern "C"
+
+#define fpclassify(x)                                                                                  (sizeof(x) == sizeof(float) ? __fpclassifyf((float)(x)) : __fpclassifyd((double)(x)))
+#define signbit(x) (sizeof(x) == sizeof(float) ? __signbitf((float)(x)) : __signbitd((double)(x)))
+#define isfinite(x) (fpclassify(x) > FP_INFINITE)
+#define isnan(x) (fpclassify(x) == FP_NAN)
+#define isinf(x) (fpclassify(x) == FP_INFINITE)
+#define isnormal(x) (fpclassify(x) == FP_NORMAL)
+
+namespace std {
+
+using ::sin;
+using ::cos;
+using ::tan;
+using ::atan;
+using ::atan2;
+using ::acos;
+using ::asin;
+using ::sinh;
+using ::cosh;
+using ::tanh;
+using ::pow;
+using ::exp;
+using ::log;
+using ::log10;
+using ::floor;
+using ::ceil;
+using ::fmod;
+using ::modf;
+using ::frexp;
+using ::ldexp;
+using ::sqrt;
+using ::fabs;
+
+inline float abs(float x) {
+    return fabsf(x);
+}
+
+inline double abs(double x) {
+    return fabs(x);
+}
+
+inline float fabs(float x) {
+    return fabsf(x);
+}
+
+inline float sin(float x) {
+    return sinf(x);
+}
+
+inline float cos(float x) {
+    return cosf(x);
+}
+
+inline float tan(float x) {
+    return tanf(x);
+}
+
+inline float atan2(float y, float x) {
+    return atan2f(y, x);
+}
+
+inline float floor(float x) {
+    return floorf(x);
+}
+
+inline float ceil(float x) {
+    return ceilf(x);
+}
+
+inline float fmod(float x, float y) {
+    return fmodf(x, y);
+}
+
+inline float pow(float x, float y) {
+    return (float)::pow((double)x, (double)y);
+}
+
+inline float sqrt(float x) {
+    return sqrtf(x);
+}
+
+} // namespace std
+
+#endif

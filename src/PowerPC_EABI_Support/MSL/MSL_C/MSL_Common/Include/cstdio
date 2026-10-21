@@ -1,0 +1,36 @@
+#ifndef MSL_CSTDIO_
+#define MSL_CSTDIO_
+
+#include <cstddef>
+
+/* Minimal stand-in for the MSL <cstdio>. The streams live in the library's __files table, 0x50
+ * bytes per stream (stdin, stdout, stderr); the stream contents are not needed here. */
+extern "C" {
+
+typedef struct _FILE {
+    unsigned char opaque[0x50];
+} FILE;
+
+extern FILE __files[];
+
+#define stdin (&__files[0])
+#define stdout (&__files[1])
+#define stderr (&__files[2])
+
+int printf(const char *format, ...);
+int fprintf(FILE *stream, const char *format, ...);
+int sprintf(char *s, const char *format, ...);
+int snprintf(char *s, size_t n, const char *format, ...);
+int puts(const char *s);
+}
+
+namespace std {
+using ::FILE;
+using ::printf;
+using ::fprintf;
+using ::sprintf;
+using ::snprintf;
+using ::puts;
+} // namespace std
+
+#endif
