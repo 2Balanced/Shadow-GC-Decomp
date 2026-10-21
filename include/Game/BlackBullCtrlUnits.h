@@ -2,7 +2,7 @@
 #define GAME_BLACKBULLCTRLUNITS_H
 
 /* The control units both Black Bull stages use (class names from RTTI), defined in the unit at
- * 0x8023F150 (not yet decompiled); the boss tasks and mode units create them. Only what their
+ * 0x8023F150 (Game/BlackBullCtrlUnit.cpp); the boss tasks and mode units create them. Only what their
  * creators need is declared: the constructors (out of line, except where noted) and the sizes
  * that new passes. Member names and meanings are inferred. Kept apart from
  * Game/BlackBullCtrlUnit.h, since inline functions there would renumber the compiler-generated
@@ -11,8 +11,23 @@
 #include "Game/BlackBullCtrlUnit.h"
 #include "Game/BossCtrlUnit.h"
 #include "Game/MathTypes.h"
+#include "boost/shared_ptr.hpp"
+#include "boost/weak_ptr.hpp"
 #include <dolphin/types.h>
 #include "size_assert.h"
+
+namespace Effect {
+namespace System {
+class EffectElement;
+} // namespace System
+} // namespace Effect
+namespace SonicteamUSA {
+namespace System {
+namespace CharaColli {
+class CharaColliBase;
+} // namespace CharaColli
+} // namespace System
+} // namespace SonicteamUSA
 
 /* BlackBullCtrlUnit_AttackCallback (class name from RTTI; vtable at 0x80547454): receives the
  * callbacks of one of the boss's attack colliders (index picks the collider). Its constructor is
@@ -90,7 +105,8 @@ class BlackBullCtrlUnit_AdjustNeck : public BlackBullCtrlUnit, public MotionCall
     virtual int Tick(float dt);
     virtual void OnMotion(_stMtnCallbackParam &param);
 
-    /* 0x10 */ u8 field_0x10[0x20 - 0x10];
+    /* 0x10 */ UnkMotionCallback_802414D4 m_callback;
+    /* 0x1C */ float m_blend; /* 0 the motion's own neck, 1 turned to the player */
 };
 
 class BlackBullCtrlUnit_AdjustEye : public BlackBullCtrlUnit, public MotionCallbackContainer {
@@ -100,7 +116,8 @@ class BlackBullCtrlUnit_AdjustEye : public BlackBullCtrlUnit, public MotionCallb
     virtual int Tick(float dt);
     virtual void OnMotion(_stMtnCallbackParam &param);
 
-    /* 0x10 */ u8 field_0x10[0x20 - 0x10];
+    /* 0x10 */ UnkMotionCallback_802414D4 m_callback;
+    /* 0x1C */ float m_blend;
 };
 
 /* BlackBullCtrlUnit_Dizzy (vtable at 0x80547ECC, constructor 0x8023F4B4). */
@@ -110,7 +127,8 @@ class BlackBullCtrlUnit_Dizzy : public BlackBullCtrlUnit {
     virtual ~BlackBullCtrlUnit_Dizzy();
     virtual int Tick(float dt);
 
-    /* 0x0C */ u8 field_0xC[0x14 - 0xC];
+    /* 0x0C */ float m_time;  /* how long the boss stays dizzy */
+    /* 0x10 */ float m_speed; /* how fast it sinks meanwhile */
 };
 
 /* BlackBullCtrlUnit_FireBall (vtable at 0x80548028, constructor 0x80240E60): a fire ball shot
@@ -123,8 +141,36 @@ class BlackBullCtrlUnit_FireBall : public BlackBullCtrlUnit, public AttackCallba
     virtual ~BlackBullCtrlUnit_FireBall();
     virtual int Tick(float dt);
     virtual void OnHit(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+    virtual void OnDamage(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
 
-    /* 0x10 */ u8 field_0x10[0x50 - 0x10];
+    /* 0x10 */ float m_radius;
+    /* 0x14 */ float field_0x14;
+    /* 0x18 */ s32 m_type; /* the kind passed to the constructor */
+    /* 0x1C */ boost::weak_ptr<Effect::System::EffectElement> m_effect;
+    /* 0x24 */ Vec3f m_velocity;
+    /* 0x30 */ Vec3f m_start;
+    /* 0x3C */ Vec3f m_position;
+    /* 0x48 */ boost::shared_ptr<SonicteamUSA::System::CharaColli::CharaColliBase> m_collider;
+};
+
+/* BlackBullCtrlUnit_WaveRingFire (class name from RTTI; vtable at 0x80547F68, constructor
+ * 0x80240274): a ring of fire that spreads from center along the ground; when spawnWalls is set it
+ * ends in two walls of fire (BlackBullCtrlUnit_WallFire) running toward the player (meanings
+ * inferred). */
+class BlackBullCtrlUnit_WaveRingFire : public BlackBullCtrlUnit, public AttackCallbackContainer {
+  public:
+    BlackBullCtrlUnit_WaveRingFire(BlackBullVarParam *param, const Vec3f *center, int spawnWalls);
+    virtual ~BlackBullCtrlUnit_WaveRingFire();
+    virtual int Tick(float dt);
+    virtual void OnHit(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+
+    /* 0x10 */ boost::weak_ptr<Effect::System::EffectElement> m_effect;
+    /* 0x18 */ Mtx34f m_matrix;
+    /* 0x48 */ Vec3f m_center;
+    /* 0x54 */ float m_radius; /* in units of 120 */
+    /* 0x58 */ float m_speed;
+    /* 0x5C */ s32 m_spawnWalls;
+    /* 0x60 */ boost::shared_ptr<SonicteamUSA::System::CharaColli::CharaColliBase> m_collider;
 };
 
 SIZE_ASSERT(BlackBullCtrlUnit_AttackCallbackBody, 0x20);
@@ -135,5 +181,6 @@ SIZE_ASSERT(BlackBullCtrlUnit_AdjustNeck, 0x30);
 SIZE_ASSERT(BlackBullCtrlUnit_AdjustEye, 0x30);
 SIZE_ASSERT(BlackBullCtrlUnit_Dizzy, 0x24);
 SIZE_ASSERT(BlackBullCtrlUnit_FireBall, 0x60);
+SIZE_ASSERT(BlackBullCtrlUnit_WaveRingFire, 0x78);
 
 #endif

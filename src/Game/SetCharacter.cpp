@@ -8,6 +8,7 @@
 #include "Game/CharInfo.h"
 #include "Game/Gadget.h"
 #include "Game/GadgetClassDesc.h"
+#include "Game/Mission.h"
 #include "Game/Npc.h"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
@@ -19,14 +20,6 @@ class UnkLabelQuery_800CBC20 {
     /* 0x0 */ const GadgetParamDesc *params;
     /* 0x4 */ s32 index; /* the parameter being shown */
     /* 0x8 */ s32 value; /* its current value */
-};
-
-/* An object kept by the manager returned by fn_8006D6A8 (class unknown; the first entry is
- * probably the player). Only the state word this unit reads is declared. */
-class UnkPlayer_800740E4 {
-  public:
-    /* 0x0 */ u8 field_0x0[0xC];
-    /* 0xC */ s32 m_state; /* (name inferred) */
 };
 
 class UnkPlayerManager_8006D6A8;
@@ -55,7 +48,7 @@ const char *fn_802285D4(int character);
 int fn_802285A0(int character);
 /* Returns the player manager and its entry of an index (behaviour inferred). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Returns the character manager and the character of an id in it; fn_80076218 creates the
  * character of an id (behaviour inferred). */
 UnkCharManager_8006F754 *fn_8006F754(void);
@@ -127,7 +120,7 @@ void SetCharacterTask::SpawnCharacter(UnkPlacement_800C9CD0 *owner) {
     int index = fn_802285A0(character);
 
     {
-        boost::weak_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), index);
+        boost::weak_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), index);
         if (!player.expired() && player.lock()->m_state == 2) {
             return;
         }

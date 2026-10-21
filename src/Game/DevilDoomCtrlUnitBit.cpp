@@ -48,12 +48,6 @@ class UnkEffectManager_800A31F0 {
     virtual boost::weak_ptr<EffectElement> Launch(boost::shared_ptr<EffectLaunchInfo> info, s32 id);
 };
 
-/* The boss's effect launcher, read as the PJS launcher it holds (as in
- * HeavyDog0410CtrlUnit.cpp): retail converts it through a local converting constructor. */
-inline const boost::shared_ptr<Effect::PJS::Launcher> &BossEffects(BossVarParam *param) {
-    return *reinterpret_cast<const boost::shared_ptr<Effect::PJS::Launcher> *>(&param->m_effects);
-}
-
 /* The game state (struct name unknown; see DevilDoomCtrlUnit.cpp): the frame time at 0x24. */
 struct UnkGameState_8057D6A0 {
     /* 0x000 */ u8 field_0x0[0x24];
@@ -866,7 +860,7 @@ bool DevilDoomCtrlUnit_Bit::Appear() {
     m_owner->field_0x62C = m_owner->m_settings.field_0xB0;
     m_health = m_owner->m_settings.field_0x84;
     fn_8040C148(&m_matrix, &lbl_805E0720);
-    m_effect = fn_800A31F0()->Launch(BossEffects(m_owner), 6);
+    m_effect = fn_800A31F0()->Launch(m_owner->m_effects, 6);
     boost::shared_ptr<EffectElement> effect(m_effect.lock());
     if (effect) {
         effect->SetMatrix(&m_matrix);
@@ -904,7 +898,7 @@ bool DevilDoomCtrlUnit_Bit::Appear() {
             best = i;
             fn_800091D0(&nearestPosition, &position);
         }
-        effect = fn_800A31F0()->Launch(BossEffects(m_owner), 0x23).lock();
+        effect = fn_800A31F0()->Launch(m_owner->m_effects, 0x23).lock();
         if (effect) {
             Mtx34f matrix;
             fn_80016370(&matrix, frame);
@@ -929,7 +923,7 @@ bool DevilDoomCtrlUnit_Bit::Appear() {
 }
 
 void DevilDoomCtrlUnit_Bit::StartCharge() {
-    m_chargeEffect = fn_800A31F0()->Launch(BossEffects(m_owner), 0xA);
+    m_chargeEffect = fn_800A31F0()->Launch(m_owner->m_effects, 0xA);
     boost::shared_ptr<EffectElement> effect(m_chargeEffect.lock());
     if (effect) {
         effect->SetMatrix(&m_matrix);
@@ -962,7 +956,7 @@ void DevilDoomCtrlUnit_Bit::Disappear() {
         m_target.reset();
     }
     Place()->m_alive = 0;
-    effect = fn_800A31F0()->Launch(BossEffects(m_owner), 0).lock();
+    effect = fn_800A31F0()->Launch(m_owner->m_effects, 0).lock();
     if (EffectElement *element = effect.get()) {
         fn_80425E4C(element, &Ref(fn_8040FB08(&m_matrix)));
         effect->SetField14(FrameTime());
@@ -1037,13 +1031,13 @@ void DevilDoomCtrlUnit_BitLaser::Init() {
     m_time = 0.0f;
     m_ending = 0;
     m_matrix = m_startMatrix = lbl_805E0720;
-    m_effect = fn_800A31F0()->Launch(BossEffects(m_owner), 0x1B);
+    m_effect = fn_800A31F0()->Launch(m_owner->m_effects, 0x1B);
     boost::shared_ptr<EffectElement> effect(m_effect.lock());
     if (effect) {
         effect->SetMatrix(&m_matrix);
         effect->SetField14(FrameTime());
     }
-    m_startEffect = fn_800A31F0()->Launch(BossEffects(m_owner), 0x1D);
+    m_startEffect = fn_800A31F0()->Launch(m_owner->m_effects, 0x1D);
     effect = m_startEffect.lock();
     if (effect) {
         effect->SetMatrix(&m_startMatrix);

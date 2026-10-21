@@ -19,6 +19,7 @@
 #include "Game/GadgetSound.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
+#include "Game/Mission.h"
 #include "Game/SetAdapterState.h"
 #include "Game/UnkSwitchBank_800CB69C.h"
 #include "boost/shared_ptr.hpp"
@@ -37,20 +38,6 @@ using SonicteamUSA::System::CharaColli::CharaColliBase;
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
 class UnkSound_802B4254;
-
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp). */
-class UnkPlayer_800740E4 {
-  public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
-};
 
 class UnkPlayerManager_8006D6A8;
 class UnkColliderManager_80021B08;
@@ -114,7 +101,7 @@ void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
 
 /* The manager and its entry by index (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Turns switch id on (behaviour inferred; see UnkSwitchBank_800CB69C.h). */
 void fn_8016907C(UnkSwitchBank_800CB69C *manager, int id, int arg2);
 /* Tells the owner the gadget changed (behaviour unknown; see ChaoHolder.cpp). */
@@ -299,9 +286,9 @@ void GiantLantern::Behave(float dt) {
         fn_8016907C(fn_800CB69C(), m_switchId, 1);
         m_state->m_flags.Set(0);
         {
-            boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 0).lock();
+            boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 0).lock();
             if (player.get() != 0) {
-                player->Hit(1, 0);
+                player->AddCount(1, 0);
             }
         }
         fn_800C985C(m_owner);

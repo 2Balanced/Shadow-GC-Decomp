@@ -101,10 +101,19 @@ template <class T> class __tree_iterator {
     __tree_iterator() {}
     __tree_iterator(__tree_node_base *n) : node_(n) {}
     __tree_iterator(const __tree_iterator &x) : node_(x.node_) {}
+#ifdef MSL_TREE_ITERATOR_ASSIGN_CALL
+    /* Where MSL_TREE_ITERATOR_ASSIGN_CALL is defined before this header (Game/Mission.cpp), the
+     * assignment calls an inline function, so that it stays out of line as the game has it there. */
+    __tree_iterator &operator=(const __tree_iterator &x) {
+        node_ = __tree_id(x.node_);
+        return *this;
+    }
+#else
     __tree_iterator &operator=(const __tree_iterator &x) {
         node_ = x.node_;
         return *this;
     }
+#endif
 
     T &operator*() const {
         return static_cast<__tree_node<T> *>(node_)->value_;

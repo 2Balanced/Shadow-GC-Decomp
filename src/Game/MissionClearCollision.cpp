@@ -12,6 +12,7 @@
 #include "Game/GadgetCharInfo.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
+#include "Game/Mission.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
@@ -30,18 +31,6 @@ SIZE_ASSERT(UnkColor_8040D2D8, 0x4);
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
 class UnkSound_802B4254;
 
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp and
- * ElecCoreProgram.cpp). Only the member this unit uses is declared (names inferred). */
-class UnkPlayer_800740E4 {
-  public:
-    bool IsState(s32 state) const {
-        return m_state == state;
-    }
-
-    /* 0x00 */ u8 field_0x0[0xC];
-    /* 0x0C */ s32 m_state;
-};
-
 class UnkPlayerManager_8006D6A8;
 
 /* fn_8040CD74 and fn_8040CDD0 called as returning a - b and a + b by value (they store the result
@@ -55,9 +44,9 @@ boost::weak_ptr<CharInfo> fn_800A8C54(UnkCharaList_80074194 *manager, int index)
 
 /* The manager and its entry by index (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Notifies the entry (behaviour unknown; see ElecCoreProgram.cpp). */
-void fn_8016B2A4(UnkPlayer_800740E4 *player);
+void fn_8016B2A4(Mission::Mission *player);
 /* Tells the owner the gadget is done (behaviour inferred; see BreakObj.cpp). */
 void fn_800C9B34(UnkPlacement_800C9CD0 *owner);
 
@@ -144,7 +133,7 @@ void MissionClearCollision::Behave(float dt) {
         fn_800091EC(&offset, &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(
                                  &character->m_position, &m_chara->m_position));
         if (fn_8040CF50(&offset) < m_params.radius) {
-            boost::shared_ptr<UnkPlayer_800740E4> player =
+            boost::shared_ptr<Mission::Mission> player =
                 fn_800740E4(fn_8006D6A8(), m_params.side).lock();
             if (player.get() != 0 && !player->IsState(2) && !player->IsState(1)) {
                 fn_8016B2A4(player.get());

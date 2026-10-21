@@ -17,6 +17,7 @@
 #include "Game/GadgetSound.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
+#include "Game/Mission.h"
 #include "Game/SetAdapterState.h"
 #include "Game/TNumEdit.h"
 /* This unit's .rodata is kept whole (the type record's hook addresses it through one base), and
@@ -49,20 +50,6 @@ class Target {
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
 class UnkSound_802B4254;
-
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp). */
-class UnkPlayer_800740E4 {
-  public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
-};
 
 class UnkPlayerManager_8006D6A8;
 
@@ -152,7 +139,7 @@ void fn_8016907C(UnkSwitchBank_800CB69C *manager, int id, int arg2);
 
 /* The player manager and its entry (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 
 /* destination = a + b (behaviour inferred). */
 void fn_8040CDD0(Vec3f *destination, const Vec3f *a, const Vec3f *b);
@@ -331,10 +318,10 @@ void DefenseSystem::Behave(float dt) {
         }
         fn_8016907C(fn_800CB69C(), m_switchId, 1);
         {
-            boost::shared_ptr<UnkPlayer_800740E4> player =
+            boost::shared_ptr<Mission::Mission> player =
                 fn_800740E4(fn_8006D6A8(), s_debris->player).lock();
             if (player.get() != 0) {
-                player->Hit(1, 0);
+                player->AddCount(1, 0);
             }
         }
         fn_802B4510(m_sound.px, 0);

@@ -6,11 +6,11 @@
  * are placeholders; their behaviour is inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * Left NonMatching: every function compiles to retail's code, but the unit cannot link while
- * symbols.txt names 0x80235B00 boost::shared_ptr<Effect::System::EffectLaunchInfo>::~shared_ptr
- * (from HeavyDog0410CtrlUnit and DevilDoomCtrlUnit). Retail's copy of that destructor for this
- * unit's s_stageEffects (whose reset at 0x80168D98 DevilDoom.cpp also calls) is 0x80168E04, and a
- * weak instance has one retail address, so one of the two names is wrong. */
+ * s_stageEffects is a shared_ptr<EffectLaunchInfoUSA>: it is assigned from the PJS launcher through
+ * a converting assignment (so it is not a shared_ptr<Launcher>), and the bosses' BossVarParam::
+ * m_effects, which shares its constructor (0x80168E54), reset (0x80168D98) and destructor
+ * (0x80168E04), is converted again to the shared_ptr<EffectLaunchInfo> the effect manager's
+ * Launch takes (so it is not a shared_ptr<EffectLaunchInfo> either). */
 #define BOOST_SP_CONVERTING_ASSIGNMENT
 
 #include "Effect/System/EffectElement.h"
@@ -26,6 +26,7 @@
 
 using Effect::System::EffectElement;
 using Effect::System::EffectLaunchInfo;
+using SonicteamUSA::System::Effect::EffectLaunchInfoUSA;
 
 /* The effect manager fn_800A31F0 returns (class name unknown): its second virtual function
  * launches effect id of a launcher (as in Game/EffectPJS.cpp). */
@@ -85,13 +86,13 @@ inline bool FileExists(const char *path) {
 extern u8 lbl_80575EE4[];
 
 /* boost 1.32's reset, which the trimmed shared_ptr.hpp declares out of line: this unit holds the
- * first copy of the instance for EffectLaunchInfo. */
-template <> inline void boost::shared_ptr<EffectLaunchInfo>::reset() {
+ * first copy of the instance for EffectLaunchInfoUSA. */
+template <> inline void boost::shared_ptr<EffectLaunchInfoUSA>::reset() {
     this_type().swap(*this);
 }
 
 /* The launcher of the stage's effects (name inferred). */
-boost::shared_ptr<EffectLaunchInfo> s_stageEffects;
+boost::shared_ptr<EffectLaunchInfoUSA> s_stageEffects;
 
 /* GadgetStageDataStart's hooks. */
 extern "C" void fn_80168FF4(void) {

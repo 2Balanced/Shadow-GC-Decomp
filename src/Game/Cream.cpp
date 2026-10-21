@@ -16,6 +16,7 @@
 #include "Game/GadgetCharInfo.h"
 #include "Game/GadgetModelInfo.h"
 #include "Game/GadgetClassDesc.h"
+#include "Game/Mission.h"
 #include "Game/SetAdapterState.h"
 #include "Game/UnkSwitchBank_800CB69C.h"
 #include "Game/FileQueue.h"
@@ -37,30 +38,6 @@ class Target {
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
 class UnkSound_802B4254;
-
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp; the entries are
- * probably the players). */
-class UnkPlayer_800740E4 {
-  public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
-
-    /* The word at 0xC (meaning unknown; 1 selects the first hint). An inline function in the
-     * original: retail calls the smart pointer's operator-> out of line before it. */
-    void GetField0C(s32 *value) {
-        *value = field_0xC;
-    }
-
-    /* 0x04 */ u8 field_0x4[0xC - 0x4];
-    /* 0x0C */ s32 field_0xC;
-};
 
 class UnkPlayerManager_8006D6A8;
 class UnkHintManager_801FB180;
@@ -139,7 +116,7 @@ void fn_8016907C(UnkSwitchBank_800CB69C *manager, int id, int arg2);
 void fn_800C985C(UnkPlacement_800C9CD0 *owner);
 /* The player manager and its entry index (behaviour inferred). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Shows a hint (see HintRing.cpp). */
 s32 fn_801FAF00(UnkHintManager_801FB180 *manager, s32 id, s32 branch, int arg3, int arg4);
 /* The sound manager and its play call at a character info (behaviour inferred). */
@@ -258,11 +235,11 @@ void Cream::Behave(float dt) {
                     m_state = 1;
                     fn_80014E1C(&m_data->m_flags.m_bits, 0);
                     {
-                        boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+                        boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
                         if (player.get() != 0) {
-                            player->Hit(1, 0);
+                            player->AddCount(1, 0);
                             s32 kind;
-                            player->GetField0C(&kind);
+                            player->GetState(&kind);
                             if (kind == 1) {
                                 fn_801FAF00(GetHintManager(), 0x3D1, 0, 0, 0);
                             } else {

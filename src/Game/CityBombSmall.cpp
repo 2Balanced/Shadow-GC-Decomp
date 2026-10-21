@@ -22,6 +22,7 @@
 #include "Game/GadgetParticle.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetUtil.h"
+#include "Game/Mission.h"
 #include "Game/UnkSwitchBank_800CB69C.h"
 #include "Game/VacuumObject.h"
 #include "Game/FileQueue.h"
@@ -42,20 +43,6 @@ class Target {
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
 class UnkSound_802B4254;
-
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp). */
-class UnkPlayer_800740E4 {
-  public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
-};
 
 class UnkPlayerManager_8006D6A8;
 class UnkCharManager_800DDF20;
@@ -170,7 +157,7 @@ void fn_8016907C(UnkSwitchBank_800CB69C *manager, int id, int arg2);
 
 /* The player manager and its entry (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* A character of the manager at fn_80074194 by index (behaviour inferred). */
 boost::weak_ptr<CharInfo> fn_800A8C54(UnkCharaList_80074194 *manager, int index);
 /* A manager of characters and its character with id (behaviour inferred). */
@@ -449,10 +436,10 @@ void CityBombSmall::OnCommand(CharCommand &command) {
             fn_800CC978(&m_sound);
             m_state = 2;
             {
-                boost::shared_ptr<UnkPlayer_800740E4> player =
+                boost::shared_ptr<Mission::Mission> player =
                     fn_800740E4(fn_8006D6A8(), 2).lock();
                 if (player.get() != 0) {
-                    player->Hit(1, 0);
+                    player->AddCount(1, 0);
                 }
             }
             fn_8016907C(fn_800CB69C(), m_switchId, 1);

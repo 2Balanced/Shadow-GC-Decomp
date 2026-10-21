@@ -38,7 +38,7 @@ void fn_801D9C0C(boost::shared_ptr<CharCommandUnit> unit, CharCommand *command);
 }
 
 /* The boss's effects (defined in another unit). */
-extern boost::shared_ptr<Effect::System::EffectLaunchInfo> lbl_805F0240;
+extern boost::shared_ptr<SonicteamUSA::System::Effect::EffectLaunchInfoUSA> lbl_805F0240;
 
 /* The game state record (class unknown); the word at 0x38 is the difficulty (meaning inferred). */
 extern u8 lbl_8057D6A0[];

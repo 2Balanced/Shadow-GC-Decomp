@@ -26,6 +26,7 @@
 #include "Game/GadgetModelInfo.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/MathConstants.h"
+#include "Game/Mission.h"
 #include "Game/TNumEdit.h"
 /* After TNumEdit.h: the order of the casts sets the order of the RTTI base lists in .data. */
 #include "Game/CharaColliBaseCharInfo.h"
@@ -112,24 +113,6 @@ class Target {
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp). */
 class UnkSound_802B4254;
 
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp; the first entry is
- * probably the player). Only the members this unit uses are declared (names inferred). */
-class UnkPlayer_800740E4 {
-  public:
-    bool IsState1() const {
-        return m_state == 1;
-    }
-
-    void SetFlag14() {
-        field_0x14 = 1;
-    }
-
-    /* 0x00 */ u8 field_0x0[0xC];
-    /* 0x0C */ s32 m_state;
-    /* 0x10 */ u32 field_0x10;
-    /* 0x14 */ u8 field_0x14;
-};
-
 class UnkPlayerManager_8006D6A8;
 class UnkSoundManager_80053164;
 
@@ -168,9 +151,9 @@ void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
 void fn_8040CDD0(Vec3f *destination, const Vec3f *a, const Vec3f *b);
 /* Returns the player manager and its entry of an index (behaviour inferred). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Sets the word at 0xC of player to 1 and updates it (behaviour inferred). */
-void fn_8016B2A4(UnkPlayer_800740E4 *player);
+void fn_8016B2A4(Mission::Mission *player);
 /* Starts a pad rumble at a position (behaviour and arguments inferred). */
 boost::weak_ptr<Vibration::RequestHandle> fn_8034DE08(int pattern, const Vec3f *position,
                                                       int pad);
@@ -325,9 +308,9 @@ void ElecCoreProgram::Behave(float dt) {
         break;
     case 1:
         if (m_time >= 1.0f) {
-            boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 0).lock();
-            if (player.get() != 0 && !player->IsState1()) {
-                player->SetFlag14();
+            boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 0).lock();
+            if (player.get() != 0 && !player->IsState(1)) {
+                player->SetFlag();
                 fn_8016B2A4(player.get());
             }
             fn_8034DE08(9, &m_chara->m_position, -2);

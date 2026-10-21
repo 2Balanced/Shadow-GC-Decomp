@@ -26,6 +26,7 @@
 #include "Game/CharaColli.h"
 #include "Game/CharaColliAttack.h"
 #include "Game/DevilDoomCtrlUnit.h"
+#include "Game/EffectPJSLauncher.h"
 #include "Game/EnemyCharInfo.h"
 #include "Game/GiHPGaugeEnemy.h"
 #include "Game/MathConstants.h"
@@ -104,7 +105,7 @@ struct DevilDoomAttackParam {
 class UnkEffectManager_800A31F0 {
   public:
     virtual void vf08();
-    virtual boost::weak_ptr<EffectElement> Launch(s32 id, s32 arg);
+    virtual boost::weak_ptr<EffectElement> LaunchId(s32 id, s32 arg);
     virtual boost::weak_ptr<EffectElement> Launch(boost::shared_ptr<EffectLaunchInfo> info, s32 id);
 };
 

@@ -29,7 +29,7 @@ boost::shared_ptr<Effect::PJS::Launcher> fn_801D2CA4(int index);
 }
 
 /* The boss's effects (defined in another unit). */
-extern boost::shared_ptr<Effect::System::EffectLaunchInfo> lbl_805F0240;
+extern boost::shared_ptr<SonicteamUSA::System::Effect::EffectLaunchInfoUSA> lbl_805F0240;
 
 /* BossVarParam's destructor is inline: this unit emits a weak copy (the linked one is at
  * 0x80232440) and, with it, BossVarParam's vtable and RTTI, which puts BossVarParam's RTTI name

@@ -24,11 +24,13 @@ struct _stMtnCallbackParam;
 struct UnkList_80179304;
 class BossCharInfo;
 struct UnkBossDef;
-namespace Effect {
+namespace SonicteamUSA {
 namespace System {
-class EffectLaunchInfo;
-} // namespace System
+namespace Effect {
+class EffectLaunchInfoUSA;
 } // namespace Effect
+} // namespace System
+} // namespace SonicteamUSA
 
 #ifdef BOSSVARPARAM_CHARA_SHARED_PTR
 /* Defined by the unit that emits BossVarParam's constructor (Game/BlackBull0210.cpp): the members
@@ -88,7 +90,11 @@ class BossVarParam {
     /* 0x58 */ Vec3f field_0x58;
     /* 0x64 */ UnkList_80179304 *m_targets;
     /* 0x68 */ u32 field_0x68;
-    /* 0x6C */ boost::shared_ptr<Effect::System::EffectLaunchInfo> m_effects;
+    /* The boss's effects: a shared_ptr<EffectLaunchInfoUSA>, the type of Game/GadgetStageData.cpp's
+     * s_stageEffects (constructor 0x80168E54, destructor 0x80168E04). Launching an effect converts
+     * it to the shared_ptr<EffectLaunchInfo> the effect manager takes (a local converting
+     * constructor in each unit; that type's destructor is 0x80235B00). */
+    /* 0x6C */ boost::shared_ptr<SonicteamUSA::System::Effect::EffectLaunchInfoUSA> m_effects;
 };
 
 /* BossCtrlUnit (class name from RTTI; vtable 0x80547210): one piece of a boss's behaviour, run by
@@ -188,14 +194,17 @@ class BossCtrlUnit_Shadow : public BossCtrlUnit {
 /* Adds unit to the units the boss runs (behaviour inferred). */
 extern "C" void fn_803358D0(BossVarParam *param, BossCtrlUnit *unit);
 
-/* A motion callback (the class name is unknown): a boost::function whose constructor, destructor
- * and assignment from a boost::function are functions of their own at 0x80241858, 0x802414D4 and
+/* A motion callback (the class name is unknown): it holds a boost::function (a member: its
+ * destructor destroys it as one), and its constructor, destructor and assignment from a
+ * boost::function are functions of their own at 0x80241858, 0x802414D4 and
  * 0x802416D0. */
 typedef boost::function1<void, _stMtnCallbackParam &> MotionCallbackFunction;
 
-class UnkMotionCallback_802414D4 : public MotionCallbackFunction {
+class UnkMotionCallback_802414D4 {
   public:
     UnkMotionCallback_802414D4 &operator=(const MotionCallbackFunction &f);
+
+    /* 0x0 */ MotionCallbackFunction m_function;
 };
 
 /* MotionCallbackContainer (class name from RTTI; vtable at 0x8055D38C): receives the callbacks of

@@ -14,6 +14,7 @@
 #include "Game/BlackBullCtrlUnit.h"
 #include "Game/BlackBullCtrlUnits.h"
 #include "Game/BossCtrlUnit.h"
+#include "Game/EffectPJSLauncher.h"
 #include "Game/EnemyCharInfo.h"
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
@@ -47,7 +48,7 @@ struct UnkMotionFrames {
 class UnkEffectManager_800A31F0 {
   public:
     virtual void vf08();
-    virtual boost::weak_ptr<EffectElement> Launch(s32 id, s32 arg);
+    virtual boost::weak_ptr<EffectElement> LaunchId(s32 id, s32 arg);
     virtual boost::weak_ptr<EffectElement> Launch(boost::shared_ptr<EffectLaunchInfo> info, s32 id);
 };
 

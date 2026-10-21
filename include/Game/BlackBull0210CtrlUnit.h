@@ -17,6 +17,7 @@ class BlackBull0210VarParam : public BlackBullVarParam {
     BlackBull0210VarParam();
     virtual ~BlackBull0210VarParam();
 
+    /* 0x188 */ u32 field_0x188;
     /* 0x18C */ s32 m_point;
 };
 SIZE_ASSERT(BlackBull0210VarParam, 0x190);

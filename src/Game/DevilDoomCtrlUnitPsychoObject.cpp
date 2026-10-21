@@ -98,12 +98,6 @@ class UnkEffectManager_800A31F0 {
     virtual boost::weak_ptr<EffectElement> Launch(boost::shared_ptr<EffectLaunchInfo> info, s32 id);
 };
 
-/* The boss's effect launcher, read as the PJS launcher it holds (as in
- * HeavyDog0410CtrlUnit.cpp): retail converts it through a local converting constructor. */
-inline const boost::shared_ptr<Effect::PJS::Launcher> &BossEffects(BossVarParam *param) {
-    return *reinterpret_cast<const boost::shared_ptr<Effect::PJS::Launcher> *>(&param->m_effects);
-}
-
 /* The boss's character info, which BossVarParam keeps in a shared_ptr (its px is mapped as
  * m_chara). */
 inline const boost::shared_ptr<EnemyCharInfo> &BossCharInfo(BossVarParam *param) {
@@ -484,7 +478,7 @@ int DevilDoomCtrlUnit_PsychoObjectControl::Tick(float dt) {
             PushBack(&PsychoRow(m_owner, row), node);
             row = 1 - row;
         }
-        boost::weak_ptr<EffectElement> effect = fn_800A31F0()->Launch(BossEffects(m_owner), 0x34);
+        boost::weak_ptr<EffectElement> effect = fn_800A31F0()->Launch(m_owner->m_effects, 0x34);
         boost::shared_ptr<EffectElement> element = effect.lock();
         if (element) {
             Vec3f position;
@@ -793,7 +787,7 @@ int DevilDoomCtrlUnit_PsychoObject::Tick(float dt) {
             fn_801D54F4(fn_80053164(), 0x813D, &m_position, 0, 1);
         } else if (s_objects[m_node.m_type].m_effect != -1) {
             boost::weak_ptr<EffectElement> effect =
-                fn_800A31F0()->Launch(BossEffects(m_owner), s_objects[m_node.m_type].m_effect);
+                fn_800A31F0()->Launch(m_owner->m_effects, s_objects[m_node.m_type].m_effect);
             boost::shared_ptr<EffectElement> element = effect.lock();
             if (element) {
                 fn_80425E4C(element.get(), &m_position);

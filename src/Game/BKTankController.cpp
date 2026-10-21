@@ -17,6 +17,7 @@
 #include "Game/GadgetCharCommands.h"
 #include "Game/GadgetCharInfo.h"
 #include "Game/GadgetCommand.h"
+#include "Game/Mission.h"
 #include "Game/PathCtrl.h"
 #include "Game/PathObject.h"
 #include "Game/ResourceOneFile.h"
@@ -32,30 +33,6 @@ using SonicteamUSA::System::PathCtrl;
 class SwitchCommand : public CharCommand {
   public:
     /* 0x14 */ s32 m_index;
-};
-
-/* An object kept by the manager returned by fn_8006D6A8 (see ElecBomb.cpp); the player when
- * fetched with index 2. */
-class UnkPlayer_800740E4 {
-  public:
-    /* Whether the player is in mode mode (name and meaning inferred; mode 2 while the player
-     * cannot be moved). */
-    bool IsMode(s32 mode) {
-        return m_mode == mode;
-    }
-
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
-
-    /* 0x4 */ u8 field_0x4[0xC - 0x4];
-    /* 0xC */ s32 m_mode;
 };
 
 class UnkPlayerManager_8006D6A8;
@@ -78,9 +55,9 @@ extern "C" {
 extern UnkGameState_8057D6A0 lbl_8057D6A0;
 
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Tells the player that the tank is through (behaviour inferred). */
-void fn_8016B270(UnkPlayer_800740E4 *player);
+void fn_8016B270(Mission::Mission *player);
 
 /* The state of resource slot slot (3: loaded; see EffectPJS.cpp), and whether the stage has
  * started (behaviour inferred). */
@@ -212,8 +189,8 @@ bool TankPath::Next() {
 }
 
 void TankPath::Set(int index, float rate) {
-    boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
-    if (player.get() != 0 && player->IsMode(2)) {
+    boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+    if (player.get() != 0 && player->IsState(2)) {
         return;
     }
     m_index = index;
@@ -281,7 +258,7 @@ void Controller::Tick(float dt) {
             m_object->UpdateMatrix();
             m_object->Tick(dt);
             if (done && !m_path->Next()) {
-                boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+                boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
                 if (player.get() != 0) {
                     fn_8016B270(player.get());
                 }
@@ -296,9 +273,9 @@ void Controller::Tick(float dt) {
         if (m_object.get() != 0) {
             m_object->Tick(dt);
         }
-        boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+        boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
         if (player.get() != 0) {
-            player->Hit(1, 0);
+            player->AddCount(1, 0);
         }
         m_state = 3;
         break;
@@ -354,8 +331,8 @@ void Controller::OnCommand(CharCommand &command) {
         }
         break;
     case 2: {
-        boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
-        if (player.get() != 0 && player->IsMode(2)) {
+        boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+        if (player.get() != 0 && player->IsState(2)) {
             break;
         }
         if (SetPositionCommand *set = dynamic_cast<SetPositionCommand *>(&command)) {

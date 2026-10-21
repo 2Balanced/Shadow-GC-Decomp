@@ -94,7 +94,9 @@ boost::weak_ptr<CharInfo> fn_80238058(VacuumObject *object);
 /* A length the vacuum object units scale (3.5; meaning unknown). Each of them keeps a tenth of it
  * in a static that a static initializer stores (Balloon, VacuumContainer, CityBombSmall, ...). */
 extern const float lbl_805F72B0;
-/* The speed the objects spin at (-1080 degrees a second, in radians; meaning inferred). */
-extern float lbl_805EFEE8;
+/* The speed the objects spin at (-1080 degrees a second, in radians; meaning inferred). A const
+ * object set up by VacuumObject.cpp's static initializer: VacuumContainer.cpp's fn_80238184
+ * schedules its load the way only a const object allows. */
+extern const float lbl_805EFEE8;
 
 #endif

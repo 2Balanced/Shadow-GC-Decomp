@@ -139,7 +139,7 @@ template<> inline void checked_delete<VacuumObject::Impl>(VacuumObject::Impl *x)
 
 const float lbl_805F72B0 = 3.5f;
 
-float lbl_805EFEE8 = DEG2RAD(-1080.0f);
+const float lbl_805EFEE8 = DEG2RAD(-1080.0f);
 /* How hard the object is pulled in with a weapon and with only an owner (names inferred). */
 static float s_weaponPull = Span(1500.0f);
 static float s_ownerPull = Span(6000.0f);

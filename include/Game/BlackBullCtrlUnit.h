@@ -60,14 +60,25 @@ class BlackBullVarParam : public BossVarParam {
     /* 0x123 */ u8 m_moving;
     /* 0x124 */ u8 m_dizzy;
     /* 0x125 */ u8 m_dizzyEnded;
+#ifdef BLACKBULLVARPARAM_VECTORS
+    /* Defined by Game/BlackBullCtrlUnit.cpp, which uses these members; the other units keep the
+     * plain layout, since the vectors would renumber their compiler-generated @N locals. */
+    /* 0x126 */ u8 field_0x126[0x128 - 0x126];
+    /* 0x128 */ Vec3f m_velocity; /* the boss's own movement */
+    /* 0x134 */ float m_turnRate; /* how fast the boss turns, in radians a second */
+    /* 0x138 */ Vec3f m_testDestination;
+    /* 0x144 */ Vec3f m_prevDestination; /* m_testDestination as it was last frame */
+    /* 0x150 */ Vec3f m_target; /* where the player is; y is m_height */
+#else
     /* 0x126 */ u8 field_0x126[0x138 - 0x126];
     /* 0x138 */ Vec3f m_testDestination;
     /* 0x144 */ u8 field_0x144[0x154 - 0x144];
     /* 0x154 */ float m_height; /* the player's height above the boss (meaning inferred) */
     /* 0x158 */ u32 field_0x158;
+#endif
     /* 0x15C */ float field_0x15C;
     /* 0x160 */ float m_targetAngle;
-    /* 0x164 */ u32 field_0x164;
+    /* 0x164 */ float field_0x164; /* the direction the boss heads in */
     /* 0x168 */ u8 field_0x168;
     /* 0x169 */ u8 m_hit;
     /* 0x16C */ float field_0x16C;
@@ -79,14 +90,35 @@ class BlackBullVarParam : public BossVarParam {
     /* 0x17C */ s32 m_comboCount;
     /* 0x180 */ s32 m_sound;
     /* 0x184 */ u32 m_attribute; /* set by the motion's attribute callback */
-    /* 0x188 */ u32 field_0x188;
+};
+
+/* The 0412 stage's tuning values (struct name unknown; its constructor is out of line at
+ * 0x80243BC4, in Game/BlackBull0412.cpp). Member names and meanings are inferred. */
+struct BlackBull0412Settings {
+    BlackBull0412Settings();
+
+    /* 0x00 */ float field_0x0;
+    /* 0x04 */ float field_0x4;
+    /* 0x08 */ float field_0x8;
+    /* 0x0C */ float field_0xC;
+    /* 0x10 */ float field_0x10;
+    /* 0x14 */ float field_0x14;
+    /* 0x18 */ float field_0x18;
+    /* 0x1C */ float field_0x1C;
+    /* 0x20 */ float field_0x20;
+    /* 0x24 */ float field_0x24;
+    /* 0x28 */ float field_0x28;
+    /* 0x2C */ u32 field_0x2C;
 };
 
 /* BlackBull0412VarParam (class name from RTTI; vtable at 0x805484B8): the state of the 0412
  * stage. */
 class BlackBull0412VarParam : public BlackBullVarParam {
   public:
+    BlackBull0412VarParam();
     virtual ~BlackBull0412VarParam();
+
+    /* 0x188 */ BlackBull0412Settings m_settings;
 };
 
 /* BlackBullCtrlUnit (class name from RTTI; vtable at 0x805471D8): the base of the boss's units. */

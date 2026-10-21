@@ -19,6 +19,7 @@
 #include "Game/GadgetCharCommands.h"
 #include "Game/GadgetCharInfo.h"
 #include "Game/GadgetCommand.h"
+#include "Game/Mission.h"
 #include "Game/PathCtrl.h"
 #include "Game/PathObject.h"
 #include "Game/ResourceOneFile.h"
@@ -34,21 +35,6 @@ using SonicteamUSA::System::PathCtrl;
 class SwitchCommand : public CharCommand {
   public:
     /* 0x14 */ s32 m_index;
-};
-
-/* An object kept by the manager returned by fn_8006D6A8 (see BKTankController.cpp); the player
- * when fetched with index 2. */
-class UnkPlayer_800740E4 {
-  public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
-    virtual void vf14();
-    virtual void vf18();
-    virtual void vf1C();
-    virtual void vf20();
-    /* Hits the object (name and meaning of the arguments inferred). */
-    virtual void Hit(int arg0, int arg1);
 };
 
 class UnkPlayerManager_8006D6A8;
@@ -73,9 +59,9 @@ extern UnkGameState_8057D6A0 lbl_8057D6A0;
 extern const float lbl_805FAD38; /* pi */
 
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
-boost::weak_ptr<UnkPlayer_800740E4> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
+boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int index);
 /* Tells the player that the balloon is through (behaviour inferred). */
-void fn_8016B270(UnkPlayer_800740E4 *player);
+void fn_8016B270(Mission::Mission *player);
 
 /* The state of resource slot slot (3: loaded; see EffectPJS.cpp), and whether the stage has
  * started (behaviour inferred). */
@@ -320,9 +306,9 @@ void Controller::Tick(float dt) {
         if (m_object.get() != 0) {
             m_object->Tick(dt);
         }
-        boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+        boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
         if (player.get() != 0) {
-            player->Hit(1, 0);
+            player->AddCount(1, 0);
         }
         m_state = 4;
         break;
@@ -331,7 +317,7 @@ void Controller::Tick(float dt) {
         if (m_object.get() != 0) {
             m_object->Tick(dt);
         }
-        boost::shared_ptr<UnkPlayer_800740E4> player = fn_800740E4(fn_8006D6A8(), 2).lock();
+        boost::shared_ptr<Mission::Mission> player = fn_800740E4(fn_8006D6A8(), 2).lock();
         if (player.get() != 0) {
             fn_8016B270(player.get());
         }

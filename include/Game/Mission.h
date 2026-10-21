@@ -10,8 +10,8 @@
  * towards a target and share Mission as a virtual base. Member names are inferred from what the
  * functions do; the virtuals of Mission are listed in vtable order (offsets in the vtable).
  *
- * NOTE: other units call this class UnkPlayer_800740E4 (boost::shared_ptr / weak_ptr instances at
- * 0x80073EA0..0x800740E4 are named with it); Mission::Mission is its RTTI name. */
+ * Gadget units reach a player's mission through fn_800740E4 (a weak_ptr<Mission>; the shared_ptr /
+ * weak_ptr instances at 0x80073EA0..0x800740E4). */
 namespace Mission {
 
 class Mission {
@@ -20,7 +20,7 @@ class Mission {
 
     /* 0x08 */ virtual ~Mission();
     /* 0x0C */ virtual int GetType(); /* 0 here; 1 Goal, 2 Count, 3 Enemy, 7 Ring */
-    /* 0x10 */ virtual int IsTimed();
+    /* 0x10 */ virtual bool IsTimed();
     /* 0x14 */ virtual float GetTimeLimit();
     /* 0x18 */ virtual int GetCount(int index);
     /* 0x1C */ virtual int GetTarget();
@@ -35,12 +35,39 @@ class Mission {
     /* 0x40 */ virtual void OnReset();
     /* 0x44 */ virtual void OnUpdate(); /* called each frame while the mission runs */
 
+    /* Inline helpers the gadget units use (names inferred). */
+    bool IsState(s32 state) const {
+        return m_state == state;
+    }
+    void GetState(s32 *state) {
+        *state = m_state;
+    }
+    void SetFlag() {
+        m_flag = 1;
+    }
+    int GetId() const {
+        return m_id;
+    }
+    u8 GetFlag() const {
+        return m_flag;
+    }
+
+    /* Defined in Game/Mission.cpp (names inferred). Clearing and failing a mission are
+     * fn_8016B2A4 and fn_8016B270 there, which the gadget units call under those names. */
+    void Update(float dt);
+    void Save();
+    void Restore();
+    void Reset();
+    void OnCleared();
+    void OnFailed();
+
     /* 0x04 */ int m_id;
     /* 0x08 */ int m_player;
     /* 0x0C */ int m_state;
     /* 0x10 */ int m_savedState;
     /* 0x14 */ u8 m_flag;
     /* 0x15 */ u8 m_savedFlag;
+    /* 0x16 */ u8 field_0x16[2];
     /* 0x18 */ u8 m_message[0x28]; /* the message manager (Mission::BasicMessageManage?) */
 };
 SIZE_ASSERT(Mission, 0x40);

@@ -230,7 +230,20 @@ void __vec_base<T, A>::insert_n(iterator position, size_type n, const T &x) {
     }
 }
 
-template <class T, class A = allocator<T> > class vector : public __vec_base<T, A> {
+#ifdef MSL_VECTOR_MIDDLE
+/* Where MSL_VECTOR_MIDDLE is defined before this header (Game/Mission.cpp), a class sits between
+ * the vector and its storage: the game emits its constructor out of line there and inlines its
+ * destructor's null check into the vector's. */
+template <class T, class A> class __vec_middle : public __vec_base<T, A> {
+  public:
+    __vec_middle() {}
+};
+#define __MSL_VECTOR_PARENT __vec_middle<T, A>
+#else
+#define __MSL_VECTOR_PARENT __vec_base<T, A>
+#endif
+
+template <class T, class A = allocator<T> > class vector : public __MSL_VECTOR_PARENT {
   public:
     typedef __vec_base<T, A> base;
     typedef typename base::iterator iterator;

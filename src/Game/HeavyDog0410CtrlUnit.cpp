@@ -71,13 +71,6 @@ class UnkEffectManager_800A31F0 {
     virtual boost::weak_ptr<EffectElement> Launch(boost::shared_ptr<EffectLaunchInfo> info, s32 id);
 };
 
-/* The boss's effect launcher (BossVarParam::m_effects). Retail converts it to the launch
- * parameter through a converting constructor of its own (a local copy at 0x8026C784, as every boss
- * unit has), so here it is read as the PJS launcher it holds (element type inferred). */
-inline const boost::shared_ptr<Effect::PJS::Launcher> &BossEffects(BossVarParam *param) {
-    return *reinterpret_cast<const boost::shared_ptr<Effect::PJS::Launcher> *>(&param->m_effects);
-}
-
 /* The game state (struct name unknown; see DevilDoomCtrlUnit.cpp): the frame time at 0x24. */
 struct UnkGameState_8057D6A0 {
     /* 0x000 */ u8 field_0x0[0x24];
@@ -388,7 +381,7 @@ void HeavyDog0410CtrlUnit_Mine::OnDamage(AttackCallbackParam &param) {
 HeavyDog0410CtrlUnit_Dust::HeavyDog0410CtrlUnit_Dust(HeavyDog0410VarParam *param)
     : BossCtrlUnit(param), HeavyDog0410CtrlUnit(param) {
     m_kind = 3;
-    m_effect = fn_800A31F0()->Launch(BossEffects(m_owner), 0x16);
+    m_effect = fn_800A31F0()->Launch(m_owner->m_effects, 0x16);
     boost::shared_ptr<EffectElement> effect(m_effect.lock());
     if (effect) {
         effect->SetField4C((u32)fn_801792D0(&m_owner->m_chara));
