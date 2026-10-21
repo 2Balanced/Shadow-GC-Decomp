@@ -130,7 +130,7 @@ def write_progress_page(report_path, out_path, history_path, verified=None):
     page = TEMPLATE.replace("/*DATA*/", payload)
     Path(out_path).write_text(page, encoding="utf-8", newline="\n")
     write_badge(Path(history_path).parent / "badge.json", summary)
-    write_card(Path(history_path).parent / "progress.svg", summary)
+    write_card(Path(history_path).parent / "progress.svg", summary, verified)
 
 
 CARD_STYLE = """
@@ -155,7 +155,7 @@ CARD_STYLE = """
 """
 
 
-def write_card(path, summary):
+def write_card(path, summary, verified=None):
     """An SVG progress card for the README, which cannot embed the HTML page itself."""
     width, bar_x, bar_w = 760, 112, 360
 
@@ -179,6 +179,9 @@ def write_card(path, summary):
     data = (pct(summary["linked_data"], summary["total_data"]),
             pct(summary["matched_data"], summary["total_data"]))
     funcs = pct(summary["matched_functions"], summary["total_functions"])
+    status = f"{summary['linked_units']} of {summary['units_with_source']} units linked"
+    if verified:
+        status += " · rebuilt main.dol matches retail"
     rows = [
         ("Code", code, f"{code[1]:.2f}% matched · {code[0]:.2f}% linked"),
         ("Data", data, f"{data[1]:.2f}% matched · {data[0]:.2f}% linked"),
@@ -195,7 +198,7 @@ def write_card(path, summary):
 <style>{CARD_STYLE}</style>
 <rect class="bg" x="0.5" y="0.5" width="{width - 1}" height="215" rx="8"/>
 <text class="title" x="24" y="36">Shadow the Hedgehog (GUPE8P)</text>
-<text class="sub" x="24" y="58">{summary['linked_units']} of {summary['units_with_source']} units linked · rebuilt main.dol matches retail</text>
+<text class="sub" x="24" y="58">{status}</text>
 <rect class="linked" x="24" y="72" width="10" height="10" rx="2"/><text class="key" x="40" y="81">Linked into the DOL</text>
 <rect class="matched" x="184" y="72" width="10" height="10" rx="2"/><text class="key" x="200" y="81">Matched, not yet linked</text>
 {''.join(body)}
