@@ -6,6 +6,8 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+class CharCommand;
+
 namespace Player {
 namespace Behavior {
 
@@ -33,7 +35,10 @@ class Behavior {
     /* Called when the behavior is entered and left (meanings inferred). */
     virtual void Enter() = 0;
     virtual void Leave() = 0;
-    virtual void vf_0x18();
+    /* Offered each command the player receives; a behavior marks the ones it takes as handled
+     * (CharCommand::Flags() bit 1; argument from Player::Behavior::Super and the behaviors whose
+     * slot reads the command type at 0x4, e.g. 0x80083EC0). */
+    virtual void vf_0x18(CharCommand *command);
     /* The frame update. */
     virtual void Update(float dt) = 0;
     virtual void vf_0x20();

@@ -76,7 +76,7 @@ class FirstMeet : public Behavior {
     virtual bool vf_0x0C();
     virtual void Enter();
     virtual void Leave();
-    virtual void vf_0x18();
+    virtual void vf_0x18(CharCommand *command);
     virtual void Update(float dt);
 
     /* The factory record's functions (names inferred). */
@@ -128,7 +128,7 @@ void FirstMeet::Leave() {
     End();
 }
 
-void FirstMeet::vf_0x18() {}
+void FirstMeet::vf_0x18(CharCommand *command) {}
 
 void FirstMeet::Update(float dt) {
     if (!m_active && IsEventReady()) {

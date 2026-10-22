@@ -10,6 +10,8 @@
  * boost::shared_ptr<IAction> and creates each through `new`, so the sizes below are the ones the
  * game allocates. Constructors and destructors live in the actions' own units; the destructors are
  * not virtual (boost::checked_delete calls each one directly). Member names are inferred. */
+class Task;
+
 namespace StageAction {
 
 class IAction {
@@ -42,21 +44,127 @@ class IAction {
     };                                                                                             \
     SIZE_ASSERT(Name, 0x4)
 
-STAGEACTION_DECLARE_EMPTY(InitAction);
-STAGEACTION_DECLARE_EMPTY(PlayAction);
-STAGEACTION_DECLARE(EventAction, 0x8);
-STAGEACTION_DECLARE(GoalAction, 0x20);
+/* Game/InitAction.cpp. */
+class InitAction : public IAction {
+  public:
+    InitAction();
+    ~InitAction();
+    virtual void Execute();
+};
+SIZE_ASSERT(InitAction, 0x4);
+/* Game/PlayAction.cpp. */
+class PlayAction : public IAction {
+  public:
+    PlayAction();
+    ~PlayAction();
+    virtual void Execute();
+};
+SIZE_ASSERT(PlayAction, 0x4);
+/* Game/EventAction.cpp. */
+class EventAction : public IAction {
+  public:
+    EventAction();
+    ~EventAction();
+    virtual void Execute();
+
+    /* 0x4 */ u8 m_hudVisible; /* the game state's flag before the event (meaning inferred) */
+};
+SIZE_ASSERT(EventAction, 0x8);
+/* Game/GoalAction.cpp. */
+class GoalAction : public IAction {
+  public:
+    GoalAction();
+    ~GoalAction();
+    virtual void Execute();
+
+    /* Starts the goal: fades to white and finds the mission cleared (name inferred). */
+    void Begin();
+    /* Records the result in the save data (name inferred). */
+    void SaveResult();
+
+    /* 0x04 */ s32 m_timer;
+    /* 0x08 */ s32 m_prevTimer; /* m_timer at the end of the last Execute */
+    /* 0x0C */ s32 m_frames;
+    /* 0x10 */ s32 m_result;    /* the mission cleared (0 to 2) */
+    /* 0x14 */ u8 m_savedD1;    /* the game state's byte 0xD1 before the goal (meaning unknown) */
+    /* 0x18 */ s32 m_voice;     /* the clear voice, or -1 */
+    /* 0x1C */ s32 m_state;
+};
+SIZE_ASSERT(GoalAction, 0x20);
 STAGEACTION_DECLARE_EMPTY(PauseAction);
-STAGEACTION_DECLARE(RestartAction, 0xC);
-STAGEACTION_DECLARE(ContinueAction, 0xC);
-STAGEACTION_DECLARE(DeadAction, 0xC);
-STAGEACTION_DECLARE(SaveAction, 0x10);
-STAGEACTION_DECLARE(TryAgainAction, 0xC);
+/* Game/RestartAction.cpp. */
+class RestartAction : public IAction {
+  public:
+    RestartAction();
+    ~RestartAction();
+    virtual void Execute();
+    virtual bool IsDone();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ s32 m_timer; /* frames left (meaning inferred) */
+};
+SIZE_ASSERT(RestartAction, 0xC);
+/* Game/ContinueAction.cpp. */
+class ContinueAction : public IAction {
+  public:
+    ContinueAction();
+    ~ContinueAction();
+    virtual void Execute();
+    virtual bool IsDone();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ s32 m_timer; /* frames left (meaning inferred) */
+};
+SIZE_ASSERT(ContinueAction, 0xC);
+/* Game/DeadAction.cpp. */
+class DeadAction : public IAction {
+  public:
+    DeadAction();
+    ~DeadAction();
+    virtual void Execute();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ s32 m_timer; /* frames left (meaning inferred) */
+};
+SIZE_ASSERT(DeadAction, 0xC);
+/* Saves the game through a SaveCycle::CycleTask (Game/SaveAction.cpp). */
+class SaveAction : public IAction {
+  public:
+    SaveAction();
+    ~SaveAction();
+    virtual void Execute();
+
+    /* 0x4 */ Task *m_task; /* a SaveCycle::CycleTask */
+    /* 0x8 */ s32 m_state;
+    /* 0xC */ u8 m_started;
+};
+SIZE_ASSERT(SaveAction, 0x10);
+/* The try-again question after a game over (Game/TryAgainAction.cpp). */
+class TryAgainAction : public IAction {
+  public:
+    TryAgainAction();
+    ~TryAgainAction();
+    virtual void Execute();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ u8 m_retry; /* the selected answer: 1 try again, 0 quit */
+};
+SIZE_ASSERT(TryAgainAction, 0xC);
 STAGEACTION_DECLARE(ShowAction, 0x18);
 STAGEACTION_DECLARE(FlashbackAction, 0xC);
 STAGEACTION_DECLARE(Result2PAction, 0x3C);
 STAGEACTION_DECLARE(TimeupAction, 0xC);
-STAGEACTION_DECLARE(EndAction, 0xC);
+/* Game/EndAction.cpp. */
+class EndAction : public IAction {
+  public:
+    EndAction();
+    ~EndAction();
+    virtual void Execute();
+
+    /* 0x4 */ u8 m_held;   /* the end was held up at least once (meaning inferred) */
+    /* 0x8 */ s32 m_timer; /* frames left (meaning inferred) */
+};
+SIZE_ASSERT(EndAction, 0xC);
 
 #undef STAGEACTION_DECLARE
 #undef STAGEACTION_DECLARE_EMPTY

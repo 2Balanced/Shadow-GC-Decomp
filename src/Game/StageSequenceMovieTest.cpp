@@ -122,16 +122,6 @@ class phaseImpl {
     /* 0x31C */ s32 m_state; /* 0 choosing, 1 playing */
 };
 
-class Phase : public StageSequenceBase {
-  public:
-    Phase();
-    virtual ~Phase();
-    virtual bool Tick();
-    virtual void Skip();
-
-    /* 0x4 */ boost::scoped_ptr<phaseImpl> m_impl;
-};
-
 /* Deletes the phaseImpl (name inferred; see checked_delete below). */
 inline void DeleteImpl(phaseImpl *impl) {
     delete impl;

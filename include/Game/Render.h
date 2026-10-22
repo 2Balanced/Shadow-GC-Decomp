@@ -35,7 +35,9 @@ struct UnkRenderOwner_80046178 {
     /* 0x38 */ void *field_0x38; /* passed by SavePointSelect (meaning unknown) */
     /* 0x3C */ void *field_0x3C; /* passed by GiGameOver (meaning unknown) */
     /* 0x40 */ void *field_0x40; /* passed by StageSequence::MovieTest (meaning unknown) */
-    /* 0x44 */ u8 field_0x44[0x54 - 0x44];
+    /* 0x44 */ u8 field_0x44[0x4C - 0x44];
+    /* 0x4C */ void *field_0x4C; /* passed by StageMovie (meaning unknown) */
+    /* 0x50 */ u8 field_0x50[0x54 - 0x50];
     /* 0x54 */ void *field_0x54; /* passed by EggLastMechSlotDisp2D (meaning unknown) */
 };
 

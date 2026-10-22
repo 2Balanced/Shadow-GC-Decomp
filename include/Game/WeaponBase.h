@@ -93,7 +93,7 @@ class WeaponBase {
     virtual float vf_0x1C();
     virtual Vec3f vf_0x20();
     virtual float vf_0x24();
-    virtual s32 vf_0x28();
+    virtual float vf_0x28();
     virtual bool vf_0x2C();
 
     /* The type, and the kind of weapon (Player::Shadow::ShadowWeapon picks its control by it;

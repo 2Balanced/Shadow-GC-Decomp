@@ -7,6 +7,8 @@ extern "C" {
 int fn_8040EA90(int count);
 /* Uniform float, lo <= result < hi. */
 float fn_8040EC80(float lo, float hi);
+/* Uniform float, 0 <= result < 1. */
+float fn_8040EE90(void);
 }
 
 #endif

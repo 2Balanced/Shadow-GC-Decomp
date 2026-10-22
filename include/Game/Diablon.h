@@ -26,7 +26,7 @@ class Executer;
 namespace Behavior {
 
 /* InitializeArgs (class name from RTTI; vtable 0x805585AC): the behavior to switch to; id is the
- * index in the behavior table at 0x80558CA8 (1 Idle, 2 Move, 3 Beam, 4 Bomb, 5 Wipe, 6 Event). */
+ * index in the behavior table at 0x80558CA8 (1 Idle, 2 Move, 3 Bomb, 4 Beam, 5 Wipe, 6 Event). */
 class InitializeArgs {
   public:
     InitializeArgs(int id) : m_id(id) {}
@@ -35,6 +35,18 @@ class InitializeArgs {
     /* 0x4 */ s32 m_id;
 };
 SIZE_ASSERT(InitializeArgs, 0x8);
+
+/* InitializeArgsEvent (class name from RTTI; vtable 0x80559688): switches to the event behavior
+ * (id 6) with the event to play (0-2, in the order Desire::Event wants them). Its constructor and
+ * destructor are inline; as they call InitializeArgs's, retail keeps weak copies of them. */
+class InitializeArgsEvent : public InitializeArgs {
+  public:
+    InitializeArgsEvent(int event) : InitializeArgs(6), m_event(event) {}
+    virtual ~InitializeArgsEvent() {}
+
+    /* 0x8 */ s32 m_event;
+};
+SIZE_ASSERT(InitializeArgsEvent, 0xC);
 
 /* BehaviorBase (class name from RTTI; vtable 0x805584B0, constructor 0x802D36E4, destructor
  * 0x802D3638): one behavior of the boss. The executer starts, runs and ends it. */
@@ -112,7 +124,9 @@ SIZE_ASSERT(PartsBase, 0x24);
 
 /* The boss's tuning values (struct name unknown; only the members used so far). */
 struct DiablonParams {
-    /* 0x00 */ u8 field_0x0[0x20];
+    /* 0x00 */ u8 field_0x0[0x8];
+    /* 0x08 */ float m_barrierDownTime; /* how long the barrier stays down once flag 3 is set (inferred) */
+    /* 0x0C */ u8 field_0xC[0x20 - 0xC];
     /* 0x20 */ float m_moveDesireTime; /* the move desire grows by dt over it */
     /* 0x24 */ float m_moveAccel;      /* the move behavior's acceleration */
     /* 0x28 */ float m_moveFriction;   /* passed to the integration with the time step */
@@ -122,14 +136,29 @@ struct DiablonParams {
     /* 0x38 */ float m_moveFacingAngle; /* degrees */
     /* 0x3C */ float m_moveMinDistance;
     /* 0x40 */ float m_moveMaxDistance;
-    /* 0x44 */ u8 field_0x44[0x4C - 0x44];
+    /* 0x44 */ float m_beamDesireTime;      /* the beam desire grows by dt over it while flag 0 is set */
+    /* 0x48 */ float m_beamDesireTimeStill; /* ... and over this one otherwise (inferred) */
     /* 0x4C */ float m_beamDelay;     /* before the beam first aims at the player (inferred) */
     /* 0x50 */ float m_beamAngleLimit; /* degrees; the beam's highest pitch (inferred) */
     /* 0x54 */ float m_beamSweepAngle; /* degrees the beam turns while it fires (inferred) */
     /* 0x58 */ float m_beamTime;       /* how long the beam fires */
-    /* 0x5C */ u8 field_0x5C[0x70 - 0x5C];
+    /* 0x5C */ float m_beamFacingAngle;    /* degrees */
+    /* 0x60 */ float m_beamMinDistance;    /* checked while flag 0 is set */
+    /* 0x64 */ float m_beamMaxDistance;
+    /* 0x68 */ float m_beamMinTargetHeight; /* checked while flag 0 is clear (inferred) */
+    /* 0x6C */ float m_bombDesireTime;
     /* 0x70 */ float m_bombMaxRadius; /* the bomb blast's final radius (inferred) */
     /* 0x74 */ float m_bombGrowTime;  /* how long the blast takes to reach it (inferred) */
+    /* 0x78 */ float m_bombMinDistance;
+    /* 0x7C */ float m_bombMaxDistance;
+    /* 0x80 */ float m_wipeDesireTime;
+    /* 0x84 */ float m_wipeFacingAngle; /* degrees */
+    /* 0x88 */ float m_wipeMinDistance;
+    /* 0x8C */ float m_wipeMaxDistance;
+    /* 0x90 */ u8 field_0x90[0xAC - 0x90];
+    /* 0xAC */ s32 m_wipeHintId; /* hint messages shown as each attack starts (inferred) */
+    /* 0xB0 */ s32 m_beamHintId;
+    /* 0xB4 */ s32 m_bombHintId;
 };
 
 /* Diablon (class name from RTTI; vtable 0x80558C54): the boss's character info. */
@@ -142,6 +171,9 @@ class Diablon : public CharInfo {
     /* 0x78 */ u8 field_0x78[0x88 - 0x78];
     /* 0x88 */ u32 m_flags; /* a bit set; see fn_802D4ED4 */
     /* 0x8C */ DiablonParams *m_params;
+    /* 0x90 */ u8 field_0x90[0xCC - 0x90];
+    /* 0xCC */ s32 field_0xCC; /* the event desire's last stage waits for it to reach 0 */
+    /* 0xD0 */ s32 field_0xD0; /* the beam is wanted while it is 1-4, the bomb from 5 on */
 };
 
 namespace Desire {
