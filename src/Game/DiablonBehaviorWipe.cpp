@@ -26,8 +26,8 @@ class Wipe : public BehaviorBase {
   public:
     Wipe(const boost::shared_ptr<Diablon> &owner) : BehaviorBase(owner, "Wipe", 5) {}
     virtual ~Wipe();
-    virtual void Begin();
-    virtual void End();
+    virtual void Begin(int previous, const InitializeArgs &args);
+    virtual void End(int next);
     virtual void Tick(float dt);
 
     static boost::shared_ptr<BehaviorBase> Instantiate(const boost::shared_ptr<Diablon> &owner);
@@ -40,13 +40,13 @@ SIZE_ASSERT(Wipe, 0x18);
 
 Wipe::~Wipe() {}
 
-void Wipe::Begin() {
-    fn_802D4ED4(&m_owner->m_flags, 7);
+void Wipe::Begin(int previous, const InitializeArgs &args) {
+    m_owner->m_flags.Set(7);
     m_state = 0;
 }
 
-void Wipe::End() {
-    fn_802D4EF4(&m_owner->m_flags, 7);
+void Wipe::End(int next) {
+    m_owner->m_flags.Reset(7);
 }
 
 void Wipe::Tick(float dt) {
@@ -57,13 +57,13 @@ void Wipe::Tick(float dt) {
         m_state++;
         break;
     case 1:
-        if (fn_802D58FC(&m_owner->m_flags, 4)) {
+        if (m_owner->m_flags.Test(4)) {
             fn_802D9E4C(m_owner->m_executer, Parts::Action(3));
             m_state++;
         }
         break;
     case 2:
-        if (fn_802D58FC(&m_owner->m_flags, 4)) {
+        if (m_owner->m_flags.Test(4)) {
             m_state = 100;
         }
         break;
@@ -72,7 +72,7 @@ void Wipe::Tick(float dt) {
         m_state++;
         break;
     case 101:
-        if (fn_802D58FC(&m_owner->m_flags, 4)) {
+        if (m_owner->m_flags.Test(4)) {
             fn_802D9ED8(m_owner->m_executer, InitializeArgs(1));
             m_state++;
         }

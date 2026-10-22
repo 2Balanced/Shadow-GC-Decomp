@@ -26,8 +26,8 @@ class Beam : public BehaviorBase {
   public:
     Beam(const boost::shared_ptr<Diablon> &owner) : BehaviorBase(owner, "Beam", 4) {}
     virtual ~Beam();
-    virtual void Begin();
-    virtual void End();
+    virtual void Begin(int previous, const InitializeArgs &args);
+    virtual void End(int next);
     virtual void Tick(float dt);
 
     static boost::shared_ptr<BehaviorBase> Instantiate(const boost::shared_ptr<Diablon> &owner);
@@ -42,14 +42,14 @@ SIZE_ASSERT(Beam, 0x20);
 
 Beam::~Beam() {}
 
-void Beam::Begin() {
-    fn_802D4ED4(&m_owner->m_flags, 7);
+void Beam::Begin(int previous, const InitializeArgs &args) {
+    m_owner->m_flags.Set(7);
     m_firing = false;
     m_state = 0;
 }
 
-void Beam::End() {
-    fn_802D4EF4(&m_owner->m_flags, 7);
+void Beam::End(int next) {
+    m_owner->m_flags.Reset(7);
     if (m_firing && m_owner->m_executer != 0) {
         fn_802D9E4C(m_owner->m_executer, Parts::Action(7));
     }
@@ -63,7 +63,7 @@ void Beam::Tick(float dt) {
         m_state++;
         break;
     case 1:
-        if (fn_802D58FC(&m_owner->m_flags, 4)) {
+        if (m_owner->m_flags.Test(4)) {
             fn_802D9E4C(m_owner->m_executer, Parts::Action(6));
             fn_802D9E4C(m_owner->m_executer, Parts::Action(13));
             fn_801FAF00(GetHintManager(), m_owner->m_params->m_beamHintId, 0, 1, 0);
@@ -73,7 +73,7 @@ void Beam::Tick(float dt) {
         break;
     case 2:
         m_timer += dt;
-        if (m_timer >= m_owner->m_params->m_beamTime && fn_802D58FC(&m_owner->m_flags, 4)) {
+        if (m_timer >= m_owner->m_params->m_beamTime && m_owner->m_flags.Test(4)) {
             m_state = 100;
         }
         break;

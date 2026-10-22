@@ -6,6 +6,7 @@
  * from the class; member and method names other than the classes' are inferred. Definitions are
  * in reverse address order (deferred inlining emits functions last-defined first). */
 #include "Game/CameraState.h"
+#include "Game/CameraModeFixLookChar.h"
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "Game/PJSCameraMode.h"
@@ -57,43 +58,7 @@ inline Vec3f operator+(const Vec3f &a, const Vec3f &b) {
     return ((VectorBinaryFn)fn_8040CDD0)(&a, &b);
 }
 
-/* A vector member copy-constructed through the out-of-line copy constructor (fn_800091EC). It
- * does not derive from Vec3f: a constructor that calls Vec3f's inline one is not inlined. */
-struct UnkCopiedVector {
-    UnkCopiedVector(const Vec3f &from) {
-        fn_800091EC((Vec3f *)this, &from);
-    }
-
-    const Vec3f *Get() const {
-        return (const Vec3f *)this;
-    }
-
-    float x;
-    float y;
-    float z;
-};
-
 namespace PJSCamera {
-
-class CameraModeFixLookChar : public PJSCameraMode {
-  public:
-    CameraModeFixLookChar(UnkCameraOwner_8000E9BC *owner, int number);
-    virtual ~CameraModeFixLookChar();
-    virtual int GetModeId();
-    virtual void Update(float dt, UnkCameraUpdateArg_800099B8 *arg);
-    virtual void OnSwitch(UnkCameraSwitchArg_8000996C *arg);
-    virtual void vf_0x14(UnkCameraArg_800098E4 *arg);
-
-    /* Creates the mode for the camera factory (name inferred). */
-    static CameraMode *Create(UnkCameraOwner_8000E9BC *owner, int number);
-
-    /* 0xAC */ float m_distance;
-    /* 0xB0 */ float m_height;
-    /* 0xB4 */ boost::weak_ptr<CharInfo> m_chara; /* the character looked at */
-    /* 0xBC */ UnkCopiedVector m_offset;
-    /* 0xC8 */ boost::shared_ptr<Collision::ProcessBase> m_process;
-};
-SIZE_ASSERT(CameraModeFixLookChar, 0xD0);
 
 CameraModeFixLookChar::CameraModeFixLookChar(UnkCameraOwner_8000E9BC *owner, int number)
     : PJSCameraMode(owner, number), m_distance(60.0f), m_height(0.0f), m_offset(lbl_805E07A0) {

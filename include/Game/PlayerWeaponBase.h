@@ -105,23 +105,48 @@ class PlayerMotion : public Task {
     /* 0x454 */ u32 field_0x454;
 };
 
+/* A position returned through the game's out-of-line vector copy constructor (fn_800091EC), as
+ * PlayerTargetBase's position slots build it. It has no base class, so that its inline
+ * constructor calls no other inline function and is inlined; callers read it as a Vec3f (as
+ * ThrowObjectPosition in Game/ThrowObject.h; name invented). */
+struct AimPosition {
+    AimPosition(const Vec3f &position) {
+        fn_800091EC(reinterpret_cast<Vec3f *>(this), &position);
+    }
+
+    float x;
+    float y;
+    float z;
+};
+
 /* PlayerTargetBase (class name from RTTI; vtable 0x80543DF8): the aim of a player character,
- * kept at 0x24C of the player (slot names inferred from Game/PlayerShadowWeapon.cpp). */
+ * kept at 0x24C of the player (slot names inferred from Game/PlayerShadowWeapon.cpp). Its own
+ * code is Game/PlayerTargetBase.cpp; the return types of slots 0x10, 0x1C, 0x20 and 0x28 come
+ * from its bodies there. */
 class PlayerTargetBase {
   public:
+    PlayerTargetBase(const boost::shared_ptr<PlayerBase> &player);
     virtual ~PlayerTargetBase();
+    /* Moves the player's own target along and turns the aim (name inferred). */
     virtual void vf_0x0C();
-    virtual void vf_0x10();
+    virtual int vf_0x10();
     /* Whether a target is locked on, its position, and the target (behaviour inferred from
      * Game/PlayerShadowWeaponGun.cpp). */
     virtual bool HasTarget();
     virtual void vf_0x18();
-    virtual void vf_0x1C();
-    virtual Vec3f GetTargetPosition();
+    virtual AimPosition vf_0x1C();
+    virtual AimPosition GetTargetPosition();
     virtual boost::weak_ptr<Target> GetTarget();
-    virtual void vf_0x28();
+    virtual boost::weak_ptr<Target> vf_0x28();
     /* Turns a vector into the aim's frame (behaviour inferred). */
     virtual Vec3f ToAimSpace(const Vec3f &vector);
+
+    /* The turn rate (0x80206AD4; name inferred). */
+    float GetTurn();
+
+    /* 0x04 */ boost::shared_ptr<PlayerBase> m_player;
+    /* 0x0C */ boost::shared_ptr<Target> m_target; /* the player's own target (inferred) */
+    /* 0x14 */ float m_turn; /* eased towards the stick's turn each frame (name inferred) */
 };
 
 /* WeaponBase (class name from RTTI; vtable 0x805223DC): the weapon slot of a player character, a

@@ -26,14 +26,20 @@ struct UnkCameraMtx_8040C148 {
 };
 
 /* What the camera factory's first method makes for each camera unit (class name unknown): a
- * position first, its vtable pointer at 0x3C. */
+ * position first, its vtable pointer at 0x3C. RTTI calls the base of PJSCamera::PJSCameraTargetInfo
+ * (Game/CameraTargetInfo.h), which has the same layout, SonicteamUSA::System::Camera::
+ * CameraTargetInfo; this is probably that class. */
 class UnkCameraTarget_8026FCFC {
   public:
     /* 0x00 */ Vec3f m_position;
-    /* 0x0C */ u8 field_0xC[0x3C - 0xC];
+    /* 0x0C */ Vec3f field_0xC;
+    /* 0x18 */ Vec3f field_0x18;
+    /* 0x24 */ Vec3f field_0x24;
+    /* 0x30 */ Vec3f field_0x30;
 
     virtual void vf_0x08();
-    virtual void vf_0x0C();
+    /* Takes over another target's values (name inferred; Game/PlayerPostManager.cpp). */
+    virtual void vf_0x0C(const UnkCameraTarget_8026FCFC *source);
     virtual ~UnkCameraTarget_8026FCFC();
 };
 

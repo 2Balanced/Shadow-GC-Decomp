@@ -42,8 +42,8 @@ class Move : public BehaviorBase {
   public:
     Move(const boost::shared_ptr<Diablon> &owner);
     virtual ~Move();
-    virtual void Begin();
-    virtual void End();
+    virtual void Begin(int previous, const InitializeArgs &args);
+    virtual void End(int next);
     virtual void Tick(float dt);
 
     /* How far the target lies along the boss's facing (name inferred). */
@@ -63,10 +63,10 @@ Move::Move(const boost::shared_ptr<Diablon> &owner) : BehaviorBase(owner, "Move"
 
 Move::~Move() {}
 
-void Move::Begin() {
-    fn_802D4ED4(&m_owner->m_flags, 1);
-    fn_802D4ED4(&m_owner->m_flags, 3);
-    fn_802D4ED4(&m_owner->m_flags, 8);
+void Move::Begin(int previous, const InitializeArgs &args) {
+    m_owner->m_flags.Set(1);
+    m_owner->m_flags.Set(3);
+    m_owner->m_flags.Set(8);
     fn_800091D0(&m_target, &m_owner->m_target.lock()->m_position);
     if (GetFrontDistance() > m_owner->m_params->m_moveBackLimit) {
         m_direction = 1.0f;
@@ -78,10 +78,10 @@ void Move::Begin() {
     m_state = 0;
 }
 
-void Move::End() {
-    fn_802D4EF4(&m_owner->m_flags, 1);
-    fn_802D4EF4(&m_owner->m_flags, 3);
-    fn_802D4EF4(&m_owner->m_flags, 8);
+void Move::End(int next) {
+    m_owner->m_flags.Reset(1);
+    m_owner->m_flags.Reset(3);
+    m_owner->m_flags.Reset(8);
 }
 
 void Move::Tick(float dt) {

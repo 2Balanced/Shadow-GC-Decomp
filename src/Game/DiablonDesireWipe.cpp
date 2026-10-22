@@ -37,7 +37,7 @@ SIZE_ASSERT(Wipe, 0x1C);
 Wipe::~Wipe() {}
 
 void Wipe::Tick(float dt) {
-    if (!fn_802D58FC(&m_owner->m_flags, 0)) {
+    if (!m_owner->m_flags.Test(0)) {
         m_desire = 0.0f;
     } else if (IsTargetInRange()) {
         AddDesire(dt / m_owner->m_params->m_wipeDesireTime);

@@ -20,6 +20,8 @@ namespace Vehicle {
 class TVehicleBase;
 }
 
+class Task;
+
 namespace Player {
 
 namespace Behavior {
@@ -55,7 +57,9 @@ class PlayerBase : public PlayerObject {
     /* 0x0A4 */ u32 field_0xA4;
     /* 0x0A8 */ u32 m_stateBits[2]; /* bit array (fn_8006CD78 tests, fn_80076CA8 sets, fn_80076CC8
                                       clears) */
-    /* 0x0B0 */ u8 field_0xB0[0x22C - 0xB0];
+    /* 0x0B0 */ u8 field_0xB0[0x224 - 0xB0];
+    /* 0x224 */ Task *m_task; /* the character's task, the parent of its sub tasks (inferred) */
+    /* 0x228 */ u32 field_0x228;
     /* 0x22C */ Behavior::UnkBehaviorExecuter_800A7F14 *m_behaviors; /* switches behaviors */
     /* 0x230 */ PlayerMotion *m_motion;
     /* 0x234 */ u32 field_0x234;

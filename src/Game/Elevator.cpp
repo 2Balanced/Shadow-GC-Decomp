@@ -26,9 +26,11 @@
 
 /* The model entry of the table for one "model" parameter: fn_80208978 creates one and
  * the accessors below read it. Its shared_ptr instances (0x800E4D8C-0x800E4E88) are shared with
- * Stick, which named the class; the RTTI of its control block (vtable 0x80544154, constructor
+ * Stick and BreakWall; the RTTI of its control block (vtable 0x80544154, constructor
  * 0x80208B84) calls it GadgetBuilder::CrashInfoCtrl. */
-class UnkModelEntry_80208978;
+namespace GadgetBuilder {
+class CrashInfoCtrl;
+} // namespace GadgetBuilder
 
 /* A model's table of named entries in its resource file (names as in Stick). */
 class UnkModelTable_80208888;
@@ -46,14 +48,14 @@ SIZE_ASSERT(UnkSoundEntry_80208888, 0x1C);
 extern "C" {
 /* Builds the entry for model of the table, reports whether the table holds that entry, and
  * returns the sound entry named name or 0 (behaviour inferred). */
-boost::shared_ptr<UnkModelEntry_80208978> fn_80208978(UnkModelTable_80208888 *table, int model);
+boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> fn_80208978(UnkModelTable_80208888 *table, int model);
 bool fn_80208BB8(UnkModelTable_80208888 *table, int model);
 UnkSoundEntry_80208888 *fn_80208888(UnkModelTable_80208888 *table, const char *name);
 /* Accessors of the entry, each 0 when the entry is empty (meanings inferred from their callers):
  * the model to show, the name of the collision node and the base name of the entry's sounds. */
-void *fn_802087D8(UnkModelEntry_80208978 *entry);
-const char *fn_802087BC(UnkModelEntry_80208978 *entry);
-const char *fn_80208768(UnkModelEntry_80208978 *entry);
+void *fn_802087D8(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_802087BC(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_80208768(GadgetBuilder::CrashInfoCtrl *entry);
 /* A 32-bit flag word: fn_80014E04 clears it, fn_80014E1C sets bit, fn_8006127C clears bit and
  * fn_80014E34 tests bit (behaviour inferred from their bodies). */
 void fn_80014E04(u32 *flags);
@@ -153,7 +155,7 @@ class Elevator : public Gadget {
 
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
-    /* 0x40 */ boost::shared_ptr<UnkModelEntry_80208978> m_entry;
+    /* 0x40 */ boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> m_entry;
     /* 0x48 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particle;
     /* 0x50 */ UnkModelTable_80208888 *m_table; /* the table of ELEVATOR.BIN */
     /* 0x54 */ s32 m_shownModel;

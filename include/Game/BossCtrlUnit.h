@@ -16,6 +16,23 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+/* Game/BossCallbackContainer.cpp emits the callback containers' vtables: only there are the
+ * handlers declared inline (elsewhere that would add the vtables and their RTTI to every unit). */
+#ifdef BOSS_CALLBACK_CONTAINER_UNIT
+#define BOSS_CALLBACK_INLINE inline
+#else
+#define BOSS_CALLBACK_INLINE
+#endif
+
+#ifdef BOSSCTRLUNIT_HELPERS
+/* Defined by the unit that emits the helpers' functions (Game/BossCtrlUnit.cpp): the members of
+ * the camera units and the shadow and stage object units as their functions see them. */
+#include "Game/CameraModeUser.h"
+#include "Game/ExternalCameraRequest.h"
+#include "boost/shared_ptr.hpp"
+#include "boost/weak_ptr.hpp"
+#endif
+
 struct _stMtnPlayWork;
 struct RpClump;
 struct UnkClumpFade_80027D5C;
@@ -142,7 +159,22 @@ class BossCtrlUnit_PlayCameraMotion : public BossCtrlUnit {
     virtual ~BossCtrlUnit_PlayCameraMotion();
     virtual int Tick(float dt);
 
+#ifdef BOSSCTRLUNIT_HELPERS
+    /* Loads camera motion motion and requests its camera mode, and places the mode on the motion
+     * (names inferred). */
+    void Init(int motion, float arg1, float arg2);
+    void OnUpdate(SonicteamUSA::System::Camera::CameraModeUser::UpdateEventArgs &args);
+    void OnSwitch(SonicteamUSA::System::Camera::CameraModeUser::SwitchEventArgs &args);
+    void Apply();
+
+    /* 0x0C */ float m_time;
+    /* 0x10 */ UnkCameraData_80012510 *m_data;
+    /* 0x14 */ boost::weak_ptr<PJSCamera::ExternalCameraRequest> m_request;
+    /* 0x1C */ boost::shared_ptr<SonicteamUSA::System::Camera::CameraModeUser> m_mode;
+    /* 0x24 */ Mtx34f m_matrix;
+#else
     /* 0x0C */ u8 field_0xC[0x54 - 0xC];
+#endif
 };
 
 /* BossCtrlUnit_DamageEff (class name from RTTI; vtable at 0x8055258C): the damage effect a boss
@@ -186,6 +218,22 @@ class BossCtrlUnit_CheckFirstDamage : public BossCtrlUnit {
     /* 0x10 */ s32 field_0x10;
 };
 
+#ifdef BOSSCTRLUNIT_HELPERS
+/* A shadow cast on the ground (struct name unknown; its constructor is out of line at 0x8009368C,
+ * and fn_802DE99C draws it with a size). The position and normal are the ground's; the meanings of
+ * the other members are unknown. */
+struct UnkShadow_8009368C {
+    UnkShadow_8009368C();
+
+    /* 0x00 */ Vec3f m_position;
+    /* 0x0C */ Vec3f m_normal;
+    /* 0x18 */ u32 field_0x18;
+    /* 0x1C */ u32 field_0x1C;
+    /* 0x20 */ float field_0x20;
+    /* 0x24 */ bool m_visible;
+};
+#endif
+
 /* BossCtrlUnit_Shadow (class name from RTTI; vtable at 0x80552474, constructor 0x802904D8): the
  * boss's shadow (meaning inferred from the name; size from its allocation). */
 class BossCtrlUnit_Shadow : public BossCtrlUnit {
@@ -194,7 +242,12 @@ class BossCtrlUnit_Shadow : public BossCtrlUnit {
     virtual ~BossCtrlUnit_Shadow();
     virtual int Tick(float dt);
 
+#ifdef BOSSCTRLUNIT_HELPERS
+    /* 0x0C */ float m_size;
+    /* 0x10 */ UnkShadow_8009368C m_shadow;
+#else
     /* 0x0C */ u8 field_0xC[0x38 - 0xC];
+#endif
 };
 
 /* BossCtrlUnit_StageObject (class name from RTTI; vtable at 0x80552490, constructor 0x80290920):
@@ -207,7 +260,14 @@ class BossCtrlUnit_StageObject : public BossCtrlUnit {
     virtual ~BossCtrlUnit_StageObject();
     virtual int Tick(float dt);
 
+#ifdef BOSSCTRLUNIT_HELPERS
+    /* 0x0C */ float m_radius; /* the camera nearer than this to the object fades it */
+    /* 0x10 */ Vec3f m_position;
+    /* 0x1C */ RpClump *m_clumps[2]; /* the models arg3 and arg4 */
+    /* 0x24 */ UnkClumpFade_80027D5C *m_fade;
+#else
     /* 0x0C */ u8 field_0xC[0x28 - 0xC];
+#endif
 };
 
 /* Adds unit to the units the boss runs (behaviour inferred). */
@@ -222,15 +282,30 @@ typedef boost::function1<void, _stMtnCallbackParam &> MotionCallbackFunction;
 class UnkMotionCallback_802414D4 {
   public:
     UnkMotionCallback_802414D4 &operator=(const MotionCallbackFunction &f);
+    /* Whether no function is set, and the call of the function when one is (weak copies in
+     * Game/BossCallbackContainer.cpp, 0x803358C0 and 0x80335894; names inferred). Declared only
+     * there: elsewhere they would renumber the unit's local labels. */
+#ifdef BOSS_CALLBACK_CONTAINER_UNIT
+    bool IsEmpty() const {
+        return m_function.empty();
+    }
+    void Call(_stMtnCallbackParam &param) {
+        if (!m_function.empty()) {
+            m_function(param);
+        }
+    }
+#endif
 
     /* 0x0 */ MotionCallbackFunction m_function;
 };
 
 /* MotionCallbackContainer (class name from RTTI; vtable at 0x8055D38C): receives the callbacks of
- * a motion. GetCallback binds OnMotion to this object. */
+ * a motion. GetCallback binds OnMotion to this object. The handlers are inline (empty; the units
+ * that need their bodies define them), so the vtables are emitted with the Get functions in
+ * Game/BossCtrlUnit.cpp. */
 class MotionCallbackContainer {
   public:
-    virtual void OnMotion(_stMtnCallbackParam &param);
+    virtual BOSS_CALLBACK_INLINE void OnMotion(_stMtnCallbackParam &param);
     virtual MotionCallbackFunction GetCallback();
 };
 
@@ -238,9 +313,9 @@ class MotionCallbackContainer {
  * collision's callbacks; the Get functions bind the three handlers to this object. */
 class AttackCallbackContainer {
   public:
-    virtual void OnHit(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
-    virtual void OnEnd(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
-    virtual void OnDamage(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+    virtual BOSS_CALLBACK_INLINE void OnHit(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+    virtual BOSS_CALLBACK_INLINE void OnEnd(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+    virtual BOSS_CALLBACK_INLINE void OnDamage(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
     virtual SonicteamUSA::System::CharaColli::AttackCallback GetHitCallback();
     virtual SonicteamUSA::System::CharaColli::AttackCallback GetEndCallback();
     virtual SonicteamUSA::System::CharaColli::AttackCallback GetDamageCallback();
@@ -268,9 +343,17 @@ class BossCtrlUnit_FixLookCharCamera : public virtual BossCtrlUnit {
 
     /* 0x08 */ float field_0x8;
     /* 0x0C */ float field_0xC;
+#ifdef BOSSCTRLUNIT_HELPERS
+    /* 0x10 */ float m_blendIn;  /* the blend times of the camera request (meanings inferred) */
+    /* 0x14 */ float m_blendOut;
+    /* 0x18 */ Vec3f m_offset;
+    /* 0x24 */ u8 m_restart; /* set while the boss is inactive (meaning inferred) */
+    /* 0x28 */ boost::weak_ptr<PJSCamera::ExternalCameraRequest> m_request;
+#else
     /* 0x10 */ u8 field_0x10[0x18 - 0x10];
     /* 0x18 */ Vec3f m_offset;
     /* 0x24 */ u8 field_0x24[0x30 - 0x24];
+#endif
 };
 
 #endif

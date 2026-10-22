@@ -19,7 +19,9 @@ class TPjsCsd {
 
     /* 0x08 */ u32 field_0x8;
     /* 0x0C */ u32 field_0xC;
-    /* 0x10 */ char m_sceneName[0x54 - 0x10]; /* the scene to play */
+    /* 0x10 */ char m_sceneName[0x50 - 0x10]; /* the scene to play */
+    /* 0x50 */ u8 m_playing; /* set by fn_8003FE2C while the scene runs (meaning inferred) */
+    /* 0x51 */ u8 field_0x51[0x54 - 0x51];
 };
 SIZE_ASSERT(TPjsCsd, 0x54);
 

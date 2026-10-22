@@ -26,4 +26,18 @@ struct UnkCameraState_80359164 : public UnkCameraState_8000AA70 {
     ~UnkCameraState_80359164();
 };
 
+/* The parameters a camera mode is made with (struct name unknown; 0x6C bytes, from its constructor
+ * 0x8000EBB0, which clears the parameters at 0x4C; destructor 0x8000EAE8). A mode copies the
+ * parameters from 0x34 on; CameraModeFixLookChar takes its distance and height from 0x4C and 0x50
+ * (names inferred). */
+struct UnkCameraModeArgs_8000EBB0 {
+    UnkCameraModeArgs_8000EBB0();
+    ~UnkCameraModeArgs_8000EBB0();
+
+    /* 0x00 */ u8 field_0x0[0x4C];
+    /* 0x4C */ float m_distance;
+    /* 0x50 */ float m_height;
+    /* 0x54 */ u8 field_0x54[0x6C - 0x54];
+};
+
 #endif

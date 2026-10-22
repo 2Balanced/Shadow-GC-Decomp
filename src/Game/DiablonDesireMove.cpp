@@ -40,7 +40,7 @@ SIZE_ASSERT(Move, 0x1C);
 Move::~Move() {}
 
 void Move::Tick(float dt) {
-    if (fn_802D58FC(&m_owner->m_flags, 0)) {
+    if (m_owner->m_flags.Test(0)) {
         if (IsFacingTarget()) {
             if (IsTargetOutOfRange()) {
                 AddDesire(dt / m_owner->m_params->m_moveDesireTime);

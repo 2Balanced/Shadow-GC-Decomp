@@ -35,9 +35,11 @@ using SonicteamUSA::System::CharaColli::AttackCallback;
 using SonicteamUSA::System::CharaColli::AttackCallbackParam;
 using SonicteamUSA::System::CharaColli::CharaColliAttack;
 
-/* The model entry of the table for one "model" parameter (name as in Elevator and Stick, whose
- * shared_ptr instances it shares). */
-class UnkModelEntry_80208978;
+/* The model entry of the table for one "model" parameter (GadgetBuilder::CrashInfoCtrl, from
+ * RTTI; Game/GadgetBuilder.cpp). */
+namespace GadgetBuilder {
+class CrashInfoCtrl;
+} // namespace GadgetBuilder
 
 /* A model's table of named entries in its resource file (name as in Elevator). */
 class UnkModelTable_80208888;
@@ -102,19 +104,19 @@ void *fn_800122D4(void);
 UnkModelTable_80208888 *fn_80012700(void *loader, int arg1, const char *fileName);
 /* Builds the entry for model of the table, reports whether the table holds that entry, and
  * returns the model or sound entry named name or 0 (behaviour inferred). */
-boost::shared_ptr<UnkModelEntry_80208978> fn_80208978(UnkModelTable_80208888 *table, int model);
+boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> fn_80208978(UnkModelTable_80208888 *table, int model);
 bool fn_80208BB8(UnkModelTable_80208888 *table, int model);
 UnkModelPartEntry_80208900 *fn_80208900(UnkModelTable_80208888 *table, const char *name);
 UnkSoundEntry_80208888 *fn_80208888(UnkModelTable_80208888 *table, const char *name);
 /* Accessors of the entry, each 0 when the entry is empty (meanings inferred from their callers):
  * the name of the model to show and of its collision node, the same two for the broken wall, the
  * debris and the break sound. */
-const char *fn_802087D8(UnkModelEntry_80208978 *entry);
-const char *fn_802087BC(UnkModelEntry_80208978 *entry);
-const char *fn_802087A0(UnkModelEntry_80208978 *entry);
-const char *fn_80208784(UnkModelEntry_80208978 *entry);
-UnkDebrisEntry_802086C0 *fn_802086C0(UnkModelEntry_80208978 *entry);
-UnkSoundEntry_80208888 *fn_80208618(UnkModelEntry_80208978 *entry);
+const char *fn_802087D8(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_802087BC(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_802087A0(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_80208784(GadgetBuilder::CrashInfoCtrl *entry);
+UnkDebrisEntry_802086C0 *fn_802086C0(GadgetBuilder::CrashInfoCtrl *entry);
+UnkSoundEntry_80208888 *fn_80208618(GadgetBuilder::CrashInfoCtrl *entry);
 
 /* Shows the model named name of the model file (behaviour inferred; arg2 unknown). */
 void fn_801629D8(GadgetModelInfo *model, const char *name, int arg2);
@@ -190,7 +192,7 @@ class BreakWall : public Gadget {
     /* 0x40 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particle;
     /* 0x48 */ boost::weak_ptr<CharInfo> m_attacker; /* who broke the wall (inferred) */
     /* 0x50 */ UnkModelTable_80208888 *m_table;    /* the table of BREAKWALL.BIN */
-    /* 0x54 */ boost::shared_ptr<UnkModelEntry_80208978> m_entry;
+    /* 0x54 */ boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> m_entry;
     /* 0x5C */ BreakWallParams m_params;
     /* 0x60 */ s32 m_state; /* 0 new, 1 intact, 2 cracked, 3 breaking, 4 broken (inferred) */
     /* 0x64 */ s32 m_shownModel;
@@ -240,7 +242,7 @@ BreakWall::BreakWall(Task *parent, UnkPlacement_800C9CD0 *owner) : Gadget(parent
     /* Retail destroys the attack handle before LoadFromOwner, so these lines form a block. */
     {
         m_entry = fn_80208978(m_table, m_params.model);
-        UnkModelEntry_80208978 *entry = m_entry.get();
+        GadgetBuilder::CrashInfoCtrl *entry = m_entry.get();
         fn_801629D8(m_model.get(), fn_802087D8(entry), 0);
         const char *collision = fn_802087BC(m_entry.get());
         m_model->fn_80161F08(collision, m_chara);

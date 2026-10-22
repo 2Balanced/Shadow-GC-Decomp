@@ -4,6 +4,8 @@
 #include "Game/BossDesire.h"
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
+#include "Game/Task.h"
+#include "boost/scoped_ptr.hpp"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include <dolphin/types.h>
@@ -13,15 +15,90 @@
  * is not split yet; the classes are declared here as far as the split units use them. Member
  * names are inferred unless noted. */
 
+/* A set of N bits (class name unknown). Its members are out-of-line template functions, so each
+ * unit that uses them carries weak copies; retail keeps the first ones linked: Set at 0x802D4ED4,
+ * Reset at 0x802D4EF4 (Game/DiablonBehaviorEvent.cpp) and Test at 0x802D58FC. */
+template <int N> class UnkBitFlags_802D4ED4 {
+  public:
+    UnkBitFlags_802D4ED4(); /* 0x802D9DCC */
+    void Set(u32 index);
+    void Reset(u32 index);
+    bool Test(u32 index) const;
+
+    u32 m_words[(N + 31) / 32];
+};
+
+template <int N> UnkBitFlags_802D4ED4<N>::UnkBitFlags_802D4ED4() {
+    for (int i = 0; i < (N + 31) / 32; i++) {
+        m_words[i] = 0;
+    }
+}
+
+template <int N> void UnkBitFlags_802D4ED4<N>::Set(u32 index) {
+    m_words[index >> 5] |= 1 << (index & 31);
+}
+
+template <int N> void UnkBitFlags_802D4ED4<N>::Reset(u32 index) {
+    m_words[index >> 5] &= ~(1 << (index & 31));
+}
+
+template <int N> bool UnkBitFlags_802D4ED4<N>::Test(u32 index) const {
+    return (m_words[index >> 5] & (1 << (index & 31))) != 0;
+}
+
+class CharCommandUnit;
+
+/* A clump's colour fade (struct name unknown; as in Game/BlackDoomCtrlUnit.cpp and
+ * Game/BossRender.cpp); its constructor is out of line (0x80027D5C). */
+struct UnkClumpFade_80027D5C;
+extern "C" UnkClumpFade_80027D5C *fn_80027D5C(UnkClumpFade_80027D5C *fade);
+struct UnkClumpFade_80027D5C {
+    UnkClumpFade_80027D5C() {
+        fn_80027D5C(this);
+    }
+
+    /* 0x00 */ float m_color[4];
+    /* 0x10 */ u8 field_0x10[0x24 - 0x10];
+    /* 0x24 */ u8 m_mode;
+    /* 0x25 */ u8 field_0x25[0x2C - 0x25];
+};
+
 namespace Boss {
 namespace Diablon {
 
 class Diablon;
 
-/* Executer (class name from RTTI; a Task, vtable 0x80558CD0, constructor 0x802DA1B0): runs the
- * boss's behaviors and passes actions on to its parts. Its methods used here are declared as the
- * fn_ functions below. */
-class Executer;
+/* Controller (class name from RTTI; a Task, vtable 0x805586DC; Game/DiablonController.cpp): runs
+ * the boss's desires. */
+class Controller;
+
+/* Executer (class name from RTTI; a Task, vtable 0x80558CD0; Game/DiablonExecuter.cpp): runs the
+ * boss's behaviors and its parts. The methods other units call keep their fn_ names (C functions
+ * taking the executer; see the end of this header). */
+class Executer : public Task {
+  public:
+    /* Its state (class name inferred; defined in Game/DiablonExecuter.cpp). */
+    class Impl;
+
+    Executer(Task *parent, const boost::shared_ptr<Diablon> &owner);
+    virtual ~Executer();
+    virtual void Tick(float dt);
+
+    /* Makes the boss's body, health gauge and camera control (name inferred). */
+    void Start();
+
+    /* 0x28 */ boost::scoped_ptr<Impl> m_impl;
+    /* 0x2C */ u32 field_0x2C; /* never touched (size from the allocation) */
+};
+
+/* Effect (class name from RTTI; a Task, vtable 0x80558DAC, constructor 0x802DCA60): the boss's
+ * effects; only its size is known so far. */
+class Effect : public Task {
+  public:
+    Effect(Executer *executer, const boost::shared_ptr<Diablon> &owner);
+
+    /* 0x28 */ u8 field_0x28[0x38 - 0x28];
+};
 
 namespace Behavior {
 
@@ -55,9 +132,16 @@ class BehaviorBase {
     /* name is the behavior's name; the meaning of arg is unknown. */
     BehaviorBase(const boost::shared_ptr<Diablon> &owner, const char *name, int arg);
     virtual ~BehaviorBase();
-    virtual void Begin() = 0;
-    virtual void End() = 0;
+    /* The executer starts a behavior with the id of the behavior before it and the arguments it
+     * was switched with (see fn_802DA29C), and ends it with the id of the next one. */
+    virtual void Begin(int previous, const InitializeArgs &args) = 0;
+    virtual void End(int next) = 0;
     virtual void Tick(float dt) = 0;
+
+    /* The behavior's id (name inferred). */
+    int GetId() const {
+        return field_0x10;
+    }
 
     /* 0x04 */ boost::shared_ptr<Diablon> m_owner;
     /* 0x0C */ const char *m_name;
@@ -98,6 +182,18 @@ class ActionMove : public Action {
 };
 SIZE_ASSERT(ActionMove, 0xC);
 
+/* ActionDamage (class name from RTTI; vtable 0x80558A9C): tells the parts the boss was hit for
+ * m_damage (type 11; meaning inferred). Its constructor and destructor are inline; retail keeps
+ * weak copies of them (0x802D6414, 0x802D63B8). */
+class ActionDamage : public Action {
+  public:
+    ActionDamage(int damage) : Action(11), m_damage(damage) {}
+    virtual ~ActionDamage() {}
+
+    /* 0x8 */ s32 m_damage;
+};
+SIZE_ASSERT(ActionDamage, 0xC);
+
 /* PartsBase (class name from RTTI; vtable 0x805589C0, constructor 0x802D6180, destructor
  * 0x802D60B4): a part of the boss. The parts form a tree: the constructor appends the part to its
  * parent's children, the boss updates the tree and passes actions down it (0x802D5FB0 and
@@ -110,6 +206,14 @@ class PartsBase {
     virtual void Tick(float dt);               /* 0x802D5F1C */
     virtual void OnAction(const Action &action); /* 0x802D5F20 */
 
+    /* Passes action to every part below this one (0x802D5F24), and ticks them, deleting those
+     * that finished (0x802D5FB0) (names inferred). */
+    void SendAction(const Action &action);
+    void TickChildren(float dt);
+    /* Links child in as the last child, and unlinks it (names inferred; Game/DiablonPartsBase.cpp). */
+    inline void AddChild(PartsBase *child);
+    inline void RemoveChild(PartsBase *child);
+
     /* 0x04 */ boost::shared_ptr<Diablon> m_owner;
     /* 0x0C */ const char *m_name;
     /* 0x10 */ PartsBase *m_parent;
@@ -120,13 +224,60 @@ class PartsBase {
 };
 SIZE_ASSERT(PartsBase, 0x24);
 
+/* A node of a part's model and the motions it plays (struct names unknown; members inferred). */
+struct ModelNode {
+    /* 0x0 */ s32 m_id;
+    /* 0x4 */ s32 field_0x4;
+};
+
+struct ModelDesc {
+    /* 0x00 */ s32 field_0x0;
+    /* 0x04 */ s32 field_0x4;
+    /* 0x08 */ const ModelNode *m_nodes;
+    /* 0x0C */ s32 m_nodeCount;
+    /* 0x10 */ const s32 *m_motions;
+    /* 0x14 */ s32 m_motionCount;
+};
+
+/* The model a ModelBase owns (class name unknown; 0x38 bytes, constructor at 0x802DB4D0). */
+class UnkModel_802DB4D0;
+
+/* ModelBase (class name from RTTI; vtable 0x80558D0C, constructor 0x802DAB6C, destructor
+ * 0x802DAA94): a part with a model of its own, which it ticks and whose motions it plays. Its
+ * code is at 0x802DA7AC-0x802DABEC; method names are inferred. */
+class ModelBase : public PartsBase {
+  public:
+    ModelBase(PartsBase *parent, const char *name, const boost::shared_ptr<Diablon> &owner,
+              const ModelDesc *desc, const Mtx34f *parentMatrix);
+    virtual ~ModelBase();
+    virtual void Tick(float dt);
+
+    u32 *GetModelFlags();                     /* 0x802DA7AC */
+    const Mtx34f *GetNodeMatrix(int index);   /* 0x802DA7B8 */
+    const Mtx34f *GetParentMatrix();          /* 0x802DA7E8 */
+    void *GetMotion();                        /* 0x802DA7F4 */
+    int GetMotionIndex();                     /* 0x802DA800 */
+    void SetMotionSpeed(float speed);         /* 0x802DA80C */
+    void PlayMotions(int motion, int next, float blend); /* 0x802DA838 */
+    void SetMotionNode(int node, int motion); /* 0x802DA85C */
+    void PlayMotion(int motion, float blend); /* 0x802DA880 */
+
+    /* 0x24 */ UnkModel_802DB4D0 *m_model; /* a boost::scoped_ptr in the original (inferred) */
+};
+SIZE_ASSERT(ModelBase, 0x28);
+
 } // namespace Parts
 
-/* The boss's tuning values (struct name unknown; only the members used so far). */
+/* The boss's tuning values (struct name unknown; the tables are in Game/DiablonParam.cpp). */
 struct DiablonParams {
-    /* 0x00 */ u8 field_0x0[0x8];
+    /* 0x00 */ s32 field_0x0;
+    /* 0x04 */ float field_0x4;
     /* 0x08 */ float m_barrierDownTime; /* how long the barrier stays down once flag 3 is set (inferred) */
-    /* 0x0C */ u8 field_0xC[0x20 - 0xC];
+    /* 0x0C */ float m_idleTime;    /* how long the idle behavior keeps flag 8 set (inferred) */
+    /* 0x10 */ float m_idleMinTime; /* ... at least, once flag 5 is set (inferred) */
+    /* 0x14 */ float m_idleFacingAngle;  /* degrees; the idle behavior slows its turn within it */
+    /* 0x18 */ float m_idleTurnAccel;    /* degrees */
+    /* 0x1C */ float m_idleMaxTurnSpeed; /* degrees */
     /* 0x20 */ float m_moveDesireTime; /* the move desire grows by dt over it */
     /* 0x24 */ float m_moveAccel;      /* the move behavior's acceleration */
     /* 0x28 */ float m_moveFriction;   /* passed to the integration with the time step */
@@ -155,26 +306,63 @@ struct DiablonParams {
     /* 0x84 */ float m_wipeFacingAngle; /* degrees */
     /* 0x88 */ float m_wipeMinDistance;
     /* 0x8C */ float m_wipeMaxDistance;
-    /* 0x90 */ u8 field_0x90[0xAC - 0x90];
+    /* 0x90 */ s32 m_eventStartHintId; /* hint messages of the event behavior (inferred) */
+    /* 0x94 */ s32 field_0x94;
+    /* 0x98 */ s32 field_0x98;
+    /* 0x9C */ s32 m_eventEndHintId1[2];   /* shown as the second event ends */
+    /* 0xA4 */ s32 m_eventStartHintId2[2]; /* shown as the third event starts */
     /* 0xAC */ s32 m_wipeHintId; /* hint messages shown as each attack starts (inferred) */
     /* 0xB0 */ s32 m_beamHintId;
     /* 0xB4 */ s32 m_bombHintId;
+    /* 0xB8 */ s32 field_0xB8;
+    /* 0xBC */ s32 field_0xBC;
+    /* 0xC0 */ float field_0xC0;
+    /* 0xC4 */ float field_0xC4;
+    /* 0xC8 */ float field_0xC8;
+    /* 0xCC */ float field_0xCC;
+    /* 0xD0 */ float field_0xD0;
+    /* 0xD4 */ float field_0xD4;
+    /* 0xD8 */ float field_0xD8;
+    /* 0xDC */ float field_0xDC;
+    /* 0xE0 */ float field_0xE0;
 };
+SIZE_ASSERT(DiablonParams, 0xE4);
 
-/* Diablon (class name from RTTI; vtable 0x80558C54): the boss's character info. */
+/* The tuning tables of the boss's stages (Game/DiablonParam.cpp). */
+extern DiablonParams g_params611;
+extern DiablonParams g_params613;
+extern DiablonParams g_paramsDefault;
+
+/* Diablon (class name from RTTI; vtable 0x80558C54, Game/Diablon.cpp): the boss's character
+ * info. Its methods that other units call keep their fn_ names (see the end of this header). */
 class Diablon : public CharInfo {
   public:
-    /* 0x64 */ u32 field_0x64;
+    Diablon();
+    virtual ~Diablon();
+    virtual void PushCommand(CharCommand *command);
+
+    /* Makes the boss and its tasks (names inferred). */
+    static boost::shared_ptr<Diablon> Create(Task *parent, int cameraSlot, DiablonParams *params);
+    void Setup(Task *parent);
+
+    /* 0x64 */ Controller *m_controller; /* set while its controller exists */
     /* 0x68 */ Executer *m_executer;
     /* 0x6C */ u32 field_0x6C;
     /* 0x70 */ boost::weak_ptr<CharInfo> m_target; /* the player */
-    /* 0x78 */ u8 field_0x78[0x88 - 0x78];
-    /* 0x88 */ u32 m_flags; /* a bit set; see fn_802D4ED4 */
+    /* 0x78 */ boost::weak_ptr<CharInfo> field_0x78; /* another character, which the event behavior
+                                                     * places and sends a ToUnderCommand */
+    /* 0x80 */ Parts::PartsBase *m_rootPart; /* the root of the parts tree (the executer's) */
+    /* 0x84 */ s32 m_cameraSlot; /* the resource slot of the boss's camera paths (name inferred) */
+    /* 0x88 */ UnkBitFlags_802D4ED4<32> m_flags;
     /* 0x8C */ DiablonParams *m_params;
-    /* 0x90 */ u8 field_0x90[0xCC - 0x90];
-    /* 0xCC */ s32 field_0xCC; /* the event desire's last stage waits for it to reach 0 */
-    /* 0xD0 */ s32 field_0xD0; /* the beam is wanted while it is 1-4, the bomb from 5 on */
+    /* 0x90 */ boost::weak_ptr<Diablon> m_self;
+    /* 0x98 */ UnkClumpFade_80027D5C m_fade; /* passed with the controller when the boss is hit */
+    /* 0xC4 */ boost::shared_ptr<CharCommandUnit> m_commandUnit;
+    /* 0xCC */ s32 field_0xCC; /* the health; the event desire's last stage waits for 0 */
+    /* 0xD0 */ s32 field_0xD0; /* the charge level; the beam is wanted while it is 1-4, the bomb
+                                * from 5 on */
 };
+SIZE_ASSERT(Diablon, 0xD4);
 
 namespace Desire {
 
@@ -193,10 +381,6 @@ SIZE_ASSERT(DiablonDesireBase, 0x1C);
 } // namespace Desire
 
 extern "C" {
-/* Sets, clears and tests bit index of flags (behaviour from their bodies). */
-void fn_802D4ED4(u32 *flags, int index);
-void fn_802D4EF4(u32 *flags, int index);
-bool fn_802D58FC(u32 *flags, int index);
 /* The distance to the target, and the cosine of the angle between the boss's facing and the
  * target (behaviour inferred). */
 float fn_802D94B8(Diablon *diablon);

@@ -91,7 +91,14 @@ class GoalAction : public IAction {
     /* 0x1C */ s32 m_state;
 };
 SIZE_ASSERT(GoalAction, 0x20);
-STAGEACTION_DECLARE_EMPTY(PauseAction);
+/* Game/PauseAction.cpp. */
+class PauseAction : public IAction {
+  public:
+    PauseAction();
+    ~PauseAction();
+    virtual void Execute();
+};
+SIZE_ASSERT(PauseAction, 0x4);
 /* Game/RestartAction.cpp. */
 class RestartAction : public IAction {
   public:

@@ -57,9 +57,12 @@ struct UnkEffectEntry_802086C0 {
     /* 0x18 */ float offset[3];
 };
 
-/* The model entry of the table for one "model" parameter (class unknown): fn_80208978 creates
- * one, and the accessors below read the names it keeps (names inferred). */
-class UnkModelEntry_80208978;
+/* The model entry of the table for one "model" parameter (GadgetBuilder::CrashInfoCtrl, from
+ * RTTI; Game/GadgetBuilder.cpp): fn_80208978 creates one, and the accessors below read the
+ * names it keeps (names inferred). */
+namespace GadgetBuilder {
+class CrashInfoCtrl;
+} // namespace GadgetBuilder
 
 /* The motion work of a model (struct name from the RTTI of its shared_ptr control block). */
 struct _stMtnPlayWork;
@@ -116,16 +119,16 @@ s32 fn_80012700(void *manager, int arg1, const char *fileName);
 /* Model table lookups (behaviour inferred): whether there is a model entry for id, the entry,
  * and the sound entry called name. */
 bool fn_80208BB8(UnkModelTable_80208888 *table, int id);
-boost::shared_ptr<UnkModelEntry_80208978> fn_80208978(UnkModelTable_80208888 *table, int id);
+boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> fn_80208978(UnkModelTable_80208888 *table, int id);
 UnkSoundEntry_80208888 *fn_80208888(UnkModelTable_80208888 *table, const char *name);
 /* The model entry's motion name, collision node name, break motion name and break collision node
  * name, and its break effect and break sound entries (behaviour inferred). */
-const char *fn_802087D8(UnkModelEntry_80208978 *entry);
-const char *fn_802087BC(UnkModelEntry_80208978 *entry);
-const char *fn_802087A0(UnkModelEntry_80208978 *entry);
-const char *fn_80208784(UnkModelEntry_80208978 *entry);
-UnkEffectEntry_802086C0 *fn_802086C0(UnkModelEntry_80208978 *entry);
-UnkSoundEntry_80208888 *fn_80208618(UnkModelEntry_80208978 *entry);
+const char *fn_802087D8(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_802087BC(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_802087A0(GadgetBuilder::CrashInfoCtrl *entry);
+const char *fn_80208784(GadgetBuilder::CrashInfoCtrl *entry);
+UnkEffectEntry_802086C0 *fn_802086C0(GadgetBuilder::CrashInfoCtrl *entry);
+UnkSoundEntry_80208888 *fn_80208618(GadgetBuilder::CrashInfoCtrl *entry);
 /* GadgetModelInfo methods not declared in its header (behaviour inferred where named): select
  * the part named name, play its motion, attach a character info to a node of the part, return
  * the attack of a node or of a variant, and the motion work of a named motion. */
@@ -223,7 +226,7 @@ class Stick : public Gadget {
                              * (inferred) */
     /* 0x50 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
     /* 0x58 */ UnkModelTable_80208888 *m_table;
-    /* 0x5C */ boost::shared_ptr<UnkModelEntry_80208978> m_entry;
+    /* 0x5C */ boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> m_entry;
     /* 0x64 */ float m_timer;
     /* 0x68 */ UnkSoundHandle_801D3DC8 m_sound;
     /* 0x84 */ u32 m_motionFlags; /* bit 0: the entry has a motion (inferred) */
@@ -247,7 +250,7 @@ Stick::Stick(Task *parent, UnkPlacement_800C9CD0 *owner) : Gadget(parent, owner)
     }
 
     m_entry = fn_80208978(m_table, m_params.model);
-    UnkModelEntry_80208978 *entry = m_entry.get();
+    GadgetBuilder::CrashInfoCtrl *entry = m_entry.get();
     fn_801629D8(m_model.get(), fn_802087D8(entry), 0);
     const char *motionName = fn_802087D8(m_entry.get());
     const char *nodeName = fn_802087BC(m_entry.get());

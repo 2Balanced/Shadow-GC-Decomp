@@ -26,6 +26,14 @@ class DesireBase {
     void AddDesire(float value) {
         m_desire += value;
     }
+    /* Whether the desire reached value, and setting it (names inferred; through the smart pointer,
+     * retail calls its operator-> out of line for them, as for inline functions). */
+    bool IsAtLeast(float value) const {
+        return m_desire >= value;
+    }
+    void SetDesire(float value) {
+        m_desire = value;
+    }
 
     /* 0x04 */ u32 field_0x4; /* set up by fn_80014E04 */
     /* 0x08 */ const char *m_name;

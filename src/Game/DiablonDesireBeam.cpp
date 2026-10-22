@@ -47,7 +47,7 @@ void Beam::Tick(float dt) {
             m_desire = 0.98f;
         }
     } else if (IsTargetInRange()) {
-        m_desire += dt / (fn_802D58FC(&m_owner->m_flags, 0) ? m_owner->m_params->m_beamDesireTime
+        m_desire += dt / (m_owner->m_flags.Test(0) ? m_owner->m_params->m_beamDesireTime
                                                             : m_owner->m_params->m_beamDesireTimeStill);
     }
 }
@@ -74,7 +74,7 @@ bool Beam::IsTargetInRange() {
     if (params->m_beamMaxDistance < distance) {
         return false;
     }
-    if (fn_802D58FC(&m_owner->m_flags, 0)) {
+    if (m_owner->m_flags.Test(0)) {
         if (params->m_beamMinDistance > distance) {
             return false;
         }

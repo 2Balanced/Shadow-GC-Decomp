@@ -126,13 +126,13 @@ void Barrier::Tick(float dt) {
     m_position.y += s_height;
     switch (m_state) {
     case 0:
-        fn_802D4EF4(&m_owner->m_flags, 2);
+        m_owner->m_flags.Reset(2);
         m_collider->TurnOff(-1);
         m_scale = 0.0f;
         m_state++;
         break;
     case 1:
-        if (fn_802D58FC(&m_owner->m_flags, 3)) {
+        if (m_owner->m_flags.Test(3)) {
             m_state = 100;
             m_timer = m_owner->m_params->m_barrierDownTime;
         }
@@ -144,7 +144,7 @@ void Barrier::Tick(float dt) {
         }
         break;
     case 101:
-        fn_802D4ED4(&m_owner->m_flags, 2);
+        m_owner->m_flags.Set(2);
         m_collider->TurnOn(-1);
         m_scale = 0.01f;
         m_state++;
@@ -156,12 +156,12 @@ void Barrier::Tick(float dt) {
             m_state++;
         }
     case 103:
-        if (!fn_802D58FC(&m_owner->m_flags, 3)) {
+        if (!m_owner->m_flags.Test(3)) {
             m_state = 0;
         }
         break;
     }
-    if (fn_802D58FC(&m_owner->m_flags, 2)) {
+    if (m_owner->m_flags.Test(2)) {
         UpdateCollider();
     }
     UpdateEffect(dt);
@@ -229,7 +229,7 @@ void Barrier::OnAttack(AttackCallbackParam &param) {
     if (m_effect.expired()) {
         m_effect = fn_802DC998(m_owner->field_0x6C, &m_matrix, 10);
     }
-    fn_802D4ED4(&m_owner->m_flags, 5);
+    m_owner->m_flags.Set(5);
     fn_801D54F4(fn_80053164(), 0x7E40, m_owner.px, 0, 1);
 }
 
