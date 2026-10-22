@@ -3,16 +3,9 @@
  * where to jump on one. DBStack, DBIsDebuggerPresent, __DBMarkException and __DBSetPresent are
  * unused by the game and were dead-stripped. */
 #include <dolphin/base/PPCArch.h>
-#include <dolphin/types.h>
-
-#define OSPhysicalToCached(paddr) ((void *)((u32)(paddr) + 0x80000000))
-#define OSCachedToPhysical(caddr) ((u32)(caddr) - 0x80000000)
+#include <dolphin/os.h>
 
 typedef u8 __OSException;
-typedef struct OSContext OSContext;
-
-void OSReport(const char *msg, ...);
-void OSDumpContext(OSContext *context);
 
 typedef struct DBInterface {
     u32 bPresent;
