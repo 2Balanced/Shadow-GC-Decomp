@@ -332,6 +332,8 @@ config.libs = [
         "os",
         [
             Object(Matching, "dolphin/os/OSArena.c"),
+            Object(Matching, "dolphin/os/OSSync.c"),
+            Object(Matching, "dolphin/os/OSTime.c"),
         ],
     ),
     {
