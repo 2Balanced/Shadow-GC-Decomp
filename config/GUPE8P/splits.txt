@@ -1930,6 +1930,14 @@ Game/ElecCircuitColli.cpp:
 	.sbss       start:0x805F0CF8 end:0x805F0D08
 	.sdata2     start:0x805FA068 end:0x805FA080
 
+dolphin/base/PPCArch.c:
+	.text       start:0x8036FC94 end:0x8036FDA8
+
+dolphin/os/OSArena.c:
+	.text       start:0x803713CC end:0x80371418
+	.sdata      start:0x805EDB38 end:0x805EDB40
+	.sbss       start:0x805F0EC8 end:0x805F0ED0
+
 Runtime.PPCEABI.H/__va_arg.c:
 	.text       start:0x803A00B0 end:0x803A0178
 

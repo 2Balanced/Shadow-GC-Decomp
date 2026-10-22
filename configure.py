@@ -316,6 +316,18 @@ config.libs = [
             Object(Matching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
         ],
     },
+    DolphinLib(
+        "base",
+        [
+            Object(Matching, "dolphin/base/PPCArch.c"),
+        ],
+    ),
+    DolphinLib(
+        "os",
+        [
+            Object(Matching, "dolphin/os/OSArena.c"),
+        ],
+    ),
     {
         # Gadget units. They have no splits yet, so none is linked.
         "lib": "Game",
