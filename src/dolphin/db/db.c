@@ -5,8 +5,6 @@
 #include <dolphin/base/PPCArch.h>
 #include <dolphin/os.h>
 
-typedef u8 __OSException;
-
 typedef struct DBInterface {
     u32 bPresent;
     u32 exceptionMask;

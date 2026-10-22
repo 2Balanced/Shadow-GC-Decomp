@@ -7,28 +7,11 @@
 
 void *memset(void *dst, int value, unsigned long n);
 
-typedef u8 __OSException;
-typedef void (*__OSExceptionHandler)(__OSException exception, OSContext *context);
-__OSExceptionHandler __OSSetExceptionHandler(__OSException exception, __OSExceptionHandler handler);
-
-void OSLoadContext(OSContext *context);
-s32 OSDisableScheduler(void);
-s32 OSEnableScheduler(void);
-void __OSReschedule(void);
-
 volatile u32 __PIRegs[] : 0xCC003000;
 volatile u16 __MEMRegs[] : 0xCC004000;
 volatile u16 __DSPRegs[] : 0xCC005000;
 volatile u32 __EXIRegs[] : 0xCC006800;
 volatile u32 __AIRegs[] : 0xCC006C00;
-
-#define GQR1 913
-#define GQR2 914
-#define GQR3 915
-#define GQR4 916
-#define GQR5 917
-#define GQR6 918
-#define GQR7 919
 
 typedef s16 __OSInterrupt;
 typedef u32 OSInterruptMask;
@@ -502,24 +485,7 @@ void __OSDispatchInterrupt(__OSException exception, OSContext *context) {
 static asm void ExternalInterruptHandler(register __OSException exception,
                                          register OSContext *context) {
     nofralloc
-    stw r0, OSContext.gpr[0](context)
-    stw r1, OSContext.gpr[1](context)
-    stw r2, OSContext.gpr[2](context)
-    stmw r6, OSContext.gpr[6](context)
-    mfspr r0, GQR1
-    stw r0, OSContext.gqr[1](context)
-    mfspr r0, GQR2
-    stw r0, OSContext.gqr[2](context)
-    mfspr r0, GQR3
-    stw r0, OSContext.gqr[3](context)
-    mfspr r0, GQR4
-    stw r0, OSContext.gqr[4](context)
-    mfspr r0, GQR5
-    stw r0, OSContext.gqr[5](context)
-    mfspr r0, GQR6
-    stw r0, OSContext.gqr[6](context)
-    mfspr r0, GQR7
-    stw r0, OSContext.gqr[7](context)
+    OS_EXCEPTION_SAVE_GPRS(context)
     stwu r1, -8(r1)
     b __OSDispatchInterrupt
 }
