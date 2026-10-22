@@ -61,6 +61,184 @@ inline OutputIterator copy(InputIterator first, InputIterator last, OutputIterat
 }
 #endif
 
+#ifdef MSL_ALGORITHM_REMOVE_IF
+/* find_if, remove_copy_if and remove_if (only units that define MSL_ALGORITHM_REMOVE_IF see them,
+ * for the reason given at MSL_ALGORITHM_COPY; Game/BasicMessage.cpp). find_if is inline, so the game
+ * emits it right after remove_if, which passes it the predicate by reference; remove_copy_if is
+ * not, so it comes out at the end of the unit. */
+template <class InputIterator, class Predicate>
+inline InputIterator find_if(InputIterator first, InputIterator last, Predicate pred) {
+    while (first != last && !pred(*first)) {
+        ++first;
+    }
+    return first;
+}
+
+template <class InputIterator, class OutputIterator, class Predicate>
+OutputIterator remove_copy_if(InputIterator first, InputIterator last, OutputIterator result, Predicate pred) {
+    for (; first != last; ++first) {
+        if (!pred(*first)) {
+            *result = *first;
+            ++result;
+        }
+    }
+    return result;
+}
+
+template <class ForwardIterator, class Predicate>
+ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate pred) {
+    first = find_if<ForwardIterator, Predicate &>(first, last, pred);
+    return first == last ? first : remove_copy_if(first + 1, last, first, pred);
+}
+#endif
+
+#ifdef MSL_ALGORITHM_SORT
+/* sort and its helpers (only units that define MSL_ALGORITHM_SORT see them, for the reason given
+ * at MSL_ALGORITHM_COPY; Game/CountMessage.cpp, Game/TimerMessage.cpp). The game's sort is a
+ * quicksort on a median of three, picked a quarter and three quarters into the range with a
+ * small offset that cycles from -4 to 4, and a selection sort below 21 elements. */
+template <class ForwardIterator1, class ForwardIterator2>
+inline void iter_swap(ForwardIterator1 a, ForwardIterator2 b) {
+    swap(*a, *b);
+}
+
+template <class ForwardIterator, class Compare>
+ForwardIterator min_element(ForwardIterator first, ForwardIterator last, Compare comp) {
+    ForwardIterator result = first;
+    if (first != last) {
+        for (++first; first != last; ++first) {
+            if (comp(*first, *result)) {
+                result = first;
+            }
+        }
+    }
+    return result;
+}
+
+template <class BidirectionalIterator, class Compare>
+void __selection_sort(BidirectionalIterator first, BidirectionalIterator last, Compare comp) {
+    if (first != last) {
+        BidirectionalIterator j = last;
+        --j;
+        for (; first < j; ++first) {
+            BidirectionalIterator i = min_element(first, last, comp);
+            if (i != first) {
+                iter_swap(i, first);
+            }
+        }
+    }
+}
+
+/* Orders *a, *b and *c so that the median ends up in *c. */
+template <class RandomAccessIterator, class Compare>
+void __median_of_3(RandomAccessIterator a, RandomAccessIterator b, RandomAccessIterator c, Compare comp) {
+    bool x = !comp(*c, *a);
+    bool y = !comp(*b, *c);
+    if (x && y) {
+        return;
+    }
+    if (!x && !y) {
+        iter_swap(a, b);
+        return;
+    }
+    if (comp(*b, *a)) {
+        iter_swap(a, b);
+    }
+    if (x) {
+        iter_swap(b, c);
+    } else {
+        iter_swap(a, c);
+    }
+}
+
+template <class RandomAccessIterator, class Compare>
+void sort(RandomAccessIterator first, RandomAccessIterator last, Compare comp) {
+    for (;;) {
+        int len = last - first;
+        if (len <= 1) {
+            return;
+        }
+        if (len <= 20) {
+            __selection_sort(first, last, comp);
+            return;
+        }
+        /* A static in a template: GC/2.7 guards its initialisation, as in the game. */
+        static int jitter = -4;
+        RandomAccessIterator m1 = first + (len / 4 + jitter % 5);
+        if (++jitter >= 5) {
+            jitter = -4;
+        }
+        len = len * 3 / 4; /* reusing len gives the game's register allocation */
+        RandomAccessIterator m2 = first + (len + jitter % 5);
+        if (++jitter >= 5) {
+            jitter = -4;
+        }
+        RandomAccessIterator i; /* declared before pivot for the game's registers */
+        RandomAccessIterator j;
+        RandomAccessIterator pivot = last - 1;
+        __median_of_3(m1, m2, pivot, comp);
+        i = first;
+        j = pivot;
+        while (comp(*i, *pivot)) {
+            ++i;
+        }
+        while (i != --j && !comp(*j, *pivot)) {
+        }
+        if (i < j) {
+            iter_swap(i, j);
+            ++i;
+            for (;;) {
+                while (comp(*i, *pivot)) {
+                    ++i;
+                }
+                while (!comp(*--j, *pivot)) {
+                }
+                if (i >= j) {
+                    break;
+                }
+                iter_swap(i, j);
+                ++i;
+            }
+        }
+        if (i == first) {
+            /* Nothing below the pivot: put it first and split what is not above it. */
+            iter_swap(i, pivot);
+            ++i;
+            j = last;
+            if (!comp(*first, *--j)) {
+                while (i != last && !comp(*first, *i)) {
+                    ++i;
+                }
+                if (i < j) {
+                    iter_swap(i, j);
+                }
+            }
+            if (i < j) {
+                for (;;) {
+                    while (!comp(*first, *i)) {
+                        ++i;
+                    }
+                    while (comp(*first, *--j)) {
+                    }
+                    if (i >= j) {
+                        break;
+                    }
+                    iter_swap(i, j);
+                    ++i;
+                }
+            }
+            first = i;
+        } else if (i - first < last - i) {
+            sort(first, i, comp);
+            first = i;
+        } else {
+            sort(i, last, comp);
+            last = i;
+        }
+    }
+}
+#endif
+
 } // namespace std
 
 #endif

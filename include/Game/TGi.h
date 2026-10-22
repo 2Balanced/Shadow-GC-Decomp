@@ -35,13 +35,15 @@ struct TGiColorSet {
 };
 
 /* The colours every TGi unit gives its number displays (each unit has its own copy at the start of
- * its .rodata). */
+ * its .rodata). Units without number displays (Game/GiGameOver.cpp) define TGI_NO_NUMBER_COLORS. */
+#ifndef TGI_NO_NUMBER_COLORS
 static const TGiColorSet s_numberColors = {{
     {255, 255, 255, 255},
     {128, 128, 128, 255},
     {64, 64, 64, 255},
     {255, 255, 255, 255},
 }};
+#endif
 
 /* TGiNumberDisplay (class name from the RTTI of its shared_ptr control block): draws a string of
  * digits from a font texture. Its code lies around 0x800BC7BC; only the constructor and the

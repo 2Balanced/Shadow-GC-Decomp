@@ -203,7 +203,7 @@ class BossCtrlUnit_Shadow : public BossCtrlUnit {
 class BossCtrlUnit_StageObject : public BossCtrlUnit {
   public:
     BossCtrlUnit_StageObject(BossVarParam *param, const Vec3f *position, const Vec3f *rotation,
-                             int arg3, int arg4, int arg5, float radius);
+                             int arg3, int arg4, const char *arg5, float radius);
     virtual ~BossCtrlUnit_StageObject();
     virtual int Tick(float dt);
 

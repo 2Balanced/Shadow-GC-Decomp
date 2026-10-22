@@ -26,7 +26,8 @@
 //  For the same reason the constructor taking a deleter is compiled only where
 //  BOOST_SP_DELETER_CONSTRUCTOR is defined (Game/EffectPJS.cpp), and the converting assignment
 //  only where BOOST_SP_CONVERTING_ASSIGNMENT is defined (Game/DevilDoom.cpp), and reset(Y *)
-//  only where BOOST_SP_RESET_POINTER is defined (Game/WeaponVacuumBase.cpp).
+//  only where BOOST_SP_RESET_POINTER is defined (Game/WeaponVacuumBase.cpp), and the free swap
+//  only where BOOST_SP_FREE_SWAP is defined (Game/CountMessage.cpp).
 //
 
 #include <boost/config.hpp>
@@ -354,6 +355,15 @@ template<class T, class U> inline bool operator==(shared_ptr<T> const & a, share
 {
     return a.get() == b.get();
 }
+
+#ifdef BOOST_SP_FREE_SWAP
+// Only where BOOST_SP_FREE_SWAP is defined before this header (Game/CountMessage.cpp,
+// Game/TimerMessage.cpp; see the note at the top).
+template<class T> inline void swap(shared_ptr<T> & a, shared_ptr<T> & b)
+{
+    a.swap(b);
+}
+#endif
 
 #ifdef BOOST_SP_NOT_EQUAL
 // boost 1.32's operator!=, compiled only where BOOST_SP_NOT_EQUAL is defined before this header

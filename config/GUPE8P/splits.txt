@@ -1671,6 +1671,145 @@ Game/PlayerShadowSuper.cpp:
 	.sdata      start:0x805EAC98 end:0x805EACB0
 	.sdata2     start:0x805F8160 end:0x805F8180
 
+Game/BlackDoomCtrlUnit.cpp:
+	.text       start:0x8027F1B4 end:0x80282DBC
+	.ctors      start:0x804A9F54 end:0x804A9F58
+	.rodata     start:0x804F8140 end:0x804F82F0
+	.data       start:0x8054DF10 end:0x8054E250
+	.bss        start:0x80584288 end:0x805842B8
+	.sdata      start:0x805EACB0 end:0x805EAD28
+	.sdata2     start:0x805F8180 end:0x805F81E0
+
+Game/BlackDoom.cpp:
+	.text       start:0x80282DBC end:0x802839E4
+	.ctors      start:0x804A9F58 end:0x804A9F5C
+	.rodata     start:0x804F82F0 end:0x804F8398
+	.data       start:0x8054E250 end:0x8054E368
+	.bss        start:0x805842B8 end:0x805842D8
+	.sdata      start:0x805EAD28 end:0x805EAD50
+	.sbss       start:0x805F0248 end:0x805F0250
+	.sdata2     start:0x805F81E0 end:0x805F8248
+
+Game/BlackDoomModeCtrlUnit.cpp:
+	.text       start:0x802839E4 end:0x80286D4C
+	.rodata     start:0x804F8398 end:0x804F8580
+	.data       start:0x8054E368 end:0x8054E678
+	.sdata      start:0x805EAD50 end:0x805EADD0
+	.sdata2     start:0x805F8248 end:0x805F82B0
+
+Game/EggMecaCtrlUnit.cpp:
+	.text       start:0x8029F4D0 end:0x802A7C9C
+	.rodata     start:0x804FC160 end:0x804FCB18
+	.data       start:0x80553D80 end:0x805542C0
+	.sdata      start:0x805EB7A8 end:0x805EB8D0
+	.sbss       start:0x805F03E8 end:0x805F0448
+	.sdata2     start:0x805F86E8 end:0x805F8748
+
+Game/EggMecaModeCtrlUnit.cpp:
+	.text       start:0x802A7C9C end:0x802ABA94
+	.rodata     start:0x804FCB18 end:0x804FCE00
+	.data       start:0x805542C0 end:0x805546A0
+	.sdata      start:0x805EB8D0 end:0x805EB980
+	.sbss       start:0x805F0448 end:0x805F0450
+	.sdata2     start:0x805F8748 end:0x805F8790
+
+Game/DebugDisp.cpp:
+	.text       start:0x802E0A34 end:0x802E1C70
+	.ctors      start:0x804A9F9C end:0x804A9FA0
+	.rodata     start:0x805058E0 end:0x80505A00
+	.data       start:0x80559270 end:0x805592A0
+	.bss        start:0x80584968 end:0x80584A40
+	.sdata      start:0x805EC5C8 end:0x805EC5E8
+	.sbss       start:0x805F06D8 end:0x805F06F0
+	.sdata2     start:0x805F90F0 end:0x805F9100
+
+Game/DebugDispCapsule.cpp:
+	.text       start:0x802E1C70 end:0x802E2024
+	.rodata     start:0x80505A00 end:0x80505AD0
+	.data       start:0x805592A0 end:0x805592C0
+	.sdata      start:0x805EC5E8 end:0x805EC5F8
+	.sdata2     start:0x805F9100 end:0x805F9108
+	.sbss2      start:0x805FB520 end:0x805FB528
+
+Game/DebugDispBox.cpp:
+	.text       start:0x802E2024 end:0x802E22A4
+	.rodata     start:0x80505AD0 end:0x80505B18
+	.data       start:0x805592C0 end:0x805592E0
+	.sdata      start:0x805EC5F8 end:0x805EC608
+	.sdata2     start:0x805F9108 end:0x805F9110
+	.sbss2      start:0x805FB528 end:0x805FB530
+
+Game/DebugDispLine.cpp:
+	.text       start:0x802E22A4 end:0x802E2534
+	.rodata     start:0x80505B18 end:0x80505B70
+	.data       start:0x805592E0 end:0x80559300
+	.sdata      start:0x805EC608 end:0x805EC618
+	.sdata2     start:0x805F9110 end:0x805F9118
+	.sbss2      start:0x805FB530 end:0x805FB538
+
+Game/DebugDispCylinder.cpp:
+	.text       start:0x802E2534 end:0x802E27DC
+	.rodata     start:0x80505B70 end:0x80505BC0
+	.data       start:0x80559300 end:0x80559320
+	.sdata      start:0x805EC618 end:0x805EC628
+	.sdata2     start:0x805F9118 end:0x805F9120
+	.sbss2      start:0x805FB538 end:0x805FB540
+
+Game/DebugDispSphere.cpp:
+	.text       start:0x802E27DC end:0x802E2A2C
+	.rodata     start:0x80505BC0 end:0x80505C10
+	.data       start:0x80559320 end:0x80559340
+	.sdata      start:0x805EC628 end:0x805EC638
+	.sdata2     start:0x805F9120 end:0x805F9128
+	.sbss2      start:0x805FB540 end:0x805FB548
+
+Game/GiGameOver.cpp:
+	.text       start:0x802E2B98 end:0x802E3CAC
+	.rodata     start:0x80505C10 end:0x80506098
+	.data       start:0x80559340 end:0x80559368
+	.sdata      start:0x805EC638 end:0x805EC670
+	.sbss       start:0x805F06F0 end:0x805F0708
+	.sdata2     start:0x805F9128 end:0x805F9160
+
+Game/EggMeca511.cpp:
+	.text       start:0x802E9700 end:0x802EA398
+	.ctors      start:0x804A9FA4 end:0x804A9FA8
+	.rodata     start:0x805079F8 end:0x80507A80
+	.data       start:0x80559740 end:0x80559880
+	.bss        start:0x80584B18 end:0x80584B38
+	.sdata      start:0x805EC890 end:0x805EC8B8
+	.sbss       start:0x805F0770 end:0x805F0778
+	.sdata2     start:0x805F9258 end:0x805F9308
+
+Game/BasicMessage.cpp:
+	.text       start:0x802EB9E0 end:0x802ECF8C
+	.rodata     start:0x80507BF0 end:0x80507D68
+	.data       start:0x80559BE0 end:0x80559C58
+	.sdata      start:0x805EC920 end:0x805EC958
+	.sbss       start:0x805F0780 end:0x805F0790
+
+Game/CountMessage.cpp:
+	.text       start:0x802ECF8C end:0x802EEA98
+	.rodata     start:0x80507D68 end:0x80507EE0
+	.data       start:0x80559C58 end:0x80559CB8
+	.sdata      start:0x805EC958 end:0x805EC990
+	.sbss       start:0x805F0790 end:0x805F07A0
+	.sdata2     start:0x805F9390 end:0x805F9398
+
+Game/MissionMessage.cpp:
+	.text       start:0x802EEA98 end:0x802EEC4C
+	.rodata     start:0x80507EE0 end:0x80508F80
+	.data       start:0x80559CB8 end:0x80559CC8
+	.sdata      start:0x805EC990 end:0x805EC998
+
+Game/TimerMessage.cpp:
+	.text       start:0x802EEC4C end:0x802F0730
+	.rodata     start:0x80508F80 end:0x805090F8
+	.data       start:0x80559CC8 end:0x80559D28
+	.sdata      start:0x805EC998 end:0x805EC9D0
+	.sbss       start:0x805F07A0 end:0x805F07B0
+	.sdata2     start:0x805F9398 end:0x805F93A0
+
 Game/CityBombBig.cpp:
 	.text       start:0x802F31DC end:0x802F46E4
 	.ctors      start:0x804A9FC0 end:0x804A9FC4

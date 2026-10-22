@@ -17,6 +17,8 @@ struct UnkSphere_8004E6CC {
     /* 0xC */ float m_radius;
 };
 
+/* Both are defined in Game/DebugDisp.cpp, which queues the shapes for SonicteamUSA::System::DebugDisp
+ * (the colour there is UnkColor_8040D2D8, see Game/DebugDisp.h). */
 extern "C" {
 /* Debug view: a wire sphere around `at`. */
 void fn_802E0E84(const Vec3f *at, const UnkDrawColor_802E0E84 *rgba, float size);
