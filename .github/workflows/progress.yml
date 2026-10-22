@@ -10,6 +10,7 @@ on:
 
 jobs:
   check:
+    name: Progress tracker
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

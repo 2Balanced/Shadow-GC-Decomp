@@ -7,14 +7,37 @@ treat every rule here as part of their instructions.
 
 - **Independence.** This is an independent, clean-room project. Never copy, open or consult another
   decompilation of this game, leaked SDK or RenderWare/CRI source, or code under an incompatible
-  license. Work only from the retail DOL, dtk's disassembly, RTTI/vtables, public library code we
+  license. Work from the retail DOL, dtk's disassembly, RTTI/vtables, public library code we
   vendor (boost 1.32), and this repository. Invent your own names for anything the game does not
-  name itself.
+  name itself. Decompilations of *other* games may be consulted only as described under
+  [References](#references).
 - **License.** Everything you contribute is dedicated to the public domain under CC0 1.0
   (`LICENSE`). Only add third-party code whose license allows it, keep its license file next to
   it, and say so in the commit message.
 - **The build is the judge.** A change is good when `ninja` exits 0 and ends with
   `build/GUPE8P/main.dol: OK`. objdiff at 100% is not enough on its own.
+
+## References
+
+Other games' decompilations share our libraries (the Dolphin SDK, the MetroWerks runtime and MSL,
+TRK). The CC0 ones listed in [docs/toolchain.md](docs/toolchain.md#reference-material) may be read
+to *understand* a library function: what it does, which compiler flags built it, why a match
+fails. They are not templates, and this project is not a copy of them.
+
+- Write the code yourself from the disassembly: your own structure, local names, helpers and
+  comments. Names the binary or SDK headers fix (function, global and type names, register and
+  hardware constants) stay as they are.
+- Check every file you wrote while a reference was open:
+
+  ```sh
+  python tools/similarity.py --ref path/to/tp --ref path/to/other-reference src/dolphin/os/OSFoo.c
+  ```
+
+  Comments, whitespace and `asm` bodies are ignored. A file flagged `TOO CLOSE` (60% or more of
+  its code, or 8 or more consecutive lines, the same as a reference) is reworked until it passes.
+  Clone the references outside this repository; never commit their files.
+- Name every reference you consulted in the commit message (`Reference: zeldaret/tp OSAlarm.c`),
+  and add it to the reference table in `docs/toolchain.md` if it is new.
 
 ## Sync first, every time
 
@@ -31,6 +54,21 @@ deletion. If a push is rejected because `main` moved, fetch, merge and build aga
 
 Agents running in waves sync at the start of every wave (before seeding worktrees) and again
 before each push, so work pushed by others in between is merged first, never overwritten.
+
+## Pull requests
+
+`main` accepts changes from contributors only through pull requests:
+
+1. Work on a branch (in your fork or here), synced with `main` as above.
+2. Open a pull request. Its description lists the units and their status, what changed outside
+   them, and the references consulted.
+3. The **Progress tracker** check must pass, and the branch must be up to date with `main`
+   (GitHub offers "Update branch" when it is not).
+4. The project owner (2Balanced) reviews and approves it. **Do not merge your own pull request**;
+   the owner merges it after approving. Pushing new commits after an approval asks for a new one.
+
+The owner's routine pushes (matching waves, tracker regeneration) go to `main` directly and pass
+the same checks locally first.
 
 ## Who works on what
 
@@ -74,9 +112,13 @@ builds, from the build's own report. To keep them correct when people push at ne
   git config core.hooksPath tools/hooks
   ```
 
-- **No game copy?** If you cannot build, do not touch `docs/progress*`; it is fine for the check
-  to stay red until someone with the game rebuilds and commits. Changes to `tools/`, `.github/` and
-  `docs/` (other than the tracker) do not affect the fingerprint.
+- **Include it in your change.** If you can build, every commit or pull request that changes
+  `src/`, `include/`, `config/` or `configure.py` also commits the regenerated `docs/progress*`.
+  Do not leave it out to avoid conflicts: if `main` moves, update your branch, rebuild, and commit
+  the new tracker (a conflict on those files is resolved by rebuilding, never by hand).
+- **No game copy?** If you cannot build, do not touch `docs/progress*`; say so in the pull request
+  and the owner adds a tracker commit before merging. Changes to `tools/`, `.github/` and `docs/`
+  (other than the tracker) do not affect the fingerprint and need no tracker commit.
 
 ## Code conventions
 
@@ -99,3 +141,5 @@ builds, from the build's own report. To keep them correct when people push at ne
   lists units that became Matching or NonMatching (with N/M), and any renames outside a unit's own
   range.
 - Work produced with an AI assistant carries a `Co-Authored-By:` trailer naming it.
+- Code written with a reference open names it in a `Reference:` line (see [References](#references)).
+  The pull request description alone is not enough: the commit history is the lasting record.

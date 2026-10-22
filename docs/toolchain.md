@@ -38,6 +38,7 @@ are listed under `force_active` in `config/GUPE8P/config.yml`.
 | `tools/rename_class.py`, `tools/rename_ident.py` | repo | Rename a class or any other identifier in sources and `symbols.txt` (mangled names included) |
 | `tools/unitstatus.py`, `tools/fndiff.py` | repo | Per-unit and per-function match status; side-by-side function diff |
 | `tools/class_catalog.py` | repo | List the game's C++ classes from vtables and RTTI |
+| `tools/similarity.py` | repo | How closely our files follow a reference project's same-named files (see CONTRIBUTING.md, References) |
 | `tools/objcompare.py`, `tools/cc_game.sh` | repo | Compile one game unit directly; compare two objects section by section |
 | `tools/ghidra/ImportDtkSymbols.java` | repo | Push names from `symbols.txt` into a Ghidra program |
 | REA (morluto/rea) | `.tools/rea.cmd` | Evidence-tracked Ghidra analysis. Needs Ghidra 12.1.x; with the GameCubeLoader installed for 12.1.2 Ghidra can import the DOL (headless: pass `-loader-autoloadMaps false`). Also useful on the Sonic Heroes PC exe |
@@ -58,6 +59,14 @@ Licensed and reusable:
 - [ShulkMaster/mk-deception](https://github.com/ShulkMaster/mk-deception) (CC0): GC/2.7 runtime, TRK v2.6, CRI ADX 9.28 / Sofdec 3.31 with original CRI paths
 - [projectPiki/pikmin2](https://github.com/projectPiki/pikmin2) (CC0): GC/2.6 runtime and TRK
 - [Jovinull/sonicheroes](https://github.com/Jovinull/sonicheroes) (MIT): same engine lineage, about 30% matched
+
+They are read to understand library code, not copied; see CONTRIBUTING.md, References.
+
+Where a reference was followed:
+
+| Our files | Reference | Status |
+| --------- | --------- | ------ |
+| `src/dolphin/` (PPCArch, db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSSync, OSTime, `__ppc_eabi_init`), `src/Runtime.PPCEABI.H/` (`__mem`, `__va_arg`, `global_destructor_chain`, `CPlusLibPPC`, `ptmf`, `runtime`), `include/dolphin/` | zeldaret/tp `libs/dolphin`, `libs/PowerPC_EABI_Support` (CC0); pull request #1 | db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSTime, `__ppc_eabi_init` and CPlusLibPPC are flagged by `tools/similarity.py` and are to be rewritten |
 
 This project is independent of other decompilations of this game and does not use their
 code.
