@@ -57,10 +57,23 @@ class TGiNumberDisplay {
         m_scaleY = scale;
     }
 
+    /* Scales the digits by x and y (name inferred; ResultTask). */
+    void SetScale(float x, float y) {
+        m_scaleX = x;
+        m_scaleY = y;
+    }
+
+    /* Sets the word at 0x14 (name inferred; ResultTask). */
+    void SetField14(float value) {
+        field_0x14 = value;
+    }
+
     /* 0x000 */ u8 field_0x0[0x8];
     /* 0x008 */ float m_scaleX;
     /* 0x00C */ float m_scaleY;
-    /* 0x010 */ u8 field_0x10[0x4E0 - 0x10];
+    /* 0x010 */ u8 field_0x10[0x14 - 0x10];
+    /* 0x014 */ float field_0x14; /* meaning unknown */
+    /* 0x018 */ u8 field_0x18[0x4E0 - 0x18];
 };
 SIZE_ASSERT(TGiNumberDisplay, 0x4E0);
 
@@ -82,15 +95,24 @@ class UnkCsdResource_8003E808 {
  * EggLastMechSlotDisp2D.cpp). */
 class UnkCsdHandle_80042DF0 {
   public:
+    /* fn_80042E5C (ResultTask makes an empty one to compare with). */
+    UnkCsdHandle_80042DF0(void *object);
     UnkCsdHandle_80042DF0(const UnkCsdHandle_80042DF0 &other);
     ~UnkCsdHandle_80042DF0();
+
+    /* The object the handle holds (name inferred; ResultTask). */
+    void *Get() const {
+        return m_object != 0 ? *(void **)m_object : 0;
+    }
 
     /* 0x0 */ void *m_object;
 };
 
 /* The game state (struct name unknown; as far as the TGi units read it). */
 struct UnkGameState_8057D6A0 {
-    /* 0x000 */ u8 field_0x0[0x84];
+    /* 0x000 */ u8 field_0x0[0x58];
+    /* 0x058 */ s32 m_language; /* indexes the suffixes _JP, _EN, ... (meaning inferred; ResultTask) */
+    /* 0x05C */ u8 field_0x5C[0x84 - 0x5C];
     /* 0x084 */ u8 field_0x84; /* meaning unknown */
     /* 0x085 */ u8 field_0x85[0x90 - 0x85];
     /* 0x090 */ u32 m_frame; /* meaning inferred */
@@ -98,9 +120,15 @@ struct UnkGameState_8057D6A0 {
     /* 0x098 */ u8 field_0x98[0x9C - 0x98];
     /* 0x09C */ float field_0x9C; /* meaning unknown */
     /* 0x0A0 */ float m_time2; /* meaning inferred */
-    /* 0x0A4 */ u8 field_0xA4[0xB2 - 0xA4];
+    /* 0x0A4 */ u8 field_0xA4[0xAC - 0xA4];
+    /* 0x0AC */ s32 m_stage; /* (name inferred; see Game/CenFile.cpp) */
+    /* 0x0B0 */ u8 field_0xB0;
+    /* 0x0B1 */ u8 field_0xB1; /* meaning unknown (ResultTask ranks by a lower total when set) */
     /* 0x0B2 */ u8 m_twoPlayer; /* meaning inferred */
-    /* 0x0B3 */ u8 field_0xB3[0x134 - 0xB3];
+    /* 0x0B3 */ u8 field_0xB3[0xB8 - 0xB3];
+    /* 0x0B8 */ s32 m_total; /* the result's total (meaning inferred; ResultTask) */
+    /* 0x0BC */ s32 m_rank;  /* the result's rank (meaning inferred; ResultTask) */
+    /* 0x0C0 */ u8 field_0xC0[0x134 - 0xC0];
     /* 0x134 */ s32 m_stars[2]; /* meaning inferred */
     /* 0x13C */ u8 field_0x13C[0x148 - 0x13C];
     /* 0x148 */ u8 m_hudVisible; /* meaning inferred */

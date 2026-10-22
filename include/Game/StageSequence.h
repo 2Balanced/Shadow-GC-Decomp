@@ -13,10 +13,14 @@ namespace StageBase {
 /* Base (vtable at 0x80558448): a stage a phase plays. */
 class Base {
   public:
+    /* 0x802D2560; kind is 1 for a StageManager (meaning inferred). */
+    Base(int kind);
     virtual ~Base();
     /* Runs the stage; 1 while it is still running (meaning inferred). */
     virtual int Tick();
     virtual void vf_0x10();
+
+    /* 0x04 */ s32 m_kind;
 };
 
 } // namespace StageBase
@@ -29,7 +33,7 @@ class StageMovie : public StageBase::Base {
     virtual int Tick();
     virtual void vf_0x10();
 
-    /* 0x04 */ u8 field_0x4[0x58 - 0x4];
+    /* 0x08 */ u8 field_0x8[0x58 - 0x8];
 };
 
 namespace StageSequence {

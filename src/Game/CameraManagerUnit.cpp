@@ -9,7 +9,10 @@
  * of sp_counted_base_impl<CameraRequest *, ...> (with the type_info name of its deleter) before
  * those of sp_counted_base_impl<CameraMode *, ...>, while their vtables and RTTI come in the
  * other order; GC/2.7 emits both in vtable order. This looks like another difference of the
- * game's compiler (see docs/research-notes.md). */
+ * game's compiler (see docs/research-notes.md). Tried without success: an explicit instantiation
+ * of the request's control block (it puts get_deleter before dispose), unused functions that
+ * inline or call dispose and get_deleter at several points of the file, and a local class
+ * template whose virtual function calls them. */
 #define BOOST_SP_DELETER_CONSTRUCTOR
 #define MSL_LIST_ACCESSORS
 #include "Game/CameraManagerUnit.h"

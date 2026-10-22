@@ -73,6 +73,9 @@ struct StageActionManager {
     void SetResult(int result) {
         field_0x10 = result;
     }
+    /* True unless the current action is still running (name inferred; Game/ShootingGameManager.cpp
+     * defines it). */
+    bool IsActionDone();
 
     /* 0x00 */ boost::shared_ptr<StageAction::IAction> m_action;
     /* 0x08 */ s32 m_prevState;

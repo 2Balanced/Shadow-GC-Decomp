@@ -14,6 +14,7 @@
 /* The manager defines and uses the table's constructors and destructor. */
 #define SHOOTINGGAME_TABLE_CTORS
 #include "Game/ShootingGameTable.h"
+#include "Game/StageAction.h"
 #include "Game/Task.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -21,34 +22,7 @@
 
 class CharInfo;
 
-namespace StageAction {
-
-/* StageAction::IAction (class name from RTTI; vtable at 0x80543CDC): the stage's current action.
- * Slot 0xC is an inline virtual that returns false (name and meaning inferred; this unit emits its
- * out-of-line copy, 0x8013D37C, which the other actions' vtables use). */
-class IAction {
-  public:
-    virtual ~IAction();
-    virtual bool IsDone() {
-        return false;
-    }
-};
-
-} // namespace StageAction
-
-/* The object fn_80074470 returns (class unknown): its word at 0x0 is the current stage action and
- * its word at 0x8 is the game's state (names inferred). */
-struct UnkStage_80074470 {
-    /* True unless the current action is still running (name inferred). */
-    bool IsActionDone();
-
-    /* 0x00 */ StageAction::IAction *m_action;
-    /* 0x04 */ u32 field_0x4;
-    /* 0x08 */ s32 m_state;
-};
-
 extern "C" {
-UnkStage_80074470 *fn_80074470(void);
 /* A 32-bit flag word: fn_80014E04 constructs it clear, fn_80014E10 clears it, fn_80014E1C sets
  * bit and fn_80014E34 tests bit (behaviour from their bodies). */
 void fn_80014E04(u32 *flags);
@@ -232,15 +206,15 @@ void fn_8013D3DC(void) {
 
 ManagerTask::~ManagerTask() {}
 
-bool UnkStage_80074470::IsActionDone() {
-    if (m_action != 0) {
+bool StageActionManager::IsActionDone() {
+    if (m_action) {
         return m_action->IsDone();
     }
     return true;
 }
 
 void ManagerTask::Tick(float dt) {
-    if (fn_80074470()->m_state != 3 && fn_80074470()->IsActionDone()) {
+    if (fn_80074470()->m_prevState != 3 && fn_80074470()->IsActionDone()) {
         if (lbl_805EEFC0 != 0) {
             memset(lbl_805EEFC0, 0, sizeof(BalloonTable));
         }

@@ -769,6 +769,30 @@ Game/SaveRecord.cpp:
 	.sdata      start:0x805E6808 end:0x805E6810
 	.sdata2     start:0x805F4BF0 end:0x805F4C10
 
+Game/PjsEventActionScene.cpp:
+	.text       start:0x8016F67C end:0x80172F48
+	.ctors      start:0x804A9D90 end:0x804A9D94
+	.rodata     start:0x804C3668 end:0x804C3C90
+	.data       start:0x8052BA10 end:0x8052BA68
+	.bss        start:0x805801A0 end:0x80580240
+	.sdata      start:0x805E6810 end:0x805E6840
+	.sbss       start:0x805EF280 end:0x805EF2C8
+	.sdata2     start:0x805F4C10 end:0x805F4DA0
+
+Game/PjsEventActionManager.cpp:
+	.text       start:0x80172F48 end:0x801742E0
+	.rodata     start:0x804C3C90 end:0x804C3DC8
+	.data       start:0x8052BA68 end:0x8052BB28
+	.sdata      start:0x805E6840 end:0x805E6860
+	.sdata2     start:0x805F4DA0 end:0x805F4DC8
+
+Game/PjsEventFolder.cpp:
+	.text       start:0x801742E0 end:0x80174504
+	.rodata     start:0x804C3DC8 end:0x804C3DD8
+	.data       start:0x8052BB28 end:0x8052BB48
+	.sdata      start:0x805E6860 end:0x805E6878
+	.sdata2     start:0x805F4DC8 end:0x805F4DD0
+
 Game/StageActionManager.cpp:
 	.text       start:0x80174504 end:0x80176BE4
 	.rodata     start:0x804C3DD8 end:0x804C47B8
@@ -789,6 +813,19 @@ Game/StageInitalizeTask.cpp:
 	.bss        start:0x80580250 end:0x80580260
 	.sdata      start:0x805E6970 end:0x805E69A0
 	.sdata2     start:0x805F4E48 end:0x805F4E60
+
+Game/StageManager.cpp:
+	.text       start:0x801773AC end:0x80178B20
+	.rodata     start:0x804C5CD0 end:0x804C6040
+	.data       start:0x8052BDF8 end:0x8052BE60
+	.bss        start:0x80580260 end:0x805802F8
+	.sdata      start:0x805E69A0 end:0x805E69D8
+	.sbss       start:0x805EF310 end:0x805EF338
+	.sdata2     start:0x805F4E60 end:0x805F4E80
+
+Game/PlayRecord.cpp:
+	.text       start:0x80178B20 end:0x80178DF8
+	.sdata2     start:0x805F4E80 end:0x805F4E88
 
 Game/BossCharaColli.cpp:
 	.text       start:0x80178DF8 end:0x80179A34
@@ -956,6 +993,15 @@ Game/TGiScoreDisplay.cpp:
 	.sdata      start:0x805E91D0 end:0x805E91E8
 	.sbss       start:0x805EFBE0 end:0x805EFBF8
 	.sdata2     start:0x805F6820 end:0x805F6868
+
+Game/ResultTask.cpp:
+	.text       start:0x8020261C end:0x80203890
+	.rodata     start:0x804ED398 end:0x804ED460
+	.data       start:0x80542978 end:0x80543C30
+	.bss        start:0x80583B88 end:0x80583BA0
+	.sdata      start:0x805E91E8 end:0x805E91F8
+	.sbss       start:0x805EFBF8 end:0x805EFC00
+	.sdata2     start:0x805F6868 end:0x805F68D0
 
 Game/ElecSmallCube.cpp:
 	.text       start:0x8021AD3C end:0x8021BCF0
@@ -1617,6 +1663,13 @@ Game/BossRootTask.cpp:
 	.sdata      start:0x805EAC80 end:0x805EAC98
 	.sbss       start:0x805F0240 end:0x805F0248
 	.sdata2     start:0x805F8158 end:0x805F8160
+
+Game/PlayerShadowSuper.cpp:
+	.text       start:0x8027E0D8 end:0x8027F1B4
+	.rodata     start:0x804F8100 end:0x804F8140
+	.data       start:0x8054DEF0 end:0x8054DF10
+	.sdata      start:0x805EAC98 end:0x805EACB0
+	.sdata2     start:0x805F8160 end:0x805F8180
 
 Game/CityBombBig.cpp:
 	.text       start:0x802F31DC end:0x802F46E4
