@@ -323,6 +323,12 @@ config.libs = [
         ],
     ),
     DolphinLib(
+        "db",
+        [
+            Object(Matching, "dolphin/db/db.c"),
+        ],
+    ),
+    DolphinLib(
         "os",
         [
             Object(Matching, "dolphin/os/OSArena.c"),
