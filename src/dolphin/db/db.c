@@ -1,42 +1,46 @@
-/* Dolphin SDK debugger interface. A debugger stub (e.g. on a development kit) shares a small
- * record at physical 0x40 with the game: whether it is present, which exceptions it wants, and
- * where to jump on one. DBStack, DBIsDebuggerPresent, __DBMarkException and __DBSetPresent are
- * unused by the game and were dead-stripped. */
+/* Dolphin SDK debugger hooks. When a debugger stub is resident (development hardware) it shares a
+ * four-word block with the game at physical address 0x40: a presence flag, the set of exception
+ * numbers it wants to see, and the physical entry point it should branch to. Only the pieces the
+ * game links survive; the presence queries and DBStack were dead-stripped. */
 #include <dolphin/base/PPCArch.h>
 #include <dolphin/os.h>
 
-typedef struct DBInterface {
-    u32 bPresent;
-    u32 exceptionMask;
-    void (*ExceptionDestination)(void);
-    void *exceptionReturn;
-} DBInterface;
+/* Layout of the block shared with the debugger stub. */
+typedef struct DebuggerBlock {
+    u32 attached;
+    u32 trapMask;
+    void (*entry)(void);
+    void *resume;
+} DebuggerBlock;
+
+#define DB_BLOCK_PHYS 0x40       /* where the stub keeps its DebuggerBlock */
+#define DB_CONTEXT_SLOT_PHYS 0xC0 /* physical pointer to the faulting OSContext */
+
+typedef void (*DebuggerEntry)(void);
 
 BOOL DBVerbose;
-DBInterface *__DBInterface;
+DebuggerBlock *__DBInterface;
 
 void __DBExceptionDestination(void);
 
 void DBInit(void) {
-    __DBInterface = OSPhysicalToCached(0x40);
-    __DBInterface->ExceptionDestination = (void (*)(void))OSCachedToPhysical(__DBExceptionDestination);
+    __DBInterface = (DebuggerBlock *)OSPhysicalToCached(DB_BLOCK_PHYS);
+    /* The stub runs untranslated, so it needs the physical address of our entry stub. */
+    __DBInterface->entry = (DebuggerEntry)OSCachedToPhysical(__DBExceptionDestination);
     DBVerbose = TRUE;
 }
 
-/* Reached with translation off from __DBExceptionDestination: reports the context saved at
- * physical 0xC0 and stops. */
+/* Runs once __DBExceptionDestination has re-enabled translation: dump the saved context, halt. */
 void __DBExceptionDestinationAux(void) {
-    u32 *contextAddr;
-    OSContext *context;
+    u32 *slot = (u32 *)DB_CONTEXT_SLOT_PHYS;
+    OSContext *faulting = (OSContext *)OSPhysicalToCached(*slot);
 
-    contextAddr = (void *)0xC0;
-    context = OSPhysicalToCached(*contextAddr);
     OSReport("DBExceptionDestination\n");
-    OSDumpContext(context);
+    OSDumpContext(faulting);
     PPCHalt();
 }
 
-/* Turns address translation back on (MSR[IR|DR]) before running C code. */
+/* Entered from the debugger with MSR[IR] and MSR[DR] clear; set both, then continue in C. */
 asm void __DBExceptionDestination(void) {
     nofralloc
     mfmsr r3
@@ -46,8 +50,7 @@ asm void __DBExceptionDestination(void) {
 }
 
 BOOL __DBIsExceptionMarked(__OSException exception) {
-    u32 mask = (1 << exception);
-    return __DBInterface->exceptionMask & mask;
+    return __DBInterface->trapMask & (1 << exception);
 }
 
 void DBPrintf(char *str, ...) {}

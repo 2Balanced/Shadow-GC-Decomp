@@ -1,39 +1,30 @@
-/* Dolphin SDK OS: the arena, the free memory between the end of the loaded program and the top
- * of main RAM. OSInit sets its bounds; allocations carve from either end and never return.
- * (OSAllocFromArenaHi is unused by the game and was dead-stripped.) */
+/* Dolphin SDK OS: the arena is the span of main RAM between the end of the loaded program and
+ * the top of memory. OSInit fixes both edges; allocating moves an edge inward for good, nothing is
+ * ever handed back. Only the low edge is allocated from here (OSAllocFromArenaHi was stripped). */
 #include <dolphin/types.h>
 
-#define ROUND(n, a) (((u32)(n) + (a) - 1) & ~((a) - 1))
+/* Bump `addr` up to the next multiple of `align`, which must be a power of two. */
+#define ARENA_ALIGN_UP(addr, align) (((u32)(addr) + (align) - 1) & ~((align) - 1))
 
+/* Upper edge lives in .sbss; the lower edge starts out as an all-ones "not set yet" marker. */
 static void *__OSArenaHi;
-static void *__OSArenaLo = (void *)-1; /* -1 until OSInit runs */
+static void *__OSArenaLo = (void *)-1;
 
-void *OSGetArenaHi(void) {
-    return __OSArenaHi;
-}
+void *OSGetArenaHi(void) { return __OSArenaHi; }
+void *OSGetArenaLo(void) { return __OSArenaLo; }
+void OSSetArenaHi(void *top) { __OSArenaHi = top; }
+void OSSetArenaLo(void *bottom) { __OSArenaLo = bottom; }
 
-void *OSGetArenaLo(void) {
-    return __OSArenaLo;
-}
-
-void OSSetArenaHi(void *newHi) {
-    __OSArenaHi = newHi;
-}
-
-void OSSetArenaLo(void *newLo) {
-    __OSArenaLo = newLo;
-}
-
-/* Takes `size` bytes from the bottom of the arena, aligned to `align` (a power of two); the new
- * bottom is aligned too. */
+/* Hands out `size` bytes at the aligned low edge, then re-aligns the edge past the block so the
+ * next caller starts on a boundary as well. */
 void *OSAllocFromArenaLo(u32 size, u32 align) {
-    void *ptr;
-    u8 *arenaLo;
+    void *block;
+    u8 *end;
 
-    ptr = OSGetArenaLo();
-    arenaLo = ptr = (void *)ROUND(ptr, align);
-    arenaLo += size;
-    arenaLo = (u8 *)ROUND(arenaLo, align);
-    OSSetArenaLo(arenaLo);
-    return ptr;
+    block = OSGetArenaLo();
+    end = block = (void *)ARENA_ALIGN_UP(block, align);
+    end += size;
+    end = (u8 *)ARENA_ALIGN_UP(end, align);
+    OSSetArenaLo(end);
+    return block;
 }

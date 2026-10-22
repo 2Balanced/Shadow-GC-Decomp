@@ -1,16 +1,16 @@
-/* PowerPC-specific C++ support: __copy, the byte copy the compiler calls to copy an object of a
- * class with a trivial copy constructor whose size isn't known at compile time. */
-extern "C" void *__copy(char *dst, char *src, unsigned long size) {
-    char *p;
+/* PowerPC C++ runtime support. The compiler emits calls to __copy when it must copy an object
+ * whose class has a trivial copy constructor but whose size is only known at run time. */
 
-    if (dst && size) {
-        p = dst;
+/* Byte-by-byte copy of `count` bytes; a null destination or a zero count copies nothing.
+ * Returns the destination. */
+extern "C" void *__copy(char *to, char *from, unsigned long count) {
+    char *out;
+
+    if (to != 0 && count != 0) {
+        out = to;
         do {
-            *p = *src;
-            ++p;
-            ++src;
-            --size;
-        } while (size);
+            *out++ = *from++;
+        } while (--count != 0);
     }
-    return dst;
+    return to;
 }

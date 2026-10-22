@@ -1,197 +1,206 @@
-/* Dolphin SDK OS: the heap allocator. OSInitAlloc puts an array of heap descriptors at the start
- * of a range; each heap keeps a free list (address-ordered, coalesced on free) and an allocated
- * list of cells, each with a 32-byte header. OSAllocFixed, OSDestroyHeap, OSAddToHeap and the
- * debug walkers are unused by the game and were dead-stripped. */
+/* Dolphin SDK OS: the multi-heap allocator.
+ *
+ * OSInitAlloc carves a table of heap descriptors off the front of the arena it is given; each
+ * OSCreateHeap claims one descriptor for a 32-byte aligned range. A heap tracks two lists of
+ * blocks: free blocks in address order (neighbours are merged when a block is returned) and
+ * allocated blocks in no particular order. Every block starts with a 32-byte header. OSAllocFixed,
+ * OSDestroyHeap, OSAddToHeap and the debug walkers are not referenced by the game and were
+ * dead-stripped. */
 #include <dolphin/os.h>
 
-#define HEADERSIZE 32u
-#define MINOBJSIZE 64u
+#define BLOCK_HEADER 32u   /* header in front of every block, keeps payloads 32-byte aligned */
+#define BLOCK_MIN 64u      /* smallest leftover worth splitting off as its own free block */
+#define ALIGN32_MASK 0xFFFFFFE0
+#define ROUND_UP_32(x) (((x) + 0x1F) & ALIGN32_MASK)
 
-typedef struct Cell Cell;
-typedef struct HeapDesc HeapDesc;
+typedef struct Block {
+    struct Block *back;
+    struct Block *fwd;
+    s32 bytes; /* whole block, header included */
+} Block;
 
-struct Cell {
-    Cell *prev;
-    Cell *next;
-    s32 size; /* including the header */
-};
-
-struct HeapDesc {
-    s32 size; /* negative while the descriptor is unused */
-    Cell *free;
-    Cell *allocated;
-};
+typedef struct Heap {
+    s32 bytes; /* < 0 marks a descriptor nobody has claimed */
+    Block *freeList;
+    Block *usedList;
+} Heap;
 
 volatile int __OSCurrHeap = -1;
 
-static HeapDesc *HeapArray;
+static Heap *HeapArray;
 static int NumHeaps;
 static void *ArenaStart;
 static void *ArenaEnd;
 
-static Cell *DLAddFront(Cell *list, Cell *cell) {
-    cell->next = list;
-    cell->prev = 0;
-    if (list) {
-        list->prev = cell;
+/* Pushes `b` on the front of `head`; returns the new head. */
+static Block *DLAddFront(Block *head, Block *b) {
+    b->fwd = head;
+    b->back = NULL;
+    if (head != NULL) {
+        head->back = b;
     }
-    return cell;
+    return b;
 }
 
-static Cell *DLExtract(Cell *list, Cell *cell) {
-    if (cell->next) {
-        cell->next->prev = cell->prev;
+/* Unlinks `b` from `head`; returns the (possibly new) head. */
+static Block *DLExtract(Block *head, Block *b) {
+    if (b->fwd != NULL) {
+        b->fwd->back = b->back;
     }
-    if (cell->prev == NULL) {
-        return cell->next;
+    if (b->back == NULL) {
+        /* `b` was the head. */
+        return b->fwd;
     }
-    cell->prev->next = cell->next;
-    return list;
+    b->back->fwd = b->fwd;
+    return head;
 }
 
-/* Inserts `cell` in address order, merging it with an adjacent neighbour on either side. */
-static Cell *DLInsert(Cell *list, Cell *cell) {
-    Cell *prev;
-    Cell *next;
+/* Links `b` into the address-ordered list `head`, absorbing whichever neighbours touch it. */
+static Block *DLInsert(Block *head, Block *b) {
+    Block *lo;
+    Block *hi;
 
-    for (next = list, prev = NULL; next != 0; prev = next, next = next->next) {
-        if (cell <= next) {
+    lo = NULL;
+    for (hi = head; hi != NULL; hi = hi->fwd) {
+        if (b <= hi) {
             break;
         }
+        lo = hi;
     }
 
-    cell->next = next;
-    cell->prev = prev;
-    if (next) {
-        next->prev = cell;
-        if ((u8 *)cell + cell->size == (u8 *)next) {
-            cell->size += next->size;
-            next = next->next;
-            cell->next = next;
-            if (next) {
-                next->prev = cell;
+    b->fwd = hi;
+    b->back = lo;
+
+    if (hi != NULL) {
+        hi->back = b;
+        /* Touches the following block: swallow it. */
+        if ((u8 *)b + b->bytes == (u8 *)hi) {
+            b->bytes += hi->bytes;
+            hi = hi->fwd;
+            b->fwd = hi;
+            if (hi != NULL) {
+                hi->back = b;
             }
         }
     }
-    if (prev) {
-        prev->next = cell;
-        if ((u8 *)prev + prev->size == (u8 *)cell) {
-            prev->size += cell->size;
-            prev->next = next;
-            if (next) {
-                next->prev = prev;
+
+    if (lo != NULL) {
+        lo->fwd = b;
+        /* Touches the preceding block: let it swallow us. */
+        if ((u8 *)lo + lo->bytes == (u8 *)b) {
+            lo->bytes += b->bytes;
+            lo->fwd = hi;
+            if (hi != NULL) {
+                hi->back = lo;
             }
         }
-        return list;
+        return head;
     }
-    return cell;
+    return b; /* new lowest block */
 }
 
-/* First fit; the remainder of the chosen cell is split off unless it would be too small. */
+/* First fit over the free list. When enough is left over, the tail of the block becomes a new
+ * free block in its place; otherwise the whole block is handed out. */
 void *OSAllocFromHeap(int heap, u32 size) {
-    HeapDesc *hd;
-    Cell *cell;
-    Cell *newCell;
-    s32 leftoverSize;
+    Heap *h = &HeapArray[heap];
+    Block *b;
+    Block *tail;
+    s32 spare;
 
-    hd = &HeapArray[heap];
-    size += HEADERSIZE;
-    size = (size + 0x1F) & 0xFFFFFFE0;
+    size = ROUND_UP_32(size + BLOCK_HEADER);
 
-    for (cell = hd->free; cell != NULL; cell = cell->next) {
-        if ((signed)size <= (signed)cell->size) {
+    for (b = h->freeList; b != NULL; b = b->fwd) {
+        if ((s32)size <= b->bytes) {
             break;
         }
     }
-
-    if (cell == NULL) {
+    if (b == NULL) {
         return NULL;
     }
 
-    leftoverSize = cell->size - size;
-    if (leftoverSize < MINOBJSIZE) {
-        hd->free = DLExtract(hd->free, cell);
+    spare = b->bytes - size;
+    if (spare < BLOCK_MIN) {
+        h->freeList = DLExtract(h->freeList, b);
     } else {
-        cell->size = size;
-        newCell = (void *)((u8 *)cell + size);
-        newCell->size = leftoverSize;
-        newCell->prev = cell->prev;
-        newCell->next = cell->next;
-        if (newCell->next != NULL) {
-            newCell->next->prev = newCell;
+        b->bytes = size;
+        tail = (Block *)((u8 *)b + size);
+        tail->bytes = spare;
+        tail->back = b->back;
+        tail->fwd = b->fwd;
+        if (tail->fwd != NULL) {
+            tail->fwd->back = tail;
         }
-        if (newCell->prev != NULL) {
-            newCell->prev->next = newCell;
+        if (tail->back != NULL) {
+            tail->back->fwd = tail;
         } else {
-            hd->free = newCell;
+            h->freeList = tail;
         }
     }
 
-    hd->allocated = DLAddFront(hd->allocated, cell);
-    return (u8 *)cell + HEADERSIZE;
+    h->usedList = DLAddFront(h->usedList, b);
+    return (u8 *)b + BLOCK_HEADER;
 }
 
-void OSFreeToHeap(int heap, void *ptr) {
-    HeapDesc *hd;
-    Cell *cell;
+void OSFreeToHeap(int heap, void *p) {
+    Block *b = (Block *)((u32)p - BLOCK_HEADER);
+    Heap *h = &HeapArray[heap];
 
-    cell = (void *)((u32)ptr - HEADERSIZE);
-    hd = &HeapArray[heap];
-    hd->allocated = DLExtract(hd->allocated, cell);
-    hd->free = DLInsert(hd->free, cell);
+    h->usedList = DLExtract(h->usedList, b);
+    h->freeList = DLInsert(h->freeList, b);
 }
 
 int OSSetCurrentHeap(int heap) {
-    int prev;
+    int old = __OSCurrHeap;
 
-    prev = __OSCurrHeap;
     __OSCurrHeap = heap;
-    return prev;
+    return old;
 }
 
-void *OSInitAlloc(void *arenaStart, void *arenaEnd, int maxHeaps) {
-    u32 arraySize;
-    int i;
-    HeapDesc *hd;
+/* Places `maxHeaps` empty descriptors at `lo`; returns where the usable arena now begins. */
+void *OSInitAlloc(void *lo, void *hi, int maxHeaps) {
+    u32 tableBytes = sizeof(Heap) * maxHeaps;
+    int n;
+    Heap *h;
 
-    arraySize = maxHeaps * sizeof(HeapDesc);
-    HeapArray = arenaStart;
+    HeapArray = lo;
     NumHeaps = maxHeaps;
-
-    for (i = 0; i < NumHeaps; i++) {
-        hd = &HeapArray[i];
-        hd->size = -1;
-        hd->free = hd->allocated = 0;
+    for (n = 0; n < NumHeaps; n++) {
+        h = HeapArray + n;
+        h->bytes = -1;
+        h->freeList = h->usedList = NULL;
     }
     __OSCurrHeap = -1;
-    arenaStart = (void *)((u32)((char *)HeapArray + arraySize));
-    arenaStart = (void *)(((u32)arenaStart + 0x1F) & 0xFFFFFFE0);
-    ArenaStart = arenaStart;
-    ArenaEnd = (void *)((u32)arenaEnd & 0xFFFFFFE0);
-    return arenaStart;
+
+    lo = (u8 *)HeapArray + tableBytes;
+    lo = (void *)ROUND_UP_32((u32)lo);
+    ArenaStart = lo;
+    ArenaEnd = (void *)((u32)hi & ALIGN32_MASK);
+    return lo;
 }
 
-/* Takes the first unused descriptor for [start, end), rounded inwards to 32 bytes. */
-int OSCreateHeap(void *start, void *end) {
-    int heap;
-    HeapDesc *hd;
-    Cell *cell;
+/* Claims the first unused descriptor for [lo, hi) shrunk inwards to 32-byte boundaries; the
+ * whole range starts out as a single free block. Returns -1 when the table is full. */
+int OSCreateHeap(void *lo, void *hi) {
+    Heap *h;
+    Block *b;
+    int n;
 
-    start = (void *)(((u32)start + 0x1FU) & ~((32) - 1));
-    end = (void *)(((u32)end) & ~((32) - 1));
+    lo = (void *)ROUND_UP_32((u32)lo);
+    hi = (void *)((u32)hi & ALIGN32_MASK);
 
-    for (heap = 0; heap < NumHeaps; heap++) {
-        hd = &HeapArray[heap];
-        if (hd->size < 0) {
-            hd->size = (u32)end - (u32)start;
-            cell = start;
-            cell->prev = 0;
-            cell->next = 0;
-            cell->size = hd->size;
-            hd->free = cell;
-            hd->allocated = 0;
-            return heap;
+    for (n = 0; n < NumHeaps; n++) {
+        h = &HeapArray[n];
+        if (h->bytes >= 0) {
+            continue;
         }
+        h->bytes = (u32)hi - (u32)lo;
+        b = lo;
+        b->back = NULL;
+        b->fwd = NULL;
+        b->bytes = h->bytes;
+        h->freeList = b;
+        h->usedList = NULL;
+        return n;
     }
     return -1;
 }

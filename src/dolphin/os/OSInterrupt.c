@@ -1,8 +1,12 @@
-/* Dolphin SDK OS: external interrupts. The MSR[EE] helpers, the per-interrupt handler table (in
- * low memory at 0x80003040), the global and local masks (0x800000C4/0x800000C8) and how they map
- * onto each device's own interrupt-enable bits, and the dispatcher the external-interrupt
- * exception jumps to. OSGetInterruptMask/OSSetInterruptMask are unused by the game and were
- * dead-stripped. */
+/* Dolphin SDK OS: external interrupts.
+ *
+ * Holds the MSR[EE] on/off helpers, the table of per-interrupt handlers (kept in low memory at
+ * 0x80003040), and the two interrupt masks in low memory (global at 0x800000C4, local at
+ * 0x800000C8). A set bit in either mask blocks that interrupt; changing the masks reprograms the
+ * enable bits of the owning device (MEM, DSP, AI, the three EXI channels, PI). The external
+ * interrupt exception lands in __OSDispatchInterrupt, which picks the most urgent pending,
+ * unblocked interrupt and runs its handler. OSGetInterruptMask/OSSetInterruptMask were never
+ * called by the game and are dead-stripped. */
 #include <dolphin/os.h>
 
 void *memset(void *dst, int value, unsigned long n);
@@ -17,87 +21,72 @@ typedef s16 __OSInterrupt;
 typedef u32 OSInterruptMask;
 typedef void (*__OSInterruptHandler)(__OSInterrupt interrupt, OSContext *context);
 
-#define __OS_INTERRUPT_MEM_0 0
-#define __OS_INTERRUPT_MEM_1 1
-#define __OS_INTERRUPT_MEM_2 2
-#define __OS_INTERRUPT_MEM_3 3
-#define __OS_INTERRUPT_MEM_ADDRESS 4
-#define __OS_INTERRUPT_DSP_AI 5
-#define __OS_INTERRUPT_DSP_ARAM 6
-#define __OS_INTERRUPT_DSP_DSP 7
-#define __OS_INTERRUPT_AI_AI 8
-#define __OS_INTERRUPT_EXI_0_EXI 9
-#define __OS_INTERRUPT_EXI_0_TC 10
-#define __OS_INTERRUPT_EXI_0_EXT 11
-#define __OS_INTERRUPT_EXI_1_EXI 12
-#define __OS_INTERRUPT_EXI_1_TC 13
-#define __OS_INTERRUPT_EXI_1_EXT 14
-#define __OS_INTERRUPT_EXI_2_EXI 15
-#define __OS_INTERRUPT_EXI_2_TC 16
-#define __OS_INTERRUPT_PI_CP 17
-#define __OS_INTERRUPT_PI_PE_TOKEN 18
-#define __OS_INTERRUPT_PI_PE_FINISH 19
-#define __OS_INTERRUPT_PI_SI 20
-#define __OS_INTERRUPT_PI_DI 21
-#define __OS_INTERRUPT_PI_RSW 22
-#define __OS_INTERRUPT_PI_ERROR 23
-#define __OS_INTERRUPT_PI_VI 24
-#define __OS_INTERRUPT_PI_DEBUG 25
-#define __OS_INTERRUPT_PI_HSP 26
-#define __OS_INTERRUPT_MAX 32
+/* Interrupt numbers, grouped by the device that raises them. */
+enum {
+    IRQ_MEM0, IRQ_MEM1, IRQ_MEM2, IRQ_MEM3, IRQ_MEMADDR,
+    IRQ_DSP_AI, IRQ_DSP_ARAM, IRQ_DSP_DSP,
+    IRQ_AI,
+    IRQ_EXI0, IRQ_EXI0_TC, IRQ_EXI0_EXT,
+    IRQ_EXI1, IRQ_EXI1_TC, IRQ_EXI1_EXT,
+    IRQ_EXI2, IRQ_EXI2_TC,
+    IRQ_CP, IRQ_PE_TOKEN, IRQ_PE_FINISH, IRQ_SI, IRQ_DI, IRQ_RSW, IRQ_PI_ERR, IRQ_VI,
+    IRQ_DEBUG, IRQ_HSP,
+    IRQ_COUNT = 32
+};
 
-/* Interrupt n is bit (31 - n) of a mask, so __cntlzw of a mask gives its first interrupt. */
-#define OS_INTERRUPTMASK(interrupt) (0x80000000u >> (interrupt))
-#define OS_INTERRUPTMASK_MEM_0 OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_0)
-#define OS_INTERRUPTMASK_MEM_1 OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_1)
-#define OS_INTERRUPTMASK_MEM_2 OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_2)
-#define OS_INTERRUPTMASK_MEM_3 OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_3)
-#define OS_INTERRUPTMASK_MEM_ADDRESS OS_INTERRUPTMASK(__OS_INTERRUPT_MEM_ADDRESS)
-#define OS_INTERRUPTMASK_MEM                                                                       \
-    (OS_INTERRUPTMASK_MEM_0 | OS_INTERRUPTMASK_MEM_1 | OS_INTERRUPTMASK_MEM_2 |                    \
-     OS_INTERRUPTMASK_MEM_3 | OS_INTERRUPTMASK_MEM_ADDRESS)
-#define OS_INTERRUPTMASK_DSP_AI OS_INTERRUPTMASK(__OS_INTERRUPT_DSP_AI)
-#define OS_INTERRUPTMASK_DSP_ARAM OS_INTERRUPTMASK(__OS_INTERRUPT_DSP_ARAM)
-#define OS_INTERRUPTMASK_DSP_DSP OS_INTERRUPTMASK(__OS_INTERRUPT_DSP_DSP)
-#define OS_INTERRUPTMASK_DSP                                                                       \
-    (OS_INTERRUPTMASK_DSP_AI | OS_INTERRUPTMASK_DSP_ARAM | OS_INTERRUPTMASK_DSP_DSP)
-#define OS_INTERRUPTMASK_AI_AI OS_INTERRUPTMASK(__OS_INTERRUPT_AI_AI)
-#define OS_INTERRUPTMASK_AI (OS_INTERRUPTMASK_AI_AI)
-#define OS_INTERRUPTMASK_EXI_0_EXI OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_0_EXI)
-#define OS_INTERRUPTMASK_EXI_0_TC OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_0_TC)
-#define OS_INTERRUPTMASK_EXI_0_EXT OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_0_EXT)
-#define OS_INTERRUPTMASK_EXI_0                                                                     \
-    (OS_INTERRUPTMASK_EXI_0_EXI | OS_INTERRUPTMASK_EXI_0_TC | OS_INTERRUPTMASK_EXI_0_EXT)
-#define OS_INTERRUPTMASK_EXI_1_EXI OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_1_EXI)
-#define OS_INTERRUPTMASK_EXI_1_TC OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_1_TC)
-#define OS_INTERRUPTMASK_EXI_1_EXT OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_1_EXT)
-#define OS_INTERRUPTMASK_EXI_1                                                                     \
-    (OS_INTERRUPTMASK_EXI_1_EXI | OS_INTERRUPTMASK_EXI_1_TC | OS_INTERRUPTMASK_EXI_1_EXT)
-#define OS_INTERRUPTMASK_EXI_2_EXI OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_2_EXI)
-#define OS_INTERRUPTMASK_EXI_2_TC OS_INTERRUPTMASK(__OS_INTERRUPT_EXI_2_TC)
-#define OS_INTERRUPTMASK_EXI_2 (OS_INTERRUPTMASK_EXI_2_EXI | OS_INTERRUPTMASK_EXI_2_TC)
-#define OS_INTERRUPTMASK_EXI                                                                       \
-    (OS_INTERRUPTMASK_EXI_0_EXI | OS_INTERRUPTMASK_EXI_0_TC | OS_INTERRUPTMASK_EXI_0_EXT |         \
-     OS_INTERRUPTMASK_EXI_1_EXI | OS_INTERRUPTMASK_EXI_1_TC | OS_INTERRUPTMASK_EXI_1_EXT |         \
-     OS_INTERRUPTMASK_EXI_2_EXI | OS_INTERRUPTMASK_EXI_2_TC)
-#define OS_INTERRUPTMASK_PI_PE_TOKEN OS_INTERRUPTMASK(__OS_INTERRUPT_PI_PE_TOKEN)
-#define OS_INTERRUPTMASK_PI_PE_FINISH OS_INTERRUPTMASK(__OS_INTERRUPT_PI_PE_FINISH)
-#define OS_INTERRUPTMASK_PI_CP OS_INTERRUPTMASK(__OS_INTERRUPT_PI_CP)
-#define OS_INTERRUPTMASK_PI_SI OS_INTERRUPTMASK(__OS_INTERRUPT_PI_SI)
-#define OS_INTERRUPTMASK_PI_DI OS_INTERRUPTMASK(__OS_INTERRUPT_PI_DI)
-#define OS_INTERRUPTMASK_PI_RSW OS_INTERRUPTMASK(__OS_INTERRUPT_PI_RSW)
-#define OS_INTERRUPTMASK_PI_ERROR OS_INTERRUPTMASK(__OS_INTERRUPT_PI_ERROR)
-#define OS_INTERRUPTMASK_PI_VI OS_INTERRUPTMASK(__OS_INTERRUPT_PI_VI)
-#define OS_INTERRUPTMASK_PI_DEBUG OS_INTERRUPTMASK(__OS_INTERRUPT_PI_DEBUG)
-#define OS_INTERRUPTMASK_PI_HSP OS_INTERRUPTMASK(__OS_INTERRUPT_PI_HSP)
-#define OS_INTERRUPTMASK_PI                                                                        \
-    (OS_INTERRUPTMASK_PI_CP | OS_INTERRUPTMASK_PI_SI | OS_INTERRUPTMASK_PI_DI |                    \
-     OS_INTERRUPTMASK_PI_RSW | OS_INTERRUPTMASK_PI_ERROR | OS_INTERRUPTMASK_PI_VI |                \
-     OS_INTERRUPTMASK_PI_PE_TOKEN | OS_INTERRUPTMASK_PI_PE_FINISH | OS_INTERRUPTMASK_PI_DEBUG |    \
-     OS_INTERRUPTMASK_PI_HSP)
+/* Masks number interrupts from the top bit down, so __cntlzw of a mask is its lowest-numbered
+ * interrupt. */
+#define BIT_OF(irq) (0x80000000u >> (irq))
 
-#define __OSGlobalInterruptMask (*(OSInterruptMask *)OSPhysicalToCached(0x00C4))
-#define __OSLocalInterruptMask (*(OSInterruptMask *)OSPhysicalToCached(0x00C8))
+#define GROUP_MEM                                                                                  \
+    (BIT_OF(IRQ_MEM0) | BIT_OF(IRQ_MEM1) | BIT_OF(IRQ_MEM2) | BIT_OF(IRQ_MEM3) |                   \
+     BIT_OF(IRQ_MEMADDR))
+#define GROUP_DSP (BIT_OF(IRQ_DSP_AI) | BIT_OF(IRQ_DSP_ARAM) | BIT_OF(IRQ_DSP_DSP))
+#define GROUP_EXI0 (BIT_OF(IRQ_EXI0) | BIT_OF(IRQ_EXI0_TC) | BIT_OF(IRQ_EXI0_EXT))
+#define GROUP_EXI1 (BIT_OF(IRQ_EXI1) | BIT_OF(IRQ_EXI1_TC) | BIT_OF(IRQ_EXI1_EXT))
+#define GROUP_EXI2 (BIT_OF(IRQ_EXI2) | BIT_OF(IRQ_EXI2_TC))
+#define GROUP_EXI (GROUP_EXI0 | GROUP_EXI1 | GROUP_EXI2)
+#define GROUP_PE (BIT_OF(IRQ_PE_TOKEN) | BIT_OF(IRQ_PE_FINISH))
+#define GROUP_PI                                                                                   \
+    (BIT_OF(IRQ_CP) | GROUP_PE | BIT_OF(IRQ_SI) | BIT_OF(IRQ_DI) | BIT_OF(IRQ_RSW) |               \
+     BIT_OF(IRQ_PI_ERR) | BIT_OF(IRQ_VI) | BIT_OF(IRQ_DEBUG) | BIT_OF(IRQ_HSP))
+#define GROUP_ALL (GROUP_MEM | GROUP_DSP | BIT_OF(IRQ_AI) | GROUP_EXI | GROUP_PI)
+
+#define GLOBAL_MASK (*(OSInterruptMask *)OSPhysicalToCached(0x00C4))
+#define LOCAL_MASK (*(OSInterruptMask *)OSPhysicalToCached(0x00C8))
+
+/* PI interrupt cause (reg 0) and enable (reg 1) bits, one per source. */
+#define PI_ERROR 0x0001
+#define PI_RSW 0x0002
+#define PI_DI 0x0004
+#define PI_SI 0x0008
+#define PI_EXI 0x0010
+#define PI_AI 0x0020
+#define PI_DSP 0x0040
+#define PI_MEM 0x0080
+#define PI_VI 0x0100
+#define PI_PE_TOKEN 0x0200
+#define PI_PE_FINISH 0x0400
+#define PI_CP 0x0800
+#define PI_DEBUG 0x1000
+#define PI_HSP 0x2000
+#define PI_RESET_LINE 0x00010000 /* reset switch state, not an interrupt */
+#define PI_ALWAYS_ON 0xF0        /* EXI/AI/DSP/MEM lines are gated in their own devices */
+
+/* Device register indices. */
+#define MEM_INT_ENABLE 14
+#define MEM_INT_STATUS 15
+#define DSP_CSR 5
+#define EXI_CHANNEL(n) ((n) * 5) /* each EXI channel has five 32-bit registers */
+
+/* Set `enable` in `on` unless `blocked` holds interrupt irq. */
+#define ALLOW(irq, enable)                                                                         \
+    if ((blocked & BIT_OF(irq)) == 0)                                                              \
+    on |= (enable)
+/* Mark interrupt irq pending when `flag` is set in `status`. */
+#define PENDING(status, flag, irq)                                                                 \
+    if ((status) & (flag))                                                                         \
+    pending |= BIT_OF(irq)
 
 static __OSInterruptHandler *InterruptHandlerTable;
 
@@ -105,19 +94,20 @@ volatile OSTime __OSLastInterruptTime;
 volatile __OSInterrupt __OSLastInterrupt;
 volatile u32 __OSLastInterruptSrr0;
 
-/* Dispatch order when several interrupts are pending: the first entry with a pending bit wins. */
+/* The dispatcher scans these groups in order and serves the first one with something pending;
+ * the last entry catches anything left. */
 static OSInterruptMask InterruptPrioTable[] = {
-    OS_INTERRUPTMASK_PI_ERROR,
-    OS_INTERRUPTMASK_PI_DEBUG,
-    OS_INTERRUPTMASK_MEM,
-    OS_INTERRUPTMASK_PI_RSW,
-    OS_INTERRUPTMASK_PI_VI,
-    OS_INTERRUPTMASK_PI_PE_TOKEN | OS_INTERRUPTMASK_PI_PE_FINISH,
-    OS_INTERRUPTMASK_PI_HSP,
-    OS_INTERRUPTMASK_DSP_ARAM | OS_INTERRUPTMASK_DSP_DSP | OS_INTERRUPTMASK_AI |
-        OS_INTERRUPTMASK_EXI | OS_INTERRUPTMASK_PI_SI | OS_INTERRUPTMASK_PI_DI,
-    OS_INTERRUPTMASK_DSP_AI,
-    OS_INTERRUPTMASK_PI_CP,
+    BIT_OF(IRQ_PI_ERR),
+    BIT_OF(IRQ_DEBUG),
+    GROUP_MEM,
+    BIT_OF(IRQ_RSW),
+    BIT_OF(IRQ_VI),
+    GROUP_PE,
+    BIT_OF(IRQ_HSP),
+    BIT_OF(IRQ_DSP_ARAM) | BIT_OF(IRQ_DSP_DSP) | BIT_OF(IRQ_AI) | GROUP_EXI | BIT_OF(IRQ_SI) |
+        BIT_OF(IRQ_DI),
+    BIT_OF(IRQ_DSP_AI),
+    BIT_OF(IRQ_CP),
     0xFFFFFFFF,
 };
 
@@ -156,321 +146,261 @@ _restore:
     blr
 }
 
-__OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt interrupt, __OSInterruptHandler handler) {
-    __OSInterruptHandler oldHandler;
+__OSInterruptHandler __OSSetInterruptHandler(__OSInterrupt id, __OSInterruptHandler fn) {
+    __OSInterruptHandler *slot = &InterruptHandlerTable[id];
+    __OSInterruptHandler previous = *slot;
 
-    oldHandler = InterruptHandlerTable[interrupt];
-    InterruptHandlerTable[interrupt] = handler;
-    return oldHandler;
+    *slot = fn;
+    return previous;
 }
 
-__OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt interrupt) {
-    return InterruptHandlerTable[interrupt];
-}
+__OSInterruptHandler __OSGetInterruptHandler(__OSInterrupt id) { return InterruptHandlerTable[id]; }
 
-OSInterruptMask __OSMaskInterrupts(OSInterruptMask global);
+OSInterruptMask __OSMaskInterrupts(OSInterruptMask add);
 
 void __OSInterruptInit(void) {
     InterruptHandlerTable = OSPhysicalToCached(0x3040);
-    memset(InterruptHandlerTable, 0, __OS_INTERRUPT_MAX * sizeof(__OSInterruptHandler));
+    memset(InterruptHandlerTable, 0, sizeof(__OSInterruptHandler) * IRQ_COUNT);
 
-    __OSGlobalInterruptMask = 0;
-    __OSLocalInterruptMask = 0;
+    LOCAL_MASK = GLOBAL_MASK = 0;
+    __PIRegs[1] = PI_ALWAYS_ON;
 
-    __PIRegs[1] = 0xF0;
-
-    __OSMaskInterrupts(OS_INTERRUPTMASK_MEM | OS_INTERRUPTMASK_DSP | OS_INTERRUPTMASK_AI |
-                       OS_INTERRUPTMASK_EXI | OS_INTERRUPTMASK_PI);
-
+    /* Start with everything blocked; drivers unmask what they use. */
+    __OSMaskInterrupts(GROUP_ALL);
     __OSSetExceptionHandler(4, ExternalInterruptHandler);
 }
 
-/* Programs the enable bits of the device that owns the first interrupt in `mask` from `current`
- * (the masked set), and returns `mask` without that device's interrupts. */
-static u32 SetInterruptMask(OSInterruptMask mask, OSInterruptMask current) {
-    u32 reg;
+/* Writes the enable register of the device owning the lowest-numbered interrupt in `todo`, with
+ * every source of that device enabled unless `blocked` has it, and returns `todo` minus that
+ * device's interrupts. Called until `todo` is empty. */
+static u32 SetInterruptMask(OSInterruptMask todo, OSInterruptMask blocked) {
+    u32 on;
 
-    switch (__cntlzw(mask)) {
-    case __OS_INTERRUPT_MEM_0:
-    case __OS_INTERRUPT_MEM_1:
-    case __OS_INTERRUPT_MEM_2:
-    case __OS_INTERRUPT_MEM_3:
-    case __OS_INTERRUPT_MEM_ADDRESS:
-        reg = 0;
-        if (!(current & OS_INTERRUPTMASK_MEM_0))
-            reg |= 0x1;
-        if (!(current & OS_INTERRUPTMASK_MEM_1))
-            reg |= 0x2;
-        if (!(current & OS_INTERRUPTMASK_MEM_2))
-            reg |= 0x4;
-        if (!(current & OS_INTERRUPTMASK_MEM_3))
-            reg |= 0x8;
-        if (!(current & OS_INTERRUPTMASK_MEM_ADDRESS))
-            reg |= 0x10;
-        __MEMRegs[0x0000000E] = (u16)reg;
-        mask &= ~OS_INTERRUPTMASK_MEM;
+    switch (__cntlzw(todo)) {
+    case IRQ_MEM0:
+    case IRQ_MEM1:
+    case IRQ_MEM2:
+    case IRQ_MEM3:
+    case IRQ_MEMADDR:
+        on = 0;
+        ALLOW(IRQ_MEM0, 1 << 0);
+        ALLOW(IRQ_MEM1, 1 << 1);
+        ALLOW(IRQ_MEM2, 1 << 2);
+        ALLOW(IRQ_MEM3, 1 << 3);
+        ALLOW(IRQ_MEMADDR, 1 << 4);
+        __MEMRegs[MEM_INT_ENABLE] = (u16)on;
+        todo &= ~GROUP_MEM;
         break;
-    case __OS_INTERRUPT_DSP_AI:
-    case __OS_INTERRUPT_DSP_ARAM:
-    case __OS_INTERRUPT_DSP_DSP:
-        reg = __DSPRegs[0x00000005];
-        reg &= ~0x1F8;
-        if (!(current & OS_INTERRUPTMASK_DSP_AI))
-            reg |= 0x10;
-        if (!(current & OS_INTERRUPTMASK_DSP_ARAM))
-            reg |= 0x40;
-        if (!(current & OS_INTERRUPTMASK_DSP_DSP))
-            reg |= 0x100;
-        __DSPRegs[0x00000005] = (u16)reg;
-        mask &= ~OS_INTERRUPTMASK_DSP;
+
+    case IRQ_DSP_AI:
+    case IRQ_DSP_ARAM:
+    case IRQ_DSP_DSP:
+        /* Clear the three enables and the write-1-to-clear status bits next to them. */
+        on = __DSPRegs[DSP_CSR];
+        on &= ~0x1F8;
+        ALLOW(IRQ_DSP_AI, 0x10);
+        ALLOW(IRQ_DSP_ARAM, 0x40);
+        ALLOW(IRQ_DSP_DSP, 0x100);
+        __DSPRegs[DSP_CSR] = (u16)on;
+        todo &= ~GROUP_DSP;
         break;
-    case __OS_INTERRUPT_AI_AI:
-        reg = __AIRegs[0];
-        reg &= ~0x2C;
-        if (!(current & OS_INTERRUPTMASK_AI_AI))
-            reg |= 0x4;
-        __AIRegs[0] = reg;
-        mask &= ~OS_INTERRUPTMASK_AI;
+
+    case IRQ_AI:
+        on = __AIRegs[0];
+        on &= ~0x2C;
+        ALLOW(IRQ_AI, 0x4);
+        __AIRegs[0] = on;
+        todo &= ~BIT_OF(IRQ_AI);
         break;
-    case __OS_INTERRUPT_EXI_0_EXI:
-    case __OS_INTERRUPT_EXI_0_TC:
-    case __OS_INTERRUPT_EXI_0_EXT:
-        reg = __EXIRegs[0];
-        reg &= ~0x2C0F;
-        if (!(current & OS_INTERRUPTMASK_EXI_0_EXI))
-            reg |= 0x1;
-        if (!(current & OS_INTERRUPTMASK_EXI_0_TC))
-            reg |= 0x4;
-        if (!(current & OS_INTERRUPTMASK_EXI_0_EXT))
-            reg |= 0x400;
-        __EXIRegs[0] = reg;
-        mask &= ~OS_INTERRUPTMASK_EXI_0;
+
+    case IRQ_EXI0:
+    case IRQ_EXI0_TC:
+    case IRQ_EXI0_EXT:
+        /* Channel 0 also has bit 13 (ROM descrambler), which is cleared too. */
+        on = __EXIRegs[EXI_CHANNEL(0)];
+        on &= ~0x2C0F;
+        ALLOW(IRQ_EXI0, 0x1);
+        ALLOW(IRQ_EXI0_TC, 0x4);
+        ALLOW(IRQ_EXI0_EXT, 0x400);
+        __EXIRegs[EXI_CHANNEL(0)] = on;
+        todo &= ~GROUP_EXI0;
         break;
-    case __OS_INTERRUPT_EXI_1_EXI:
-    case __OS_INTERRUPT_EXI_1_TC:
-    case __OS_INTERRUPT_EXI_1_EXT:
-        reg = __EXIRegs[5];
-        reg &= ~0xC0F;
-        if (!(current & OS_INTERRUPTMASK_EXI_1_EXI))
-            reg |= 0x1;
-        if (!(current & OS_INTERRUPTMASK_EXI_1_TC))
-            reg |= 0x4;
-        if (!(current & OS_INTERRUPTMASK_EXI_1_EXT))
-            reg |= 0x400;
-        __EXIRegs[5] = reg;
-        mask &= ~OS_INTERRUPTMASK_EXI_1;
+
+    case IRQ_EXI1:
+    case IRQ_EXI1_TC:
+    case IRQ_EXI1_EXT:
+        on = __EXIRegs[EXI_CHANNEL(1)];
+        on &= ~0xC0F;
+        ALLOW(IRQ_EXI1, 0x1);
+        ALLOW(IRQ_EXI1_TC, 0x4);
+        ALLOW(IRQ_EXI1_EXT, 0x400);
+        __EXIRegs[EXI_CHANNEL(1)] = on;
+        todo &= ~GROUP_EXI1;
         break;
-    case __OS_INTERRUPT_EXI_2_EXI:
-    case __OS_INTERRUPT_EXI_2_TC:
-        reg = __EXIRegs[10];
-        reg &= ~0xF;
-        if (!(current & OS_INTERRUPTMASK_EXI_2_EXI))
-            reg |= 0x1;
-        if (!(current & OS_INTERRUPTMASK_EXI_2_TC))
-            reg |= 0x4;
-        __EXIRegs[10] = reg;
-        mask &= ~OS_INTERRUPTMASK_EXI_2;
+
+    case IRQ_EXI2:
+    case IRQ_EXI2_TC:
+        on = __EXIRegs[EXI_CHANNEL(2)];
+        on &= ~0xF;
+        ALLOW(IRQ_EXI2, 0x1);
+        ALLOW(IRQ_EXI2_TC, 0x4);
+        __EXIRegs[EXI_CHANNEL(2)] = on;
+        todo &= ~GROUP_EXI2;
         break;
-    case __OS_INTERRUPT_PI_CP:
-    case __OS_INTERRUPT_PI_SI:
-    case __OS_INTERRUPT_PI_DI:
-    case __OS_INTERRUPT_PI_RSW:
-    case __OS_INTERRUPT_PI_ERROR:
-    case __OS_INTERRUPT_PI_VI:
-    case __OS_INTERRUPT_PI_DEBUG:
-    case __OS_INTERRUPT_PI_PE_TOKEN:
-    case __OS_INTERRUPT_PI_PE_FINISH:
-    case __OS_INTERRUPT_PI_HSP:
-        reg = 0xF0;
-        if (!(current & OS_INTERRUPTMASK_PI_CP)) {
-            reg |= 0x800;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_SI)) {
-            reg |= 0x8;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_DI)) {
-            reg |= 0x4;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_RSW)) {
-            reg |= 0x2;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_ERROR)) {
-            reg |= 0x1;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_VI)) {
-            reg |= 0x100;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_DEBUG)) {
-            reg |= 0x1000;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_PE_TOKEN)) {
-            reg |= 0x200;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_PE_FINISH)) {
-            reg |= 0x400;
-        }
-        if (!(current & OS_INTERRUPTMASK_PI_HSP)) {
-            reg |= 0x2000;
-        }
-        __PIRegs[1] = reg;
-        mask &= ~OS_INTERRUPTMASK_PI;
+
+    case IRQ_CP:
+    case IRQ_SI:
+    case IRQ_DI:
+    case IRQ_RSW:
+    case IRQ_PI_ERR:
+    case IRQ_VI:
+    case IRQ_DEBUG:
+    case IRQ_PE_TOKEN:
+    case IRQ_PE_FINISH:
+    case IRQ_HSP:
+        on = PI_ALWAYS_ON;
+        ALLOW(IRQ_CP, PI_CP);
+        ALLOW(IRQ_SI, PI_SI);
+        ALLOW(IRQ_DI, PI_DI);
+        ALLOW(IRQ_RSW, PI_RSW);
+        ALLOW(IRQ_PI_ERR, PI_ERROR);
+        ALLOW(IRQ_VI, PI_VI);
+        ALLOW(IRQ_DEBUG, PI_DEBUG);
+        ALLOW(IRQ_PE_TOKEN, PI_PE_TOKEN);
+        ALLOW(IRQ_PE_FINISH, PI_PE_FINISH);
+        ALLOW(IRQ_HSP, PI_HSP);
+        __PIRegs[1] = on;
+        todo &= ~GROUP_PI;
         break;
+
     default:
         break;
     }
-    return mask;
+    return todo;
 }
 
-OSInterruptMask __OSMaskInterrupts(OSInterruptMask global) {
-    BOOL enabled;
-    OSInterruptMask prev;
-    OSInterruptMask local;
-    OSInterruptMask mask;
+/* Adds `add` to the global mask and blocks whatever was not blocked before. Returns the old
+ * global mask. */
+OSInterruptMask __OSMaskInterrupts(OSInterruptMask add) {
+    BOOL level = OSDisableInterrupts();
+    OSInterruptMask old = GLOBAL_MASK;
+    OSInterruptMask local = LOCAL_MASK;
+    OSInterruptMask todo = ~(old | local) & add;
 
-    enabled = OSDisableInterrupts();
-    prev = __OSGlobalInterruptMask;
-    local = __OSLocalInterruptMask;
-    mask = ~(prev | local) & global;
-    global |= prev;
-    __OSGlobalInterruptMask = global;
-    while (mask) {
-        mask = SetInterruptMask(mask, global | local);
-    }
-    OSRestoreInterrupts(enabled);
-    return prev;
+    add |= old;
+    GLOBAL_MASK = add;
+    while (todo != 0)
+        todo = SetInterruptMask(todo, add | local);
+
+    OSRestoreInterrupts(level);
+    return old;
 }
 
-OSInterruptMask __OSUnmaskInterrupts(OSInterruptMask global) {
-    BOOL enabled;
-    OSInterruptMask prev;
-    OSInterruptMask local;
-    OSInterruptMask mask;
+/* Removes `remove` from the global mask and re-enables those that were blocked (unless the local
+ * mask still blocks them). Returns the old global mask. */
+OSInterruptMask __OSUnmaskInterrupts(OSInterruptMask remove) {
+    BOOL level = OSDisableInterrupts();
+    OSInterruptMask old = GLOBAL_MASK;
+    OSInterruptMask local = LOCAL_MASK;
+    OSInterruptMask todo = (old | local) & remove;
 
-    enabled = OSDisableInterrupts();
-    prev = __OSGlobalInterruptMask;
-    local = __OSLocalInterruptMask;
-    mask = (prev | local) & global;
-    global = prev & ~global;
-    __OSGlobalInterruptMask = global;
-    while (mask) {
-        mask = SetInterruptMask(mask, global | local);
-    }
-    OSRestoreInterrupts(enabled);
-    return prev;
+    remove = old & ~remove;
+    GLOBAL_MASK = remove;
+    while (todo != 0)
+        todo = SetInterruptMask(todo, remove | local);
+
+    OSRestoreInterrupts(level);
+    return old;
 }
 
-/* Works out which interrupts are pending from the PI interrupt cause and each device's status,
- * runs the handler of the highest-priority unmasked one (with the scheduler held off) and returns
- * to the interrupted context. */
+/* Builds the set of pending interrupts from the PI cause register and each signalling device's
+ * status, then runs the handler of the most urgent unblocked one with thread switching held off.
+ * Always ends by resuming `context`. */
 void __OSDispatchInterrupt(__OSException exception, OSContext *context) {
-    u32 intsr;
-    u32 reg;
-    OSInterruptMask cause;
-    OSInterruptMask unmasked;
-    OSInterruptMask *prio;
-    __OSInterrupt interrupt;
-    __OSInterruptHandler handler;
+    u32 cause;
+    u32 status;
+    OSInterruptMask pending;
+    OSInterruptMask ready;
+    OSInterruptMask *group;
+    __OSInterrupt id;
+    __OSInterruptHandler fn;
 
-    intsr = __PIRegs[0];
-    intsr &= ~0x00010000;
+    cause = __PIRegs[0];
+    cause &= ~PI_RESET_LINE;
+    if (cause == 0 || (cause & __PIRegs[1]) == 0)
+        OSLoadContext(context); /* spurious */
 
-    if (intsr == 0 || (intsr & __PIRegs[1]) == 0) {
-        OSLoadContext(context);
+    pending = 0;
+
+    if (cause & PI_MEM) {
+        status = __MEMRegs[MEM_INT_STATUS];
+        PENDING(status, 1 << 0, IRQ_MEM0);
+        PENDING(status, 1 << 1, IRQ_MEM1);
+        PENDING(status, 1 << 2, IRQ_MEM2);
+        PENDING(status, 1 << 3, IRQ_MEM3);
+        PENDING(status, 1 << 4, IRQ_MEMADDR);
     }
 
-    cause = 0;
-
-    if (intsr & 0x00000080) {
-        reg = __MEMRegs[15];
-        if (reg & 0x1)
-            cause |= OS_INTERRUPTMASK_MEM_0;
-        if (reg & 0x2)
-            cause |= OS_INTERRUPTMASK_MEM_1;
-        if (reg & 0x4)
-            cause |= OS_INTERRUPTMASK_MEM_2;
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_MEM_3;
-        if (reg & 0x10)
-            cause |= OS_INTERRUPTMASK_MEM_ADDRESS;
+    if (cause & PI_DSP) {
+        status = __DSPRegs[DSP_CSR];
+        PENDING(status, 0x08, IRQ_DSP_AI);
+        PENDING(status, 0x20, IRQ_DSP_ARAM);
+        PENDING(status, 0x80, IRQ_DSP_DSP);
     }
 
-    if (intsr & 0x00000040) {
-        reg = __DSPRegs[5];
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_DSP_AI;
-        if (reg & 0x20)
-            cause |= OS_INTERRUPTMASK_DSP_ARAM;
-        if (reg & 0x80)
-            cause |= OS_INTERRUPTMASK_DSP_DSP;
+    if (cause & PI_AI) {
+        status = __AIRegs[0];
+        PENDING(status, 0x8, IRQ_AI);
     }
 
-    if (intsr & 0x00000020) {
-        reg = __AIRegs[0];
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_AI_AI;
+    if (cause & PI_EXI) {
+        /* Status bits sit one above their enables: 0x2 EXI, 0x8 transfer, 0x800 attach. */
+        status = __EXIRegs[EXI_CHANNEL(0)];
+        PENDING(status, 0x2, IRQ_EXI0);
+        PENDING(status, 0x8, IRQ_EXI0_TC);
+        PENDING(status, 0x800, IRQ_EXI0_EXT);
+        status = __EXIRegs[EXI_CHANNEL(1)];
+        PENDING(status, 0x2, IRQ_EXI1);
+        PENDING(status, 0x8, IRQ_EXI1_TC);
+        PENDING(status, 0x800, IRQ_EXI1_EXT);
+        status = __EXIRegs[EXI_CHANNEL(2)];
+        PENDING(status, 0x2, IRQ_EXI2);
+        PENDING(status, 0x8, IRQ_EXI2_TC);
     }
 
-    if (intsr & 0x00000010) {
-        reg = __EXIRegs[0];
-        if (reg & 0x2)
-            cause |= OS_INTERRUPTMASK_EXI_0_EXI;
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_EXI_0_TC;
-        if (reg & 0x800)
-            cause |= OS_INTERRUPTMASK_EXI_0_EXT;
-        reg = __EXIRegs[5];
-        if (reg & 0x2)
-            cause |= OS_INTERRUPTMASK_EXI_1_EXI;
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_EXI_1_TC;
-        if (reg & 0x800)
-            cause |= OS_INTERRUPTMASK_EXI_1_EXT;
-        reg = __EXIRegs[10];
-        if (reg & 0x2)
-            cause |= OS_INTERRUPTMASK_EXI_2_EXI;
-        if (reg & 0x8)
-            cause |= OS_INTERRUPTMASK_EXI_2_TC;
-    }
+    PENDING(cause, PI_HSP, IRQ_HSP);
+    PENDING(cause, PI_DEBUG, IRQ_DEBUG);
+    PENDING(cause, PI_PE_FINISH, IRQ_PE_FINISH);
+    PENDING(cause, PI_PE_TOKEN, IRQ_PE_TOKEN);
+    PENDING(cause, PI_VI, IRQ_VI);
+    PENDING(cause, PI_SI, IRQ_SI);
+    PENDING(cause, PI_DI, IRQ_DI);
+    PENDING(cause, PI_RSW, IRQ_RSW);
+    PENDING(cause, PI_CP, IRQ_CP);
+    PENDING(cause, PI_ERROR, IRQ_PI_ERR);
 
-    if (intsr & 0x00002000)
-        cause |= OS_INTERRUPTMASK_PI_HSP;
-    if (intsr & 0x00001000)
-        cause |= OS_INTERRUPTMASK_PI_DEBUG;
-    if (intsr & 0x00000400)
-        cause |= OS_INTERRUPTMASK_PI_PE_FINISH;
-    if (intsr & 0x00000200)
-        cause |= OS_INTERRUPTMASK_PI_PE_TOKEN;
-    if (intsr & 0x00000100)
-        cause |= OS_INTERRUPTMASK_PI_VI;
-    if (intsr & 0x00000008)
-        cause |= OS_INTERRUPTMASK_PI_SI;
-    if (intsr & 0x00000004)
-        cause |= OS_INTERRUPTMASK_PI_DI;
-    if (intsr & 0x00000002)
-        cause |= OS_INTERRUPTMASK_PI_RSW;
-    if (intsr & 0x00000800)
-        cause |= OS_INTERRUPTMASK_PI_CP;
-    if (intsr & 0x00000001)
-        cause |= OS_INTERRUPTMASK_PI_ERROR;
-
-    unmasked = cause & ~(__OSGlobalInterruptMask | __OSLocalInterruptMask);
-    if (unmasked) {
-        for (prio = InterruptPrioTable;; ++prio) {
-            if (unmasked & *prio) {
-                interrupt = (__OSInterrupt)__cntlzw(unmasked & *prio);
+    ready = pending & ~(GLOBAL_MASK | LOCAL_MASK);
+    if (ready != 0) {
+        /* The table ends in an all-ones entry, so this always stops. */
+        group = InterruptPrioTable;
+        while (1) {
+            if ((ready & *group) != 0) {
+                id = (__OSInterrupt)__cntlzw(ready & *group);
                 break;
             }
+            group++;
         }
 
-        handler = __OSGetInterruptHandler(interrupt);
-        if (handler) {
-            if (__OS_INTERRUPT_MEM_ADDRESS < interrupt) {
-                __OSLastInterrupt = interrupt;
+        fn = __OSGetInterruptHandler(id);
+        if (fn != NULL) {
+            /* Memory interface errors are not recorded. */
+            if (id > IRQ_MEMADDR) {
+                __OSLastInterrupt = id;
                 __OSLastInterruptTime = OSGetTime();
                 __OSLastInterruptSrr0 = context->srr0;
             }
             OSDisableScheduler();
-            handler(interrupt, context);
+            fn(id, context);
             OSEnableScheduler();
             __OSReschedule();
             OSLoadContext(context);
@@ -480,8 +410,8 @@ void __OSDispatchInterrupt(__OSException exception, OSContext *context) {
     OSLoadContext(context);
 }
 
-/* The external-interrupt exception entry: finishes saving the context the first-level handler
- * started (r0-r2, r6-r31, the GQRs) and enters the dispatcher on a fresh frame. */
+/* Entry for the external interrupt exception: the first-level handler saved part of the context;
+ * save the rest (r0-r2, r6-r31, GQRs) and tail-jump into the dispatcher on a new frame. */
 static asm void ExternalInterruptHandler(register __OSException exception,
                                          register OSContext *context) {
     nofralloc

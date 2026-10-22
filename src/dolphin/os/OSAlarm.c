@@ -1,187 +1,197 @@
-/* Dolphin SDK OS: alarms. Pending alarms are kept in a list sorted by fire time; the decrementer
- * is always programmed for the head, and its exception runs the head's handler (periodic alarms
- * are re-queued first). OSSetAbsAlarm, OSSetPeriodicAlarm, OSSetAlarmTag, OSCancelAlarms and
- * OSCheckAlarmQueue are unused by the game and were dead-stripped. */
+/* Dolphin SDK OS: one-shot and periodic alarms driven by the decrementer.
+ *
+ * Every armed alarm sits in a doubly linked list ordered by its fire time. Only the earliest one
+ * is ever loaded into the decrementer; when that exception arrives the head is unlinked, periodic
+ * alarms are put back at their next due time, and the handler runs. OSSetAbsAlarm,
+ * OSSetPeriodicAlarm, OSSetAlarmTag, OSCancelAlarms and OSCheckAlarmQueue are not referenced by
+ * the game and were dead-stripped. */
 #include <dolphin/base/PPCArch.h>
 #include <dolphin/os.h>
 
-BOOL __DVDTestAlarm(OSAlarm *alarm);
+#define DECREMENTER_EXCEPTION 8
+/* The decrementer interrupts on the 0 -> -1 step, so it holds at most a positive s32. */
+#define DECREMENTER_LIMIT 0x80000000
+#define DECREMENTER_MAX 0x7FFFFFFF
 
-typedef struct OSAlarmQueue {
-    OSAlarm *head;
-    OSAlarm *tail;
-} OSAlarmQueue;
+extern BOOL __DVDTestAlarm(OSAlarm *);
 
-static void SetTimer(OSAlarm *alarm);
-static void InsertAlarm(OSAlarm *alarm, OSTime fire, OSAlarmHandler handler);
-static void DecrementerExceptionCallback(register __OSException exception,
-                                         register OSContext *context);
-static void DecrementerExceptionHandler(__OSException exception, OSContext *context);
-static BOOL OnReset(BOOL final);
+/* Armed alarms, earliest first. */
+typedef struct PendingList {
+    OSAlarm *first;
+    OSAlarm *last;
+} PendingList;
+
+static void DecrementerExceptionHandler(__OSException, OSContext *);
+static BOOL OnReset(BOOL);
 
 static OSResetFunctionInfo ResetFunctionInfo = {OnReset, 0xFFFFFFFF, NULL, NULL};
-static OSAlarmQueue AlarmQueue;
+static PendingList AlarmQueue;
 
-/* Programs the decrementer to fire for `alarm`, clamped to its 31-bit range. */
-static void SetTimer(OSAlarm *alarm) {
-    OSTime delta = alarm->fire - __OSGetSystemTime();
+/* Loads the decrementer with the ticks left until `a` is due (zero when overdue, saturated when
+ * it is further away than the counter can express). */
+static void SetTimer(OSAlarm *a) {
+    OSTime left;
 
-    if (delta < 0) {
+    left = a->fire - __OSGetSystemTime();
+    if (left < 0) {
         PPCMtdec(0);
-    } else if (delta < 0x80000000) {
-        PPCMtdec((u32)delta);
+    } else if (left < DECREMENTER_LIMIT) {
+        PPCMtdec((u32)left);
     } else {
-        PPCMtdec(0x7FFFFFFF);
+        PPCMtdec(DECREMENTER_MAX);
     }
 }
 
 void OSInitAlarm(void) {
-    if (__OSGetExceptionHandler(8) != DecrementerExceptionHandler) {
-        AlarmQueue.head = AlarmQueue.tail = NULL;
-        __OSSetExceptionHandler(8, DecrementerExceptionHandler);
-        OSRegisterResetFunction(&ResetFunctionInfo);
+    if (__OSGetExceptionHandler(DECREMENTER_EXCEPTION) == DecrementerExceptionHandler) {
+        return;
+    }
+    AlarmQueue.first = AlarmQueue.last = NULL;
+    __OSSetExceptionHandler(DECREMENTER_EXCEPTION, DecrementerExceptionHandler);
+    OSRegisterResetFunction(&ResetFunctionInfo);
+}
+
+void OSCreateAlarm(OSAlarm *a) {
+    a->handler = NULL;
+    a->tag = 0;
+}
+
+/* Arms `a` for `when` (periodic alarms instead use the first start + n * period still ahead) and
+ * links it before the first alarm due strictly later. A new head reprograms the decrementer. */
+static void InsertAlarm(OSAlarm *a, OSTime when, OSAlarmHandler fn) {
+    OSAlarm *cur;
+    OSAlarm *before;
+
+    if (a->period > 0) {
+        OSTime now = __OSGetSystemTime();
+        when = a->start;
+        if (now > a->start) {
+            when += a->period * (1 + (now - a->start) / a->period);
+        }
+    }
+
+    a->handler = fn;
+    a->fire = when;
+
+    cur = AlarmQueue.first;
+    while (cur != NULL) {
+        if (when < cur->fire) {
+            a->prev = cur->prev;
+            cur->prev = a;
+            a->next = cur;
+            before = a->prev;
+            if (before != NULL) {
+                before->next = a;
+            } else {
+                AlarmQueue.first = a;
+                SetTimer(a);
+            }
+            return;
+        }
+        cur = cur->next;
+    }
+
+    /* Due after everything already queued: append. */
+    a->next = NULL;
+    before = AlarmQueue.last;
+    AlarmQueue.last = a;
+    a->prev = before;
+    if (before != NULL) {
+        before->next = a;
+    } else {
+        /* The queue was empty. */
+        AlarmQueue.first = AlarmQueue.last = a;
+        SetTimer(a);
     }
 }
 
-void OSCreateAlarm(OSAlarm *alarm) {
-    alarm->handler = 0;
-    alarm->tag = 0;
+void OSSetAlarm(OSAlarm *a, OSTime delay, OSAlarmHandler fn) {
+    BOOL level = OSDisableInterrupts();
+
+    a->period = 0;
+    InsertAlarm(a, delay + __OSGetSystemTime(), fn);
+    OSRestoreInterrupts(level);
 }
 
-static void InsertAlarm(OSAlarm *alarm, OSTime fire, OSAlarmHandler handler) {
-    OSAlarm *next;
-    OSAlarm *prev;
+void OSCancelAlarm(OSAlarm *a) {
+    BOOL level = OSDisableInterrupts();
+    OSAlarm *after;
 
-    if (0 < alarm->period) {
-        OSTime time = __OSGetSystemTime();
-
-        fire = alarm->start;
-        if (alarm->start < time) {
-            fire += alarm->period * ((time - alarm->start) / alarm->period + 1);
-        }
-    }
-
-    alarm->handler = handler;
-    alarm->fire = fire;
-
-    for (next = AlarmQueue.head; next; next = next->next) {
-        if (next->fire <= fire) {
-            continue;
-        }
-
-        alarm->prev = next->prev;
-        next->prev = alarm;
-        alarm->next = next;
-        prev = alarm->prev;
-        if (prev) {
-            prev->next = alarm;
-        } else {
-            AlarmQueue.head = alarm;
-            SetTimer(alarm);
-        }
+    /* Not armed: nothing to unlink. */
+    if (a->handler == NULL) {
+        OSRestoreInterrupts(level);
         return;
     }
 
-    alarm->next = 0;
-    prev = AlarmQueue.tail;
-    AlarmQueue.tail = alarm;
-    alarm->prev = prev;
-    if (prev) {
-        prev->next = alarm;
+    after = a->next;
+    if (after == NULL) {
+        AlarmQueue.last = a->prev;
     } else {
-        AlarmQueue.head = AlarmQueue.tail = alarm;
-        SetTimer(alarm);
-    }
-}
-
-void OSSetAlarm(OSAlarm *alarm, OSTime tick, OSAlarmHandler handler) {
-    BOOL enabled;
-
-    enabled = OSDisableInterrupts();
-    alarm->period = 0;
-    InsertAlarm(alarm, __OSGetSystemTime() + tick, handler);
-    OSRestoreInterrupts(enabled);
-}
-
-void OSCancelAlarm(OSAlarm *alarm) {
-    OSAlarm *next;
-    BOOL enabled;
-
-    enabled = OSDisableInterrupts();
-
-    if (alarm->handler == 0) {
-        OSRestoreInterrupts(enabled);
-        return;
+        after->prev = a->prev;
     }
 
-    next = alarm->next;
-    if (next == 0) {
-        AlarmQueue.tail = alarm->prev;
+    if (a->prev != NULL) {
+        a->prev->next = after;
     } else {
-        next->prev = alarm->prev;
-    }
-    if (alarm->prev) {
-        alarm->prev->next = next;
-    } else {
-        AlarmQueue.head = next;
-        if (next) {
-            SetTimer(next);
+        /* It was the head: the decrementer now belongs to its successor. */
+        AlarmQueue.first = after;
+        if (after != NULL) {
+            SetTimer(after);
         }
     }
-    alarm->handler = 0;
-    OSRestoreInterrupts(enabled);
+    a->handler = NULL;
+    OSRestoreInterrupts(level);
 }
 
-/* Runs the head alarm's handler (if it is due) with the scheduler held off, on a fresh context
- * so the handler may use the FPU, then returns to the interrupted context. */
-static void DecrementerExceptionCallback(register __OSException exception,
-                                         register OSContext *context) {
-    OSAlarm *alarm;
-    OSAlarm *next;
-    OSAlarmHandler handler;
-    OSTime time;
-    OSContext exceptionContext;
+/* Entered from DecrementerExceptionHandler with the interrupted GPRs saved in `ctx`. A spurious
+ * or early interrupt just re-arms and resumes; otherwise the head alarm is retired and its
+ * handler called on a scratch context (so it may touch the FPU) with the scheduler held. */
+static void DecrementerExceptionCallback(register __OSException exc, register OSContext *ctx) {
+    OSContext scratch;
+    OSAlarm *due;
+    OSAlarm *rest;
+    OSAlarmHandler fn;
+    OSTime now;
 
-    time = __OSGetSystemTime();
-    alarm = AlarmQueue.head;
-    if (alarm == 0) {
-        OSLoadContext(context);
+    now = __OSGetSystemTime();
+    due = AlarmQueue.first;
+    if (due == NULL) {
+        OSLoadContext(ctx);
+    }
+    if (due->fire > now) {
+        SetTimer(due);
+        OSLoadContext(ctx);
     }
 
-    if (time < alarm->fire) {
-        SetTimer(alarm);
-        OSLoadContext(context);
-    }
-
-    next = alarm->next;
-    AlarmQueue.head = next;
-    if (next == 0) {
-        AlarmQueue.tail = 0;
+    rest = due->next;
+    AlarmQueue.first = rest;
+    if (rest == NULL) {
+        AlarmQueue.last = NULL;
     } else {
-        next->prev = 0;
+        rest->prev = NULL;
     }
 
-    handler = alarm->handler;
-    alarm->handler = 0;
-    if (0 < alarm->period) {
-        InsertAlarm(alarm, 0, handler);
+    fn = due->handler;
+    due->handler = NULL;
+    if (due->period > 0) {
+        InsertAlarm(due, 0, fn);
     }
-
-    if (AlarmQueue.head) {
-        SetTimer(AlarmQueue.head);
+    if (AlarmQueue.first != NULL) {
+        SetTimer(AlarmQueue.first);
     }
 
     OSDisableScheduler();
-    OSClearContext(&exceptionContext);
-    OSSetCurrentContext(&exceptionContext);
-    handler(alarm, context);
-    OSClearContext(&exceptionContext);
-    OSSetCurrentContext(context);
+    OSClearContext(&scratch);
+    OSSetCurrentContext(&scratch);
+    fn(due, ctx);
+    OSClearContext(&scratch);
+    OSSetCurrentContext(ctx);
     OSEnableScheduler();
     __OSReschedule();
-    OSLoadContext(context);
+    OSLoadContext(ctx);
 }
 
+/* Saves the volatile GPRs into the interrupted context and tail-calls the C callback. */
 static asm void DecrementerExceptionHandler(register __OSException exception,
                                             register OSContext *context) {
     nofralloc
@@ -190,21 +200,18 @@ static asm void DecrementerExceptionHandler(register __OSException exception,
     b DecrementerExceptionCallback
 }
 
-/* On the final reset pass, cancels every alarm except the DVD driver's. */
+/* Last reset pass: cancel everything still queued except the DVD driver's own alarms. */
 static BOOL OnReset(BOOL final) {
-    OSAlarm *alarm;
-    OSAlarm *next;
+    OSAlarm *a;
+    OSAlarm *following;
 
-    if (final != FALSE) {
-        alarm = AlarmQueue.head;
-        next = (alarm) ? alarm->next : NULL;
-
-        while (alarm != 0) {
-            if (__DVDTestAlarm(alarm) == FALSE) {
-                OSCancelAlarm(alarm);
+    if (final) {
+        a = AlarmQueue.first;
+        following = (a != NULL) ? a->next : NULL;
+        for (; a != NULL; a = following, following = (a != NULL) ? a->next : NULL) {
+            if (!__DVDTestAlarm(a)) {
+                OSCancelAlarm(a);
             }
-            alarm = next;
-            next = (alarm) ? alarm->next : NULL;
         }
     }
     return TRUE;

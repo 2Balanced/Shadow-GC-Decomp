@@ -1,30 +1,40 @@
-/* Dolphin SDK OS: cache control. Range operations work a 32-byte cache line at a time; the
- * flush/store variants end with `sc` so the system-call handler (OSSync.c) syncs the bus.
- * __OSCacheInit turns on the L1 and L2 caches if the boot code didn't and installs the handler
- * for locked-cache DMA machine checks. Functions the game doesn't use (DCFreeze, the LC DMA
- * helpers, L2SetDataOnly, ...) were dead-stripped. */
+/* Dolphin SDK OS: L1/L2 cache management.
+ *
+ * The range primitives below walk the range one 32-byte block at a time. The flush and store
+ * variants finish with `sc`, which the system-call handler (OSSync.c) turns into a bus sync.
+ * __OSCacheInit switches on whichever of the instruction, data and L2 caches the boot code left
+ * off, then hooks machine checks so locked-cache DMA errors are reported. The rest of the SDK's
+ * cache API (DCFreeze, the locked-cache DMA helpers, L2SetDataOnly and so on) is not linked by
+ * the game. */
 #include <dolphin/base/PPCArch.h>
 #include <dolphin/os.h>
 
-#define LC_BASE_PREFIX 0xE000
-#define LC_LINES 512
+/* Locked cache: mapped at 0xE0000000, 16 KB = 512 blocks. */
+#define LOCKED_CACHE_HI    0xE000
+#define LOCKED_CACHE_BLOCKS 512
 
-#define HID0_ICE 0x8000
-#define HID0_DCE 0x4000
+/* HID0 cache enables. */
+#define HID0_ICACHE_ON 0x8000
+#define HID0_DCACHE_ON 0x4000
 
-#define L2CR_L2E 0x80000000
-#define L2CR_L2I 0x00200000
-#define L2CR_L2IP 0x00000001
+/* L2CR fields. */
+#define L2CR_ENABLE      0x80000000
+#define L2CR_INVALIDATE  0x00200000 /* start a global invalidate */
+#define L2CR_INVAL_BUSY  0x00000001 /* global invalidate still running */
 
-#define HID2_DCHERR 0x00800000 /* locked cache tag already in the cache */
-#define HID2_DNCERR 0x00400000 /* DMA accessed the normal cache */
-#define HID2_DCMERR 0x00200000 /* DMA missed in the data cache */
-#define HID2_DQOERR 0x00100000 /* DMA queue overflow */
+/* HID2 locked-cache DMA error flags; writing HID2 back acknowledges them. */
+#define HID2_ERR_TAG_HIT    0x00800000 /* locked cache tag already present in the cache */
+#define HID2_ERR_NORMAL_ACC 0x00400000 /* DMA touched the normal cache */
+#define HID2_ERR_DC_MISS    0x00200000 /* DMA missed in the data cache */
+#define HID2_ERR_QUEUE_OVF  0x00100000 /* DMA queue overflowed */
+#define HID2_ERR_ANY (HID2_ERR_TAG_HIT | HID2_ERR_NORMAL_ACC | HID2_ERR_DC_MISS | HID2_ERR_QUEUE_OVF)
 
-#define SRR1_DMA_BIT 0x00200000
+/* SRR1 bit set when the machine check came from the DMA engine. */
+#define SRR1_FROM_DMA 0x00200000
 
-#define MSR_IR 0x20
-#define MSR_DR 0x10
+/* MSR address translation enables. */
+#define MSR_ITRANS 0x20
+#define MSR_DTRANS 0x10
 
 asm void DCEnable(void) {
     nofralloc
@@ -136,11 +146,11 @@ asm void ICEnable(void) {
     blr
 }
 
-/* Invalidates the 16 KB locked cache and clears HID2[LCE]. */
+/* Throws away the locked cache contents and turns HID2[LCE] off again. */
 asm void LCDisable(void) {
     nofralloc
-    lis r3, LC_BASE_PREFIX
-    li r4, LC_LINES
+    lis r3, LOCKED_CACHE_HI
+    li r4, LOCKED_CACHE_BLOCKS
     mtctr r4
 @1
     dcbi r0, r3
@@ -154,44 +164,51 @@ asm void LCDisable(void) {
 
 static void L2Disable(void) {
     __sync();
-    PPCMtl2cr(PPCMfl2cr() & ~L2CR_L2E);
+    PPCMtl2cr(PPCMfl2cr() & ~L2CR_ENABLE);
     __sync();
 }
 
+/* Disables the L2 and runs a hardware global invalidate, polling until the cache reports done. */
 void L2GlobalInvalidate(void) {
     L2Disable();
-    PPCMtl2cr(PPCMfl2cr() | L2CR_L2I);
-    while (PPCMfl2cr() & L2CR_L2IP);
 
-    PPCMtl2cr(PPCMfl2cr() & ~L2CR_L2I);
-    while (PPCMfl2cr() & L2CR_L2IP) {
+    PPCMtl2cr(PPCMfl2cr() | L2CR_INVALIDATE);
+    while ((PPCMfl2cr() & L2CR_INVAL_BUSY) != 0) {}
+
+    PPCMtl2cr(PPCMfl2cr() & ~L2CR_INVALIDATE);
+    while ((PPCMfl2cr() & L2CR_INVAL_BUSY) != 0) {
+        /* Clearing the start bit should never restart the invalidate. */
         DBPrintf(">>> L2 INVALIDATE : SHOULD NEVER HAPPEN\n");
     }
 }
 
+/* The invalidate is done with translation on and interrupts masked; the old MSR is put back. */
 static void L2Init(void) {
-    u32 oldMSR;
+    u32 savedMsr = PPCMfmsr();
 
-    oldMSR = PPCMfmsr();
     __sync();
-    PPCMtmsr(MSR_IR | MSR_DR);
+    PPCMtmsr(MSR_ITRANS | MSR_DTRANS);
     __sync();
     L2Disable();
     L2GlobalInvalidate();
-    PPCMtmsr(oldMSR);
+    PPCMtmsr(savedMsr);
 }
 
 static void L2Enable(void) {
-    PPCMtl2cr((PPCMfl2cr() | L2CR_L2E) & ~L2CR_L2I);
+    /* Set the enable bit and make sure no new global invalidate gets started. */
+    PPCMtl2cr((PPCMfl2cr() | L2CR_ENABLE) & ~L2CR_INVALIDATE);
 }
 
+#define REPORT_DMA_ERROR(flags, bit, text)     if ((flags) & (bit)) {                         OSReport(text);                        }
+
+/* Machine check handler: anything that is not a locked-cache DMA error is fatal. */
 void DMAErrorHandler(OSError error, OSContext *context, ...) {
-    u32 hid2 = PPCMfhid2();
+    u32 errors = PPCMfhid2();
 
     OSReport("Machine check received\n");
-    OSReport("HID2 = 0x%x   SRR1 = 0x%x\n", hid2, context->srr1);
-    if (!(hid2 & (HID2_DCHERR | HID2_DNCERR | HID2_DCMERR | HID2_DQOERR)) ||
-        !(context->srr1 & SRR1_DMA_BIT)) {
+    OSReport("HID2 = 0x%x   SRR1 = 0x%x\n", errors, context->srr1);
+
+    if (!(errors & HID2_ERR_ANY) || !(context->srr1 & SRR1_FROM_DMA)) {
         OSReport("Machine check was not DMA/locked cache related\n");
         OSDumpContext(context);
         PPCHalt();
@@ -199,34 +216,24 @@ void DMAErrorHandler(OSError error, OSContext *context, ...) {
 
     OSReport("DMAErrorHandler(): An error occurred while processing DMA.\n");
     OSReport("The following errors have been detected and cleared :\n");
+    REPORT_DMA_ERROR(errors, HID2_ERR_TAG_HIT, "	- Requested a locked cache tag that was already in the cache\n");
+    REPORT_DMA_ERROR(errors, HID2_ERR_NORMAL_ACC, "	- DMA attempted to access normal cache\n");
+    REPORT_DMA_ERROR(errors, HID2_ERR_DC_MISS, "	- DMA missed in data cache\n");
+    REPORT_DMA_ERROR(errors, HID2_ERR_QUEUE_OVF, "	- DMA queue overflowed\n");
 
-    if (hid2 & HID2_DCHERR) {
-        OSReport("\t- Requested a locked cache tag that was already in the cache\n");
-    }
-    if (hid2 & HID2_DNCERR) {
-        OSReport("\t- DMA attempted to access normal cache\n");
-    }
-    if (hid2 & HID2_DCMERR) {
-        OSReport("\t- DMA missed in data cache\n");
-    }
-    if (hid2 & HID2_DQOERR) {
-        OSReport("\t- DMA queue overflowed\n");
-    }
-
-    /* Writing HID2 back clears the error bits. */
-    PPCMthid2(hid2);
+    PPCMthid2(errors);
 }
 
 void __OSCacheInit(void) {
-    if (!(PPCMfhid0() & HID0_ICE)) {
+    if (!(PPCMfhid0() & HID0_ICACHE_ON)) {
         ICEnable();
         DBPrintf("L1 i-caches initialized\n");
     }
-    if (!(PPCMfhid0() & HID0_DCE)) {
+    if (!(PPCMfhid0() & HID0_DCACHE_ON)) {
         DCEnable();
         DBPrintf("L1 d-caches initialized\n");
     }
-    if (!(PPCMfl2cr() & L2CR_L2E)) {
+    if (!(PPCMfl2cr() & L2CR_ENABLE)) {
         L2Init();
         L2Enable();
         DBPrintf("L2 cache initialized\n");

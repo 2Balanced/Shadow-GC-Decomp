@@ -1,34 +1,36 @@
-/* Dolphin SDK OS: the time base. OSTime is the 64-bit time-base register; the system time adds
- * the adjustment kept in low memory at 0x800030D8. The calendar conversions (OSTicksToCalendarTime
- * and its month tables) and __OSSetTime are unused by the game and were dead-stripped. */
+/* Dolphin SDK OS: clock reads. OSTime is the full 64-bit PowerPC time base; "system time" is that
+ * value plus a correction the OS keeps in low memory (__OSSystemTime, 0x800030D8). Calendar
+ * conversion (OSTicksToCalendarTime and its month tables) and __OSSetTime were never referenced by
+ * the game, so the linker dropped them. */
 #include <dolphin/os.h>
 
-/* Reads TBU, TBL, TBU again and retries if TBL carried into TBU in between. */
+/* The two halves of the time base cannot be read at once. Sample upper, lower, upper; if the two
+ * upper samples disagree the lower word wrapped mid-read, so try again. */
 asm OSTime OSGetTime(void) {
-jump:
+retry:
     nofralloc
     mftbu r3
     mftb r4
     mftbu r5
     cmpw r3, r5
-    bne jump
+    bne retry
     blr
 }
 
+/* Lower 32 bits of the time base only; enough for short intervals. */
 asm OSTick OSGetTick(void) {
     nofralloc
     mftb r3
     blr
 }
 
+/* Time base plus the stored correction. Interrupts stay off across the read so a handler cannot
+ * change the correction between the two loads. */
 OSTime __OSGetSystemTime(void) {
-    BOOL enabled;
-    OSTime *timeAdjustAddr;
-    OSTime result;
+    OSTime *correction = __OSSystemTime;
+    BOOL wasEnabled = OSDisableInterrupts();
+    OSTime now = OSGetTime() + *correction;
 
-    timeAdjustAddr = __OSSystemTime;
-    enabled = OSDisableInterrupts();
-    result = OSGetTime() + *timeAdjustAddr;
-    OSRestoreInterrupts(enabled);
-    return result;
+    OSRestoreInterrupts(wasEnabled);
+    return now;
 }

@@ -66,7 +66,7 @@ Where a reference was followed:
 
 | Our files | Reference | Status |
 | --------- | --------- | ------ |
-| `src/dolphin/` (PPCArch, db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSSync, OSTime, `__ppc_eabi_init`), `src/Runtime.PPCEABI.H/` (`__mem`, `__va_arg`, `global_destructor_chain`, `CPlusLibPPC`, `ptmf`, `runtime`), `include/dolphin/` | zeldaret/tp `libs/dolphin`, `libs/PowerPC_EABI_Support` (CC0); pull request #1 | db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSTime, `__ppc_eabi_init` and CPlusLibPPC are flagged by `tools/similarity.py` and are to be rewritten |
+| `src/dolphin/` (PPCArch, db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSSync, OSTime, `__ppc_eabi_init`), `src/Runtime.PPCEABI.H/` (`__mem`, `__va_arg`, `global_destructor_chain`, `CPlusLibPPC`, `ptmf`, `runtime`), `include/dolphin/` | zeldaret/tp `libs/dolphin`, `libs/PowerPC_EABI_Support` (CC0); pull request #1 db, OSAlarm, OSAlloc, OSArena, OSAudioSystem, OSCache, OSInterrupt, OSTime, `__ppc_eabi_init` and CPlusLibPPC were rewritten in this project's own words from the disassembly; every file now passes `tools/similarity.py` against tp, mk-deception and pikmin2 |
 
 This project is independent of other decompilations of this game and does not use their
 code.
