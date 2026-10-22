@@ -11,3 +11,13 @@
 
 # decomp-toolkit writes files with LF
 config/**/*.txt  text eol=lf
+
+# Progress tracker (see CONTRIBUTING.md). history.jsonl is one snapshot per line: the union driver
+# keeps both sides' new lines when two people push at nearly the same time. The other files are
+# generated from a build and are never merged by hand: a conflict there means "rebuild", and
+# tools/check_progress.py (run by CI) fails until they match the merged sources.
+docs/progress/history.jsonl text eol=lf merge=union
+docs/progress.html          text eol=lf -merge
+docs/progress/progress.svg  text eol=lf -merge
+docs/progress/badge.json    text eol=lf -merge
+docs/progress/source.txt    text eol=lf -merge

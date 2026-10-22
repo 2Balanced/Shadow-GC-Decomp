@@ -1,0 +1,19 @@
+name: Progress tracker
+
+# Checks that docs/progress* were regenerated from the sources being pushed, so a push or merge
+# can never leave the public progress page describing someone else's (or an older) tree.
+# Needs no game files: it only fingerprints src/, include/, config/ and configure.py.
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python tools/check_progress.py

@@ -1,0 +1,8 @@
+#!/bin/sh
+# Refuses a push whose progress tracker (docs/progress*) was not regenerated from the sources being
+# pushed. Enable once per clone with:  git config core.hooksPath tools/hooks
+# CI runs the same check (.github/workflows/progress.yml); this just catches it before the push.
+python tools/check_progress.py || {
+    echo "pre-push: rebuild with ninja and commit docs/progress* first (see CONTRIBUTING.md)." >&2
+    exit 1
+}

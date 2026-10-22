@@ -4,11 +4,17 @@
 Run automatically by `ninja` (the progress step in configure.py), or by hand:
   python tools/progress_page.py [--report build/GUPE8P/report.json]
 
-Each run also appends a snapshot to docs/progress/history.json when the numbers changed, so the
+Each run also appends a snapshot to docs/progress/history.jsonl when the numbers changed, so the
 page can chart progress over time. Open docs/progress.html in any browser; it needs no server.
+
+Merge safety (see CONTRIBUTING.md): history.jsonl holds one snapshot per line and is merged with
+git's union driver, so snapshots pushed at nearly the same time are both kept. The other generated
+files record a fingerprint of the sources they were built from (docs/progress/source.txt);
+tools/check_progress.py fails when it no longer matches, which means they must be regenerated.
 """
 
 import argparse
+import hashlib
 import datetime
 import json
 import subprocess
@@ -96,19 +102,59 @@ SNAPSHOT_KEYS = ["matched_code", "linked_code", "total_code", "matched_data", "l
                  "units_with_source"]
 
 
-def update_history(path, summary, commit):
-    history = []
+# The inputs that decide the report: a change to any of them makes the generated files stale.
+FINGERPRINT_PATHS = ["src", "include", "config", "configure.py"]
+
+
+def source_fingerprint():
+    """SHA-1 over the report's inputs (path and content, line endings normalised), so the same tree
+    gives the same value on any checkout."""
+    files = git("ls-files", "--cached", "--others", "--exclude-standard", "--", *FINGERPRINT_PATHS)
+    digest = hashlib.sha1()
+    for name in sorted(set(files.splitlines())):
+        path = ROOT / name
+        if not path.is_file():
+            continue
+        digest.update(name.encode("utf-8") + b"\0")
+        digest.update(path.read_bytes().replace(b"\r\n", b"\n") + b"\0")
+    return digest.hexdigest()
+
+
+def load_history(path):
+    """The snapshots in history.jsonl, oldest first. A union merge can leave the two sides' new
+    lines in either order, or the same line twice; both are tidied here."""
+    snapshots = {}
     if path.exists():
-        try:
-            history = json.loads(path.read_text(encoding="utf-8"))
-        except ValueError:
-            history = []
+        for line in path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line.startswith("{"):
+                continue
+            entry = json.loads(line)
+            snapshots[json.dumps(entry, sort_keys=True)] = entry
+    return sorted(snapshots.values(), key=lambda e: (e.get("date", ""), e.get("commit", "")))
+
+
+def migrate_history(path):
+    """Converts the old single-array history.json into history.jsonl."""
+    old = path.with_suffix(".json")
+    if old.exists() and not path.exists():
+        entries = json.loads(old.read_text(encoding="utf-8"))
+        path.write_text("".join(json.dumps(e) + "\n" for e in entries), encoding="utf-8",
+                        newline="\n")
+        old.unlink()
+
+
+def update_history(path, summary, commit):
+    migrate_history(path)
+    history = load_history(path)
     snap = {k: summary[k] for k in SNAPSHOT_KEYS}
     if not history or {k: history[-1].get(k) for k in SNAPSHOT_KEYS} != snap:
         history.append({"date": datetime.datetime.now().isoformat(timespec="minutes"),
                         "commit": commit, **snap})
-        path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(json.dumps(history, indent=1) + "\n", encoding="utf-8", newline="\n")
+    # Always rewrite in order: it also drops the duplicate lines a union merge may leave.
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text("".join(json.dumps(e) + "\n" for e in history), encoding="utf-8",
+                    newline="\n")
     return history
 
 
@@ -131,6 +177,8 @@ def write_progress_page(report_path, out_path, history_path, verified=None):
     Path(out_path).write_text(page, encoding="utf-8", newline="\n")
     write_badge(Path(history_path).parent / "badge.json", summary)
     write_card(Path(history_path).parent / "progress.svg", summary, verified)
+    (Path(history_path).parent / "source.txt").write_text(source_fingerprint() + "\n",
+                                                          encoding="utf-8", newline="\n")
 
 
 CARD_STYLE = """
@@ -487,7 +535,7 @@ def main():
     ap.add_argument("--version", default="GUPE8P")
     ap.add_argument("--report")
     ap.add_argument("--out", default=str(ROOT / "docs" / "progress.html"))
-    ap.add_argument("--history", default=str(ROOT / "docs" / "progress" / "history.json"))
+    ap.add_argument("--history", default=str(ROOT / "docs" / "progress" / "history.jsonl"))
     args = ap.parse_args()
     report = args.report or str(ROOT / "build" / args.version / "report.json")
     write_page_for_build(args.version, report, args.out, args.history)
@@ -501,7 +549,7 @@ def write_page_for_build(version, report=None, out=None, history=None):
     ok, dol = build / "ok", build / "main.dol"
     verified = ok.exists() and dol.exists() and ok.stat().st_mtime >= dol.stat().st_mtime
     write_progress_page(report, out or str(ROOT / "docs" / "progress.html"),
-                        history or str(ROOT / "docs" / "progress" / "history.json"), verified)
+                        history or str(ROOT / "docs" / "progress" / "history.jsonl"), verified)
 
 
 if __name__ == "__main__":
