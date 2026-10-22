@@ -1930,9 +1930,23 @@ Game/ElecCircuitColli.cpp:
 	.sbss       start:0x805F0CF8 end:0x805F0D08
 	.sdata2     start:0x805FA068 end:0x805FA080
 
+Runtime.PPCEABI.H/__va_arg.c:
+	.text       start:0x803A00B0 end:0x803A0178
+
+Runtime.PPCEABI.H/global_destructor_chain.c:
+	.text       start:0x803A0178 end:0x803A01D8
+	.sbss       start:0x805F12C8 end:0x805F12D0
+
+Runtime.PPCEABI.H/ptmf.c:
+	.text       start:0x803A0A2C end:0x803A0AAC
+	.rodata     start:0x80513BA0 end:0x80513BB0
+
 Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.text       start:0x803A149C end:0x803A150C
 	.ctors      start:0x804A9C00 end:0x804A9C04 rename:.ctors$10
 	.dtors      start:0x804AA080 end:0x804AA084 rename:.dtors$10
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
+
+Runtime.PPCEABI.H/__mem.c:
+	.init       start:0x8000540C end:0x80005544
