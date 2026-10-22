@@ -21,3 +21,6 @@ docs/progress.html          text eol=lf -merge
 docs/progress/progress.svg  text eol=lf -merge
 docs/progress/badge.json    text eol=lf -merge
 docs/progress/source.txt    text eol=lf -merge
+
+# Git hooks must keep LF to run on every platform.
+tools/hooks/* text eol=lf
