@@ -104,7 +104,7 @@ void OSResetSystem(s32 reset, u32 resetCode, BOOL forceMenu);
 void *OSGetArenaHi(void);
 void DCInvalidateRange(void *addr, u32 nBytes);
 void DCFlushRange(void *addr, u32 nBytes);
-void fn_8037171C(void *addr, u32 nBytes);
+void DCStoreRange(void *addr, u32 nBytes);
 s32 DVDGetDriveStatus(void);
 BOOL fn_8037C9F4(void);                                        /* DVDCheckDisk */
 u32 fn_80381A78(u32 length);                                   /* ARAlloc */
@@ -538,7 +538,7 @@ extern "C" BOOL fn_8032C190(void) {
     if (lbl_805F0B98 == 0) {
         lbl_805F0B94 = 0;
         if (lbl_805F0B88 != 0) {
-            fn_8037171C(lbl_805F0B88, lbl_805F0B90);
+            DCStoreRange(lbl_805F0B88, lbl_805F0B90);
             lbl_805F0B98 = lbl_805F0B88;
         } else {
             lbl_805F0B98 = (void *)(((u32)OSGetArenaHi() - lbl_805F0B90 - 1) & ~0x1F);
