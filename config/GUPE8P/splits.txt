@@ -1937,6 +1937,9 @@ Runtime.PPCEABI.H/global_destructor_chain.c:
 	.text       start:0x803A0178 end:0x803A01D8
 	.sbss       start:0x805F12C8 end:0x805F12D0
 
+Runtime.PPCEABI.H/CPlusLibPPC.cp:
+	.text       start:0x803A01D8 end:0x803A0208
+
 Runtime.PPCEABI.H/ptmf.c:
 	.text       start:0x803A0A2C end:0x803A0AAC
 	.rodata     start:0x80513BA0 end:0x80513BB0
