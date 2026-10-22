@@ -334,6 +334,7 @@ config.libs = [
             Object(Matching, "dolphin/os/OSArena.c"),
             Object(Matching, "dolphin/os/OSAudioSystem.c"),
             Object(Matching, "dolphin/os/OSCache.c"),
+            Object(Matching, "dolphin/os/OSInterrupt.c"),
             Object(Matching, "dolphin/os/OSSync.c"),
             Object(Matching, "dolphin/os/OSTime.c"),
             Object(Matching, "dolphin/os/__ppc_eabi_init.cpp"),

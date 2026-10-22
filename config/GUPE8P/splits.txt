@@ -1951,6 +1951,11 @@ dolphin/os/OSCache.c:
 	.text       start:0x803716AC end:0x80371AE4
 	.data       start:0x80560278 end:0x805604A8
 
+dolphin/os/OSInterrupt.c:
+	.text       start:0x803752D4 end:0x80375B40
+	.data       start:0x805614C0 end:0x805614F0
+	.sbss       start:0x805F0EE8 end:0x805F0F00
+
 dolphin/os/OSSync.c:
 	.text       start:0x80377454 end:0x803774D8
 
