@@ -32,21 +32,6 @@ class EffectLaunchInfo;
 } // namespace System
 } // namespace Effect
 
-/* The lists of colliders and targets the boss keeps (class names unknown): singly linked nodes
- * holding a shared_ptr, with the first node at 0x8 and the end at 0xC. Their accessors are small
- * out-of-line functions (behaviour from their bodies). */
-struct UnkListNode_80179304;
-struct UnkList_80179304 {
-    /* 0x00 */ u8 field_0x0[0x8];
-    /* 0x08 */ UnkListNode_80179304 *m_first;
-    /* 0x0C */ UnkListNode_80179304 *m_end;
-};
-struct UnkListIter_80179304 {
-    UnkListIter_80179304() : m_node(0) {}
-
-    UnkListNode_80179304 *m_node;
-};
-
 /* The boss's settings (struct name inferred), at 0x74 in DevilDoomVarParam: constants that its
  * out-of-line constructor (0x8030C86C) sets. Offsets are relative to the struct. */
 struct DevilDoomSettings {

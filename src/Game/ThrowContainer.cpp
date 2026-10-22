@@ -5,12 +5,7 @@
  * rewards the thrower. The container gadgets (Game/ContainerNormal.cpp, ...) create it through
  * fn_8027B338. File name inferred from the RTTI name. Names marked "(name inferred)" are not
  * original. Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first).
- *
- * Not yet matching: in fn_8027B3E8 retail loads s_range for the constructor call right after the
- * float moves, GC/2.7 after the integer argument moves (a scheduling difference; the parameter
- * order and the statics' linkage were varied without effect). Everything else, including the
- * data, matches. */
+ * last-defined first). */
 #include "Game/CharInfo.h"
 #include "Game/GadgetModelInfo.h"
 #include "Game/MathTypes.h"
@@ -71,9 +66,10 @@ inline float Plain(float value) {
 }
 
 /* The gravity, and the range and the (lack of) acceleration of a container a vacuum lets go (names
- * inferred). */
-static float s_gravity = Plain(5.0f);
-static float s_range = Plain(600.0f);
+ * inferred). The floats are const: retail loads s_range for fn_8027B3E8's constructor call right
+ * after the float moves, as GC/2.7 does only for a const static. */
+static const float s_gravity = Plain(5.0f);
+static const float s_range = Plain(600.0f);
 static Vec3f s_noAcceleration(0.0f, 0.0f, 0.0f);
 
 Container::Container(const boost::weak_ptr<CharInfo> &thrower,

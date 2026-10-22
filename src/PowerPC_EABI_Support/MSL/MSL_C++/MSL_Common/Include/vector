@@ -97,6 +97,11 @@ template <class T, class A> class __vec_base {
         return cap_.first().max_size();
     }
     void reserve(size_type n);
+#ifdef MSL_VECTOR_AT
+    /* Only where MSL_VECTOR_AT is defined before this header (Game/CameraScreenSet.cpp); defined
+     * after the class, so the game emits it at the end of the unit with insert_n. */
+    T &at(size_type n);
+#endif
     void push_back(const T &x) {
         insert_n(end(), 1, x);
     }
@@ -160,6 +165,15 @@ template <class T, class A> void __vec_base<T, A>::reserve(size_type n) {
         __vec_swap(tmp, *this);
     }
 }
+
+#ifdef MSL_VECTOR_AT
+template <class T, class A> T &__vec_base<T, A>::at(size_type n) {
+    if (n >= size_) {
+        __msl_error("vector::at index out of range");
+    }
+    return data_[n];
+}
+#endif
 
 /* Inserts n copies of x before position. */
 template <class T, class A>

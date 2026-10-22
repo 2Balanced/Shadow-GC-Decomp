@@ -5,6 +5,7 @@
  * raised by "height", and a collision process keeps it clear of the stage. File name inferred
  * from the class; member and method names other than the classes' are inferred. Definitions are
  * in reverse address order (deferred inlining emits functions last-defined first). */
+#include "Game/CameraState.h"
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "Game/PJSCameraMode.h"
@@ -23,16 +24,15 @@ class UnkCameraSwitchArg_8000996C {
     /* 0x14 */ u32 m_flags; /* bit 2: no collision process; bit 3: the 0x14-byte process */
 };
 
-/* A camera state fn_8000B3B4 reads from CameraMode's member at 0x34 and fn_8000B074 applies; its
- * destructor is fn_8000A9AC (type unknown; size taken from the caller's frame). */
+/* A camera state fn_8000B3B4 reads from CameraMode's member at 0x34; it is applied to the mode
+ * with UnkCameraState_8000AA70's assignment and destroyed with its destructor (see
+ * Game/CameraState.h; the type is unknown and the size taken from the caller's frame). */
 struct UnkCameraState_8000B3B4 {
     /* 0x00 */ u8 field_0x0[0x40];
 };
 
 extern "C" {
 void fn_8000B3B4(UnkCameraState_8000B3B4 *state, const void *source);
-void fn_8000B074(CameraMode *mode, const UnkCameraState_8000B3B4 *state);
-void fn_8000A9AC(UnkCameraState_8000B3B4 *state, int flags);
 
 /* The character with the given number (behaviour inferred). */
 boost::weak_ptr<CharInfo> fn_800A8C54(UnkCharaList_80074194 *list, int number);
@@ -100,8 +100,9 @@ CameraModeFixLookChar::CameraModeFixLookChar(UnkCameraOwner_8000E9BC *owner, int
     UnkCameraState_8000B3B4 state;
 
     fn_8000B3B4(&state, field_0x34);
-    fn_8000B074(this, &state);
-    fn_8000A9AC(&state, -1);
+    *reinterpret_cast<UnkCameraState_8000AA70 *>(static_cast<CameraMode *>(this)) =
+        *reinterpret_cast<UnkCameraState_8000AA70 *>(&state);
+    reinterpret_cast<UnkCameraState_8000AA70 *>(&state)->~UnkCameraState_8000AA70();
     m_distance = field_0x80;
     m_height = field_0x84;
 }

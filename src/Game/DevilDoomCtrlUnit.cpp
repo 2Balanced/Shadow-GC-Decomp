@@ -31,6 +31,7 @@
 #include "Game/GiHPGaugeEnemy.h"
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
+#include "Game/PooledList.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
@@ -223,18 +224,6 @@ boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager, boost::shared_ptr<C
 boost::weak_ptr<CharaColliAttack> fn_800C42D0(void *manager, boost::shared_ptr<CharaColliBase> collider);
 void fn_801E73B0(Target *target, const Vec3f *position);
 
-/* The boss's lists (behaviour from their bodies). */
-UnkListNode_80179304 *fn_8017935C(UnkList_80179304 *list);
-UnkListIter_80179304 fn_80179354(UnkListNode_80179304 *node);
-UnkListNode_80179304 *fn_801792D8(UnkList_80179304 *list);
-boost::shared_ptr<CharaColliBase> fn_80179304(const UnkListIter_80179304 *it);
-UnkListIter_80179304 fn_801792E0(UnkListIter_80179304 *it, int);
-UnkListNode_80179304 *fn_8017B008(UnkList_80179304 *list);
-UnkListIter_80179304 fn_8017B000(UnkListNode_80179304 *node);
-UnkListNode_80179304 *fn_8017AF84(UnkList_80179304 *list);
-boost::shared_ptr<Target> fn_8017AFB0(const UnkListIter_80179304 *it);
-UnkListIter_80179304 fn_8017AF8C(UnkListIter_80179304 *it, int);
-
 /* Math (behaviour inferred). */
 float fn_8000FEE4(float value); /* square root */
 float fn_8000F3D4(float angle);
@@ -406,11 +395,11 @@ int DevilDoomCtrlUnit_GetStatus::Tick(float dt) {
 DevilDoomCtrlUnit_AttackCallback::DevilDoomCtrlUnit_AttackCallback(DevilDoomVarParam *param, int index)
     : BossCtrlUnit(param), DevilDoomCtrlUnit(param) {
     m_kind = 0;
-    UnkListIter_80179304 it;
-    it = fn_80179354(fn_8017935C(m_owner->m_colliders));
-    for (int i = 0; it.m_node != fn_801792D8(m_owner->m_colliders); fn_801792E0(&it, 0), i++) {
+    PooledList<CharaColliBase>::iterator it;
+    it = PooledList<CharaColliBase>::iterator(m_owner->m_colliders->Head());
+    for (int i = 0; it != m_owner->m_colliders->End(); it++, i++) {
         if (i == index) {
-            boost::weak_ptr<CharaColliAttack> attack = fn_800C42D0(fn_80021B08(), fn_80179304(&it));
+            boost::weak_ptr<CharaColliAttack> attack = fn_800C42D0(fn_80021B08(), *it);
             boost::shared_ptr<CharaColliAttack> collision(attack.lock());
             collision->m_attackCallback = GetDamageCallback();
         }
@@ -592,13 +581,13 @@ void DevilDoomCtrlUnit_AdjustEye::OnMotion(_stMtnCallbackParam &param) {
     if (m_owner->m_eyeOpen[eye]) {
         fn_8040C148(&m_matrix, &matrix);
     }
-    UnkListIter_80179304 it;
-    it = fn_8017B000(fn_8017B008(m_owner->m_targets));
-    for (int i = 0; it.m_node != fn_8017AF84(m_owner->m_targets); fn_8017AF8C(&it, 0), i++) {
+    PooledList<Target>::iterator it;
+    it = PooledList<Target>::iterator(m_owner->m_targets->Head());
+    for (int i = 0; it != m_owner->m_targets->End(); it++, i++) {
         if (i == eye) {
-            fn_801E73B0(fn_8017AFB0(&it).get(), &Vec3f(matrix.values[0][2], matrix.values[1][2],
-                                                                matrix.values[2][2]));
-            fn_8017AFB0(&it)->SetField24(0.0f);
+            fn_801E73B0((*it).get(), &Vec3f(matrix.values[0][2], matrix.values[1][2],
+                                             matrix.values[2][2]));
+            (*it)->SetField24(0.0f);
         }
     }
 }
@@ -1285,11 +1274,11 @@ int DevilDoomCtrlUnit_AdjustTarget::Tick(float dt) {
         return false;
     }
     int i = 0;
-    UnkListIter_80179304 it;
-    for (it = fn_80179354(fn_8017935C(m_owner->m_colliders));
-         it.m_node != fn_801792D8(m_owner->m_colliders) && i < 2; fn_801792E0(&it, 0), i++) {
-        if (fn_80179304(&it).get() != 0) {
-            boost::weak_ptr<CharaColliAttack> attack = fn_800C42D0(fn_80021B08(), fn_80179304(&it));
+    PooledList<CharaColliBase>::iterator it;
+    for (it = PooledList<CharaColliBase>::iterator(m_owner->m_colliders->Head());
+         it != m_owner->m_colliders->End() && i < 2; it++, i++) {
+        if ((*it).get() != 0) {
+            boost::weak_ptr<CharaColliAttack> attack = fn_800C42D0(fn_80021B08(), *it);
             boost::shared_ptr<CharaColliAttack> collision(attack.lock());
             if (collision) {
                 if (m_owner->m_eyeOpen[i]) {
@@ -1301,14 +1290,14 @@ int DevilDoomCtrlUnit_AdjustTarget::Tick(float dt) {
         }
     }
     i = 0;
-    UnkListIter_80179304 target;
-    for (target = fn_8017B000(fn_8017B008(m_owner->m_targets));
-         target.m_node != fn_8017AF84(m_owner->m_targets) && i < 2; fn_8017AF8C(&target, 0), i++) {
-        if (fn_8017AFB0(&target).get() != 0) {
+    PooledList<Target>::iterator target;
+    for (target = PooledList<Target>::iterator(m_owner->m_targets->Head());
+         target != m_owner->m_targets->End() && i < 2; target++, i++) {
+        if ((*target).get() != 0) {
             if (m_owner->m_eyeOpen[i]) {
-                fn_8017AFB0(&target)->TurnOn();
+                (*target)->TurnOn();
             } else {
-                fn_8017AFB0(&target)->TurnOff();
+                (*target)->TurnOff();
             }
         }
     }

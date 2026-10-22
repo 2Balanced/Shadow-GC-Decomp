@@ -21,11 +21,17 @@ struct RpClump;
 struct UnkClumpFade_80027D5C;
 struct _stMtnCallbackParam;
 
-struct UnkList_80179304;
+template <class T>
+class PooledList; /* Game/PooledList.h */
+class BossCtrlUnit;
+class Target;
 class BossCharInfo;
 struct UnkBossDef;
 namespace SonicteamUSA {
 namespace System {
+namespace CharaColli {
+class CharaColliBase;
+} // namespace CharaColli
 namespace Effect {
 class EffectLaunchInfoUSA;
 } // namespace Effect
@@ -86,10 +92,10 @@ class BossVarParam {
 #else
     /* 0x48 */ Vec3f field_0x48;
 #endif
-    /* 0x54 */ UnkList_80179304 *m_colliders;
+    /* 0x54 */ PooledList<SonicteamUSA::System::CharaColli::CharaColliBase> *m_colliders; /* BossCharaColli */
     /* 0x58 */ Vec3f field_0x58;
-    /* 0x64 */ UnkList_80179304 *m_targets;
-    /* 0x68 */ u32 field_0x68;
+    /* 0x64 */ PooledList<Target> *m_targets;     /* BossTarget */
+    /* 0x68 */ PooledList<BossCtrlUnit> *m_units; /* the units BossCtrl runs */
     /* The boss's effects: a shared_ptr<EffectLaunchInfoUSA>, the type of Game/GadgetStageData.cpp's
      * s_stageEffects (constructor 0x80168E54, destructor 0x80168E04). Launching an effect converts
      * it to the shared_ptr<EffectLaunchInfo> the effect manager takes (a local converting
@@ -189,6 +195,19 @@ class BossCtrlUnit_Shadow : public BossCtrlUnit {
     virtual int Tick(float dt);
 
     /* 0x0C */ u8 field_0xC[0x38 - 0xC];
+};
+
+/* BossCtrlUnit_StageObject (class name from RTTI; vtable at 0x80552490, constructor 0x80290920):
+ * an object of the boss's stage at position, turned by rotation; the meanings of the other
+ * arguments are unknown. */
+class BossCtrlUnit_StageObject : public BossCtrlUnit {
+  public:
+    BossCtrlUnit_StageObject(BossVarParam *param, const Vec3f *position, const Vec3f *rotation,
+                             int arg3, int arg4, int arg5, float radius);
+    virtual ~BossCtrlUnit_StageObject();
+    virtual int Tick(float dt);
+
+    /* 0x0C */ u8 field_0xC[0x28 - 0xC];
 };
 
 /* Adds unit to the units the boss runs (behaviour inferred). */

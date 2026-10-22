@@ -26,6 +26,9 @@ class BossRootTask : public Task {
     /* Sets the boss up (slot 0x10, pure in BossRootTask). */
     virtual void Init() = 0;
 
+    /* "BossRootTask", the task name the constructor stores (Game/BossRootTask.cpp). */
+    static const char *s_taskName;
+
     /* 0x28 */ UnkPlacement_800C9CD0 *m_owner;
     /* 0x2C */ BossVarParam *m_param;
     /* 0x30 */ u8 m_started; /* Init has run */
@@ -35,14 +38,24 @@ class BossRootTask : public Task {
 SIZE_ASSERT(BossRootTask, 0x38);
 
 /* BossCtrl (class name from RTTI; vtable at 0x8052BE8C, constructor 0x80179B3C): a task that the
- * boss tasks create under themselves on their BossVarParam (meaning unknown). */
+ * boss tasks create under themselves on their BossVarParam. It creates the boss's other tasks
+ * (BossMotion, BossCharaColli, BossTarget, BossAfterCtrl, BossRender, BossForceClear) and runs the
+ * boss's control units (Game/BossCtrl.cpp). */
 class BossCtrl : public Task {
   public:
     BossCtrl(Task *parent, BossVarParam *param);
     virtual ~BossCtrl();
     virtual void Tick(float dt);
 
+#ifdef BOSSCTRL_MEMBERS
+    /* The members as Game/BossCtrl.cpp sees them: boost::scoped_ptr is a template the other
+     * units must not see (it would renumber their @N locals). */
+    class Impl;
+
+    /* 0x28 */ boost::scoped_ptr<Impl> m_impl;
+#else
     /* 0x28 */ void *field_0x28;
+#endif
     /* 0x2C */ u32 field_0x2C;
 };
 SIZE_ASSERT(BossCtrl, 0x30);

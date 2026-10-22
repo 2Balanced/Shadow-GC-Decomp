@@ -15,7 +15,15 @@
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
 
-class UnkCamera_8000D0F0;
+namespace SonicteamUSA {
+namespace System {
+namespace Camera {
+/* CameraManagerUnit (class name from the RTTI of its shared_ptr control block; see
+ * Game/CameraManagerUnit.h). */
+class CameraManagerUnit;
+} // namespace Camera
+} // namespace System
+} // namespace SonicteamUSA
 class UnkCameraManager_80009548;
 
 extern "C" {
@@ -33,7 +41,7 @@ void fn_8016761C(GadgetParticle::GadgetParticleCtrl *ctrl, float dt);
 /* The camera manager, a camera of it, and a camera's angles (behaviour inferred; see
  * HintRing.cpp). */
 UnkCameraManager_80009548 *fn_80009548(void);
-boost::shared_ptr<UnkCamera_8000D0F0> fn_8000D0F0(UnkCameraManager_80009548 *manager, int index);
+boost::shared_ptr<SonicteamUSA::System::Camera::CameraManagerUnit> fn_8000D0F0(UnkCameraManager_80009548 *manager, int index);
 Vec3f fn_8000A610(const u8 *camera);
 }
 

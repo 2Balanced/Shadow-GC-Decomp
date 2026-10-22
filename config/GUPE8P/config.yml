@@ -12,3 +12,5 @@ mw_comment_version: 11
 force_active:
 - __init_cpp_exceptions_reference
 - __fini_cpp_exceptions_reference
+# Game/StageInitalizeTask.cpp's unused vector: nothing refers to it, but retail kept it.
+- lbl_80580250

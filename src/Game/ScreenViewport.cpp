@@ -1,10 +1,11 @@
 /* The screen layouts of the camera system (no RTTI; the file and every name here are inferred).
  * A table of five viewports describes the full screen and the two halves of a screen split side
  * by side or one above the other: the viewport index of each player of each layout, its rectangles
- * in two screen sizes and its scale. A ScreenRasters gives a viewport its own camera and z rasters
- * (sub-rasters of the screen's) and installs them as the screen's current ones. The camera unit
- * before this one (0x8026EE9C) uses all of it. Definitions are in reverse address order (deferred
+ * in two screen sizes and its scale. A CameraScreen (Game/CameraScreen.h) gives a viewport its
+ * own camera and z rasters (sub-rasters of the screen's) and installs them as the screen's current
+ * ones. The unit before this one (Game/CameraScreenSet.cpp) uses all of it. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first). */
+#include "Game/CameraScreen.h"
 #include "Game/MathTypes.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -115,19 +116,7 @@ static const s32 s_layout1[] = {1, 2};
 static const s32 s_layout2[] = {3, 4};
 static const s32 *s_layouts[] = {s_layout0, s_layout1, s_layout2};
 
-/* The cameras' and z rasters of a viewport. */
-class ScreenRasters {
-  public:
-    ScreenRasters(s32 viewport);
-    ~ScreenRasters();
-    /* Makes them the screen's current rasters. */
-    void Apply();
-
-    /* 0x0 */ s32 m_viewport;
-    /* 0x4 */ RwRaster *m_raster;  /* the screen's own when m_viewport is 0 */
-    /* 0x8 */ RwRaster *m_zRaster;
-};
-SIZE_ASSERT(ScreenRasters, 0xC);
+using SonicteamUSA::System::Camera::CameraScreen;
 
 extern "C" s32 fn_80272EC0(s32 layout, s32 player) {
     return s_layouts[layout][player];
@@ -171,7 +160,7 @@ inline RwRect GetRwRect(s32 viewport) {
     return *reinterpret_cast<const RwRect *>(fn_80272E94(viewport));
 }
 
-ScreenRasters::ScreenRasters(s32 viewport) : m_viewport(viewport), m_raster(0), m_zRaster(0) {
+CameraScreen::CameraScreen(s32 viewport) : m_viewport(viewport), m_raster(0), m_zRaster(0) {
     if (m_viewport != 0) {
         m_raster = fn_80489E74(0, 0, 0, 2);
         m_zRaster = fn_80489E74(0, 0, 0, 1);
@@ -184,7 +173,7 @@ ScreenRasters::ScreenRasters(s32 viewport) : m_viewport(viewport), m_raster(0), 
     }
 }
 
-ScreenRasters::~ScreenRasters() {
+CameraScreen::~CameraScreen() {
     if (m_raster != 0) {
         if (m_viewport != 0) {
             fn_80489BDC(m_raster);
@@ -195,7 +184,7 @@ ScreenRasters::~ScreenRasters() {
     }
 }
 
-void ScreenRasters::Apply() {
+void CameraScreen::Apply() {
     UnkScreenHolder_8000DCC0 *holder = fn_8000DCC0();
     holder->m_screen->m_raster = m_raster;
     holder->m_screen->m_zRaster = m_zRaster;

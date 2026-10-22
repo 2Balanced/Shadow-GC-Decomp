@@ -19,6 +19,7 @@
 #include "Game/EnemyCharInfo.h"
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
+#include "Game/PooledList.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
@@ -42,14 +43,6 @@ struct _stMtnCallbackParam {
     /* 0x0 */ void *m_frame;
     /* 0x4 */ u32 field_0x4;
     /* 0x8 */ s32 m_id;
-};
-
-/* The boss's lists (as in Game/DevilDoomCtrlUnit.h). */
-struct UnkListNode_80179304;
-struct UnkListIter_80179304 {
-    UnkListIter_80179304() : m_node(0) {}
-
-    UnkListNode_80179304 *m_node;
 };
 
 /* The parts of AttackCallbackParam the units read (as in DevilDoomCtrlUnit.cpp). */
@@ -140,11 +133,6 @@ boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager,
 boost::weak_ptr<CharaColliAttack> fn_800C42D0(void *manager,
                                               boost::shared_ptr<CharaColliBase> collider);
 
-UnkListNode_80179304 *fn_8017935C(UnkList_80179304 *list);
-UnkListIter_80179304 fn_80179354(UnkListNode_80179304 *node);
-UnkListNode_80179304 *fn_801792D8(UnkList_80179304 *list);
-boost::shared_ptr<CharaColliBase> fn_80179304(const UnkListIter_80179304 *it);
-UnkListIter_80179304 fn_801792E0(UnkListIter_80179304 *it, int);
 EnemyCharInfo *fn_801792D0(EnemyCharInfo *const *body);
 
 void *fn_80020A20(UnkLine_80020A20 *line, const Vec3f *start, const Vec3f *end);
@@ -335,12 +323,11 @@ BlackBullCtrlUnit_AttackCallback::BlackBullCtrlUnit_AttackCallback(BlackBullVarP
                                                                    int index)
     : BossCtrlUnit(param), BlackBullCtrlUnit(param) {
     m_kind = 0;
-    UnkListIter_80179304 it;
-    it = fn_80179354(fn_8017935C(m_owner->m_colliders));
-    for (int i = 0; it.m_node != fn_801792D8(m_owner->m_colliders); fn_801792E0(&it, 0), i++) {
+    PooledList<CharaColliBase>::iterator it;
+    it = PooledList<CharaColliBase>::iterator(m_owner->m_colliders->Head());
+    for (int i = 0; it != m_owner->m_colliders->End(); it++, i++) {
         if (i == index) {
-            boost::weak_ptr<CharaColliAttack> attack =
-                fn_800C42D0(fn_80021B08(), fn_80179304(&it));
+            boost::weak_ptr<CharaColliAttack> attack = fn_800C42D0(fn_80021B08(), *it);
             boost::shared_ptr<CharaColliAttack> collision(attack.lock());
             collision->m_hitCallback = GetHitCallback();
             collision->m_attackCallback = GetDamageCallback();

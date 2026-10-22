@@ -121,7 +121,15 @@ class Target {
 };
 
 /* The camera fn_8000D0F0 returns (class name unknown). */
-class UnkCamera_8000D0F0;
+namespace SonicteamUSA {
+namespace System {
+namespace Camera {
+/* CameraManagerUnit (class name from the RTTI of its shared_ptr control block; see
+ * Game/CameraManagerUnit.h). */
+class CameraManagerUnit;
+} // namespace Camera
+} // namespace System
+} // namespace SonicteamUSA
 class UnkCameraManager_80009548;
 
 /* The cursor handed to a parameter's label callback (layout from fn_800CBC20; names inferred). */
@@ -174,7 +182,7 @@ void fn_800C9B34(UnkPlacement_800C9CD0 *owner);
 boost::weak_ptr<CharInfo> fn_80238058(VacuumObject *object);
 /* The camera manager, a camera of it, and a camera's angles (behaviour inferred). */
 UnkCameraManager_80009548 *fn_80009548(void);
-boost::shared_ptr<UnkCamera_8000D0F0> fn_8000D0F0(UnkCameraManager_80009548 *manager, int index);
+boost::shared_ptr<SonicteamUSA::System::Camera::CameraManagerUnit> fn_8000D0F0(UnkCameraManager_80009548 *manager, int index);
 Vec3f fn_8000A610(const u8 *camera);
 }
 

@@ -72,7 +72,7 @@ inline BossVarParam::BossVarParam()
     : m_maxHealth(100.0f), m_mode(0), field_0x10(0), m_nextMode(0), m_stopped(0), m_invincible(0),
       m_active(1), m_hidden(0), m_time(0.0f), m_clump(0), m_fade(0), field_0x34(0), m_motion(0),
       field_0x40(1.0f), field_0x48(lbl_805E07A0), m_colliders(0), field_0x58(1.0f, 1.0f, 1.0f),
-      m_targets(0), field_0x68(0) {}
+      m_targets(0), m_units(0) {}
 
 inline BossCharInfo::BossCharInfo(int type) : CharInfo(type) {
     field_0x5C = 3;

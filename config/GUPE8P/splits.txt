@@ -764,6 +764,46 @@ Game/RingMission.cpp:
 	.data       start:0x8052B970 end:0x8052BA10
 	.sdata      start:0x805E67F0 end:0x805E6808
 
+Game/SaveRecord.cpp:
+	.text       start:0x8016EEC0 end:0x8016F67C
+	.sdata      start:0x805E6808 end:0x805E6810
+	.sdata2     start:0x805F4BF0 end:0x805F4C10
+
+Game/StageActionManager.cpp:
+	.text       start:0x80174504 end:0x80176BE4
+	.rodata     start:0x804C3DD8 end:0x804C47B8
+	.data       start:0x8052BB48 end:0x8052BDA8
+	.sdata      start:0x805E6878 end:0x805E6970
+	.sbss       start:0x805EF2D0 end:0x805EF310
+
+Game/StageTable.cpp:
+	.text       start:0x80176BE4 end:0x80176C84
+	.rodata     start:0x804C47B8 end:0x804C5C88
+	.sdata2     start:0x805F4DD0 end:0x805F4E48
+
+Game/StageInitalizeTask.cpp:
+	.text       start:0x80176C84 end:0x801773AC
+	.ctors      start:0x804A9D94 end:0x804A9D98
+	.rodata     start:0x804C5C88 end:0x804C5CD0
+	.data       start:0x8052BDA8 end:0x8052BDF8
+	.bss        start:0x80580250 end:0x80580260
+	.sdata      start:0x805E6970 end:0x805E69A0
+	.sdata2     start:0x805F4E48 end:0x805F4E60
+
+Game/BossCharaColli.cpp:
+	.text       start:0x80178DF8 end:0x80179A34
+	.rodata     start:0x804C6040 end:0x804C6060
+	.data       start:0x8052BE60 end:0x8052BE80
+	.sdata      start:0x805E69D8 end:0x805E69E8
+	.sdata2     start:0x805F4E88 end:0x805F4E90
+
+Game/BossCtrl.cpp:
+	.text       start:0x80179A34 end:0x8017A34C
+	.rodata     start:0x804C6060 end:0x804C6070
+	.data       start:0x8052BE80 end:0x8052BEA0
+	.sdata      start:0x805E69E8 end:0x805E69F8
+	.sdata2     start:0x805F4E90 end:0x805F4EA0
+
 Game/BossMotion.cpp:
 	.text       start:0x8017A34C end:0x8017A71C
 	.rodata     start:0x804C6070 end:0x804C6080
@@ -777,6 +817,13 @@ Game/BossRender.cpp:
 	.data       start:0x8052BEC0 end:0x8052BEE0
 	.sdata      start:0x805E6A08 end:0x805E6A18
 	.sdata2     start:0x805F4EB0 end:0x805F4EC8
+
+Game/BossTarget.cpp:
+	.text       start:0x8017AC5C end:0x8017B50C
+	.rodata     start:0x804C6090 end:0x804C60A0
+	.data       start:0x8052BEE0 end:0x8052BF00
+	.sdata      start:0x805E6A18 end:0x805E6A28
+	.sdata2     start:0x805F4EC8 end:0x805F4ED8
 
 Game/GoalMission.cpp:
 	.text       start:0x801F38F0 end:0x801F398C
@@ -885,6 +932,30 @@ Game/NpcEggMonitorMotion.cpp:
 	.data       start:0x805427D0 end:0x805428A8
 	.sdata      start:0x805E9160 end:0x805E9188
 	.sdata2     start:0x805F6738 end:0x805F6750
+
+Game/TGiCommandWindow.cpp:
+	.text       start:0x801FDF3C end:0x801FFC8C
+	.rodata     start:0x804EC1E0 end:0x804EC7E0
+	.data       start:0x805428A8 end:0x80542928
+	.sdata      start:0x805E9188 end:0x805E91B8
+	.sbss       start:0x805EFBB0 end:0x805EFBC8
+	.sdata2     start:0x805F6750 end:0x805F67B8
+
+Game/TGiRingChallenge.cpp:
+	.text       start:0x801FFC8C end:0x80200FB0
+	.rodata     start:0x804EC7E0 end:0x804ECD88
+	.data       start:0x80542928 end:0x80542950
+	.sdata      start:0x805E91B8 end:0x805E91D0
+	.sbss       start:0x805EFBC8 end:0x805EFBE0
+	.sdata2     start:0x805F67B8 end:0x805F6820
+
+Game/TGiScoreDisplay.cpp:
+	.text       start:0x80200FB0 end:0x8020261C
+	.rodata     start:0x804ECD88 end:0x804ED398
+	.data       start:0x80542950 end:0x80542978
+	.sdata      start:0x805E91D0 end:0x805E91E8
+	.sbss       start:0x805EFBE0 end:0x805EFBF8
+	.sdata2     start:0x805F6820 end:0x805F6868
 
 Game/ElecSmallCube.cpp:
 	.text       start:0x8021AD3C end:0x8021BCF0
@@ -1182,6 +1253,47 @@ Game/ElecAccessPanel.cpp:
 	.sbss       start:0x805EFF80 end:0x805EFF98
 	.sdata2     start:0x805F74F0 end:0x805F7518
 
+Game/HeavyDogCtrlUnit.cpp:
+	.text       start:0x802498AC end:0x8024E104
+	.rodata     start:0x804F3F18 end:0x804F4290
+	.data       start:0x80548BE0 end:0x80549098
+	.sdata      start:0x805EA1D8 end:0x805EA290
+	.sbss       start:0x805EFF98 end:0x805EFFA8
+	.sdata2     start:0x805F7518 end:0x805F7560
+
+Game/HeavyDog0410.cpp:
+	.text       start:0x8024E104 end:0x8024F37C
+	.ctors      start:0x804A9EE4 end:0x804A9EE8
+	.rodata     start:0x804F4290 end:0x804F4398
+	.data       start:0x80549098 end:0x80549230
+	.bss        start:0x80583E68 end:0x80583F68
+	.sdata      start:0x805EA290 end:0x805EA2E0
+	.sbss       start:0x805EFFA8 end:0x805EFFB0
+	.sdata2     start:0x805F7560 end:0x805F75D8
+
+Game/HeavyDog0410ModeCtrlUnit.cpp:
+	.text       start:0x8024F37C end:0x802516C4
+	.rodata     start:0x804F4398 end:0x804F45C0
+	.data       start:0x80549230 end:0x805495C0
+	.sdata      start:0x805EA2E0 end:0x805EA368
+	.sdata2     start:0x805F75D8 end:0x805F7618
+
+Game/HeavyDog0510ModeCtrlUnit.cpp:
+	.text       start:0x802516C4 end:0x80253950
+	.rodata     start:0x804F45C0 end:0x804F47E8
+	.data       start:0x805495C0 end:0x80549968
+	.sdata      start:0x805EA368 end:0x805EA3F0
+	.sdata2     start:0x805F7618 end:0x805F7660
+
+Game/HeavyDog0510.cpp:
+	.text       start:0x80253950 end:0x80254384
+	.ctors      start:0x804A9EE8 end:0x804A9EEC
+	.rodata     start:0x804F47E8 end:0x804F48B8
+	.data       start:0x80549968 end:0x80549AB8
+	.bss        start:0x80583F68 end:0x80584058
+	.sdata      start:0x805EA3F0 end:0x805EA420
+	.sdata2     start:0x805F7660 end:0x805F7690
+
 Game/VacuumContainer.cpp:
 	.text       start:0x80254384 end:0x80254E90
 	.ctors      start:0x804A9EEC end:0x804A9EF0
@@ -1325,6 +1437,27 @@ Game/ArkLaser.cpp:
 	.sbss       start:0x805F0128 end:0x805F0148
 	.sdata2     start:0x805F7E30 end:0x805F7E70
 
+Game/SweepMove.cpp:
+	.text       start:0x8026EE9C end:0x8026F444
+	.sdata2     start:0x805F7E70 end:0x805F7E90
+
+Game/CameraManagerUnit.cpp:
+	.text       start:0x8026F444 end:0x802717C0
+	.rodata     start:0x804F6780 end:0x804F6940
+	.data       start:0x8054CC50 end:0x8054CC98
+	.sdata      start:0x805EA958 end:0x805EA980
+	.sbss       start:0x805F0148 end:0x805F0150
+	.sdata2     start:0x805F7E90 end:0x805F7E98
+
+Game/CameraScreenSet.cpp:
+	.text       start:0x802717C0 end:0x80272BFC
+	.ctors      start:0x804A9F14 end:0x804A9F18
+	.rodata     start:0x804F6940 end:0x804F6A98
+	.data       start:0x8054CC98 end:0x8054CCC0
+	.sdata      start:0x805EA980 end:0x805EA9A0
+	.sbss       start:0x805F0150 end:0x805F0180
+	.sdata2     start:0x805F7E98 end:0x805F7EA8
+
 Game/ScreenViewport.cpp:
 	.text       start:0x80272BFC end:0x802733C4
 	.ctors      start:0x804A9F18 end:0x804A9F1C
@@ -1449,6 +1582,41 @@ Game/ThrowContainer.cpp:
 	.sdata      start:0x805EABD8 end:0x805EABF0
 	.sbss       start:0x805F0218 end:0x805F0220
 	.sdata2     start:0x805F80B8 end:0x805F80D0
+
+Game/Magma.cpp:
+	.text       start:0x8027B90C end:0x8027BF14
+	.rodata     start:0x804F7E80 end:0x804F7EA8
+	.data       start:0x8054DBC0 end:0x8054DCC8
+	.sdata      start:0x805EABF0 end:0x805EAC10
+	.sdata2     start:0x805F80D0 end:0x805F8100
+
+Game/SetGenerator.cpp:
+	.text       start:0x8027BF14 end:0x8027CD50
+	.ctors      start:0x804A9F48 end:0x804A9F4C
+	.rodata     start:0x804F7EA8 end:0x804F8000
+	.data       start:0x8054DCC8 end:0x8054DE90
+	.sdata      start:0x805EAC10 end:0x805EAC68
+	.sbss       start:0x805F0220 end:0x805F0228
+	.sdata2     start:0x805F8100 end:0x805F8138
+
+Game/ThrowObject.cpp:
+	.text       start:0x8027CD50 end:0x8027DE0C
+	.ctors      start:0x804A9F4C end:0x804A9F50
+	.rodata     start:0x804F8000 end:0x804F80F0
+	.data       start:0x8054DE90 end:0x8054DED0
+	.sdata      start:0x805EAC68 end:0x805EAC80
+	.sbss       start:0x805F0228 end:0x805F0240
+	.sdata2     start:0x805F8138 end:0x805F8158
+
+Game/BossRootTask.cpp:
+	.text       start:0x8027DE0C end:0x8027E0D8
+	.ctors      start:0x804A9F50 end:0x804A9F54
+	.rodata     start:0x804F80F0 end:0x804F8100
+	.data       start:0x8054DED0 end:0x8054DEF0
+	.bss        start:0x80584278 end:0x80584288
+	.sdata      start:0x805EAC80 end:0x805EAC98
+	.sbss       start:0x805F0240 end:0x805F0248
+	.sdata2     start:0x805F8158 end:0x805F8160
 
 Game/CityBombBig.cpp:
 	.text       start:0x802F31DC end:0x802F46E4

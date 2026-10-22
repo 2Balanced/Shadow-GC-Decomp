@@ -192,6 +192,11 @@ template <class A, class S> struct __list_size_pair : public __list_size_base<A,
     S &second() {
         return this->second_;
     }
+#ifdef MSL_LIST_ACCESSORS
+    const S &second() const {
+        return this->second_;
+    }
+#endif
 };
 
 /* The node allocator and the end node. */
@@ -230,6 +235,22 @@ template <class T> class __list_imp {
     iterator insert(iterator position, const T &x);
     iterator erase(iterator position);
     iterator erase(iterator first, iterator last);
+#ifdef MSL_LIST_ACCESSORS
+    /* Only where MSL_LIST_ACCESSORS is defined before this header (Game/CameraManagerUnit.cpp), so
+     * that the other units' instances and local symbols stay as they are. */
+    const size_type &sz() const {
+        return size_.second();
+    }
+    size_type size() const {
+        return sz();
+    }
+    bool empty() const {
+        return sz() == 0;
+    }
+    T &front() {
+        return static_cast<node *>(tail()->next_)->data_;
+    }
+#endif
 
     size_type &sz() {
         return size_.second();

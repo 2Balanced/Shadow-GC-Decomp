@@ -189,6 +189,18 @@ class AnnounceAttackCommand : public CharCommand {
 };
 SIZE_ASSERT(AnnounceAttackCommand, 0x20);
 
+/* GenerateCommand (class name from RTTI; vtable at 0x8053D1C4): the command of type 0x19 that a
+ * set generator (Game/SetGenerator.cpp) sends to the object it releases, with the object's placed
+ * position and rotation (constructor 0x801DA9E4; names inferred). */
+class GenerateCommand : public CharCommand {
+  public:
+    GenerateCommand(const Vec3f &position, const Vec3f &rotation);
+
+    /* 0x14 */ Vec3f m_position;
+    /* 0x20 */ Vec3f m_rotation;
+};
+SIZE_ASSERT(GenerateCommand, 0x2C);
+
 namespace Player {
 
 /* PlayerCommand (class name from RTTI): the base of the player-only commands. */
