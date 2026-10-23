@@ -20,12 +20,18 @@ namespace AdvReal {
 
 /* AdvCsdEffect (class name from the RTTI of its shared_ptr's control block): two CSD scenes the
  * front-end phases (Game/AdvOption.cpp, Game/AdvStoryLibrary.cpp) play over their menus. Its
- * functions are in another unit: the constructor at 0x80356044, the destructor at 0x80355FE4,
- * and fn_80355EB0 and fn_80355F54 (see below). Member names are inferred. */
+ * functions are in Game/AdvCsdEffect.cpp: the constructor at 0x80356044, the destructor at
+ * 0x80355FE4, and fn_80355EB0 and fn_80355F54 (see below). Member names are inferred. */
 class AdvCsdEffect {
   public:
     AdvCsdEffect(UnkCsdHandle_80042DF0 project);
     ~AdvCsdEffect();
+
+    /* Takes the scenes from a project and plays their loop; true when one was found (0x80355DAC;
+     * name inferred). */
+    bool Bind(UnkCsdHandle_80042DF0 project);
+    /* Ends and drops the scenes (0x80355D0C; name inferred). */
+    void Release();
 
     /* 0x0 */ Chao::CSD::RCPtr<Chao::CSD::CScene> m_scenes[2];
 };

@@ -48,6 +48,43 @@ struct iterator {
     typedef Category iterator_category;
 };
 
+#ifdef MSL_ITERATOR_DISPATCH
+/* advance and distance through helpers chosen by the iterator's category (only units that define
+ * MSL_ITERATOR_DISPATCH see them; Game/VibrationManagerUnit.cpp, where upper_bound walks a list). */
+template <class BidirectionalIterator, class Gap>
+inline void __advance(BidirectionalIterator &i, Gap n, bidirectional_iterator_tag) {
+    if (n >= 0) {
+        for (; n > 0; --n) {
+            ++i;
+        }
+    } else {
+        for (; n < 0; ++n) {
+            --i;
+        }
+    }
+}
+
+template <class InputIterator, class Gap> inline void advance(InputIterator &i, Gap n) {
+    __advance(i, n, typename iterator_traits<InputIterator>::iterator_category());
+}
+
+template <class InputIterator>
+inline typename iterator_traits<InputIterator>::difference_type __distance(InputIterator first,
+                                                                           InputIterator last,
+                                                                           input_iterator_tag) {
+    typename iterator_traits<InputIterator>::difference_type n = 0;
+    for (; first != last; ++first) {
+        ++n;
+    }
+    return n;
+}
+
+template <class InputIterator>
+inline typename iterator_traits<InputIterator>::difference_type distance(InputIterator first,
+                                                                         InputIterator last) {
+    return __distance(first, last, typename iterator_traits<InputIterator>::iterator_category());
+}
+#else
 template <class InputIterator, class Gap> inline void advance(InputIterator &i, Gap n) {
     for (; n > 0; --n) {
         ++i;
@@ -66,6 +103,7 @@ inline typename iterator_traits<InputIterator>::difference_type distance(InputIt
     }
     return n;
 }
+#endif
 
 template <class Iterator>
 class reverse_iterator

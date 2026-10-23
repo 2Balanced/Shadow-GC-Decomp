@@ -181,6 +181,15 @@ The pool base symbol at the start of such a section should be the compiler's `@N
   constants, where retail has it.
 - Stack order follows declaration order: earlier locals get higher addresses. If two locals'
   slots are swapped, move a declaration up, as with LongSpring's `velocity`.
+- Classes with a virtual base (the enemy framework, `Game/Enemy.h`):
+  - An RTTI base list is the class's bases in reverse pre-order (each base before its own bases,
+    in declaration order). Retail lists `EnemyReferer` last for the interface classes, so they
+    name the virtual base first (`: public virtual EnemyReferer, public EnemyStatFunc`). This
+    doesn't change the layout.
+  - Virtual-base thunks (`@272@...`) of one offset come out in reverse order of the base class's
+    member declarations, then its bases' declarations. A new virtual declared before the
+    overrides (`~EnemyDispCommon`) gets its thunk last; new virtuals keep their relative order,
+    so the slot layout stays the same. See `BkSoldier.cpp`.
 - Functions that convert between float and int (a `fctiwz` plus a `0x43300000` sequence) may stay
   at about 99.8%. The original compiler shares one stack slot for these; see
   `docs/research-notes.md`. Leave them NonMatching with a comment and move on.

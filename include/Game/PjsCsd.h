@@ -26,8 +26,8 @@ class TPjsCsd {
 SIZE_ASSERT(TPjsCsd, 0x54);
 
 extern "C" {
-/* Loads the project from data (behaviour inferred). */
-void fn_8003E750(TPjsCsd &csd, void *data, u32 size);
+/* Loads the project from data; false when it could not (behaviour inferred). */
+bool fn_8003E750(TPjsCsd &csd, void *data, u32 size);
 /* Starts the scene in m_sceneName (behaviour inferred; the arguments' meanings are unknown). */
 void fn_8003E414(TPjsCsd &csd, int arg1, int arg2);
 void fn_8003FB10(TPjsCsd &csd);

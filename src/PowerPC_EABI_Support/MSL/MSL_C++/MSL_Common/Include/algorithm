@@ -92,6 +92,29 @@ ForwardIterator remove_if(ForwardIterator first, ForwardIterator last, Predicate
 }
 #endif
 
+#ifdef MSL_ALGORITHM_UPPER_BOUND
+/* upper_bound with operator< (only units that define MSL_ALGORITHM_UPPER_BOUND see it, for the
+ * reason given at MSL_ALGORITHM_COPY; Game/VibrationManagerUnit.cpp keeps a sorted list). The
+ * element is read through the iterator's operator->, which retail expands inline there. */
+template <class ForwardIterator, class T>
+ForwardIterator upper_bound(ForwardIterator first, ForwardIterator last, const T &value) {
+    typedef typename iterator_traits<ForwardIterator>::difference_type difference_type;
+    difference_type len = distance(first, last);
+    while (len > 0) {
+        ForwardIterator i = first;
+        difference_type half = len / 2;
+        advance(i, half);
+        if (!(value < *i.operator->())) {
+            first = ++i;
+            len -= half + 1;
+        } else {
+            len = half;
+        }
+    }
+    return first;
+}
+#endif
+
 #ifdef MSL_ALGORITHM_SORT
 /* sort and its helpers (only units that define MSL_ALGORITHM_SORT see them, for the reason given
  * at MSL_ALGORITHM_COPY; Game/CountMessage.cpp, Game/TimerMessage.cpp). The game's sort is a

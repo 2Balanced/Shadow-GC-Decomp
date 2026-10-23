@@ -43,6 +43,20 @@ template <class T> struct __list_node : public __list_node_base {
 
 template <class T> class __list_iterator {
   public:
+#ifdef MSL_LIST_VIBRATION
+    /* Only where MSL_LIST_VIBRATION is defined before this header (Game/VibrationManagerUnit.cpp,
+     * which includes <iterator> first): the traits upper_bound needs, and operator--. */
+    typedef bidirectional_iterator_tag iterator_category;
+    typedef T value_type;
+    typedef ptrdiff_t difference_type;
+    typedef T *pointer;
+    typedef T &reference;
+
+    __list_iterator &operator--() {
+        node_ = static_cast<__list_node<T> *>(node_->prev_);
+        return *this;
+    }
+#endif
     __list_iterator() {}
     explicit __list_iterator(__list_node_base *n) : node_(static_cast<__list_node<T> *>(n)) {}
     __list_iterator(const __list_iterator &x) : node_(x.node_) {}
@@ -80,10 +94,16 @@ template <class T> class __list_value_allocator {
     void construct(T *p, const T &value) {
         new ((void *)p) T(value);
     }
+#ifdef MSL_LIST_TRIVIAL_VALUES
+    /* Only where MSL_LIST_TRIVIAL_VALUES is defined before this header (Game/EffectKage.cpp): the
+     * values have no destructor, and retail expands destroy where it is called. */
+    void destroy(T *p) {}
+#else
     void destroy(T *p) {
         p->~T();
         __list_nothing();
     }
+#endif
 };
 
 template <class N> class __list_node_allocator {
@@ -284,7 +304,35 @@ template <class T> class list : public __list_base<T> {
     void clear() {
         this->erase(this->begin(), this->end());
     }
+#ifdef MSL_LIST_VIBRATION
+    /* Only where MSL_LIST_VIBRATION is defined before this header (Game/VibrationManagerUnit.cpp,
+     * which also defines MSL_FUNCTIONAL_BINDERS). */
+    void remove(const T &value) {
+        remove_if(bind2nd(equal_to<T>(), value));
+    }
+    template <class Predicate> void remove_if(Predicate pred);
+#endif
 };
+
+#ifdef MSL_LIST_VIBRATION
+template <class T> template <class Predicate> void list<T>::remove_if(Predicate pred) {
+    iterator e = this->end();
+    for (iterator i = this->begin(); i != e; ++i) {
+        if (pred(i.node_->data_)) {
+            iterator j = i;
+            for (++j; j != e; ++j) {
+                if (!pred(j.node_->data_)) {
+                    break;
+                }
+            }
+            i = this->erase(i, j);
+            if (i == e) {
+                break;
+            }
+        }
+    }
+}
+#endif
 
 template <class T> __list_imp<T>::__list_imp() : size_(0), tail_(node_allocator(alloc())) {
     __list_node_base *t = tail();
@@ -327,7 +375,12 @@ typename __list_imp<T>::iterator __list_imp<T>::erase(iterator first, iterator l
     fp->prev_->next_ = lp->next_;
     lp->next_->prev_ = fp->prev_;
     while (first != last) {
+#ifdef MSL_LIST_TRIVIAL_VALUES
+        /* operator-> feeds the expanded destroy, so retail calls it out of line. */
+        alloc().destroy(first.operator->());
+#else
         alloc().destroy(&static_cast<node *>(first.node_)->data_);
+#endif
         __list_node_base *p = first.node_;
         ++first;
         node_alloc().deallocate(static_cast<node *>(p), 1);

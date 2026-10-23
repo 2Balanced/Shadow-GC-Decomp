@@ -36,6 +36,9 @@
 #include <boost/detail/sp_counted_base_impl.hpp>
 
 #include <algorithm>            // for std::swap
+#ifdef BOOST_SP_LESS
+#include <functional>           // for std::less
+#endif
 #include <new>                  // for std::bad_alloc
 #include <typeinfo>
 
@@ -124,6 +127,15 @@ public:
     {
         return pi_? pi_->get_deleter(ti): 0;
     }
+
+#ifdef BOOST_SP_LESS
+    // boost 1.32's ordering, compiled only where BOOST_SP_LESS is defined before this header
+    // (Game/VibrationManagerUnit.cpp), for the reason given at the top.
+    friend inline bool operator<(shared_count const & a, shared_count const & b)
+    {
+        return std::less<sp_counted_base *>()(a.pi_, b.pi_);
+    }
+#endif
 };
 
 class weak_count
@@ -335,6 +347,13 @@ public:
         return pn.unique();
     }
 
+#ifdef BOOST_SP_LESS
+    template<class Y> bool _internal_less(shared_ptr<Y> const & rhs) const
+    {
+        return pn < rhs.pn;
+    }
+#endif
+
     long use_count() const // never throws
     {
         return pn.use_count();
@@ -355,6 +374,13 @@ template<class T, class U> inline bool operator==(shared_ptr<T> const & a, share
 {
     return a.get() == b.get();
 }
+
+#ifdef BOOST_SP_LESS
+template<class T, class U> inline bool operator<(shared_ptr<T> const & a, shared_ptr<U> const & b)
+{
+    return a._internal_less(b);
+}
+#endif
 
 #ifdef BOOST_SP_FREE_SWAP
 // Only where BOOST_SP_FREE_SWAP is defined before this header (Game/CountMessage.cpp,

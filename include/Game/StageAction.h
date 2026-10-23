@@ -11,6 +11,10 @@
  * game allocates. Constructors and destructors live in the actions' own units; the destructors are
  * not virtual (boost::checked_delete calls each one directly). Member names are inferred. */
 class Task;
+class Render;
+struct RednerDrawArgs;
+class UnkCsdResource_8003E808;
+struct UnkFlashbackEntry_803546C0;
 
 namespace StageAction {
 
@@ -157,10 +161,73 @@ class TryAgainAction : public IAction {
     /* 0x8 */ u8 m_retry; /* the selected answer: 1 try again, 0 quit */
 };
 SIZE_ASSERT(TryAgainAction, 0xC);
+#ifdef STAGEACTION_SHOWACTION_IMPL
+/* Shows the 2P battle's start screen (Game/ShowAction.cpp defines STAGEACTION_SHOWACTION_IMPL; the
+ * other units see the macro's view, so that the members' types add nothing to them). */
+class ShowAction : public IAction {
+  public:
+    ShowAction();
+    ~ShowAction();
+    virtual void Execute();
+    void Draw(RednerDrawArgs &args);
+    void PlayVoice(int player);
+
+    /* 0x04 */ s32 m_state;
+    /* 0x08 */ boost::shared_ptr<Render> m_render;
+    /* 0x10 */ UnkCsdResource_8003E808 *m_project;
+    /* 0x14 */ u8 m_playing; /* the current scene is playing */
+};
+SIZE_ASSERT(ShowAction, 0x18);
+#else
 STAGEACTION_DECLARE(ShowAction, 0x18);
-STAGEACTION_DECLARE(FlashbackAction, 0xC);
-STAGEACTION_DECLARE(Result2PAction, 0x3C);
-STAGEACTION_DECLARE(TimeupAction, 0xC);
+#endif
+/* Plays the flashback event of a stage of the story's flashbacks (Game/FlashbackAction.cpp). */
+class FlashbackAction : public IAction {
+  public:
+    FlashbackAction();
+    ~FlashbackAction();
+    virtual void Execute();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ UnkFlashbackEntry_803546C0 *m_entry; /* the flashback being played */
+};
+SIZE_ASSERT(FlashbackAction, 0xC);
+/* The result screen of a two-player round (Game/Result2PAction.cpp). */
+class Result2PAction : public IAction {
+  public:
+    Result2PAction();
+    ~Result2PAction();
+    virtual void Execute();
+
+    /* Draws the CSD project (the Render's draw callback). */
+    void Draw(RednerDrawArgs &args);
+
+    /* 0x04 */ s32 m_timer;
+    /* 0x08 */ u8 m_savedD1; /* the game state's byte 0xD1 before the result (meaning unknown) */
+    /* 0x0C */ UnkCsdResource_8003E808 *m_project;
+    /* 0x10 */ boost::shared_ptr<Render> m_render;
+    /* 0x18 */ float m_wait;
+    /* 0x1C */ void *m_texData; /* the loaded texture archive */
+    /* 0x20 */ u32 m_texSize;
+    /* 0x24 */ u8 m_texFailed;
+    /* 0x28 */ void *m_projectData; /* the loaded project file */
+    /* 0x2C */ u32 m_projectSize;
+    /* 0x30 */ u8 m_projectFailed;
+    /* 0x34 */ s32 m_winner; /* 0 a draw, 1 a round won, 2 the match won (meaning inferred) */
+    /* 0x38 */ s32 m_state;
+};
+SIZE_ASSERT(Result2PAction, 0x3C);
+/* The time-up: fades to black and goes on to the continue or the game over (Game/TimeupAction.cpp). */
+class TimeupAction : public IAction {
+  public:
+    TimeupAction();
+    ~TimeupAction();
+    virtual void Execute();
+
+    /* 0x4 */ s32 m_state;
+    /* 0x8 */ s32 m_timer; /* frames left (meaning inferred) */
+};
+SIZE_ASSERT(TimeupAction, 0xC);
 /* Game/EndAction.cpp. */
 class EndAction : public IAction {
   public:

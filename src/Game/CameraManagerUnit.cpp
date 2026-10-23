@@ -115,20 +115,20 @@ void CameraManagerUnit::Update(float dt) {
         fn_8040C148(&m_viewMtx.value, &world);
     }
     Vec3f moved;
-    fn_8040CD74(&moved, &m_state.m_eye, &m_lastState.m_eye);
-    fn_800091D0(&m_velocity, &moved);
+    fn_8040CD74(&moved, &m_state.m_eye, &m_lastState.m_state.m_eye);
+    fn_800091D0(&m_lastState.m_velocity, &moved);
     if (fn_8000A950(dt)) {
-        fn_800091D0(&m_velocity, &lbl_805E07A0);
+        fn_800091D0(&m_lastState.m_velocity, &lbl_805E07A0);
     } else {
         Vec3f moved2;
-        fn_8040CD74(&moved2, &m_state.m_eye, &m_lastState.m_eye);
-        fn_800091D0(&m_velocity, &moved2);
+        fn_8040CD74(&moved2, &m_state.m_eye, &m_lastState.m_state.m_eye);
+        fn_800091D0(&m_lastState.m_velocity, &moved2);
         Vec3f velocity;
-        fn_8040CDA8(&velocity, &m_velocity, 1.0f / dt);
-        fn_800091D0(&m_velocity, &velocity);
+        fn_8040CDA8(&velocity, &m_lastState.m_velocity, 1.0f / dt);
+        fn_800091D0(&m_lastState.m_velocity, &velocity);
     }
-    fn_800091D0(&m_targetPosition, &m_target->m_position);
-    static_cast<UnkCameraState_8000AA70 &>(m_lastState) = m_state;
+    fn_800091D0(&m_lastState.m_targetPosition, &m_target->m_position);
+    m_lastState.m_state = m_state;
 }
 
 void CameraManagerUnit::AddMode(boost::shared_ptr<CameraMode> mode) {

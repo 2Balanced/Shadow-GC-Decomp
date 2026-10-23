@@ -45,47 +45,66 @@ class CycleBase {
 };
 SIZE_ASSERT(CycleBase, 0x8);
 
-/* The phases (RTTI; their code is at 0x803596E0-0x8035B8DC). */
+/* The phases (RTTI; their code is at 0x803595E0-0x8035BA0C, one unit each). */
 namespace Load {
+/* The phase's state (class name inferred; Game/SaveCycleLoad.cpp). */
+class Impl;
+
 class Phase : public CycleBase {
   public:
     Phase();
-    ~Phase();
+    virtual ~Phase();
+    virtual bool Update();
+    virtual void Draw();
 
-    /* 0x8 */ void *m_impl;
+    /* 0x8 */ boost::scoped_ptr<Impl> m_impl;
 };
 SIZE_ASSERT(Phase, 0xC);
 } // namespace Load
 
 namespace Save {
+/* The phase's state (class name inferred; Game/SaveCycleSave.cpp). */
+class Impl;
+
 class Phase : public CycleBase {
   public:
     Phase();
-    ~Phase();
+    virtual ~Phase();
+    virtual bool Update();
+    virtual void Draw();
 
-    /* 0x8 */ void *m_impl;
+    /* 0x8 */ boost::scoped_ptr<Impl> m_impl;
 };
 SIZE_ASSERT(Phase, 0xC);
 } // namespace Save
 
 namespace Check {
+/* The phase's state (class name inferred; Game/SaveCycleCheck.cpp). */
+class Impl;
+
 class Phase : public CycleBase {
   public:
     Phase();
-    ~Phase();
+    virtual ~Phase();
+    virtual bool Update();
+    virtual void Draw();
 
-    /* 0x8 */ void *m_impl;
+    /* 0x8 */ boost::scoped_ptr<Impl> m_impl;
 };
 SIZE_ASSERT(Phase, 0xC);
 } // namespace Check
 
 namespace CheckModule {
+/* The phase's state (class name inferred; Game/SaveCycleCheckModule.cpp). */
+class Impl;
+
 class Phase : public CycleBase {
   public:
     Phase();
-    ~Phase();
+    virtual ~Phase();
+    virtual bool Update();
 
-    /* 0x8 */ void *m_impl;
+    /* 0x8 */ boost::scoped_ptr<Impl> m_impl;
 };
 SIZE_ASSERT(Phase, 0xC);
 } // namespace CheckModule

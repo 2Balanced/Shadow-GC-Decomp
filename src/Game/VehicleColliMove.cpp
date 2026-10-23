@@ -19,6 +19,7 @@
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/CharaColliBaseCharInfo.h"
+#include "Game/CollisionEffect.h"
 #include "Game/GeometryLine.h"
 #include "Game/TVehicleBase.h"
 #include "Game/MathTypes.h"
@@ -373,21 +374,18 @@ struct UnkColliMovePlacement_80333098 {
     /* 0x18 */ u32 m_kind;
 };
 
-/* The ground tracker of the collision move (struct name unknown; constructor 0x80344608,
- * destructor 0x8034454C). */
-struct UnkGroundTracker_80344608;
-
 extern "C" {
-void fn_80344608(UnkGroundTracker_80344608 *tracker);
-void fn_8034454C(UnkGroundTracker_80344608 *tracker, int flag);
-void fn_80344528(UnkGroundTracker_80344608 *tracker);
-void fn_803444E0(UnkGroundTracker_80344608 *tracker, const Vec3f *position,
-                 const Vec3f *normal, u32 attributes, u32 kind);
 void fn_801B61B0(TVehicleBase *vehicle, const UnkColliMoveContact_803334A4 *contact);
 }
 
-struct UnkGroundTracker_80344608 {
-    /* 0x00 */ u32 field_0x0;
+/* The flag word of the collision move (class name unknown; its out-of-line members are the
+ * fn_80014E04 family above). */
+struct UnkColliMoveFlags {
+    UnkColliMoveFlags() {
+        fn_80014E04(&m_bits);
+    }
+
+    u32 m_bits;
 };
 
 /* The collision move of a vehicle (class name unknown; constructor 0x8033377C). m_flags: bit 0 on
@@ -399,7 +397,8 @@ class UnkVehicleColliMove_8033377C {
 
     bool Move(Vec3f *position, Vec3f *velocity, bool ground, UnkColliList_80095314 *ignore);
     void SetTrackGround(u8 track);
-    void ResetGround();
+    /* Ticks the ground effect (name inferred). */
+    void TickGround(float dt);
     void ClearOnGround();
     bool IsLanding();
     bool IsOnGround();
@@ -408,8 +407,8 @@ class UnkVehicleColliMove_8033377C {
     /* 0x00 */ Vec3f m_velocity;
     /* 0x0C */ Vec3f m_normal;
     /* 0x18 */ TVehicleBase *m_vehicle;
-    /* 0x1C */ u32 m_flags;
-    /* 0x20 */ UnkGroundTracker_80344608 m_ground;
+    /* 0x1C */ UnkColliMoveFlags m_flags;
+    /* 0x20 */ CollisionEffect m_ground; /* the effect of the ground the vehicle stands on */
     /* 0x24 */ u8 m_trackGround;
 };
 SIZE_ASSERT(UnkVehicleColliMove_8033377C, 0x28);
@@ -438,7 +437,7 @@ static bool AcceptHit(UnkCollisionCandidate_80021934 *candidate) {
 /* Sweeps the sphere around position along velocity through the world, sliding along what it
  * touches; returns whether it stands on the ground (name inferred). */
 static bool Sweep(Vec3f *normal, TVehicleBase *vehicle, Vec3f *position, Vec3f *velocity,
-                  UnkGroundTracker_80344608 *ground, UnkColliMoveContact_803334A4 *contact,
+                  CollisionEffect *ground, UnkColliMoveContact_803334A4 *contact,
                   const UnkColliList_80095314 *ignore, int count) {
     void *world = fn_80020D40();
     CollisionResultList *previous = 0;
@@ -649,19 +648,15 @@ static UnkCopyVector3_800091EC Settle(const Vec3f &position, const Vec3f &direct
 }
 
 UnkVehicleColliMove_8033377C::UnkVehicleColliMove_8033377C(TVehicleBase *vehicle) : m_vehicle(vehicle) {
-    fn_80014E04(&m_flags);
-    fn_80344608(&m_ground);
     fn_8040CE60(&m_velocity);
     fn_800091D0(&m_normal, &Vec3f(0.0f, 1.0f, 0.0f));
     m_trackGround = 0;
 }
 
-UnkVehicleColliMove_8033377C::~UnkVehicleColliMove_8033377C() {
-    fn_8034454C(&m_ground, -1);
-}
+UnkVehicleColliMove_8033377C::~UnkVehicleColliMove_8033377C() {}
 
-void UnkVehicleColliMove_8033377C::ResetGround() {
-    fn_80344528(&m_ground);
+void UnkVehicleColliMove_8033377C::TickGround(float dt) {
+    fn_80344528(&m_ground, dt);
 }
 
 void UnkVehicleColliMove_8033377C::SetTrackGround(u8 track) {
@@ -675,22 +670,22 @@ bool UnkVehicleColliMove_8033377C::Move(Vec3f *position, Vec3f *velocity, bool g
     CopyVector(previous, *position);
     bool onGround = Sweep(&m_normal, m_vehicle, position, velocity, m_trackGround ? &m_ground : 0, &contact,
                           ignore, 8);
-    fn_8006127C(&m_flags, 2);
+    fn_8006127C(&m_flags.m_bits, 2);
     if (ground) {
         if (onGround) {
-            if (!fn_80014E34(&m_flags, 0)) {
-                fn_80014E1C(&m_flags, 2);
+            if (!fn_80014E34(&m_flags.m_bits, 0)) {
+                fn_80014E1C(&m_flags.m_bits, 2);
             }
-            fn_80014E1C(&m_flags, 0);
+            fn_80014E1C(&m_flags.m_bits, 0);
             fn_801B61B0(m_vehicle, &contact);
         } else {
-            fn_8006127C(&m_flags, 0);
+            fn_8006127C(&m_flags.m_bits, 0);
             fn_801B6184(m_vehicle);
         }
-        fn_8006127C(&m_flags, 1);
+        fn_8006127C(&m_flags.m_bits, 1);
         UnkLine_80020A20 line;
         if (fn_801BFB70(fn_80020A20(&line, &previous, position))) {
-            fn_80014E1C(&m_flags, 1);
+            fn_80014E1C(&m_flags.m_bits, 1);
         }
     }
     fn_800091D0(position, reinterpret_cast<const Vec3f *>(&Settle(*position, Vec3f(0.0f, 1.0f, 0.0f), s_radius)));
@@ -698,19 +693,19 @@ bool UnkVehicleColliMove_8033377C::Move(Vec3f *position, Vec3f *velocity, bool g
 }
 
 void UnkVehicleColliMove_8033377C::ClearOnGround() {
-    fn_8006127C(&m_flags, 0);
+    fn_8006127C(&m_flags.m_bits, 0);
 }
 
 bool UnkVehicleColliMove_8033377C::IsLanding() {
-    return fn_80014E34(&m_flags, 2);
+    return fn_80014E34(&m_flags.m_bits, 2);
 }
 
 bool UnkVehicleColliMove_8033377C::IsOnGround() {
-    return fn_80014E34(&m_flags, 0);
+    return fn_80014E34(&m_flags.m_bits, 0);
 }
 
 bool UnkVehicleColliMove_8033377C::IsLineDrawn() {
-    return fn_80014E34(&m_flags, 1);
+    return fn_80014E34(&m_flags.m_bits, 1);
 }
 
 UnkColliMoveContact_803334A4::UnkColliMoveContact_803334A4() : m_isCollider(0) {

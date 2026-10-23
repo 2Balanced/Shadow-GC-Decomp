@@ -14,6 +14,7 @@
 #include "Game/GadgetCollision.h"
 #include "Game/MathConstants.h"
 #include "Game/Vibration.h"
+#include "Game/VehicleEffect.h"
 #include "Effect/System/EffectElement.h"
 #include "boost/weak_ptr.hpp"
 
@@ -114,8 +115,6 @@ void fn_801C067C(Vehicle::TVehicleBase *vehicle, const boost::shared_ptr<CharaCo
 boost::shared_ptr<CharaColliAttack> fn_801C08F0(const boost::weak_ptr<CharInfo> &owner,
                                                const AttackCallback &onHit,
                                                const AttackCallback &onEnd);
-/* The vehicle's display object (TVehicleBase+0x74): follows a model frame (behaviour inferred). */
-void fn_8034F1D0(void *display, void *frame);
 
 /* The collider manager (see Game/BlockChange.cpp): the character info a collider belongs to, a
  * sphere collider, whether a hit is an attack target, and an attack on it. */
@@ -338,7 +337,7 @@ void BirdBase::Tick(float dt) {
         switch (m_step) {
         case 0:
             if (field_0x74 != 0) {
-                fn_8034F1D0((void *)field_0x74, m_model->GetFrame(0));
+                reinterpret_cast<Vehicle::Effect *>(field_0x74)->StartBurst(m_model->GetFrame(0));
             }
             fn_8006127C(&m_flags.m_bits, 0);
             fn_8006127C(&m_flags.m_bits, 5);

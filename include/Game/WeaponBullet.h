@@ -62,6 +62,8 @@ SIZE_ASSERT(BulletPosition, 0x24);
  * destructor 0x800528C4; member names inferred). Both are inline functions that call other inline
  * functions, so they stay out of line (weak copies). */
 struct HitResult {
+    /* A result with zero vectors and no target, which hit or not (0x80051B58). */
+    HitResult(bool hit);
     HitResult(const HitResult &other)
         : m_position(other.m_position), m_normal(other.m_normal), field_0x18(other.field_0x18),
           m_target(other.m_target), field_0x2C(other.field_0x2C), field_0x30(other.field_0x30),

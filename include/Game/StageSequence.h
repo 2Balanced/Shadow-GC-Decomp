@@ -32,6 +32,7 @@ class Base {
 
 class Render;
 struct RednerDrawArgs;
+class UnkCsdResource_8003E808;
 class StageMovieScript;
 
 /* StageMovie (vtable at 0x80558478; Game/StageMovie.cpp): a stage that plays a movie file, with
@@ -72,7 +73,13 @@ class StageRouteDisplay : public StageBase::Base {
     virtual ~StageRouteDisplay();
     virtual int Tick();
 
-    /* 0x08 */ u8 field_0x8[0x1C - 0x8];
+    /* The Render's draw callback (Game/StageRouteDisplay.cpp). */
+    void Draw(RednerDrawArgs &args);
+
+    /* 0x08 */ boost::shared_ptr<Render> m_render;
+    /* 0x10 */ UnkCsdResource_8003E808 *m_project; /* the CSD project "CsdFiles/RouteDisplay" */
+    /* 0x14 */ float m_time;
+    /* 0x18 */ s32 m_state;
 };
 
 /* StageStaffroll (vtable at 0x8055F5AC): a stage that plays the staff roll of an ending (meaning

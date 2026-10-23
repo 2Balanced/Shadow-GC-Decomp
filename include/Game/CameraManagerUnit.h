@@ -90,9 +90,7 @@ class CameraManagerUnit {
     /* 0x0E0 */ std::list<boost::weak_ptr<CameraRequest> > m_requests;
     /* 0x0EC */ boost::shared_ptr<CameraShake> m_shake;
     /* 0x0F4 */ CameraTargetInfo *m_target;
-    /* 0x0F8 */ UnkCameraState_80359164 m_lastState;
-    /* 0x12C */ Vec3f m_velocity;
-    /* 0x138 */ Vec3f m_targetPosition;
+    /* 0x0F8 */ UnkCameraState_80359164 m_lastState; /* with the velocity and target position */
 };
 SIZE_ASSERT(CameraManagerUnit, 0x144);
 

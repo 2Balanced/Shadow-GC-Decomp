@@ -45,6 +45,10 @@ class UnkCsdProject_800BFF30 {
 namespace Chao {
 namespace CSD {
 
+/* CBase (class name from RTTI): the empty base of the library's classes. The RTTI records of
+ * RCObject<T> and its CFunctorBase list it as their base (see Game/AdvSynopsis.cpp). */
+class CBase {};
+
 /* CScene (class name from the RTTI of RCPtr<CScene>::RCObject<CScene>): a scene of a CSD project.
  * Only the virtual function at 0x20 and the word at 0x8C are used here. */
 class CScene {
@@ -57,6 +61,9 @@ class CScene {
     virtual void vf_0x1C();
     /* Advances the scene by dt (name inferred). */
     virtual void Tick(float dt);
+    /* Hands the scene a project's texture list, an RCPtr<CTexList> (name inferred; see
+     * Game/AdvCsdEffect.cpp). */
+    virtual void SetTexList(const void *texList);
 
     /* Whether the scene's animation has ended (name inferred; fn_803659F0 sets the word to 1 and
      * fn_803659E4 clears it). */
@@ -82,10 +89,10 @@ class RCPtr {
   public:
     /* RCObject (class name from RTTI): the counted holder of the object. */
     template <class U>
-    class RCObject {
+    class RCObject : public CBase {
       public:
         /* CFunctorBase (class name from RTTI): a deallocation functor (names inferred). */
-        class CFunctorBase {
+        class CFunctorBase : public CBase {
           public:
             virtual void operator()(U *p);
             virtual ~CFunctorBase();

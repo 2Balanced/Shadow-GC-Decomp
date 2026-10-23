@@ -11,6 +11,7 @@
 #include "Game/MathConstants.h"
 #include "Game/UnkMatrix_800B1304.h"
 #include "Game/Vibration.h"
+#include "Game/VehicleEffect.h"
 #include "Game/WeaponAirBolt.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -50,8 +51,6 @@ void fn_801B6570(Vehicle::TVehicleBase *vehicle, float value);
 void fn_801B63B0(Vehicle::TVehicleBase *vehicle);
 void fn_801B644C(Vehicle::TVehicleBase *vehicle);
 void fn_801B64B8(Vehicle::TVehicleBase *vehicle, void *clump);
-/* The vehicle's display object (TVehicleBase+0x74): follows a model frame (behaviour inferred). */
-void fn_8034F250(void *display, void *frame);
 
 /* Weapon::WeaponLockonBase methods (see Game/PlayerShadowWeaponLockon.cpp). */
 void fn_8005FA68(Weapon::WeaponLockonBase *weapon);
@@ -221,7 +220,7 @@ void AirBolt::CreateModel() {
     m_model = new AirBoltModel(this);
     m_model->SetState(0);
     if (field_0x74 != 0) {
-        fn_8034F250((void *)field_0x74, m_model->GetFrame(0));
+        reinterpret_cast<Vehicle::Effect *>(field_0x74)->SetNode(m_model->GetFrame(0));
     }
 }
 
