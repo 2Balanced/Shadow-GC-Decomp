@@ -64,6 +64,13 @@ struct BossSonicMode {
     void Unlock() {
         m_locked = 0;
     }
+    /* The running mode, read and set directly (Game/BossSonicControlAI.cpp; names inferred). */
+    s32 Get() {
+        return m_mode;
+    }
+    void Set(int mode) {
+        m_mode = mode;
+    }
 
     /* 0x0 */ u8 m_locked;
     /* 0x4 */ s32 m_mode;

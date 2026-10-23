@@ -20,7 +20,9 @@ class ControlBase {
     virtual ~ControlBase();
     virtual void vf_0x0C() = 0;
     virtual void vf_0x10() = 0;
-    virtual void vf_0x14() = 0;
+    /* Slot 0x14: the per-frame update; Boss Sonic's ControlAI passes dt on to its desires
+     * (Game/BossSonicControlAI.cpp). */
+    virtual void vf_0x14(float dt) = 0;
     /* Slot 0x18: empty in ControlBase (0x8006D14C). */
     virtual void vf_0x18();
 

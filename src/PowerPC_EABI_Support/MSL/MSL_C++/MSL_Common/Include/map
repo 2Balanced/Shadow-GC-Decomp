@@ -25,6 +25,13 @@
  * which <utility> declares only where MSL_PAIR_CONVERTING_CONSTRUCTOR is defined before it is
  * first included. */
 
+#ifdef MSL_TREE_SELF_INLINE
+/* Where MSL_TREE_SELF_INLINE is defined (Game/csdTexList.cpp), the unit keeps its own copy of the
+ * end node's constructor, as the game does for each of its trees, so the end node is given a name
+ * of its own there; otherwise the linker would merge it with the game's copy. */
+#define __tree_end_node __tree_end_node_csd
+#endif
+
 namespace std {
 
 struct __tree_node_base;
@@ -34,6 +41,10 @@ extern "C" {
  * (behaviour inferred from their bodies). */
 void fn_8000CD64(__tree_node_base *x, __tree_node_base *root);
 void fn_80012E90(__tree_node_base **iterator);
+#ifdef MSL_TREE_ERASE
+/* Rebalances the tree under root before z is unlinked (behaviour inferred from its body). */
+void fn_80013398(__tree_node_base *z, __tree_node_base *root);
+#endif
 }
 
 /* Returns x (an inline call that keeps its caller out of line). */
@@ -72,10 +83,19 @@ template <class T> class __tree_value_allocator {
     void construct(T *p, const T &value) {
         new ((void *)p) T(value);
     }
+#ifdef MSL_TREE_SELF_INLINE
+    /* Where MSL_TREE_SELF_INLINE is defined before this header (Game/csdTexList.cpp, built
+     * without deferred inlining), the compiler itself expands destroy's recursion once and keeps
+     * the allocator calls of the expanded level, so these are written plainly. */
+    void destroy(T *p) {
+        p->~T();
+    }
+#else
     void destroy(T *p) {
         p->~T();
         __tree_nothing();
     }
+#endif
 };
 
 template <class N> class __tree_node_allocator {
@@ -89,9 +109,15 @@ template <class N> class __tree_node_allocator {
         }
         return p;
     }
+#ifdef MSL_TREE_SELF_INLINE
+    void deallocate(N *p, size_t n) {
+        ::operator delete(p);
+    }
+#else
     void deallocate(N *p, size_t n) {
         ::operator delete(__tree_id<void *>(p));
     }
+#endif
 };
 
 template <class T> class __tree_const_iterator;
@@ -100,7 +126,9 @@ template <class T> class __tree_iterator {
   public:
     __tree_iterator() {}
     __tree_iterator(__tree_node_base *n) : node_(n) {}
+#ifndef MSL_TREE_SELF_INLINE
     __tree_iterator(const __tree_iterator &x) : node_(x.node_) {}
+#endif
 #ifdef MSL_TREE_ITERATOR_ASSIGN_CALL
     /* Where MSL_TREE_ITERATOR_ASSIGN_CALL is defined before this header (Game/Mission.cpp), the
      * assignment calls an inline function, so that it stays out of line as the game has it there. */
@@ -264,6 +292,11 @@ template <class T, class C, class K = C> class __tree {
         return const_cast<__tree *>(this)->find(k);
     }
     void clear();
+#ifdef MSL_TREE_ERASE
+    /* Only where MSL_TREE_ERASE is defined before this header (Game/csdTexList.cpp), so that
+     * other units' template declarations are unchanged. */
+    void erase(iterator position);
+#endif
 
   private:
     size_type &size_ref() {
@@ -359,6 +392,11 @@ template <class Key, class T, class Compare = less<Key> > class map {
     void clear() {
         tree_.clear();
     }
+#ifdef MSL_TREE_ERASE
+    void erase(iterator position) {
+        tree_.erase(position);
+    }
+#endif
     iterator find(const key_type &k) {
         return tree_.find(k);
     }

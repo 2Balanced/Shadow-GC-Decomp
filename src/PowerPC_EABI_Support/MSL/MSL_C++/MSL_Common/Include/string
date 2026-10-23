@@ -40,6 +40,9 @@ class basic_string {
     basic_string &operator=(const charT *s);
     const charT *c_str() const;
 #endif
+#ifdef MSL_STRING_COMPARE
+    int compare(const charT *s) const;
+#endif
 #ifdef MSL_STRING_COPY
     /* Declared only where a unit needs them (Game/AdvCsdCache.cpp), for the reason given above. The
      * game links one out-of-line copy of each (copy constructor 0x80041E34, assign 0x80040384;
@@ -62,6 +65,9 @@ class basic_string {
     /* 0x8 */ charT *data_;
 };
 
+#ifndef MSL_STRING_CTOR_EXTERN
+/* Where MSL_STRING_CTOR_EXTERN is defined before this header (Game/csdRW.cpp), the unit compiles no
+ * copy of the constructor (retail has none of its message there) and calls the game's. */
 template <class charT, class traits, class Allocator>
 basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Allocator &a) {
     size_type n = traits::length(s);
@@ -72,10 +78,29 @@ basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Alloc
     size_ = n;
     data_ = const_cast<charT *>(s);
 }
+#endif
 
 #ifdef MSL_STRING_COPY
 template <class charT, class traits, class Allocator>
 bool operator==(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs);
+#endif
+
+#ifdef MSL_STRING_COMPARE
+/* Only where MSL_STRING_COMPARE is defined before this header (Game/csdFileSystem.cpp), for the
+ * reason given above. The game links one out-of-line copy of compare (0x8003C864) and of
+ * operator== (above); operator!= goes through operator==, so it is not inlined itself. */
+template <class charT, class traits, class Allocator>
+inline bool operator==(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs) {
+    return lhs.compare(rhs) == 0;
+}
+
+template <class charT, class traits, class Allocator>
+inline bool operator!=(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs) {
+    if (lhs == rhs) {
+        return false;
+    }
+    return true;
+}
 #endif
 
 typedef basic_string<char> string;

@@ -862,6 +862,24 @@ Game/BossTarget.cpp:
 	.sdata      start:0x805E6A18 end:0x805E6A28
 	.sdata2     start:0x805F4EC8 end:0x805F4ED8
 
+Game/EggPawn.cpp:
+	.text       start:0x8017B50C end:0x8017DBCC
+	.rodata     start:0x804C60A0 end:0x804C6828
+	.data       start:0x8052BF00 end:0x8052D320
+	.bss        start:0x805802F8 end:0x805803F8
+	.sdata      start:0x805E6A28 end:0x805E6B48
+	.sbss       start:0x805EF340 end:0x805EF428
+	.sdata2     start:0x805F4ED8 end:0x805F4FD8
+
+Game/EggPawnAI.cpp:
+	.text       start:0x8017DBCC end:0x8017EDE4
+	.rodata     start:0x804C6828 end:0x804C6A68
+	.data       start:0x8052D320 end:0x8052D800
+	.bss        start:0x805803F8 end:0x80580530
+	.sdata      start:0x805E6B48 end:0x805E6C48
+	.sbss       start:0x805EF428 end:0x805EF450
+	.sdata2     start:0x805F4FD8 end:0x805F5008
+
 Game/BkSoldier.cpp:
 	.text       start:0x8018C71C end:0x8018FBD0
 	.rodata     start:0x804C87F8 end:0x804C9100
@@ -870,6 +888,57 @@ Game/BkSoldier.cpp:
 	.sdata      start:0x805E76D8 end:0x805E7818
 	.sbss       start:0x805EF690 end:0x805EF6A0
 	.sdata2     start:0x805F5210 end:0x805F52F8
+
+Game/BkWingLarge.cpp:
+	.text       start:0x8018FBD0 end:0x80191278
+	.ctors      start:0x804A9D98 end:0x804A9D9C
+	.rodata     start:0x804C9100 end:0x804C9480
+	.data       start:0x80532428 end:0x80533840
+	.bss        start:0x80580B50 end:0x80580D98
+	.sdata      start:0x805E7818 end:0x805E7938
+	.sdata2     start:0x805F52F8 end:0x805F5368
+
+Game/BkWingSmall.cpp:
+	.text       start:0x80191278 end:0x80191CF0
+	.rodata     start:0x804C9480 end:0x804C97A8
+	.data       start:0x80533840 end:0x80534920
+	.sdata      start:0x805E7938 end:0x805E7A40
+	.sdata2     start:0x805F5368 end:0x805F53B0
+
+Game/BkWorm.cpp:
+	.text       start:0x80191CF0 end:0x80193434
+	.ctors      start:0x804A9D9C end:0x804A9DA0
+	.rodata     start:0x804C97A8 end:0x804C9AE8
+	.data       start:0x80534920 end:0x80535848
+	.bss        start:0x80580D98 end:0x80580DA8
+	.sdata      start:0x805E7A40 end:0x805E7B38
+	.sbss       start:0x805EF6A0 end:0x805EF6A8
+	.sdata2     start:0x805F53B0 end:0x805F5448
+
+Game/FlyerCommonBase.cpp:
+	.text       start:0x80193434 end:0x80193A0C
+	.rodata     start:0x804C9AE8 end:0x804C9C70
+	.data       start:0x80535848 end:0x80535D58
+	.sdata      start:0x805E7B38 end:0x805E7BF0
+	.sdata2     start:0x805F5448 end:0x805F5460
+
+Game/GunBeetle.cpp:
+	.text       start:0x80193A0C end:0x80194E3C
+	.rodata     start:0x804C9C70 end:0x804CA010
+	.data       start:0x80535D58 end:0x80536EE0
+	.bss        start:0x80580DA8 end:0x80580DD8
+	.sdata      start:0x805E7BF0 end:0x805E7CF8
+	.sbss       start:0x805EF6A8 end:0x805EF6B0
+	.sdata2     start:0x805F5460 end:0x805F54A0
+
+Game/GunRobot.cpp:
+	.text       start:0x80194E3C end:0x80196A84
+	.rodata     start:0x804CA010 end:0x804CA768
+	.data       start:0x80536EE0 end:0x80538308
+	.bss        start:0x80580DD8 end:0x80580EE8
+	.sdata      start:0x805E7CF8 end:0x805E7E20
+	.sbss       start:0x805EF6B0 end:0x805EF6C8
+	.sdata2     start:0x805F54A0 end:0x805F5560
 
 Game/GoalMission.cpp:
 	.text       start:0x801F38F0 end:0x801F398C
@@ -1866,6 +1935,72 @@ Game/Parachute.cpp:
 	.sdata      start:0x805EB400 end:0x805EB420
 	.sbss       start:0x805F0328 end:0x805F0340
 	.sdata2     start:0x805F8560 end:0x805F8590
+
+Game/GravityDirection.cpp:
+	.text       start:0x80293928 end:0x80293C80
+	.ctors      start:0x804A9F64 end:0x804A9F68
+	.bss        start:0x80584360 end:0x805843B8
+	.sbss       start:0x805F0340 end:0x805F0348
+	.sdata2     start:0x805F8590 end:0x805F85A0
+
+Game/BossSonic.cpp:
+	.text       start:0x80293C80 end:0x8029499C
+	.ctors      start:0x804A9F68 end:0x804A9F6C
+	.rodata     start:0x804FA158 end:0x804FA380
+	.data       start:0x805525F8 end:0x805526F8
+	.sdata      start:0x805EB420 end:0x805EB470
+	.sbss       start:0x805F0348 end:0x805F0358
+	.sdata2     start:0x805F85A0 end:0x805F85B0
+
+Game/BossSonicControlAI.cpp:
+	.text       start:0x8029499C end:0x802951EC
+	.rodata     start:0x804FA380 end:0x804FA3D8
+	.data       start:0x805526F8 end:0x80552720
+	.sdata      start:0x805EB470 end:0x805EB488
+	.sdata2     start:0x805F85B0 end:0x805F85C8
+
+Game/BossSonicSonicTypeControl.cpp:
+	.text       start:0x802951EC end:0x80295834
+	.rodata     start:0x804FA3D8 end:0x804FA518
+	.data       start:0x80552720 end:0x80552760
+	.sdata      start:0x805EB488 end:0x805EB4B0
+	.sbss       start:0x805F0358 end:0x805F0360
+
+Game/BossSonicTarget.cpp:
+	.text       start:0x80295834 end:0x80295DE4
+	.rodata     start:0x804FA518 end:0x804FA558
+	.data       start:0x80552760 end:0x805527A0
+	.sdata      start:0x805EB4B0 end:0x805EB4C0
+	.sbss       start:0x805F0360 end:0x805F0368
+	.sdata2     start:0x805F85C8 end:0x805F85D0
+
+Game/SonicTypeBehaviorFactory.cpp:
+	.text       start:0x80295DE4 end:0x8029642C
+	.rodata     start:0x804FA558 end:0x804FA740
+	.data       start:0x805527A0 end:0x805527E0
+	.sdata      start:0x805EB4C0 end:0x805EB4E8
+	.sbss       start:0x805F0368 end:0x805F0370
+
+Game/FlyTypeControlFactory.cpp:
+	.text       start:0x8029642C end:0x80296A90
+	.rodata     start:0x804FA740 end:0x804FA888
+	.data       start:0x805527E0 end:0x80552820
+	.sdata      start:0x805EB4E8 end:0x805EB510
+	.sbss       start:0x805F0370 end:0x805F0378
+
+Game/FlyTypeBehaviorFactory.cpp:
+	.text       start:0x80296A90 end:0x802970D8
+	.rodata     start:0x804FA888 end:0x804FA9F8
+	.data       start:0x80552820 end:0x80552860
+	.sdata      start:0x805EB510 end:0x805EB538
+	.sbss       start:0x805F0378 end:0x805F0380
+
+Game/SonicTypeControlFactory.cpp:
+	.text       start:0x802970D8 end:0x8029773C
+	.rodata     start:0x804FA9F8 end:0x804FAB50
+	.data       start:0x80552860 end:0x805528A0
+	.sdata      start:0x805EB538 end:0x805EB560
+	.sbss       start:0x805F0380 end:0x805F0388
 
 Game/PlayerPostManager.cpp:
 	.text       start:0x8029773C end:0x80297AB0
@@ -3617,6 +3752,68 @@ Game/csdAccess.cpp:
 	.ctors      start:0x804AA040 end:0x804AA044
 	.rodata     start:0x80512E38 end:0x80512E60
 	.bss        start:0x805858B0 end:0x80585900
+
+Game/csdLoader.cpp:
+	.text       start:0x8035C5CC end:0x8035F81C
+	.rodata     start:0x80512E60 end:0x80512EE8
+	.bss        start:0x80585900 end:0x80585958
+
+Game/csdMatrix.cpp:
+	.text       start:0x8035F81C end:0x80360528
+	.rodata     start:0x80512EE8 end:0x80512F08
+	.bss        start:0x80585958 end:0x80585988
+
+Game/csdBase.cpp:
+	.text       start:0x80360528 end:0x803605E8
+	.bss        start:0x80585988 end:0x80585990
+
+Game/csdMotionPalette.cpp:
+	.text       start:0x803605E8 end:0x80361738
+	.rodata     start:0x80512F08 end:0x80512F38
+	.bss        start:0x80585990 end:0x805859A0
+
+Game/csdFileSystem.cpp:
+	.text       start:0x80361738 end:0x80361A24
+	.rodata     start:0x80512F38 end:0x80512F48
+	.bss        start:0x805859A0 end:0x805859A8
+
+Game/csdScreen.cpp:
+	.text       start:0x80361A24 end:0x80361CF8
+	.ctors      start:0x804AA044 end:0x804AA048
+	.rodata     start:0x80512F48 end:0x80512F50
+	.bss        start:0x805859A8 end:0x805859E0
+
+Game/csdPlatform.cpp:
+	.text       start:0x80361CF8 end:0x80361F30
+	.bss        start:0x805859E0 end:0x80585A20
+
+Game/csdTexList.cpp:
+	.text       start:0x80361F30 end:0x80362BD4
+	.rodata     start:0x80512F50 end:0x80512F98
+	.data       start:0x8055FA88 end:0x8055FAB0
+	.bss        start:0x80585A20 end:0x80585A28
+
+Game/csdFileSystemRW.cpp:
+	.text       start:0x80362BD4 end:0x80362DB0
+	.rodata     start:0x80512F98 end:0x80512FA0
+	.data       start:0x8055FAB0 end:0x8055FBD8
+
+Game/csdPlatformRW.cpp:
+	.text       start:0x80362DB0 end:0x80363370
+	.rodata     start:0x80512FA0 end:0x80512FE8
+	.data       start:0x8055FBD8 end:0x8055FC48
+
+Game/csdTexListRW.cpp:
+	.text       start:0x80363370 end:0x80363B80
+	.rodata     start:0x80512FE8 end:0x80513038
+	.data       start:0x8055FC48 end:0x8055FC70
+	.bss        start:0x80585A28 end:0x80585A30
+
+Game/csdRW.cpp:
+	.text       start:0x80363B80 end:0x8036442C
+	.rodata     start:0x80513038 end:0x80513080
+	.data       start:0x8055FC70 end:0x8055FCF8
+	.bss        start:0x80585A30 end:0x80585B48
 
 dolphin/base/PPCArch.c:
 	.text       start:0x8036FC94 end:0x8036FDA8

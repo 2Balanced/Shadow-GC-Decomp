@@ -36,10 +36,10 @@ class CharInfo {
     virtual bool vf_0x18();
     /* Slot 0x1C: asked before a character may collect a ring. */
     virtual bool vf_0x1C();
-    virtual void vf_0x20();
+    virtual bool vf_0x20();
     /* Slot 0x24: asked before an item box sends HomingJumpCommand. */
     virtual bool vf_0x24();
-    virtual void vf_0x28();
+    virtual bool vf_0x28();
     /* Slot 0x2C: false in CharInfo, true in EnemyCharInfo and ResearcherCharInfo. */
     virtual bool vf_0x2C();
 

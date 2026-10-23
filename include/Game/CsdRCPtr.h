@@ -18,6 +18,12 @@ class UnkCsdAllocator_803605AC {
     virtual void vf_0x0C();
     virtual void vf_0x10();
     virtual void *Alloc(u32 size, const char *file, int line);
+    /* Frees memory from Alloc (name inferred; the class operator delete of csdBase.h). */
+    virtual void Free(void *p);
+    /* Allocates size bytes for the library's own records (name inferred; fn_80360564). */
+    virtual void *AllocDebug(u32 size, const char *file, int line);
+    /* Frees memory from AllocDebug (name inferred; fn_80360528). */
+    virtual void FreeDebug(void *p);
 };
 
 extern "C" {
@@ -160,6 +166,14 @@ class RCPtr {
 
     RCPtr();
     RCPtr(T *object);
+#ifdef CSD_RCPTR_DEALLOC_CTOR
+    /* Takes object with the deallocation d says (name inferred). Declared only where a unit needs
+     * it (Game/csdTexListRW.cpp), so that other units' template declarations are unchanged. */
+    template <class D>
+    RCPtr(T *object, D d) : m_object(0) {
+        Set(object, d);
+    }
+#endif
     RCPtr(const RCPtr &other);
     ~RCPtr();
     RCPtr &operator=(const RCPtr &other);

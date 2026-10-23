@@ -253,9 +253,20 @@ class StartJumpCommand : public PlayerCommand {
     /* 0x14 */ Vec3f field_0x14;
 };
 
+/* SetGravityCommand (class name from RTTI; vtable 0x80520F48): turns a character towards a new
+ * gravity direction. Constructor 0x8009A368 (command id 0x12D) stores the direction normalized
+ * (arg1's meaning unknown; the stage's gravity, Game/GravityDirection.cpp, passes 4). */
+class SetGravityCommand : public PlayerCommand {
+  public:
+    SetGravityCommand(const Vec3f &direction, int arg1);
+
+    /* 0x14 */ Vec3f m_direction;
+};
+
 } // namespace Player
 
 SIZE_ASSERT(Player::StartJumpCommand, 0x20);
+SIZE_ASSERT(Player::SetGravityCommand, 0x20);
 SIZE_ASSERT(Player::LaunchCommand, 0x18);
 SIZE_ASSERT(Player::IgnoreInputCommand, 0x20);
 SIZE_ASSERT(Player::ActingAccelerateCommand, 0x24);

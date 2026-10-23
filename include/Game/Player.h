@@ -41,6 +41,11 @@ class UnkCharaSlots_800AADA4;
 class PlayerBase : public PlayerObject {
   public:
     virtual ~PlayerBase();
+    /* CharInfo slots PlayerBase overrides (its vtable 0x80520310: 0x800798E8, 0x800799D0,
+     * 0x80079918). */
+    virtual void vf_0x0C();
+    virtual void PushCommand(CharCommand *command);
+    virtual void vf_0x14();
     /* Slots after CharInfo's (on the vtable pointer at 0x38; which class declares them is unknown;
      * names inferred from Game/PlayerShadowWeapon.cpp). */
     virtual void vf_0x30();
@@ -48,6 +53,13 @@ class PlayerBase : public PlayerObject {
     virtual void vf_0x38();
     /* Asked before a newly given weapon is shown (true: keep it hidden). */
     virtual bool IsWeaponHidden();
+    /* Slots 0x40 to 0x50 (0x800735F8, 0x800735FC, 0x80073600, 0x80073604, 0x80079770 in
+     * PlayerBase's vtable; roles unknown). */
+    virtual void vf_0x40();
+    virtual void vf_0x44();
+    virtual void vf_0x48();
+    virtual void vf_0x4C();
+    virtual void vf_0x50();
 
     /* Members as Player::Shadow::ShadowWeapon reads them (Game/PlayerShadowWeapon.cpp; names
      * inferred). CharInfo's word at 0x60 points at the frame time. */
@@ -72,6 +84,13 @@ class PlayerBase : public PlayerObject {
     /* 0x250 */ u32 field_0x250;
     /* 0x254 */ UnkCharaSlots_800AADA4 *m_charaSlots;
     /* 0x258 */ boost::weak_ptr<Vehicle::TVehicleBase> m_vehicle; /* the vehicle ridden (inferred) */
+    /* Members as Boss Sonic sets them up (Game/BossSonic.cpp; names inferred). */
+    /* 0x260 */ boost::weak_ptr<PlayerBase> m_self; /* the character's weak pointer to itself */
+    /* 0x268 */ Task *m_layerTask; /* made by fn_80075E30 below the layer-7 task */
+    /* 0x26C */ Task *m_rootTask;  /* the parent of the character's tasks */
+    /* 0x270 */ u32 field_0x270;
+    /* 0x274 */ float field_0x274;
+    /* 0x278 */ u8 field_0x278[0x290 - 0x278];
 };
 
 class Player : public PlayerBase {

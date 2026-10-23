@@ -81,7 +81,7 @@ class ControlRestart : public Player::Control::ControlBase {
     virtual ~ControlRestart();
     virtual void vf_0x0C();
     virtual void vf_0x10();
-    virtual void vf_0x14();
+    virtual void vf_0x14(float dt);
 
     /* 0x14 */ shared_ptr<BossSonicWork> m_work;
 };
@@ -107,7 +107,7 @@ static void GetRestartPoint(Vec3f *out, ControlRestart *control);
 /* GetRestartPoint called as returning the point by value. */
 typedef Vec3f (*RestartPointFn)(ControlRestart *control);
 
-void ControlRestart::vf_0x14() {
+void ControlRestart::vf_0x14(float dt) {
     shared_ptr<Npc> npc = m_work->m_npc.lock();
     if (fn_80073908(npc.get()) >= 1.0f) {
         fn_800B8000(GetSelf(npc.get()), ((RestartPointFn)GetRestartPoint)(this),

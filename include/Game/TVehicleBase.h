@@ -29,9 +29,9 @@ class TVehicleBase : public CharInfo {
     /* 0x801B6AB8, 0x801B6A44, 0x801B6A3C, 0x801B6A34, 0x801B69C0 */
     virtual bool vf_0x18();
     virtual bool vf_0x1C();
-    virtual void vf_0x20();
+    virtual bool vf_0x20();
     virtual bool vf_0x24();
-    virtual void vf_0x28();
+    virtual bool vf_0x28();
     /* Places the vehicle (0x801B663C; meaning inferred from GunLift, which calls it with its
      * body's position and rotation). */
     virtual void SetPlacement(const Vec3f *position, const Vec3f *rotation);

@@ -59,6 +59,15 @@ struct UnkBehaviorDesc_804EC024 {
     u32 field_0x8;
 };
 
+/* An entry of a behavior factory's table (struct name unknown; 0x804FA558 and 0x804FA888, in
+ * Game/SonicTypeBehaviorFactory.cpp and Game/FlyTypeBehaviorFactory.cpp): a behavior number and its
+ * record. The factory's constructor calls each record's fn_0x4 with the player and its destructor
+ * the function at field_0x8; an entry with id 0x25 and no record ends the table. */
+struct UnkBehaviorEntry_804FA558 {
+    s32 id;
+    const UnkBehaviorDesc_804EC024 *desc;
+};
+
 } // namespace Behavior
 } // namespace Player
 

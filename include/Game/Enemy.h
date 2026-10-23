@@ -82,6 +82,13 @@ struct EnemyFlags {
 class EnemyReferer {
   public:
     EnemyReferer() : m_enemy(0) {}
+#ifdef ENEMY_REFERER_DTOR
+    /* An empty inline destructor (not original as far as is known). EnemyTemplate's destructor
+     * then calls an inline function, so GC/2.7 keeps it out of line where retail does (EggPawn);
+     * the linker strips the unreferenced weak copy it adds. Behind a macro, so other units' @N
+     * locals do not renumber. */
+    ~EnemyReferer() {}
+#endif
 
     /* 0x0 */ Enemy *m_enemy;
     /* 0x4 */ u8 field_0x4;
@@ -135,7 +142,9 @@ class EnemyStatFunc {
     virtual void vfStat_0x14() {}
     virtual void vfStat_0x18() {}
     virtual void vfStat_0x1C() {}
-    virtual int vfStat_0x20() {
+    /* Starts motion sequence motion, again from its start when restart is set (behaviour
+     * inferred from EnemyStatusCommon). */
+    virtual int vfStat_0x20(int motion, bool restart) {
         return 0;
     }
     virtual int vfStat_0x24() {
@@ -197,13 +206,13 @@ class EnemyStatFunc {
     virtual bool vfStat_0x78() {
         return 0;
     }
-    virtual void vfStat_0x7C() {}
+    virtual void vfStat_0x7C(bool arg0, bool arg1) {}
     virtual void vfStat_0x80(bool value) {}
-    virtual void vfStat_0x84() {}
-    virtual void vfStat_0x88() {}
-    virtual void vfStat_0x8C() {}
+    virtual void vfStat_0x84(int kind) {}
+    virtual void vfStat_0x88(u32 value) {}
+    virtual void vfStat_0x8C(bool value) {}
     virtual void vfStat_0x90() {}
-    virtual void vfStat_0x94() {}
+    virtual void vfStat_0x94(int flags) {}
     virtual void vfStat_0x98() {}
     virtual void vfStat_0x9C() {}
     virtual void vfStat_0xA0() {}
@@ -218,7 +227,7 @@ class EnemyStatFunc {
     virtual float vfStat_0xB0() {
         return 0.0f;
     }
-    virtual void vfStat_0xB4() {}
+    virtual void vfStat_0xB4(float dt) {}
 };
 SIZE_ASSERT(EnemyStatFunc, 0x4);
 
@@ -237,7 +246,7 @@ class EnemyDispFunc {
     virtual int vfDisp_0x14();              /* 0x8019B3AC */
     virtual int vfDisp_0x18();              /* 0x8019B3B4 */
     virtual void *vfDisp_0x1C();            /* 0x8017CC74 */
-    virtual void vfDisp_0x20();             /* 0x80181038 */
+    virtual boost::shared_ptr<EnemyRender> vfDisp_0x20(); /* 0x80181038 */
     /* The matrix of model part index, or null (name from Game/EnemyTarget.cpp). */
     virtual Mtx34f *GetPartMatrix(int index); /* 0x8019448C */
     virtual void vfDisp_0x28();             /* 0x8019B3BC */
@@ -292,7 +301,7 @@ class EnemySetFunc {
     /* Reads the enemy's parameters from placement (behaviour inferred). */
     virtual void vfSet_0x20(UnkPlacement_800C9CD0 *placement); /* 0x8019B360 */
     virtual void vfSet_0x24(); /* 0x8019B364 */
-    virtual int vfSet_0x28();  /* 0x8019B368 */
+    virtual bool vfSet_0x28(); /* 0x8019B368 */
     virtual int vfSet_0x2C();  /* 0x8017D788 */
 };
 SIZE_ASSERT(EnemySetFunc, 0x4);
@@ -308,7 +317,7 @@ class EnemyCtrlFunc {
     virtual void *vfCtrl_0x10(); /* 0x8017C3C8 */
     virtual void *vfCtrl_0x14(); /* 0x8019B428 */
     virtual float vfCtrl_0x18(); /* 0x8019B430 */
-    virtual void vfCtrl_0x1C();  /* 0x80196628 */
+    virtual Vec3f vfCtrl_0x1C(float arg); /* 0x80196628 */
     virtual void vfCtrl_0x20();  /* 0x8017C680 */
 };
 SIZE_ASSERT(EnemyCtrlFunc, 0x1C);
@@ -453,8 +462,8 @@ class Enemy : public EnemyParamObjBase,
     virtual ~Enemy() {
         fn_801A2968(fn_80119178(), m_handle);
     }
-    virtual void vf_0x0C(); /* 0x8019AD0C */
-    virtual void vf_0x10(); /* 0x8019ABF4 */
+    virtual bool vf_0x0C(); /* 0x8019AD0C */
+    virtual bool vf_0x10(); /* 0x8019ABF4 */
 
     /* Weak helpers emitted by the first enemy unit (0x8017C684, 0x8017C690, 0x8017C3B0; names
      * inferred). The enemy's character info comes from fn_8017D014 below. */
@@ -633,14 +642,14 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x14();                  /* 0x801A8440 */
     virtual void vfStat_0x18();                  /* 0x801A83D8 */
     virtual void vfStat_0x1C();                  /* 0x801A833C */
-    virtual int vfStat_0x20();                   /* 0x8017B61C */
+    virtual int vfStat_0x20(int motion, bool restart); /* 0x8017B61C */
     virtual int vfStat_0x24();                   /* 0x8017B6F8 */
-    virtual bool vfStat_0x28();                  /* 0x8017B708 */
     virtual bool vfStat_0x2C();                  /* 0x8017B700 */
+    virtual bool vfStat_0x28();                  /* 0x8017B708 */
     virtual void vfStat_0x30(bool value);        /* 0x8017B710 */
+    virtual void vfStat_0x3C(bool value);        /* 0x8017B718 */
     virtual bool vfStat_0x34();                  /* 0x8017B720 */
     virtual void vfStat_0x38();                  /* 0x801A7FA0 */
-    virtual void vfStat_0x3C(bool value);        /* 0x8017B718 */
     virtual bool vfStat_0x40();                  /* 0x8017B728 */
     virtual bool vfStat_0x44();                  /* 0x801A8494 */
     virtual bool vfStat_0x48();                  /* 0x8017B730 */
@@ -656,13 +665,13 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x70(SonicteamUSA::System::CharaColli::AttackCallbackParam &param); /* 0x801A8020 */
     virtual int vfStat_0x74();                   /* 0x8017B780 */
     virtual bool vfStat_0x78();                  /* 0x801A8388 */
-    virtual void vfStat_0x7C();                  /* 0x8017B7D8 */
     virtual void vfStat_0x80(bool value);        /* 0x8017B788 */
-    virtual void vfStat_0x84();                  /* 0x8017B790 */
-    virtual void vfStat_0x88();                  /* 0x8017B7B4 */
-    virtual void vfStat_0x8C();                  /* 0x8017B7FC */
+    virtual void vfStat_0x84(int kind);          /* 0x8017B790 */
+    virtual void vfStat_0x88(u32 value);         /* 0x8017B7B4 */
+    virtual void vfStat_0x7C(bool arg0, bool arg1); /* 0x8017B7D8 */
+    virtual void vfStat_0x8C(bool value);        /* 0x8017B7FC */
     virtual void vfStat_0x90();                  /* 0x801A7F64 */
-    virtual void vfStat_0x94();                  /* 0x801A8608 */
+    virtual void vfStat_0x94(int flags);         /* 0x801A8608 */
     virtual void vfStat_0x98();                  /* 0x801A85B4 */
     virtual void vfStat_0x9C();                  /* 0x801A8504 */
     virtual void vfStat_0xA0();                  /* 0x801A84DC */
@@ -670,7 +679,7 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual EnemyFlags *vfStat_0xA8();           /* 0x8017B83C */
     virtual float vfStat_0xAC();                 /* 0x8017B844 */
     virtual float vfStat_0xB0();                 /* 0x8017B84C */
-    virtual void vfStat_0xB4();                  /* 0x8017B854 */
+    virtual void vfStat_0xB4(float dt);          /* 0x8017B854 */
     virtual void vfStat_0xC0();                  /* 0x801A84D4 */
     virtual int vfStat_0xC4();                   /* 0x8017B8CC */
     virtual bool vfStat_0xC8();                  /* 0x801A84AC */
@@ -713,7 +722,7 @@ class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
     virtual int vfDisp_0x14();                        /* 0x8017B5A8 */
     virtual int vfDisp_0x18();                        /* 0x801A0C8C */
     virtual void *vfDisp_0x1C();                      /* 0x801A0CB0 */
-    virtual void vfDisp_0x20();                       /* 0x8017B5B0 */
+    virtual boost::shared_ptr<EnemyRender> vfDisp_0x20(); /* 0x8017B5B0 */
     virtual Mtx34f *GetPartMatrix(int index);     /* 0x801A0C58 */
     virtual void vfDisp_0x28();                       /* 0x801A0BBC */
     virtual void vfDisp_0x2C();                       /* 0x801A0B48 */
@@ -746,10 +755,19 @@ class EnemyMoveCommon : public virtual EnemyReferer, public EnemyMoveFunc {
     virtual bool vfMove_0x14();          /* 0x8017B580 */
     virtual bool vfMove_0x18();          /* 0x801A5760 */
     virtual int vfMove_0x1C();           /* 0x801A5734 */
-    virtual float vfMove_0x24();         /* 0x8017B5A0 */
     virtual float vfMove_0x28();         /* 0x8017B588 */
     virtual int vfMove_0x2C();           /* 0x8017B590 */
     virtual void *vfMove_0x30();         /* 0x8017B598 */
+#ifdef ENEMY_MOVE_COMMON_INLINE
+    /* Inline in the original (weak copy 0x8017B5A0): units that define ENEMY_MOVE_COMMON_INLINE
+     * emit it, and its constant, as retail does (see Game/BkWingLarge.cpp). It is declared after
+     * 0x30, the order in which Game/EggPawn.cpp, where its first copy is, emits the slots. */
+    virtual float vfMove_0x24() {
+        return 0.0f;
+    }
+#else
+    virtual float vfMove_0x24();         /* 0x8017B5A0 */
+#endif
     virtual void vfMove_0x34();          /* 0x801A560C */
 
     /* 0x08 */ u8 field_0x8[0x64 - 0x8];
@@ -779,14 +797,18 @@ class TEnemySetBase : public virtual EnemyReferer, public EnemySetFunc {
     virtual void vfSet_0x1C(UnkPlacement_800C9CD0 *placement); /* 0x801A73A0 */
     virtual void vfSet_0x20(UnkPlacement_800C9CD0 *placement); /* 0x801A7380 */
     virtual void vfSet_0x24();                                     /* 0x801A6EC4 */
-    virtual int vfSet_0x28();                                      /* 0x8017B554 */
+    virtual bool vfSet_0x28();                                     /* 0x8017B554 */
     virtual ~TEnemySetBase();                                   /* 0x801A73A4 */
 
     /* 0x08 */ u8 field_0x8[0x18 - 0x8];
 };
 
 /* TEnemySetTask (class name from RTTI; vtable 0x8053AB1C; constructor 0x801A6D14): the Task that
- * runs an enemy. parent is the task it hangs below. */
+ * runs an enemy. parent is the task it hangs below. It is 8-byte aligned: BkWorm places it at
+ * 0x368, after an AI of 0x80 bytes at 0x2E4. The alignment probably comes from Task's 8-byte
+ * value at 0x20 (the Task constructor stores a pair of words returned by fn_8004F098 there),
+ * but Game/Task.h is left as it is; the attribute gives the same layout. EggPawn
+ * agrees (its TEnemySetTask starts 4 bytes after its AI). */
 class TEnemySetTask : public virtual EnemyReferer, public Task {
   public:
     TEnemySetTask(Task *parent, UnkPlacement_800C9CD0 *placement);
@@ -794,7 +816,7 @@ class TEnemySetTask : public virtual EnemyReferer, public Task {
     virtual void Tick(float dt);  /* 0x801A6AFC */
 
     /* 0x2C */ s32 field_0x2C;
-};
+} __attribute__((aligned(8)));
 
 /* ------------------------------------------------------------------------------------------- */
 /* The bodies. */
