@@ -3,7 +3,7 @@
 
 /* EnemyWalkerAI (class name from RTTI; vtable 0x8053A284): the AI of the walking enemies
  * (EggPawnAI, GunRobotAI; their bodies are EnemyWalkers, Game/EnemyWalker.h), with the states
- * they share. Its code and the states' are in its own unit (states around 0x80199968 and 0x8019A660);
+ * they share. Its code and the states' are in Game/EnemyWalkerAI.cpp (0x80199968..0x8019A890);
  * the states' destructors are inline (weak copies first emitted with Game/EggPawnAI.cpp). Each
  * state has one static object, which the inline getters below construct on first use. State
  * names are from RTTI; the other names are inferred. */
@@ -12,20 +12,10 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+class EnemyWalker;
 class EnemyWalkerAI;
 
-/* The game's vector assignment, out of line (not original: Vec3f has it inline). */
-inline void AssignVector(Vec3f *to, const Vec3f *from) {
-    fn_800091D0(to, from);
-}
-
-extern "C" {
-/* Sets enemy's target position (Enemy::field_0x6C; inline, first emitted with
- * Game/EggPawnAI.cpp; name kept as other units call it). */
-inline void fn_8017DE10(Enemy *enemy, const Vec3f *target) {
-    AssignVector(&enemy->field_0x6C, target);
-}
-}
+/* AssignVector and fn_8017DE10 moved to Game/EnemyAI.h (the soldier AIs use them too). */
 
 /* The states, behind the same macro as EnemyBaseAI's (Game/EnemyAI.h): their statics come out in
  * .sbss and .bss of every unit that sees them, so only the AI units define it. */
@@ -94,12 +84,24 @@ class EnemyAIState_EnemyWalkerAI_Caution : public TEnemyAIState {
     /* 0x4 */ EnemyWalkerAI *m_ai;
 };
 
+/* The state an AI state getter returns (not original: retail keeps GetCautionState out of line,
+ * which GC/2.7 does for an inline function that calls another inline function; see
+ * Game/EnemyWalkerAI.cpp). */
+inline TEnemyAIState *StateOf(TEnemyAIState *state) {
+    return state;
+}
+
 #endif
 
 class EnemyWalkerAI : public EnemyBaseAI {
   public:
     EnemyWalkerAI();            /* 0x8019A5E0 */
-    virtual ~EnemyWalkerAI() {} /* weak, first at 0x8019A584 */
+#ifdef ENEMY_WALKER_AI_UNIT
+    /* Out of line in Game/EnemyWalkerAI.cpp, at its place in the unit (0x8019A584). */
+    virtual ~EnemyWalkerAI();
+#else
+    virtual ~EnemyWalkerAI() {} /* first at 0x8019A584 */
+#endif
     virtual void vfAI_0x44();   /* 0x8019A4A0 */
 
 #ifdef ENEMY_BASE_AI_STATES
@@ -107,7 +109,7 @@ class EnemyWalkerAI : public EnemyBaseAI {
      * order, so these are declared last state first. */
     static TEnemyAIState *GetCautionState() {
         static EnemyAIState_EnemyWalkerAI_Caution s_state;
-        return &s_state;
+        return StateOf(&s_state);
     }
     static TEnemyAIState *GetMovingState() {
         static EnemyAIState_EnemyWalkerAI_WaitAction_Moving s_state;
@@ -127,7 +129,8 @@ class EnemyWalkerAI : public EnemyBaseAI {
     }
 #endif
 
-    /* 0x74 */ u8 field_0x74[0x7C - 0x74];
+    /* 0x74 */ EnemyWalker *m_body; /* the body, from m_disp (constructor) */
+    /* 0x78 */ s32 m_point;         /* the point the enemy walks to or waits at (0 to 3) */
 };
 
 #endif

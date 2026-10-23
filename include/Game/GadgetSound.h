@@ -13,6 +13,8 @@ class GadgetCharInfo;
 class UnkSoundHandle_801D3DC8 {
   public:
     UnkSoundHandle_801D3DC8();
+    /* Defined in Game/AudioLoopManagerTask.cpp (0x801D3D54). */
+    UnkSoundHandle_801D3DC8(const UnkSoundHandle_801D3DC8 &other);
     UnkSoundHandle_801D3DC8 &operator=(const UnkSoundHandle_801D3DC8 &other);
     /* Stops the sound and clears the handle (behaviour inferred). */
     void fn_801D455C();

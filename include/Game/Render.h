@@ -28,13 +28,15 @@ struct UnkRenderOwner_80046178 {
     /* 0x0 */ u32 field_0x0;
     /* 0x4 */ u32 field_0x4;
     /* 0x8 */ void *field_0x8;
-    /* 0xC */ u8 field_0xC[0x18 - 0xC];
+    /* 0xC */ u8 field_0xC[0x10 - 0xC];
+    /* 0x10 */ Task *field_0x10; /* the parent of Effect::PJS::EffectDrawPunchTask */
+    /* 0x14 */ u8 field_0x14[0x18 - 0x14];
     /* 0x18 */ void *field_0x18; /* passed by TPjsEventActionFade (meaning unknown) */
     /* 0x1C */ u8 field_0x1C[0x20 - 0x1C];
     /* 0x20 */ Task *field_0x20; /* the parent of Test::EffBelt and Test::EffLocusMultiVtx */
-    /* 0x24 */ u8 field_0x24[0x28 - 0x24];
+    /* 0x24 */ Task *field_0x24; /* the parent of the PJS effects' glare and lens flare tasks */
     /* 0x28 */ void *field_0x28; /* passed instead by ElecCoreWall (meaning unknown) */
-    /* 0x2C */ u8 field_0x2C[0x30 - 0x2C];
+    /* 0x2C */ Task *field_0x2C; /* the parent of the PJS effects' shimmer and blur tasks */
     /* 0x30 */ void *field_0x30; /* passed by VehicleArrow (meaning unknown) */
     /* 0x34 */ u8 field_0x34[0x38 - 0x34];
     /* 0x38 */ void *field_0x38; /* passed by SavePointSelect (meaning unknown) */
@@ -44,6 +46,7 @@ struct UnkRenderOwner_80046178 {
     /* 0x4C */ void *field_0x4C; /* passed by StageMovie (meaning unknown) */
     /* 0x50 */ u8 field_0x50[0x54 - 0x50];
     /* 0x54 */ void *field_0x54; /* passed by EggLastMechSlotDisp2D (meaning unknown) */
+    /* 0x58 */ Task *field_0x58; /* the parent of the PJS effects' screen tasks */
 };
 
 extern "C" {

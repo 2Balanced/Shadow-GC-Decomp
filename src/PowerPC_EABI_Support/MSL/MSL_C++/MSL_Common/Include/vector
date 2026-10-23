@@ -178,6 +178,20 @@ template <class T, class A> inline void __vec_swap(__vec_base<T, A> &a, __vec_ba
     a.swap(b);
 }
 
+#ifdef MSL_VECTOR_SWAP_GLOBAL
+/* Where MSL_VECTOR_SWAP_GLOBAL is defined before this header (Game/Advertise.cpp), reserve swaps
+ * through a static member instead, whose out-of-line copy is a weak global: the game's unit at
+ * 0x8025D6FC calls Advertise's copy. */
+template <class T, class A> struct __vec_swap_global {
+    static void swap(__vec_base<T, A> &a, __vec_base<T, A> &b) {
+        a.swap(b);
+    }
+};
+#define __MSL_VEC_RESERVE_SWAP(a, b) __vec_swap_global<T, A>::swap(a, b)
+#else
+#define __MSL_VEC_RESERVE_SWAP(a, b) __vec_swap(a, b)
+#endif
+
 template <class T, class A> __vec_base<T, A>::~__vec_base() {
     destroy_all();
     if (data_ != 0) {
@@ -200,7 +214,7 @@ template <class T, class A> void __vec_base<T, A>::reserve(size_type n) {
             tmp.cap_.first().construct(dest, *src);
             ++tmp.size_;
         }
-        __vec_swap(tmp, *this);
+        __MSL_VEC_RESERVE_SWAP(tmp, *this);
     }
 }
 

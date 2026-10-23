@@ -77,6 +77,10 @@ class BkWormBase : public EnemyWalkerCommon {
     /* Stops effect index of m_effects, and starts it at position (names inferred). */
     void StopEffect(int index);
     void StartEffect(const Vec3f *position, int index);
+    /* The time between appearances (IntervalSec; weak copy first at 0x801832F8; name inferred). */
+    float GetInterval() {
+        return m_params.IntervalSec;
+    }
 
     /* 0x270 */ BkWormParam m_params;
     /* 0x298 */ boost::weak_ptr<Effect::System::EffectElement> m_effect;
@@ -94,8 +98,21 @@ class BkWormAI : public EnemyBaseAI {
     virtual void vfAI_0x3C(); /* 0x801834D8 */
     virtual void vfAI_0x58(); /* 0x80183474 */
 
+    /* A point to move to: a random one around the worm while it is well inside its move range,
+     * else one back toward home (0x80183300; name inferred). */
+    void GetMovePoint(Vec3f *point);
+#ifdef ENEMY_STAT_0x90_ARG
+    /* Shows the worm above ground, or hides it (name inferred). */
+    void SetAppeared(bool appeared) {
+        m_enemy->m_status->vfStat_0x3C(!appeared);
+        m_enemy->m_status->vfStat_0x7C(appeared, appeared);
+        m_enemy->m_status->vfStat_0x90(appeared);
+    }
+#endif
+
     /* 0x74 */ BkWormBase *m_worm; /* the body (name inferred) */
-    /* 0x78 */ u8 field_0x78[0x80 - 0x78];
+    /* 0x78 */ s32 m_shots;        /* shots left before it moves (name inferred) */
+    /* 0x7C */ u8 m_underground;   /* name inferred */
 };
 
 /* BkWorm (class name from RTTI; vtable 0x80534FE0). */

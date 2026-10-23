@@ -10,13 +10,14 @@ namespace System {
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
 class EffectManager;
 
-/* The effect heap fn_8042A5D0 returns (class name unknown): its fourth virtual function frees
- * memory (name inferred). */
+/* The effect heap fn_8042A5D0 returns (class name unknown): its virtual functions set it up on a
+ * block of memory, release it, and allocate and free memory (names inferred; see
+ * Game/EffectTask.cpp). */
 class UnkEffectHeap_8042A5D0 {
   public:
-    virtual void vf08();
-    virtual void vf0C();
-    virtual void vf10();
+    virtual void Initialize(void *memory, u32 size);
+    virtual void Finalize();
+    virtual void *Alloc(u32 size);
     virtual void Free(void *p);
 };
 
@@ -87,6 +88,13 @@ class EffectElement {
      * delete, which hands the memory back to the effect heap. Gadget code only reaches the members
      * below, so the plain layout above stays the default. */
     virtual ~EffectElement();
+    /* Advances the effect by dt, and draws it (names inferred; see Game/EffectManagerPJS.h). */
+    virtual void Update(float dt) = 0;
+    virtual void Draw() = 0;
+    /* Elements live on the effect heap (see Game/EffectManagerPJS.cpp). */
+    static void *operator new(unsigned long size) {
+        return fn_8042A5D0()->Alloc(size);
+    }
     static void operator delete(void *p) {
         fn_8042A5D0()->Free(p);
     }
@@ -101,7 +109,9 @@ class EffectElement {
     /* 0x18 */ u32 m_flags; /* bit 0 is cleared to let the effect finish (inferred) */
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
     /* 0x1C */ EffectManager *m_manager; /* the manager that runs the effect (inferred) */
-    /* 0x20 */ u8 field_0x20[0x48 - 0x20];
+    /* 0x20 */ u8 field_0x20[0x30 - 0x20];
+    /* 0x30 */ s32 m_drawPass; /* which EffectDraw*Task draws it; 6 for shimmer (inferred) */
+    /* 0x34 */ u8 field_0x34[0x48 - 0x34];
 #else
     /* 0x1C */ u8 field_0x1C[0x48 - 0x1C];
 #endif

@@ -11,9 +11,23 @@
 namespace Effect {
 namespace System {
 
+class EffectElement;
+class EffectLaunchInfo;
+struct UnkEffectDesc_801D0AFC;
+
 class EffectManager {
   public:
     virtual ~EffectManager();
+    /* Two virtual functions whose purpose is unknown (0x80425630 launches an effect; see
+     * Game/EffectPJS.cpp). */
+    virtual void fn_80425630();
+    virtual void fn_804255F4();
+    /* Creates the element desc describes, launched by info (name inferred; the PJS manager's
+     * version is in Game/EffectManagerPJS.cpp). */
+    virtual EffectElement *CreateElement(const UnkEffectDesc_801D0AFC *desc,
+                                         EffectLaunchInfo *info);
+
+    /* 0x04 */ u8 field_0x4[0x58 - 0x4]; /* split between the three manager classes unknown */
 };
 
 } // namespace System
@@ -23,6 +37,12 @@ namespace RW3 {
 class EffectManagerRW3 : public ::Effect::System::EffectManager {
   public:
     virtual ~EffectManagerRW3();
+    virtual ::Effect::System::EffectElement *CreateElement(
+        const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+        ::Effect::System::EffectLaunchInfo *info);
+    /* A virtual function the RenderWare manager adds (purpose unknown; 0x80437C14, and
+     * 0x80028BA4 in EffectManagerUSA). */
+    virtual void vf18();
 };
 
 } // namespace RW3
@@ -34,8 +54,14 @@ namespace Effect {
 
 class EffectManagerUSA : public ::Effect::RW3::EffectManagerRW3 {
   public:
-    virtual ~EffectManagerUSA();
+    /* Inline: the PJS manager's destructor (0x800A327C) inlines it. */
+    virtual ~EffectManagerUSA() {}
+    virtual ::Effect::System::EffectElement *CreateElement(
+        const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+        ::Effect::System::EffectLaunchInfo *info);
+    virtual void vf18();
 };
+SIZE_ASSERT(EffectManagerUSA, 0x58);
 
 } // namespace Effect
 } // namespace System

@@ -78,10 +78,18 @@ class BkWingLargeAI : public FlyerCommonAI {
   public:
     BkWingLargeAI();
     virtual ~BkWingLargeAI() {} /* weak, first at 0x80180A34 */
+#ifdef ENEMY_AI_MESSAGE_ARG
+    virtual void vfAI_0x28(UnkEnemyMessage_8019DC9C *message); /* 0x801815BC */
+#else
     virtual void vfAI_0x28();   /* 0x801815BC */
+#endif
     virtual void vfAI_0x3C();   /* 0x80181430 */
     virtual void vfAI_0x44();   /* 0x801813C8 */
     virtual void vfAI_0x58();   /* 0x801812CC */
+
+    /* Spawns object kind 8 or 9 (by bits 4-7 of Type) where the wing is, as the DeadToAirWing state
+     * ends (0x801811C4; name and behaviour inferred). */
+    void SpawnAirWing();
 
     /* 0x8C */ BkWingLargeBase *m_body;
 };

@@ -35,8 +35,8 @@ class EffectGlobalParam : public EffectElement {
     virtual ~EffectGlobalParam();
     /* Advances the blend factor by dt (0x8042A5EC). */
     virtual void Update(float dt);
-    /* An empty slot (0x801D0FC0). */
-    virtual void fn_801D0FC0() {}
+    /* Draws nothing (0x801D0FC0). */
+    virtual void Draw() {}
 
     /* 0x054 */ u8 field_0x54[0xFC - 0x54];
     /* 0x0FC */ u32 field_0xFC; /* bit 16: turn the fog on (inferred) */

@@ -64,7 +64,7 @@ class BkWingSmallAI : public FlyerCommonAI {
     virtual void vfAI_0x44();   /* 0x801821E4 */
 
     /* 0x8C */ BkWingSmallBase *m_wing; /* the body (name inferred) */
-    /* 0x90 */ u8 field_0x90[0x9C - 0x90];
+    /* 0x90 */ Vec3f m_direction; /* from the wing to its target point (name inferred) */
 };
 
 /* BkWingSmall (class name from RTTI; vtable 0x80534094). */

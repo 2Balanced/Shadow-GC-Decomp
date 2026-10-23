@@ -134,6 +134,20 @@ class FlyerCommonBase : public EnemyFlyerCommon {
     void GetAttackEndPoint(Vec3f *position); /* 0x80193434 */
     void MoveAlongPath(float dt);            /* 0x80193460 */
     bool IsInAttackRange();                  /* 0x80193720 */
+    /* The timer of the attack stretch: the float at 0x2F0 when vf_0x238 and vf_0x23C hold, else 0
+     * (weak copy first at 0x80183A5C; name inferred). */
+    float GetAttackTime() {
+        if (vf_0x238() && vf_0x23C()) {
+            return field_0x2F0;
+        }
+        return 0.0f;
+    }
+    /* Sets both floats at 0x2F8 (name inferred; the AI states set them to 1 as the flyer starts
+     * along its path). */
+    void SetMoveRate(float rate) {
+        field_0x2F8 = rate;
+        field_0x2FC = rate;
+    }
 
     /* 0x268 */ UnkEnemyPath_801A6844 m_path;
     /* 0x2D8 */ s32 field_0x2D8;
@@ -150,6 +164,40 @@ class FlyerCommonBase : public EnemyFlyerCommon {
     /* 0x30C */ u8 field_0x30C;
 };
 
+/* The flyers' states (class names from RTTI): following the path and floating in place. Behind
+ * their own macro for the reason given at ENEMY_BASE_AI_STATES (Game/EnemyAI.h): only the units
+ * that use them define it. Their code is in FlyerCommonAI's unit (0x801838FC..), their destructors
+ * are inline (weak copies first emitted with Game/BkWingLargeAI.cpp). */
+#ifdef FLYER_COMMON_AI_STATES
+#include "Game/EnemyAIState.h"
+
+class FlyerCommonAI;
+
+class EnemyAIState_FlyerCommonAI_MoveOnPath : public TEnemyAIState {
+  public:
+    EnemyAIState_FlyerCommonAI_MoveOnPath(); /* 0x801840A0 */
+    virtual ~EnemyAIState_FlyerCommonAI_MoveOnPath() {}
+    virtual void SetOwner(EnemyBaseAI *ai); /* 0x80184054 */
+    virtual void Enter();                   /* 0x80183AD8 */
+    virtual void Update();                  /* 0x80183910 */
+    virtual void Exit();                    /* 0x801838FC */
+
+    /* 0x4 */ FlyerCommonAI *m_ai;
+};
+
+class EnemyAIState_FlyerCommonAI_WaitFloating : public TEnemyAIState {
+  public:
+    EnemyAIState_FlyerCommonAI_WaitFloating(); /* 0x80184110 */
+    virtual ~EnemyAIState_FlyerCommonAI_WaitFloating() {}
+    virtual void SetOwner(EnemyBaseAI *ai); /* 0x801840C4 */
+    virtual void Enter();                   /* 0x80183EBC */
+    virtual void Update();                  /* 0x80183B7C */
+    virtual void Exit();                    /* 0x80183B78 */
+
+    /* 0x4 */ FlyerCommonAI *m_ai;
+};
+#endif
+
 /* FlyerCommonAI (class name from RTTI; vtable 0x8052EECC): the flyers' AI. */
 class FlyerCommonAI : public EnemyBaseAI {
   public:
@@ -157,7 +205,22 @@ class FlyerCommonAI : public EnemyBaseAI {
     virtual ~FlyerCommonAI() {} /* weak, first at 0x80180A8C */
     virtual void vfAI_0x58();   /* 0x80183F64 */
 
-    /* 0x74 */ u8 field_0x74[0x8C - 0x74];
+#ifdef FLYER_COMMON_AI_STATES
+    /* The states' objects (names inferred), declared last state first (see EnemyWalkerAI). */
+    static TEnemyAIState *GetMoveOnPathState() {
+        static EnemyAIState_FlyerCommonAI_MoveOnPath s_state;
+        return &s_state;
+    }
+    static TEnemyAIState *GetWaitFloatingState() {
+        static EnemyAIState_FlyerCommonAI_WaitFloating s_state;
+        return &s_state;
+    }
+#endif
+
+    /* 0x74 */ FlyerCommonBase *m_flyer; /* the enemy's body (name inferred) */
+    /* 0x78 */ u8 m_rising;  /* the float's direction (names inferred) */
+    /* 0x7C */ float m_wave;
+    /* 0x80 */ Vec3f field_0x80;
 };
 
 #endif

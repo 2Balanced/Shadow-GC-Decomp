@@ -30,6 +30,9 @@
  * end node's constructor, as the game does for each of its trees, so the end node is given a name
  * of its own there; otherwise the linker would merge it with the game's copy. */
 #define __tree_end_node __tree_end_node_csd
+#elif defined(MSL_TREE_END_NODE_NAME)
+/* The same for a unit that names its own end node (Game/csdmScene.cpp, Game/csdmNode.cpp). */
+#define __tree_end_node MSL_TREE_END_NODE_NAME
 #endif
 
 namespace std {
@@ -189,6 +192,23 @@ template <class T> class __tree_const_iterator {
         fn_80012E90(&node_);
         return *this;
     }
+#ifdef MSL_TREE_CONST_ITERATOR_MIXED
+    /* Only where MSL_TREE_CONST_ITERATOR_MIXED is defined before this header (Game/csdmScene.cpp):
+     * the postfix increment, and comparison with an iterator. */
+    __tree_const_iterator operator++(int) {
+        __tree_const_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator!=(const __tree_iterator<T> &x) const {
+        return node_ != x.node_;
+    }
+    __tree_const_iterator &operator=(const __tree_iterator<T> &x) {
+        node_ = x.node_;
+        __tree_nothing();
+        return *this;
+    }
+#endif
     friend bool operator==(const __tree_const_iterator &x, const __tree_const_iterator &y) {
         return x.node_ == y.node_;
     }

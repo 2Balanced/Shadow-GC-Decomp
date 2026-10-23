@@ -57,7 +57,7 @@ class Launcher : public SonicteamUSA::System::Effect::EffectLaunchInfoUSA {
     bool IsLoaded() const;
 
     /* 0x0C */ s32 m_slot;
-    /* 0x10 */ u32 field_0x10;
+    /* 0x10 */ s32 field_0x10; /* how many users loaded it (see Game/EffectLauncherTable.cpp) */
 };
 SIZE_ASSERT(Launcher, 0x14);
 

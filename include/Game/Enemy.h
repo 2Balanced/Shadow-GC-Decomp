@@ -31,6 +31,7 @@
 
 #include "Game/CharaColliAttack.h"
 #include "Game/CollisionEffect.h"
+#include "Game/Fn8040CopyVector3.h"
 #include "Game/MathTypes.h"
 #include "Game/MotionSequenceModule.h"
 #include "Game/Task.h"
@@ -211,7 +212,13 @@ class EnemyStatFunc {
     virtual void vfStat_0x84(int kind) {}
     virtual void vfStat_0x88(u32 value) {}
     virtual void vfStat_0x8C(bool value) {}
+#ifdef ENEMY_STAT_0x90_ARG
+    /* The slot takes a flag (BkWormAI passes 0 or 1). Behind a macro because the symbols of this
+     * slot carry the argument-less signature; only units that need the argument define it. */
+    virtual void vfStat_0x90(bool value) {}
+#else
     virtual void vfStat_0x90() {}
+#endif
     virtual void vfStat_0x94(int flags) {}
     virtual void vfStat_0x98() {}
     virtual void vfStat_0x9C() {}
@@ -235,9 +242,7 @@ SIZE_ASSERT(EnemyStatFunc, 0x4);
  * comes before the vtable pointer at 0xC. */
 class EnemyDispFunc {
   public:
-    /* 0x0 */ u32 field_0x0;
-    /* 0x4 */ u32 field_0x4;
-    /* 0x8 */ u32 field_0x8;
+    /* 0x0 */ Vec3f field_0x0;
 
     virtual void vfDisp_0x08();             /* 0x8019B3A0 */
     virtual void vfDisp_0x0C();             /* 0x8019B3A4 */
@@ -249,13 +254,17 @@ class EnemyDispFunc {
     virtual boost::shared_ptr<EnemyRender> vfDisp_0x20(); /* 0x80181038 */
     /* The matrix of model part index, or null (name from Game/EnemyTarget.cpp). */
     virtual Mtx34f *GetPartMatrix(int index); /* 0x8019448C */
-    virtual void vfDisp_0x28();             /* 0x8019B3BC */
-    virtual void vfDisp_0x2C();             /* 0x8019B3DC */
-    virtual void vfDisp_0x30();             /* 0x80188E0C */
+    /* Two vectors of the model (meanings unknown; by default field_0x0). */
+    virtual Fn8040CopyVector3 vfDisp_0x28(); /* 0x8019B3BC */
+    virtual Fn8040CopyVector3 vfDisp_0x2C(); /* 0x8019B3DC */
+    /* Called with a turn's cosine (0.2 for a turn of more than 90 degrees; behaviour inferred from
+     * Enemy::vf_0x0C). */
+    virtual void vfDisp_0x30(float value);  /* 0x80188E0C */
     virtual float vfDisp_0x34();            /* 0x8019B3FC */
     /* Places the model at position with rotation (behaviour inferred). */
     virtual void vfDisp_0x38(const Vec3f *position, const Vec3f *rotation); /* 0x8019B404 */
-    virtual void vfDisp_0x3C();             /* 0x8017F234 */
+    /* Whether the enemy is moving (behaviour inferred from Enemy::vf_0x0C). */
+    virtual void vfDisp_0x3C(bool moving);  /* 0x8017F234 */
     /* A motion event (behaviour inferred). */
     virtual void vfDisp_0x40(EnemyMotionEventArg &arg); /* 0x8019B408 */
     virtual bool vfDisp_0x44(int *command);  /* 0x8019B40C */
@@ -310,7 +319,11 @@ SIZE_ASSERT(EnemySetFunc, 0x4);
  * comes before the vtable pointer at 0x18. */
 class EnemyCtrlFunc {
   public:
-    /* 0x00 */ u32 field_0x0[0x18 / 4];
+    /* Inline; first emitted with Game/Enemy.cpp (0x8019B370). */
+    EnemyCtrlFunc() : field_0xC(0.0f, 0.0f, 0.0f) {}
+
+    /* 0x00 */ Vec3f field_0x0; /* what vfCtrl_0x1C returns by default */
+    /* 0x0C */ Vec3f field_0xC;
 
     virtual void vfCtrl_0x08();  /* 0x8019B420 */
     virtual void vfCtrl_0x0C();  /* 0x8019B424 */
@@ -398,14 +411,53 @@ class EnemySetObjBase {
     /* 0x0 */ EnemySetFunc *m_set;
 };
 
+#ifdef ENEMY_AREA_PARTS
+/* The two halves of UnkEnemyArea_8018A374 as Game/BkLarva.cpp, which emits the area's
+ * constructor (0x8018A374), sees them: their implicit constructors are the empty functions
+ * 0x8018A3D0 and 0x8018A3CC (layouts and names unknown; the Vec3f members give the constructors
+ * their bodies). The whole area is then 0x44 bytes, which is what Enemy's field_0xA8 and
+ * field_0xCC cover. */
+struct UnkEnemyAreaShape {
+    /* 0x00 */ Vec3f field_0x0;
+    /* 0x0C */ Vec3f field_0xC;
+    /* 0x18 */ u8 field_0x18[0x20 - 0x18];
+};
+
+struct UnkEnemyAreaBounds {
+    /* 0x00 */ Vec3f field_0x0;
+    /* 0x0C */ Vec3f field_0xC;
+    /* 0x18 */ Vec3f field_0x18;
+};
+
+struct UnkEnemyArea_8018A374 {
+    UnkEnemyArea_8018A374() {
+        memset(&m_shape, 0, sizeof(m_shape));
+        memset(&m_bounds, 0, sizeof(m_bounds));
+    }
+    /* Whether key is in the area (0x801A68C0; behaviour inferred). */
+    u8 Contains(void *key);
+    /* The float at 0x18 (see the other definition below). */
+    float GetRange() {
+        return *reinterpret_cast<float *>(&m_shape.field_0x18[0]);
+    }
+
+    /* 0x00 */ UnkEnemyAreaShape m_shape;
+    /* 0x20 */ UnkEnemyAreaBounds m_bounds;
+};
+#else
 /* A 0x24-byte value at Enemy+0xA8 (constructor 0x8018A374 clears it; class name unknown). */
 struct UnkEnemyArea_8018A374 {
     UnkEnemyArea_8018A374();
     /* Whether key is in the area (0x801A68C0; behaviour inferred). */
     u8 Contains(void *key);
+    /* The float at 0x18 (name inferred: the area's radius). */
+    float GetRange() {
+        return *reinterpret_cast<float *>(&field_0x0[0x18]);
+    }
 
     /* 0x00 */ u8 field_0x0[0x24];
 };
+#endif
 
 extern "C" {
 /* The enemy registry (a singleton) and its add and remove calls (behaviour inferred). */
@@ -470,6 +522,11 @@ class Enemy : public EnemyParamObjBase,
     Vec3f *GetRotation();
     Vec3f *GetPosition();
     float GetFrameTime();
+    /* The vector at 0x60 (weak copy first at 0x80183EAC; name inferred: its y is the angle the
+     * flyers float at). */
+    Vec3f *GetHomeRotation() {
+        return &field_0x60;
+    }
     /* The second word of the frame data (0x8018F860, weak here; name inferred). */
     float GetFrameTime2() {
         return (*reinterpret_cast<float **>(m_chara->field_0x60))[1];
@@ -492,7 +549,9 @@ class Enemy : public EnemyParamObjBase,
     /* 0x90 */ Vec3f field_0x90;
     /* 0x9C */ Vec3f field_0x9C;
     /* 0xA8 */ UnkEnemyArea_8018A374 field_0xA8;
+#ifndef ENEMY_AREA_PARTS
     /* 0xCC */ u8 field_0xCC[0xEC - 0xCC];
+#endif
     /* 0xEC */ float field_0xEC;
     /* 0xF0 */ float field_0xF0;
     /* 0xF4 */ u32 field_0xF4;
@@ -670,7 +729,11 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x88(u32 value);         /* 0x8017B7B4 */
     virtual void vfStat_0x7C(bool arg0, bool arg1); /* 0x8017B7D8 */
     virtual void vfStat_0x8C(bool value);        /* 0x8017B7FC */
+#ifdef ENEMY_STAT_0x90_ARG
+    virtual void vfStat_0x90(bool value);        /* 0x801A7F64 */
+#else
     virtual void vfStat_0x90();                  /* 0x801A7F64 */
+#endif
     virtual void vfStat_0x94(int flags);         /* 0x801A8608 */
     virtual void vfStat_0x98();                  /* 0x801A85B4 */
     virtual void vfStat_0x9C();                  /* 0x801A8504 */
@@ -724,12 +787,12 @@ class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
     virtual void *vfDisp_0x1C();                      /* 0x801A0CB0 */
     virtual boost::shared_ptr<EnemyRender> vfDisp_0x20(); /* 0x8017B5B0 */
     virtual Mtx34f *GetPartMatrix(int index);     /* 0x801A0C58 */
-    virtual void vfDisp_0x28();                       /* 0x801A0BBC */
-    virtual void vfDisp_0x2C();                       /* 0x801A0B48 */
-    virtual void vfDisp_0x30();                       /* 0x801A0BB4 */
+    virtual Fn8040CopyVector3 vfDisp_0x28();          /* 0x801A0BBC */
+    virtual Fn8040CopyVector3 vfDisp_0x2C();          /* 0x801A0B48 */
+    virtual void vfDisp_0x30(float value);            /* 0x801A0BB4 */
     virtual float vfDisp_0x34();                      /* 0x801A0BAC */
     virtual void vfDisp_0x38(const Vec3f *position, const Vec3f *rotation); /* 0x801A1BF4 */
-    virtual void vfDisp_0x3C();                       /* 0x801A0AFC */
+    virtual void vfDisp_0x3C(bool moving);            /* 0x801A0AFC */
     virtual void vfDisp_0x40(EnemyMotionEventArg &arg); /* 0x801A0AB0 */
     virtual bool vfDisp_0x44(int *command);           /* 0x801A0AA8 */
     virtual void vfDisp_0x48();                       /* 0x801A07A8 */
@@ -897,6 +960,14 @@ class SoldierCommonBase : public EnemyWalkerCommon {
     /* The weapon the soldier carries, 0 for none (an index into the WeaponType list). */
     int GetWeaponType() {
         return m_weaponType;
+    }
+    /* The point the soldier walks to or waits at (0 to 3), and the time it waits at point index
+     * (weak copies first at 0x80188E04 and 0x80188DF4; names inferred). */
+    int GetPointIndex() {
+        return field_0x280;
+    }
+    float GetWaitTime(int index) {
+        return m_points[index].field_0xC;
     }
 
     /* 0x270 */ u8 field_0x270;

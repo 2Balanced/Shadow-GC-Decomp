@@ -85,14 +85,22 @@ struct SLayerInfo;
 /* A scene of a loaded project (the part read here). */
 struct SSceneInfo {
     /* 0x00 */ s32 m_version;
-    /* 0x04 */ u8 field_0x4[0x18 - 0x4];
+    /* 0x04 */ f32 m_frameCount;
+    /* 0x08 */ f32 m_frameRate;
+    /* 0x0C */ f32 m_startFrame;
+    /* 0x10 */ f32 m_endFrame;
+    /* 0x14 */ u8 field_0x14[0x18 - 0x14];
     /* 0x18 */ SVec2 *m_textureSizes;
     /* 0x1C */ u8 field_0x1C[4];
     /* 0x20 */ SPattern *m_patterns;
     /* 0x24 */ s32 m_layerCount;
     /* 0x28 */ SLayerInfo *m_layers;
-    /* 0x2C */ u8 field_0x2C[0x40 - 0x2C];
+    /* 0x2C */ u8 field_0x2C[0x34 - 0x2C];
+    /* 0x34 */ s32 m_motionCount;
+    /* 0x38 */ struct SMotion *m_motions;
+    /* 0x3C */ SNameIndex *m_motionNames;
     /* 0x40 */ f32 m_aspect;
+    /* 0x44 */ SVec2 *m_motionFrames; /* each motion's start and end frame (version 2 and later) */
 };
 
 /* A cast of a layer as stored in the project. */

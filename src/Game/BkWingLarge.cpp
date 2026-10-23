@@ -172,7 +172,7 @@ static AttackObjectParam s_cutterParam(5.0f, 0, 2, 6, 1.0f, 4, 0x40, 6,
 static u8 s_unknownBss1[0x120];
 
 BkWingLargeAirCutter *BkWingLargeAirCutter::Create(const Vec3f *position, const Vec3f *rotation) {
-    fn_800091D0(&s_cutterParam.m_position, position);
+    fn_800091D0(reinterpret_cast<Vec3f *>(&s_cutterParam.m_position), position);
     s_cutterParam.m_rotation.x = rotation->x;
     s_cutterParam.m_rotation.y = rotation->y;
     s_cutterParam.m_rotation.z = rotation->z;

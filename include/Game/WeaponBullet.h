@@ -19,26 +19,8 @@ class CharaColliAttack;
 } // namespace System
 } // namespace SonicteamUSA
 
-/* A vector member copied and assigned through the out-of-line vector copy constructor and
- * assignment (fn_800091EC, fn_800091D0). The game's vector class has those out of line;
- * Vec3f stands in without them, so members that the game copies through them use this
- * type (name inferred). It has no base class, so that its inline copy constructor calls no other
- * inline function and is inlined. */
-struct Fn8040CopyVector3 {
-    Fn8040CopyVector3() {}
-    Fn8040CopyVector3(const Fn8040CopyVector3 &v) {
-        fn_800091EC(reinterpret_cast<Vec3f *>(this), reinterpret_cast<const Vec3f *>(&v));
-    }
-    Fn8040CopyVector3 &operator=(const Fn8040CopyVector3 &v) {
-        fn_800091D0(reinterpret_cast<Vec3f *>(this), reinterpret_cast<const Vec3f *>(&v));
-        return *this;
-    }
-
-    float x;
-    float y;
-    float z;
-};
-SIZE_ASSERT(Fn8040CopyVector3, 0xC);
+/* Fn8040CopyVector3, a vector member copied through the out-of-line vector functions. */
+#include "Game/Fn8040CopyVector3.h"
 
 namespace Weapon {
 namespace Bullet {
