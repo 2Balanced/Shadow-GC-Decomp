@@ -31,6 +31,7 @@ class UnkBehaviorExecuter_800A7F14;
 
 class PlayerMotion;
 class PlayerTargetBase;
+class SoundBase;
 class WeaponBase;
 
 /* The list at 0x254 of a player (class name unknown): weak_ptr<CharInfo> entries from 0x8; fn_800AADA4
@@ -64,7 +65,9 @@ class PlayerBase : public PlayerObject {
     /* 0x230 */ PlayerMotion *m_motion;
     /* 0x234 */ u32 field_0x234;
     /* 0x238 */ WeaponBase *m_weapon;
-    /* 0x23C */ u8 field_0x23C[0x24C - 0x23C];
+    /* 0x23C */ u32 field_0x23C;
+    /* 0x240 */ SoundBase *m_sound; /* the character's sound task (Game/PlayerSoundBase.cpp) */
+    /* 0x244 */ u8 field_0x244[0x24C - 0x244];
     /* 0x24C */ PlayerTargetBase *m_target;
     /* 0x250 */ u32 field_0x250;
     /* 0x254 */ UnkCharaSlots_800AADA4 *m_charaSlots;

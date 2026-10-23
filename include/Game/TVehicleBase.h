@@ -8,6 +8,8 @@
 #include "size_assert.h"
 
 class CharCommand;
+/* A node of a collision hit list (see Game/BirdBase.cpp; name inferred). */
+struct UnkColliContactNode_800587A0;
 
 namespace Vehicle {
 
@@ -39,7 +41,9 @@ class TVehicleBase : public CharInfo {
     virtual void Setup();
     /* Takes a command sent to the vehicle (pure; name inferred). */
     virtual void OnCommand(CharCommand *command) = 0;
-    virtual void vf_0x40();
+    /* Takes a collision hit (0x801B6348, empty; BirdBase and AirSaucer read the hit's object and
+     * attack it; name unknown). */
+    virtual void vf_0x40(UnkColliContactNode_800587A0 *const &hit);
     /* Per-frame work (pure; name inferred). */
     virtual void Tick(float dt) = 0;
     /* A rider gets on and off (0x801B62C4, 0x801B6254; names inferred from GunLift). */
@@ -50,14 +54,16 @@ class TVehicleBase : public CharInfo {
     virtual bool vf_0x54();
     virtual void vf_0x58();
     virtual void vf_0x5C();
-    virtual void vf_0x60();
-    virtual void vf_0x64();
+    /* 0x801B622C returns false, 0x801B6224 a float (BirdBase: true, and its motion's time). */
+    virtual bool vf_0x60();
+    virtual float vf_0x64();
     virtual void vf_0x68();
     virtual void vf_0x6C();
     virtual void vf_0x70();
     virtual void vf_0x74();
     virtual void vf_0x78();
-    virtual void vf_0x7C();
+    /* 0x801B6208 (empty; BirdBase passes arg on to its model's motion). */
+    virtual void vf_0x7C(void *arg);
 
     /* The rider (0x801B67C4) and a second character (0x801B66EC; the shooter of the GunLift's
      * bullets) (names inferred). */

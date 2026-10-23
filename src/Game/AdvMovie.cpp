@@ -55,9 +55,9 @@ class Player {
     Player();
 
     /* Starts the movie and waits for it to end; always returns 1 (name inferred). */
-    int Draw();
+    bool Draw();
     /* Moves on once the movie has ended; always returns 1 (name inferred). */
-    int Tick();
+    bool Tick();
 
     /* 0x0 */ s32 m_state; /* 0 starting, 1 playing, 2 done */
 };
@@ -91,14 +91,14 @@ Player::Player() {
     fn_802C839C(fn_801E5CA8(), 0);
 }
 
-int Player::Tick() {
+bool Player::Tick() {
     if (m_state == 2) {
         fn_802B7528(fn_801E5E00(), 1);
     }
     return 1;
 }
 
-int Player::Draw() {
+bool Player::Draw() {
     switch (m_state) {
     case 0:
         if (lbl_805EE0B0 != 0) {
@@ -136,8 +136,8 @@ class Phase : public AdvBase {
   public:
     Phase();
     virtual ~Phase();
-    virtual int Tick();
-    virtual int Draw();
+    virtual bool Tick();
+    virtual bool Draw();
 
     /* 0x4 */ boost::scoped_ptr<Player> m_player;
 };
@@ -147,11 +147,11 @@ Phase::Phase() : m_player(new Player) {}
 
 Phase::~Phase() {}
 
-int Phase::Tick() {
+bool Phase::Tick() {
     return m_player->Tick();
 }
 
-int Phase::Draw() {
+bool Phase::Draw() {
     return m_player->Draw();
 }
 

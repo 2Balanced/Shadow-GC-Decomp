@@ -48,6 +48,12 @@ template <int N> bool UnkBitFlags_802D4ED4<N>::Test(u32 index) const {
 
 class CharCommandUnit;
 
+namespace Effect {
+namespace PJS {
+class Launcher;
+} // namespace PJS
+} // namespace Effect
+
 /* A clump's colour fade (struct name unknown; as in Game/BlackDoomCtrlUnit.cpp and
  * Game/BossRender.cpp); its constructor is out of line (0x80027D5C). */
 struct UnkClumpFade_80027D5C;
@@ -91,13 +97,18 @@ class Executer : public Task {
     /* 0x2C */ u32 field_0x2C; /* never touched (size from the allocation) */
 };
 
-/* Effect (class name from RTTI; a Task, vtable 0x80558DAC, constructor 0x802DCA60): the boss's
- * effects; only its size is known so far. */
+/* Effect (class name from RTTI; a Task, vtable 0x80558DAC; Game/DiablonEffect.cpp): loads the
+ * boss's effect file and keeps its launcher; the boss keeps it at Diablon::field_0x6C, and the
+ * parts launch their effects through it (fn_802DC95C and fn_802DC998, C functions in that
+ * unit). */
 class Effect : public Task {
   public:
     Effect(Executer *executer, const boost::shared_ptr<Diablon> &owner);
+    virtual ~Effect();
+    virtual void Tick(float dt);
 
-    /* 0x28 */ u8 field_0x28[0x38 - 0x28];
+    /* 0x28 */ boost::shared_ptr< ::Effect::PJS::Launcher> m_launcher;
+    /* 0x30 */ boost::shared_ptr<Diablon> m_owner;
 };
 
 namespace Behavior {
@@ -224,18 +235,19 @@ class PartsBase {
 };
 SIZE_ASSERT(PartsBase, 0x24);
 
-/* A node of a part's model and the motions it plays (struct names unknown; members inferred). */
+/* A motion a part's model plays, and the model with its motions and the frames it follows
+ * (struct names unknown; members inferred from Game/DiablonPartsModelBase.cpp). */
 struct ModelNode {
-    /* 0x0 */ s32 m_id;
-    /* 0x4 */ s32 field_0x4;
+    /* 0x0 */ s32 m_id;      /* the motion, counted from the model's first */
+    /* 0x4 */ s32 field_0x4; /* kept while the motion plays */
 };
 
 struct ModelDesc {
-    /* 0x00 */ s32 field_0x0;
-    /* 0x04 */ s32 field_0x4;
-    /* 0x08 */ const ModelNode *m_nodes;
+    /* 0x00 */ s32 field_0x0; /* the model in the boss's resource slot */
+    /* 0x04 */ s32 field_0x4; /* the model has motions when this is 0 or more */
+    /* 0x08 */ const ModelNode *m_nodes; /* the motions */
     /* 0x0C */ s32 m_nodeCount;
-    /* 0x10 */ const s32 *m_motions;
+    /* 0x10 */ const s32 *m_motions; /* the ids of the frames whose matrices the part keeps */
     /* 0x14 */ s32 m_motionCount;
 };
 
@@ -243,8 +255,8 @@ struct ModelDesc {
 class UnkModel_802DB4D0;
 
 /* ModelBase (class name from RTTI; vtable 0x80558D0C, constructor 0x802DAB6C, destructor
- * 0x802DAA94): a part with a model of its own, which it ticks and whose motions it plays. Its
- * code is at 0x802DA7AC-0x802DABEC; method names are inferred. */
+ * 0x802DAA94; Game/DiablonPartsModelBase.cpp): a part with a model of its own, which it ticks and
+ * whose motions it plays. Method names are inferred. */
 class ModelBase : public PartsBase {
   public:
     ModelBase(PartsBase *parent, const char *name, const boost::shared_ptr<Diablon> &owner,
@@ -254,6 +266,7 @@ class ModelBase : public PartsBase {
 
     u32 *GetModelFlags();                     /* 0x802DA7AC */
     const Mtx34f *GetNodeMatrix(int index);   /* 0x802DA7B8 */
+    void SetParentMatrix(const Mtx34f *matrix); /* 0x802DA7DC */
     const Mtx34f *GetParentMatrix();          /* 0x802DA7E8 */
     void *GetMotion();                        /* 0x802DA7F4 */
     int GetMotionIndex();                     /* 0x802DA800 */
@@ -262,7 +275,7 @@ class ModelBase : public PartsBase {
     void SetMotionNode(int node, int motion); /* 0x802DA85C */
     void PlayMotion(int motion, float blend); /* 0x802DA880 */
 
-    /* 0x24 */ UnkModel_802DB4D0 *m_model; /* a boost::scoped_ptr in the original (inferred) */
+    /* 0x24 */ boost::scoped_ptr<UnkModel_802DB4D0> m_model;
 };
 SIZE_ASSERT(ModelBase, 0x28);
 

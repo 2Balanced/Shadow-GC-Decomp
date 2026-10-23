@@ -105,6 +105,9 @@ class VacuumCommand : public CharCommand {
     /* Pulls target in with weapon (0x801DB0D8; from Game/WeaponVacuumPod.cpp, arg2 unknown). */
     VacuumCommand(const boost::weak_ptr<Target> &target,
                   const boost::weak_ptr<Weapon::WeaponVacuumBase> &weapon, bool arg2);
+    /* Pulls target in for owner, with no weapon (0x801DB004; from
+     * Game/PlayerBarrierMagnetEffect.cpp, where owner is the player). */
+    VacuumCommand(const boost::weak_ptr<Target> &target, const boost::weak_ptr<CharInfo> &owner);
 
     /* 0x14 */ boost::weak_ptr<Target> m_target;
     /* 0x1C */ boost::weak_ptr<Weapon::WeaponVacuumBase> m_weapon;

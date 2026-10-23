@@ -10,6 +10,7 @@
 /* The argument a Render passes to its draw callbacks (struct name from the game's RTTI, which
  * spells it "Redner"). */
 struct RednerDrawArgs;
+class Task;
 
 /* Render (class name from the RTTI of its shared_ptr control block): a 0x28-byte drawing hook. Only
  * the list of draw callbacks at 0x14 is known (name inferred). ElecKyuu.cpp keeps its own copy of
@@ -29,9 +30,13 @@ struct UnkRenderOwner_80046178 {
     /* 0x8 */ void *field_0x8;
     /* 0xC */ u8 field_0xC[0x18 - 0xC];
     /* 0x18 */ void *field_0x18; /* passed by TPjsEventActionFade (meaning unknown) */
-    /* 0x1C */ u8 field_0x1C[0x28 - 0x1C];
+    /* 0x1C */ u8 field_0x1C[0x20 - 0x1C];
+    /* 0x20 */ Task *field_0x20; /* the parent of Test::EffBelt and Test::EffLocusMultiVtx */
+    /* 0x24 */ u8 field_0x24[0x28 - 0x24];
     /* 0x28 */ void *field_0x28; /* passed instead by ElecCoreWall (meaning unknown) */
-    /* 0x2C */ u8 field_0x2C[0x38 - 0x2C];
+    /* 0x2C */ u8 field_0x2C[0x30 - 0x2C];
+    /* 0x30 */ void *field_0x30; /* passed by VehicleArrow (meaning unknown) */
+    /* 0x34 */ u8 field_0x34[0x38 - 0x34];
     /* 0x38 */ void *field_0x38; /* passed by SavePointSelect (meaning unknown) */
     /* 0x3C */ void *field_0x3C; /* passed by GiGameOver (meaning unknown) */
     /* 0x40 */ void *field_0x40; /* passed by StageSequence::MovieTest (meaning unknown) */

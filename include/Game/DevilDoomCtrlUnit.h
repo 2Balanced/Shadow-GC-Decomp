@@ -12,6 +12,7 @@
 #include "Game/CharCommand.h"
 #include "Game/GiHPGaugeEnemy.h"
 #include "Game/MathTypes.h"
+#include "Game/UnkMatrix_800B1304.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include <dolphin/types.h>
@@ -19,12 +20,6 @@
 
 struct RpClump;
 class Target;
-
-/* A matrix whose empty default constructor is out of line at 0x800B1304 (the class name is
- * unknown; it is the element type of the matrix arrays below). */
-struct UnkMatrix_800B1304 : public Mtx34f {
-    UnkMatrix_800B1304() {}
-};
 
 namespace Effect {
 namespace System {

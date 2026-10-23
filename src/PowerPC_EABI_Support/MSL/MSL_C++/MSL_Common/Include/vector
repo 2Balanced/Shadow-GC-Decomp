@@ -161,6 +161,13 @@ template <class T, class A> class __vec_base {
   public:
     iterator erase(iterator first, iterator last);
 #endif
+#ifdef MSL_VECTOR_ERASE_ONE
+    /* Only where MSL_VECTOR_ERASE_ONE is defined before this header (Game/AdvCsdCache.cpp, which
+     * also defines MSL_ALGORITHM_COPY). Declared last, it comes out first of the members defined
+     * out of line, as in the game. */
+  public:
+    iterator erase(iterator position);
+#endif
 
     __vec_cap_pair<A, size_type> cap_;
     size_type size_;
@@ -343,6 +350,18 @@ template <class T, class A> typename __vec_base<T, A>::iterator __vec_base<T, A>
     }
     this->size_ -= last - first;
     return first;
+}
+#endif
+
+#ifdef MSL_VECTOR_ERASE_ONE
+template <class T, class A> typename __vec_base<T, A>::iterator __vec_base<T, A>::erase(iterator position) {
+    iterator e = end();
+    if (e - position - 1 != 0) {
+        copy(position + 1, e, position);
+    }
+    A &a = cap_.first();
+    a.destroy(data_ + --size_);
+    return position;
 }
 #endif
 

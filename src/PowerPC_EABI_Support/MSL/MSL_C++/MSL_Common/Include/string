@@ -40,6 +40,17 @@ class basic_string {
     basic_string &operator=(const charT *s);
     const charT *c_str() const;
 #endif
+#ifdef MSL_STRING_COPY
+    /* Declared only where a unit needs them (Game/AdvCsdCache.cpp), for the reason given above. The
+     * game links one out-of-line copy of each (copy constructor 0x80041E34, assign 0x80040384;
+     * operator== with a C string, below, 0x8003C83C). The assignment is inline, so that, inlining
+     * it, the assignment of a class with a string member is not inlined itself. */
+    basic_string(const basic_string &str);
+    basic_string &operator=(const basic_string &str) {
+        return assign(str);
+    }
+    basic_string &assign(const basic_string &str);
+#endif
 
     size_type max_size() const {
         return size_type(-1) / sizeof(charT) - 1;
@@ -61,6 +72,11 @@ basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Alloc
     size_ = n;
     data_ = const_cast<charT *>(s);
 }
+
+#ifdef MSL_STRING_COPY
+template <class charT, class traits, class Allocator>
+bool operator==(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs);
+#endif
 
 typedef basic_string<char> string;
 

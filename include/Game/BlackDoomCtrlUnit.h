@@ -99,12 +99,15 @@ struct BlackDoomSettings {
 SIZE_ASSERT(BlackDoomSettings, 0x7C);
 
 /* One of the boss's queued attacks (struct name unknown): its empty constructor is out of line at
- * 0x802838A0. m_state counts from 0 (free) on; ATK_READY moves it on. */
+ * 0x802838A0. m_state counts from 0 (free) on; ATK_READY moves it on. Attack i is the one alter
+ * ego i (BlackDoomCtrlUnit_AlterEgo) makes: m_position and m_rotation place the alter ego. */
 struct BlackDoomAttack {
     BlackDoomAttack() {}
 
     /* 0x00 */ s32 m_state;
-    /* 0x04 */ u8 field_0x4[0x18 - 0x4];
+    /* 0x04 */ u8 field_0x4;
+    /* 0x08 */ Vec3f m_position;
+    /* 0x14 */ float m_rotation;
 };
 SIZE_ASSERT(BlackDoomAttack, 0x18);
 
@@ -326,15 +329,35 @@ SIZE_ASSERT(BlackDoomCtrlUnit_Move, 0x1C);
 SIZE_ASSERT(BlackDoomCtrlUnit_AttackCallback, 0x20);
 SIZE_ASSERT(BlackDoomCtrlUnit_GetStatus, 0x1C);
 
-/* BlackDoomCtrlUnit_AlterEgo (vtable at 0x80557A18; its unit is near 0x802BF980): only its
- * constructor and size are needed here. */
+/* BlackDoomCtrlUnit_AlterEgo (vtable at 0x80557A18; Game/BlackDoomCtrlUnitAlterEgo.cpp): one of
+ * the boss's copies. It appears behind the boss (or the alter ego before it), follows it, and
+ * fires disks, meteors or a boomerang with it when the boss attacks; m_owner->m_attacks[m_index]
+ * holds its state. Member names are inferred. */
 class BlackDoomCtrlUnit_AlterEgo : public BlackDoomCtrlUnit {
   public:
     BlackDoomCtrlUnit_AlterEgo(BlackDoomVarParam *param);
     virtual ~BlackDoomCtrlUnit_AlterEgo();
     virtual int Tick(float dt);
 
-    /* 0x0C */ u8 field_0xC[0x9C - 0xC];
+    void Turn(float dt);
+    void UpdateMotion(float dt);
+    void PlaceDiskPoints();
+    void PlaceMeteorPoints();
+
+    /* 0x0C */ s32 m_index; /* the alter ego's attack, or -1 */
+    /* 0x10 */ float m_alpha;
+    /* 0x14 */ RpClump *m_clump;
+    /* 0x18 */ UnkClumpFade_80027D5C *m_fade;
+    /* 0x1C */ _stMtnPlayWork *m_motion;
+    /* 0x20 */ UnkClumpUpdater_80015A7C *m_updater;
+    /* 0x24 */ const BlackDoomAttribute *m_attribute; /* the motion's last attribute 0x5000 */
+    /* 0x28 */ Vec3f m_points[5]; /* where the shots start */
+    /* 0x64 */ boost::weak_ptr<Effect::System::EffectElement> m_effects[5];
+    /* 0x8C */ float m_timer;
+    /* 0x90 */ u8 m_done;
+    /* 0x91 */ u8 m_launched;
+    /* 0x94 */ s32 m_shots; /* left to fire */
+    /* 0x98 */ s32 m_point; /* of the next shot */
 };
 SIZE_ASSERT(BlackDoomCtrlUnit_AlterEgo, 0xAC);
 

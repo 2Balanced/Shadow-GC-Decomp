@@ -3,6 +3,7 @@
 
 #include "Game/MathTypes.h"
 #include "Game/Task.h"
+#include "boost/scoped_ptr.hpp"
 #include "size_assert.h"
 
 /* A colour of four bytes whose first byte the constructor (0x8040D2EC) sets to 0xFF (struct name
@@ -19,15 +20,20 @@ SIZE_ASSERT(UnkColor_8040D2EC, 0x4);
 
 namespace Test {
 
-/* EffLocusMultiVtx (class name from RTTI; vtable 0x80558F14): a task that draws a trail through a
- * set of moving points. The constructor is at 0x802DEB40; the methods keep their address names
- * and what is known of them is inferred from Game/WeaponSpecialKatana.cpp. */
+/* EffLocusMultiVtx (class name from RTTI; vtable 0x80558F14; Game/EffLocusMultiVtx.cpp): a task
+ * named "Eff::LocusMultiVtx" that draws a trail through a set of moving points. The methods keep
+ * their address names. */
 class EffLocusMultiVtx : public Task {
   public:
-    /* length: the trail's history (inferred); points: count points that the owner keeps up to
-     * date. */
+    /* The trail (class name unknown). */
+    class Impl;
+
+    /* length: the trail's history; points: count points that the owner keeps up to date; arg: a
+     * matrix the points are taken through when not 0 (inferred). */
     EffLocusMultiVtx(int length, int count, Vec3f *points, int arg,
                      const UnkColor_8040D2EC *color);
+    virtual ~EffLocusMultiVtx();
+    virtual void Tick(float dt);
 
     /* Shows the trail (0x802DE9BC). */
     void fn_802DE9BC();
@@ -36,8 +42,8 @@ class EffLocusMultiVtx : public Task {
     /* Lets the trail fade out and end (0x802DE9DC). */
     void fn_802DE9DC();
 
-    /* 0x28 */ void *m_locus; /* a 0x30-byte object built by 0x802DF0E0 */
-    /* 0x2C */ u32 field_0x2C;
+    /* 0x28 */ boost::scoped_ptr<Impl> m_impl;
+    /* 0x2C */ u32 pad_0x2C; /* the class size is a multiple of 8 */
 };
 SIZE_ASSERT(EffLocusMultiVtx, 0x30);
 

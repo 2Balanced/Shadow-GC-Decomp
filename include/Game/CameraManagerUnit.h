@@ -6,6 +6,7 @@
 
 #include "Game/CameraModeUser.h"
 #include "Game/CameraState.h"
+#include "Game/CameraTargetInfo.h"
 #include "Game/MathTypes.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -25,33 +26,16 @@ struct UnkCameraMtx_8040C148 {
     Mtx34f value;
 };
 
-/* What the camera factory's first method makes for each camera unit (class name unknown): a
- * position first, its vtable pointer at 0x3C. RTTI calls the base of PJSCamera::PJSCameraTargetInfo
- * (Game/CameraTargetInfo.h), which has the same layout, SonicteamUSA::System::Camera::
- * CameraTargetInfo; this is probably that class. */
-class UnkCameraTarget_8026FCFC {
-  public:
-    /* 0x00 */ Vec3f m_position;
-    /* 0x0C */ Vec3f field_0xC;
-    /* 0x18 */ Vec3f field_0x18;
-    /* 0x24 */ Vec3f field_0x24;
-    /* 0x30 */ Vec3f field_0x30;
-
-    virtual void vf_0x08();
-    /* Takes over another target's values (name inferred; Game/PlayerPostManager.cpp). */
-    virtual void vf_0x0C(const UnkCameraTarget_8026FCFC *source);
-    virtual ~UnkCameraTarget_8026FCFC();
-};
-
 namespace SonicteamUSA {
 namespace System {
 namespace Camera {
 
 /* CameraFactory (class name from RTTI; PJSCamera::PJSCameraFactory derives from it): the camera
- * manager's first member. Slot 0x08 makes a camera unit's target (name inferred). */
+ * manager's first member. Slot 0x08 makes a camera unit's target (a CameraTargetInfo,
+ * Game/CameraTargetInfo.h; name inferred). */
 class CameraFactory {
   public:
-    virtual UnkCameraTarget_8026FCFC *CreateTarget();
+    virtual CameraTargetInfo *CreateTarget();
 };
 
 /* CameraShake (class name from the RTTI of its shared_ptr control block): a camera unit's shake
@@ -105,7 +89,7 @@ class CameraManagerUnit {
     /* 0x0D4 */ std::list<boost::weak_ptr<CameraMode> > m_modes;
     /* 0x0E0 */ std::list<boost::weak_ptr<CameraRequest> > m_requests;
     /* 0x0EC */ boost::shared_ptr<CameraShake> m_shake;
-    /* 0x0F4 */ UnkCameraTarget_8026FCFC *m_target;
+    /* 0x0F4 */ CameraTargetInfo *m_target;
     /* 0x0F8 */ UnkCameraState_80359164 m_lastState;
     /* 0x12C */ Vec3f m_velocity;
     /* 0x138 */ Vec3f m_targetPosition;

@@ -3,27 +3,9 @@
  * to CountMission and saves, restores and resets both halves. The mission factory at 0x8016B384
  * builds it for mission type 6. Member names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first). */
-#include "Game/Mission.h"
+#include "Game/TimerMission.h"
 
 namespace Mission {
-
-/* Mission::TimerMission (class name from RTTI; code at 0x802C8AF4, another unit): a mission with a
- * time limit, which fails when the stage timer runs out. Only what this unit uses is declared. */
-class TimerMission : public virtual Mission {
-  public:
-    TimerMission(int id, int player, float time);
-    virtual ~TimerMission();
-    virtual int GetType();
-    virtual bool IsTimed();
-    virtual float GetTimeLimit();
-    virtual void OnSave();
-    virtual void OnRestore();
-    virtual void OnReset();
-    virtual void OnUpdate();
-
-    /* 0x08 */ float m_time;
-    /* 0x0C */ u8 m_message[0x30]; /* the timer display (Mission::TimerMessageManage) */
-};
 
 class TimerCountMission : public CountMission, public TimerMission {
   public:

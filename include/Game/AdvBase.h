@@ -9,13 +9,14 @@ namespace AdvReal {
  * (AdvReal::Title::Phase, AdvReal::Option::Phase, AdvReal::MemoryCheck::Phase, ...). The
  * constructor is at 0x802B5224 and the destructor at 0x802B51DC. The two other virtual functions
  * (0x802B51D4 and 0x802B51CC) run the phase each frame and draw it; their names and the meaning
- * of the result are inferred. */
+ * of the result are inferred. Both return bool: the phase manager (Game/AdvFolder.cpp) tests the
+ * low byte of Tick's result without converting it. */
 class AdvBase {
   public:
     AdvBase();
     virtual ~AdvBase();
-    virtual int Tick();
-    virtual int Draw();
+    virtual bool Tick();
+    virtual bool Draw();
 };
 
 } // namespace AdvReal

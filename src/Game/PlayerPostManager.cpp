@@ -13,7 +13,7 @@
 #include "Game/CharInfo.h"
 #include "Game/GadgetUtil.h"
 #include "Game/MathTypes.h"
-#include "Game/CameraTargetInfo.h"
+#include "Game/PJSCameraTargetInfo.h"
 #include "Game/Player.h"
 #include "Game/TVehicleBase.h"
 #include "Game/Task.h"
@@ -82,7 +82,7 @@ void PostManageTask::Tick(float dt) {
 /* Hands the target to the camera of a screen. */
 static void SetCameraTarget(UnkCameraManager_80009548 *manager, int index,
                             PJSCamera::PJSCameraTargetInfo *info) {
-    fn_8000D0F0(manager, index)->m_target->vf_0x0C((const UnkCameraTarget_8026FCFC *)info);
+    fn_8000D0F0(manager, index)->m_target->Assign(*info);
 }
 
 static void PostManage() {
@@ -96,11 +96,11 @@ static void PostManage() {
                 boost::dynamic_pointer_cast<Player::PlayerBase>(charaPtr));
             PJSCamera::PJSCameraTargetInfo info;
             if (player->m_vehicle.expired()) {
-                fn_800091D0(&info.field_0x0, &player->m_position);
+                fn_800091D0(&info.m_position, &player->m_position);
                 fn_800091D0(&info.field_0xC, &player->field_0x18);
             } else {
                 boost::shared_ptr<Vehicle::TVehicleBase> vehicle(player->m_vehicle.lock());
-                fn_800091D0(&info.field_0x0, &vehicle->m_position);
+                fn_800091D0(&info.m_position, &vehicle->m_position);
                 fn_800091D0(&info.field_0xC, &vehicle->field_0x18);
             }
             fn_800091D0(&info.field_0x18, &(const Vec3f &)fn_80079698(player.get()));

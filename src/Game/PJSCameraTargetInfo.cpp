@@ -2,7 +2,7 @@
  * defaults put both vectors at the origin with up and -z directions; Assign copies another target.
  * File name inferred from the class; method and member names are inferred. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first). */
-#include "Game/CameraTargetInfo.h"
+#include "Game/PJSCameraTargetInfo.h"
 #include "Game/MathTypes.h"
 #include "size_assert.h"
 
@@ -28,7 +28,7 @@ void PJSCameraTargetInfo::Assign(const SonicteamUSA::System::Camera::CameraTarge
 }
 
 void PJSCameraTargetInfo::Reset() {
-    fn_800091D0(&field_0x0, fn_800091D0(&field_0xC, &lbl_805E07A0));
+    fn_800091D0(&m_position, fn_800091D0(&field_0xC, &lbl_805E07A0));
     Vec3f up(0.0f, 1.0f, 0.0f);
     fn_800091D0(&field_0x18, &up);
     Vec3f front(0.0f, 0.0f, -1.0f);

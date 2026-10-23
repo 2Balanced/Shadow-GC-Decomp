@@ -9,8 +9,9 @@
 #include "size_assert.h"
 
 /* EnemyRender (class name from the RTTI of its shared_ptr control blocks, with a pimpl
- * EnemyRender::Impl): the model and motion of an enemy. Its methods around 0x802CD270 are declared
- * where they are used. */
+ * EnemyRender::Impl): the model and motion of an enemy, defined in Game/EnemyRender.cpp. Its
+ * functions (0x802CD21C..0x802CDB08) keep their address names and are declared where they are
+ * used. */
 class EnemyRender;
 
 /* EnemyMotionEventArg (struct name from the RTTI of EggLastMech's callback binder): what an enemy's

@@ -78,7 +78,7 @@ class Checker {
     }
 
     /* Runs the check; always returns 1 (name inferred). */
-    int Tick();
+    bool Tick();
     /* Draws the card's messages (name inferred). */
     void Draw() {
         if (m_card != 0) {
@@ -99,7 +99,7 @@ Checker::Checker() {
     m_language = lbl_8057D6A0.m_language;
 }
 
-int Checker::Tick() {
+bool Checker::Tick() {
     if (m_card != 0) {
         switch (m_state) {
         case 0:
@@ -139,8 +139,8 @@ class Phase : public AdvBase {
   public:
     Phase();
     virtual ~Phase();
-    virtual int Tick();
-    virtual int Draw();
+    virtual bool Tick();
+    virtual bool Draw();
 
     /* 0x4 */ boost::scoped_ptr<Checker> m_checker;
 };
@@ -150,11 +150,11 @@ Phase::Phase() : m_checker(new Checker) {}
 
 Phase::~Phase() {}
 
-int Phase::Tick() {
+bool Phase::Tick() {
     return m_checker->Tick();
 }
 
-int Phase::Draw() {
+bool Phase::Draw() {
     m_checker->Draw();
     return 1;
 }

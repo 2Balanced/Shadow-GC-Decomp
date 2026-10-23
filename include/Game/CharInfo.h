@@ -43,6 +43,13 @@ class CharInfo {
     /* Slot 0x2C: false in CharInfo, true in EnemyCharInfo and ResearcherCharInfo. */
     virtual bool vf_0x2C();
 
+    /* The word at 0x50: the character's kind (meaning inferred; see Game/ElecCircuitEntrance.cpp).
+     * An inline function in the original: Game/BirdBase.cpp calls the shared_ptr's operator-> out
+     * of line before it. */
+    s32 GetKind() const {
+        return *reinterpret_cast<const s32 *>(&field_0x3C[0x50 - 0x3C]);
+    }
+
     /* 0x3C */ u8 field_0x3C[0x54 - 0x3C];
     /* 0x54 */ s32 field_0x54; /* player number, going by BlockChange */
     /* 0x58 */ u8 field_0x58[0x5C - 0x58];
