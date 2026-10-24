@@ -16,6 +16,12 @@ namespace Weapon {
  * its own code. */
 class UnkStickSwing_80068850;
 
+#ifdef WEAPON_STICK_BASE_IMPL_MEMBERS
+/* The same object as Game/WeaponStickBase.cpp sees it, under its name from the RTTI of its attack
+ * callbacks' bind_t (Weapon::WeaponStickBaseImpl). */
+class WeaponStickBaseImpl;
+#endif
+
 /* WeaponStickBase (class name from RTTI; vtable 0x8051F7D4): a weapon swung at close range. The
  * constructor is at 0x80067A8C and the destructor at 0x800679B4; Tick is at 0x80067990 and the
  * slots after vf_0x2C at 0x8006796C, 0x80067948 and 0x800678C4. Names other than the class name
@@ -38,8 +44,15 @@ class WeaponStickBase : public WeaponBase {
     /* Whether the swing is in a state the Katana does not fire in (0x80067918; meaning
      * unknown). */
     bool fn_80067918();
+    /* The swing's scale (0x8006790C; the float at 0x44 of the swing; meaning inferred from
+     * Game/WeaponBlackSword.cpp, which scales its trail's points by it). */
+    float fn_8006790C();
 
+#ifdef WEAPON_STICK_BASE_IMPL_MEMBERS
+    /* 0x38 */ boost::scoped_ptr<WeaponStickBaseImpl> m_swing;
+#else
     /* 0x38 */ boost::scoped_ptr<UnkStickSwing_80068850> m_swing;
+#endif
 };
 SIZE_ASSERT(WeaponStickBase, 0x3C);
 

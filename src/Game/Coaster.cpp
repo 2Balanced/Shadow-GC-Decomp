@@ -111,12 +111,7 @@ class GadgetCharCollision {
     /* 0x30 */ float field_0x30;
 };
 
-/* AccelerateInputCommand (class name from RTTI): command type 1, which carries the rider's input
- * direction (member name inferred). */
-class AccelerateInputCommand : public CharCommand {
-  public:
-    /* 0x14 */ Vec3f m_input;
-};
+/* AccelerateInputCommand (command type 1) is declared in Game/CharCommand.h. */
 
 /* The parameters of a debris spawn (see GadgetDebris.h; the fields set here as in ArkCannon). */
 struct UnkDebrisParam_8015F0B8 {
@@ -858,7 +853,7 @@ void Coaster::OnCommand(CharCommand &command) {
             if (input != 0) {
                 float speed = 540.0f;
                 speed *= lbl_8057D6A0.field_0x28;
-                speed *= fn_8040CF50(&input->m_input);
+                speed *= fn_8040CF50(&input->m_direction);
 
                 Mtx34f matrix;
                 fn_8040C148(&matrix, &lbl_805E0720);
@@ -874,7 +869,7 @@ void Coaster::OnCommand(CharCommand &command) {
                 fn_8040BCD4(&matrix);
 
                 Vec3f local;
-                ConstructVector(&local, fn_8040B67C(&matrix, &input->m_input));
+                ConstructVector(&local, fn_8040B67C(&matrix, &input->m_direction));
                 local.y = 0.0f;
                 fn_8040CE74(&local);
                 float side = 0.0f;

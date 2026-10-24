@@ -14,6 +14,9 @@ class UnkCameraUpdateArg_800099B8;
 class UnkCameraSwitchArg_8000996C;
 class UnkCameraArg_800098E4;
 
+/* What a camera mode is created with (class name unknown; see Game/PJSCameraMode.h). */
+class UnkCameraOwner_8000E9BC;
+
 namespace SonicteamUSA {
 namespace System {
 namespace Camera {
@@ -26,6 +29,10 @@ namespace Camera {
  * them (CameraModeUser, PJSCamera::CameraModeFixLookChar). */
 class CameraMode {
   public:
+    /* (0x8000E9BC; Game/PJSCameraMode.cpp calls it: owner, when not null, is copied to 0x34, and
+     * the second argument is kept at 0xA0.) */
+    CameraMode(UnkCameraOwner_8000E9BC *owner, int screen);
+
     /* 0x00 */ Vec3f m_eye;
     /* 0x0C */ Vec3f m_target;
     /* 0x18 */ u8 field_0x18[0x34 - 0x18];
@@ -36,16 +43,25 @@ class CameraMode {
     /* 0xA0 */ int field_0xA0; /* the constructor's second argument */
     /* 0xA4 */ u32 field_0xA4;
 
-    /* Slot 0x08: the mode's number (CameraModeUser -0x3FE, CameraModeFixLookChar 14). */
-    virtual int GetModeId();
+    /* The screen whose camera unit the mode is for (inlined where used: Game/StageCameraList.cpp;
+     * name inferred). */
+    int GetScreen() const {
+        return field_0xA0;
+    }
+
+    /* Slots 0x08 to 0x14 are pure (CameraMode's vtable at 0x8051C598 and PJSCamera::PJSCameraMode's
+     * leave them empty). Slot 0x08: the mode's number (CameraModeUser -0x3FE,
+     * CameraModeFixLookChar 14). */
+    virtual int GetModeId() = 0;
     /* Slot 0x0C: the frame update. */
-    virtual void Update(float dt, UnkCameraUpdateArg_800099B8 *arg);
+    virtual void Update(float dt, UnkCameraUpdateArg_800099B8 *arg) = 0;
     /* Slot 0x10: called when the mode is switched to (inferred from CameraModeUser, which raises
      * its switch event here). */
-    virtual void OnSwitch(UnkCameraSwitchArg_8000996C *arg);
-    virtual void vf_0x14(UnkCameraArg_800098E4 *arg);
-    /* Slot 0x18: empty in CameraMode (0x80008D48). */
-    virtual void vf_0x18();
+    virtual void OnSwitch(UnkCameraSwitchArg_8000996C *arg) = 0;
+    virtual void vf_0x14(UnkCameraArg_800098E4 *arg) = 0;
+    /* Slot 0x18: empty in CameraMode (0x80008D48). The stage camera passes it two flags
+     * (0x801CAEC4); CameraModeGeneral reads them. */
+    virtual void vf_0x18(int flags);
     virtual ~CameraMode(); /* the vtable pointer is at 0xA8 */
 };
 
@@ -77,17 +93,20 @@ class CameraModeUser : public CameraMode {
 } // namespace System
 } // namespace SonicteamUSA
 
-/* A camera mode change's blend (class name unknown; layout from its constructor, which stores the
- * time twice and clears the rest; meaning inferred). Its constructor and destructor are out of line
- * (0x8000B2C0, 0x8000B228). */
+/* A camera mode change's blend (class name unknown; layout from its constructors, which store the
+ * time twice and clear the rest, two 16-byte blocks with memset; meaning inferred). Its
+ * constructors and destructor are out of line (0x8000B2C0, 0x8000B31C without a time,
+ * 0x8000B228); its copy is implicit. */
 struct UnkCameraBlend_8000B2C0 {
+    UnkCameraBlend_8000B2C0();
     UnkCameraBlend_8000B2C0(float time);
     ~UnkCameraBlend_8000B2C0();
 
     /* 0x00 */ float m_time;
     /* 0x04 */ float field_0x4;
     /* 0x08 */ u32 field_0x8;
-    /* 0x0C */ u8 field_0xC[0x2C - 0xC];
+    /* 0x0C */ u32 field_0xC[4];
+    /* 0x1C */ u32 field_0x1C[4];
 };
 SIZE_ASSERT(UnkCameraBlend_8000B2C0, 0x2C);
 
@@ -106,9 +125,9 @@ class UnkCameraManager_80099954;
 extern "C" {
 UnkCameraManager_80099954 *fn_80099954(void);
 /* Pushes a camera mode with a blend, and removes it again (behaviour inferred; the meanings of the
- * integer arguments are unknown). */
+ * integer arguments are unknown; Game/StageCameraList.cpp, which takes the mode by value). */
 void fn_801CEA54(UnkCameraManager_80099954 *manager,
-                 const boost::shared_ptr<SonicteamUSA::System::Camera::CameraMode> &mode, int arg2,
+                 boost::shared_ptr<SonicteamUSA::System::Camera::CameraMode> mode, int arg2,
                  const UnkCameraBlend_8000B2C0 &blend, int arg4, int arg5);
 void fn_801CE9F4(UnkCameraManager_80099954 *manager,
                  const boost::shared_ptr<SonicteamUSA::System::Camera::CameraMode> &mode);

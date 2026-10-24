@@ -31,15 +31,7 @@ SIZE_ASSERT(UnkGameState_8057D6A0, 0x150);
 
 extern UnkGameState_8057D6A0 lbl_8057D6A0;
 
-/* AccelerateInputCommand (class name from RTTI; constructor 0x801DBE84): steers a character along
- * a direction (as declared in Game/BkSoldier.cpp). */
-class AccelerateInputCommand : public CharCommand {
-  public:
-    AccelerateInputCommand(const Vec3f &direction, int arg1);
-
-    /* 0x14 */ Vec3f m_direction;
-};
-SIZE_ASSERT(AccelerateInputCommand, 0x20);
+/* AccelerateInputCommand (command type 1) is declared in Game/CharCommand.h. */
 
 namespace Player {
 namespace Npc {

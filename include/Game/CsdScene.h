@@ -125,6 +125,13 @@ class CPtrList {
         iterator(const CPtrListPosition &position) : m_node(position.m_node) {
             __csd_list_nothing();
         }
+#ifdef CSD_PTRLIST_ITERATOR_COPY
+        /* (Only where CSD_PTRLIST_ITERATOR_COPY is defined, Game/csdmSceneObserver.cpp: the copy the
+         * postfix increment makes is called out of line there.) */
+        iterator(const iterator &other) : m_node(other.m_node) {
+            __csd_list_nothing();
+        }
+#endif
 
         T *&operator*() const {
             __csd_list_nothing();
@@ -135,11 +142,19 @@ class CPtrList {
             __csd_list_nothing();
             return *this;
         }
+#ifdef CSD_PTRLIST_ITERATOR_COPY
+        iterator operator++(int) {
+            iterator old(*this);
+            m_node = m_node->m_next;
+            return old;
+        }
+#else
         iterator operator++(int) {
             iterator old(*this);
             ++*this;
             return old;
         }
+#endif
         bool operator!=(const iterator &other) const {
             __csd_list_nothing();
             return m_node != other.m_node;
@@ -237,8 +252,14 @@ class CSceneObserver : public CObserver<CScene>, public CBase {
   public:
     CSceneObserver() {}
     virtual ~CSceneObserver();
+#ifdef CSD_SCENE_OBSERVER
+    /* (Defined in Game/csdmSceneObserver.cpp, which defines CSD_SCENE_OBSERVER.) */
+    virtual void OnEnd(CScene *scene);
+    virtual void OnStart(CScene *scene);
+#else
     virtual void OnEnd(CScene *scene) {}
     virtual void OnStart(CScene *scene) {}
+#endif
     virtual void OnUpdate(CScene *scene) {}
     virtual void OnPostUpdate(CScene *scene) {}
     virtual void OnDraw(CScene *scene) {}
@@ -299,6 +320,12 @@ class CFontList : public CResourceBase<SFontList>, public CBase {
     CFontList(const CResourceBase<SFontList> *other) {
         CopyFrom(*other);
     }
+#ifdef CSD_PROJECT
+    /* The font list of a project's data (Game/csdmProject.cpp). */
+    CFontList(SFontList *fontList, const RCPtr<unsigned char> &data) {
+        Set(fontList, data);
+    }
+#endif
     virtual ~CFontList() {}
 };
 
@@ -552,6 +579,15 @@ class CScene : public CResourceBase<SSceneInfo>, public CSubject<CScene, CSceneO
     void ClearMotion();
     void *GetOwner();
     void Reset();
+#ifdef CSD_PROJECT
+    /* The project that made the scene (Game/csdmProject.cpp). */
+    CProject *GetProject() {
+        return m_project;
+    }
+    void SetProject(CProject *project) {
+        m_project = project;
+    }
+#endif
 
     /* 0x1C */ FunctorList m_onEnd;
     /* 0x28 */ FunctorList m_onStart;

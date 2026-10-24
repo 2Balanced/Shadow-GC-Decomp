@@ -69,7 +69,7 @@ extern const char *lbl_8051D528[];
 /* Which of an entry's two layouts the screen uses (meaning unknown). */
 extern s32 lbl_805EE690;
 /* Loads a project from data in memory (behaviour inferred). */
-void fn_8036DB70(UnkCsdResource_8003E808 *project, void *data, u32 size, int arg3);
+void fn_8036DB70(Chao::CSD::CProject *project, void *data, u32 size, int arg3);
 /* A scene of the object a project handle holds, by name (behaviour inferred). */
 RCPtr<CScene> fn_8036F470(void *object, const char *name);
 /* Assigns a project handle (behaviour inferred). */
@@ -263,7 +263,7 @@ class ResultTask : public Task {
     /* Computes the time bonus and the total (name inferred). */
     void ComputeTotal();
 
-    /* 0x28 */ UnkCsdResource_8003E808 m_project;
+    /* 0x28 */ Chao::CSD::CProject m_project;
     /* 0x74 */ UnkCsdSceneCtrl_8003DD20 m_main;
     /* 0x88 */ UnkCsdSceneCtrl_8003DD20 m_rankScene;
     /* 0x9C */ s32 m_kind;

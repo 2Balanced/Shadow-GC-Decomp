@@ -22,6 +22,7 @@
 #include "Game/GadgetClassDesc.h"
 #include "Game/MathConstants.h"
 #include "Game/PathCtrl.h"
+#include "Game/UnkCircuitTarget_800ABCE8.h"
 #include "Game/UnkSwitchBank_800CB69C.h"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -66,17 +67,8 @@ class UnkColliderManager_80021B08;
 
 class UnkPathManager_8001B494;
 
-/* The object an ElectricCircuitCommand carries (class name unknown): a shared pointer to the
- * object fn_800ABCE8 finds for the character. */
-class UnkCircuitObject_800ABCE8;
-
-class UnkCircuitTarget_800ABCE8 {
-  public:
-    UnkCircuitTarget_800ABCE8(const boost::weak_ptr<CharInfo> &character,
-                              PathCtrl *path, int arg2);
-
-    /* 0x0 */ boost::shared_ptr<UnkCircuitObject_800ABCE8> m_object;
-};
+/* UnkCircuitTarget_800ABCE8 (Game/UnkCircuitTarget_800ABCE8.h): what an ElectricCircuitCommand
+ * carries. */
 
 namespace Player {
 

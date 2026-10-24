@@ -100,25 +100,7 @@ struct UnkColliMoveCallback_80094F64 {
 };
 SIZE_ASSERT(UnkColliMoveCallback_80094F64, 0xC);
 
-/* The commands a vehicle sends to the character it gets on and the one it leaves (class names
- * from RTTI; types 0xB and 0xC). The vehicle passes itself and its position. */
-class RideCommand : public CharCommand {
-  public:
-    RideCommand(const boost::weak_ptr<CharInfo> &vehicle, const Vec3f &position);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_vehicle;
-    /* 0x1C */ Vec3f m_position;
-};
-SIZE_ASSERT(RideCommand, 0x28);
-
-class LeaveCommand : public CharCommand {
-  public:
-    LeaveCommand(const boost::weak_ptr<CharInfo> &vehicle, const Vec3f &position);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_vehicle;
-    /* 0x1C */ Vec3f m_position;
-};
-SIZE_ASSERT(LeaveCommand, 0x28);
+/* RideCommand and LeaveCommand (command types 0xB and 0xC) are declared in Game/CharCommand.h. */
 
 /* vector = value through the out-of-line assignment (see Game/GadgetUtil.h). */
 inline void AssignVector(Vec3f &vector, const Vec3f &value) {

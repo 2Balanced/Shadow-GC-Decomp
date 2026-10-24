@@ -30,13 +30,31 @@ namespace SonicteamUSA {
 namespace System {
 namespace Camera {
 
-/* CameraFactory (class name from RTTI; PJSCamera::PJSCameraFactory derives from it): the camera
- * manager's first member. Slot 0x08 makes a camera unit's target (a CameraTargetInfo,
- * Game/CameraTargetInfo.h; name inferred). */
+class CameraAdjust;
+
+/* CameraFactory (class name from RTTI; vtable 0x8051C520; PJSCamera::PJSCameraFactory derives
+ * from it): the camera manager's first member. Slot 0x08 makes a camera unit's target (a
+ * CameraTargetInfo, Game/CameraTargetInfo.h; name inferred). It keeps the makers of the camera
+ * modes by kind and of the adjusts by type, with their names, in two containers (layout unknown);
+ * the constructor (0x8000BD6C) registers the camera's own modes, the destructor is 0x8000BB44, and
+ * AddMode and AddAdjust (0x8000B904, 0x8000B76C) register a maker (names inferred; see
+ * Game/PJSCameraFactory.cpp). */
 class CameraFactory {
   public:
+    /* Makers of a camera mode and of an adjust (as the modes' and adjusts' Create). */
+    typedef CameraMode *(*CreateModeFn)(UnkCameraOwner_8000E9BC *owner, int number);
+    typedef CameraAdjust *(*CreateAdjustFn)(const UnkCameraBlend_8000B2C0 &blend);
+
+    CameraFactory();
     virtual CameraTargetInfo *CreateTarget();
+    virtual ~CameraFactory();
+    void AddMode(int kind, const char *name, CreateModeFn create, int arg);
+    void AddAdjust(int type, const char *name, CreateAdjustFn create);
+
+    /* 0x04 */ u8 m_modes[0x10];
+    /* 0x14 */ u8 m_adjusts[0x10];
 };
+SIZE_ASSERT(CameraFactory, 0x24);
 
 /* CameraShake (class name from the RTTI of its shared_ptr control block): a camera unit's shake
  * (contents unknown). */
@@ -50,6 +68,11 @@ class CameraRequest {
   public:
     CameraRequest(boost::shared_ptr<CameraMode> mode, int arg1, int arg2, int arg3, int arg4);
     ~CameraRequest();
+
+    /* The mode (out of line where used: Game/StageCameraManager.cpp). */
+    boost::shared_ptr<CameraMode> GetMode() {
+        return m_mode;
+    }
 
     /* 0x00 */ boost::shared_ptr<CameraMode> m_mode;
     /* 0x08 */ s32 m_priority;

@@ -65,16 +65,7 @@ u8 lbl_805E76EC = 0;
 #pragma explicit_zero_data reset
 using SonicteamUSA::System::CharaColli::CharaColliAttack;
 
-/* AccelerateInputCommand (class name from RTTI; constructor 0x801DBE84): steers a vehicle (the
- * soldier passes the normalized direction to its Air Saucer and 4; meaning inferred). Other units
- * declare it locally as well (BossSonicSubControlDodge.cpp, Coaster.cpp, UpDownReel.cpp). */
-class AccelerateInputCommand : public CharCommand {
-  public:
-    AccelerateInputCommand(const Vec3f &direction, int arg1);
-
-    /* 0x14 */ Vec3f m_direction;
-};
-SIZE_ASSERT(AccelerateInputCommand, 0x20);
+/* AccelerateInputCommand (command type 1) is declared in Game/CharCommand.h. */
 
 /* The cursor a parameter's label callback receives (layout as in Helicopter.cpp). */
 class UnkLabelQuery_800CBC20 {

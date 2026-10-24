@@ -6,9 +6,8 @@
  * Names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: fn_801D4EA0 (98.7%: three callee-saved registers are permuted) and
- * UnkSound_80053164::FindFreeChannel (95%: retail keeps the priority in r4 and clears the
- * channel's priority byte again before the equality test). Every other function matches. */
+ * NonMatching: UnkSound_80053164::FindFreeChannel (95%: retail keeps the priority in r4 and clears
+ * the channel's priority byte again before the equality test). Every other function matches. */
 #include "Game/IAudio.h"
 #include "Game/SoundManager.h"
 #include "Game/Task.h"
@@ -289,51 +288,52 @@ void UnkSound_80053164::UpdateChannels() {
     }
 }
 
-void UnkSound_80053164::fn_801D5E98() {
+void UnkSound_80053164::fn_801D5E98(s8 bank, s8 program, u8 priority, s8 group, u8 voice,
+                                    float range) {
     if (m_audio != 0) {
-        m_audio->vf_0x24();
+        m_audio->vf_0x24(bank, program, priority, group, voice, range);
     }
 }
 
-void UnkSound_80053164::fn_801D5E60(u8 arg1, u8 arg2) {
+void UnkSound_80053164::fn_801D5E60(s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x30(arg1, arg2);
+        m_audio->vf_0x30(group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5E28() {
+void UnkSound_80053164::fn_801D5E28(s8 pan, s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x3C();
+        m_audio->vf_0x3C(pan, group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5DF0() {
+void UnkSound_80053164::fn_801D5DF0(s8 surround, s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x44();
+        m_audio->vf_0x44(surround, group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5DB8() {
+void UnkSound_80053164::fn_801D5DB8(s8 volume, s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x38();
+        m_audio->vf_0x38(volume, group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5D80() {
+void UnkSound_80053164::fn_801D5D80(s16 pitch, s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x4C();
+        m_audio->vf_0x4C(pitch, group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5D48(u8 arg1, u8 arg2) {
+void UnkSound_80053164::fn_801D5D48(s8 group, u8 voice) {
     if (m_audio != 0) {
-        m_audio->vf_0x48(arg1, arg2);
+        m_audio->vf_0x48(group, voice);
     }
 }
 
-void UnkSound_80053164::fn_801D5D10() {
+void UnkSound_80053164::fn_801D5D10(s8 group, u8 voice, s8 bank, s8 program) {
     if (m_audio != 0) {
-        m_audio->vf_0x50();
+        m_audio->vf_0x50(group, voice, bank, program);
     }
 }
 
@@ -489,7 +489,7 @@ s8 UnkSound_80053164::FindFreeChannel(UnkSoundBankEntry *entry, u8 priority) {
                 channel->field_0x6 = -0x7F;
             }
             u8 right;
-            u8 left;
+            s8 left;
             channel->fn_801D984C(&left, &right);
             if (channel->field_0x4 != 0 || channel->field_0x5 != 0) {
                 channel->field_0x4 = 0;
@@ -684,7 +684,7 @@ extern "C" void fn_801D4FBC(UnkSound_80053164 *sound, int mode) {
         UnkSoundChannel_801D98FC *channel = &sound->m_channels[i];
         if (channel->m_entry != 0 &&
             (sound->m_mode == 2 || IsVoiceAllowed(sound->m_flags, (u32)channel->m_id) != true)) {
-            u8 left;
+            s8 left;
             u8 right;
             channel->fn_801D984C(&left, &right);
             sound->m_audio->vf_0x5C(left, right);
@@ -699,7 +699,7 @@ extern "C" void fn_801D4EA0(UnkSound_80053164 *sound) {
         UnkSoundChannel_801D98FC *channel = &sound->m_channels[i];
         if (channel->m_entry != 0 &&
             (sound->m_mode == 2 || IsVoiceAllowed(sound->m_flags, (u32)channel->m_id) != true)) {
-            u8 left;
+            s8 left;
             u8 right;
             channel->fn_801D984C(&left, &right);
             sound->m_audio->vf_0x64(channel->field_0x6, left, right);

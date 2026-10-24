@@ -43,6 +43,17 @@ class CharInfo {
     /* Slot 0x2C: false in CharInfo, true in EnemyCharInfo and ResearcherCharInfo. */
     virtual bool vf_0x2C();
 
+#ifdef CHARINFO_IMPLEMENTATION
+    /* The members from 0x3C as Game/CharInfo.cpp sees them (names inferred; other units keep the
+     * byte arrays below). */
+    /* 0x3C */ char m_name[0x10];
+    /* 0x4C */ s32 field_0x4C;
+    /* 0x50 */ s32 m_kind;
+    /* 0x54 */ s32 field_0x54;
+    /* 0x58 */ s32 field_0x58;
+    /* 0x5C */ s32 field_0x5C;
+    /* 0x60 */ void *field_0x60; /* points to the frame time (see Game/DiablonController.cpp) */
+#else
     /* The word at 0x50: the character's kind (meaning inferred; see Game/ElecCircuitEntrance.cpp).
      * An inline function in the original: Game/BirdBase.cpp calls the shared_ptr's operator-> out
      * of line before it. */
@@ -55,6 +66,7 @@ class CharInfo {
     /* 0x58 */ u8 field_0x58[0x5C - 0x58];
     /* 0x5C */ s32 field_0x5C; /* 1 for players, going by BlockChange */
     /* 0x60 */ u8 field_0x60[0x64 - 0x60];
+#endif
 };
 SIZE_ASSERT(CharInfo, 0x64);
 

@@ -16,14 +16,18 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
-/* The loaded CSD project (class name unknown; declared as in Game/TGi.h). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in Game/TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The file system fn_800371D8 returns (class name unknown; see Game/GadgetStageData.cpp). */
 class UnkFileSystem_800371D8 {
@@ -85,7 +89,7 @@ class CsdOneShot : public Task {
     /* 0x02C */ u8 m_stopped;
     /* 0x030 */ boost::shared_ptr<Render> m_render;
     /* 0x038 */ TPjsCsd m_csd;
-    /* 0x08C */ UnkCsdResource_8003E808 m_project;
+    /* 0x08C */ Chao::CSD::CProject m_project;
     /* 0x0D8 */ char m_file[0x20];
     /* 0x0F8 */ char m_scene[0x20];
     /* 0x118 */ char m_motion[0x20];

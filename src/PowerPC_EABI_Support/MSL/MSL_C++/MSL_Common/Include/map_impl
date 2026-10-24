@@ -169,6 +169,132 @@ typename __tree<T, C, K>::node *__tree<T, C, K>::insert_node(__tree_node_base *p
     return n;
 }
 
+#ifdef MSL_MULTIMAP
+/* The multimap's tree (see <map>): its constructor, destroy and insert_node are __tree's. Erasing
+ * destroys the value through the value allocator and inlines its deallocation. */
+template <class T, class C, class K>
+__multi_tree<T, C, K>::__multi_tree(const K &comp, const value_allocator &a)
+    : size_(a, 0), header_(node_allocator()), begin_(comp) {
+    begin_node() = static_cast<__tree_node_base *>(header());
+}
+
+template <class T, class C, class K> void __multi_tree<T, C, K>::destroy(node *n) {
+    node *child = static_cast<node *>(n->left_);
+    if (child != 0) {
+        if (child->left_ != 0) {
+            destroy(static_cast<node *>(child->left_));
+        }
+        if (child->right_ != 0) {
+            destroy(static_cast<node *>(child->right_));
+        }
+        value_alloc().destroy(&child->value_);
+        node_alloc().deallocate(child, 1);
+    }
+    child = static_cast<node *>(n->right_);
+    if (child != 0) {
+        if (child->left_ != 0) {
+            destroy(static_cast<node *>(child->left_));
+        }
+        if (child->right_ != 0) {
+            destroy(static_cast<node *>(child->right_));
+        }
+        value_alloc().destroy(&child->value_);
+        node_alloc().deallocate(child, 1);
+    }
+    value_alloc();
+    n->value_.~T();
+    node_alloc();
+    ::operator delete(n);
+}
+
+template <class T, class C, class K> void __multi_tree<T, C, K>::erase(const_iterator &position) {
+    node *n = static_cast<node *>(position.node_);
+    if (position == begin()) {
+        begin_node() = (++position).node_;
+    }
+    fn_80013398(n, root());
+    value_alloc().destroy(&n->value_);
+    node_alloc();
+    ::operator delete(n);
+    --size_ref();
+}
+
+template <class T, class C, class K>
+typename __multi_tree<T, C, K>::iterator __multi_tree<T, C, K>::insert_equal(const T &v) {
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    __tree_node_base *x = root();
+    bool left = true;
+    bool leftmost = true;
+    while (x != 0) {
+        y = x;
+        if (comp()(v, static_cast<node *>(x)->value_)) {
+            x = x->left_;
+            left = true;
+        } else {
+            x = x->right_;
+            left = false;
+            leftmost = false;
+        }
+    }
+    return iterator(insert_node(y, left, leftmost, v));
+}
+
+template <class T, class C, class K>
+template <class Key>
+typename __multi_tree<T, C, K>::iterator __multi_tree<T, C, K>::lower_bound(const Key &k) {
+    __tree_node_base *x = root();
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    while (x != 0) {
+        if (!comp()(static_cast<node *>(x)->value_, k)) {
+            y = x;
+            x = x->left_;
+        } else {
+            x = x->right_;
+        }
+    }
+    return iterator(y);
+}
+
+template <class T, class C, class K>
+template <class Key>
+typename __multi_tree<T, C, K>::iterator __multi_tree<T, C, K>::upper_bound(const Key &k) {
+    __tree_node_base *x = root();
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    while (x != 0) {
+        if (comp()(k, static_cast<node *>(x)->value_)) {
+            y = x;
+            x = x->left_;
+        } else {
+            x = x->right_;
+        }
+    }
+    return iterator(y);
+}
+
+template <class T, class C, class K>
+typename __multi_tree<T, C, K>::node *__multi_tree<T, C, K>::insert_node(__tree_node_base *parent, bool left,
+                                                                        bool leftmost, const T &v) {
+    if (size() > max_size() - 1) {
+        __msl_error("tree::insert length error\n");
+    }
+    node *n = node_alloc().allocate(1);
+    value_alloc().construct(&n->value_, v);
+    n->left_ = n->right_ = 0;
+    n->set_parent(parent);
+    if (left) {
+        parent->left_ = n;
+    } else {
+        parent->right_ = n;
+    }
+    ++size_ref();
+    fn_8000CD64(n, root());
+    if (leftmost) {
+        begin_node() = n;
+    }
+    return n;
+}
+#endif
+
 #undef __TREE_TRUE
 #undef __TREE_FALSE
 

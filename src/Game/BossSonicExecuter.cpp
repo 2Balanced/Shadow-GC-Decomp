@@ -25,20 +25,7 @@
 
 namespace Player {
 
-namespace Behavior {
-
-/* InitializeArgsDamage (class name from RTTI; vtable 0x8051FDEC): switches to the damage
- * behavior (0x1E), knocked along direction. */
-class InitializeArgsDamage : public InitializeArgs {
-  public:
-    InitializeArgsDamage(const Vec3f &direction);
-    virtual ~InitializeArgsDamage();
-
-    /* 0x8 */ Vec3f m_direction;
-};
-SIZE_ASSERT(InitializeArgsDamage, 0x14);
-
-} // namespace Behavior
+/* Behavior::InitializeArgsDamage is in Game/PlayerBehavior.h. */
 
 namespace Control {
 

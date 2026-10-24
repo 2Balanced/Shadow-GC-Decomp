@@ -211,7 +211,7 @@ void VacuumPod::Tick(float dt) {
                     boost::shared_ptr<WeaponVacuumBase> self =
                         boost::static_pointer_cast<WeaponVacuumBase>(m_self.lock());
                     /* Written as a conditional: "!test" or "test == 0" give other registers. */
-                    bool arg = fn_80014E34(&m_flags.m_bits, 2) ? false : true;
+                    int arg = fn_80014E34(&m_flags.m_bits, 2) ? 0 : 1;
                     info->PushCommand(new VacuumCommand(locked, self, arg));
                     m_timer = 0.0625f;
                 }

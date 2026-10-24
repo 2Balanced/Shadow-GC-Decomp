@@ -14,14 +14,18 @@
 struct RwCamera;
 struct RwRaster;
 
-/* The loaded CSD project (class name unknown; see Game/TGi.h). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; see Game/TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The "Now Loading" screen (class name inferred). fn_801E265C keeps the game's one. */
 class NowLoadingScreen {
@@ -35,7 +39,7 @@ class NowLoadingScreen {
 
     /* 0x00 */ bool m_loaded;
     /* 0x04 */ float m_time; /* the time of the last update, in seconds */
-    /* 0x08 */ UnkCsdResource_8003E808 m_project;
+    /* 0x08 */ Chao::CSD::CProject m_project;
 };
 SIZE_ASSERT(NowLoadingScreen, 0x54);
 

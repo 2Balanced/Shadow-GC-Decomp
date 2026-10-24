@@ -53,8 +53,10 @@ extern "C" {
 UnkRenderOwner_80046178 *fn_80046178(void);
 /* Creates a Render named name (behaviour inferred). */
 boost::shared_ptr<Render> fn_8004DFB0(void *arg0, const char *name);
+#ifndef RENDER_DRAW_CALLBACK_DEFINED /* Game/WeaponLockonMark.cpp defines it, returning callbacks */
 /* Adds a draw callback to a Render's list (behaviour inferred). */
 void fn_80062CD0(void *callbacks, const boost::function1<void, RednerDrawArgs &> &callback);
+#endif
 }
 
 #endif

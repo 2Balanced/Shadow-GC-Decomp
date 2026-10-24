@@ -152,15 +152,7 @@ SIZE_ASSERT(Player::CancelBehaviorCommand, 0x14);
 SIZE_ASSERT(Player::PressGroundCommand, 0x14);
 SIZE_ASSERT(Player::AddWeaponCommand, 0x1C);
 
-/* AccelerateCommand (command type 6; constructor 0x8006E354, vtable 0x8053D470): pushes the
- * character by velocity (name of the member inferred; arg1 unknown). */
-class AccelerateCommand : public CharCommand {
-  public:
-    AccelerateCommand(const Vec3f &velocity, int arg1);
-
-    /* 0x14 */ Vec3f m_velocity;
-};
-SIZE_ASSERT(AccelerateCommand, 0x20);
+/* AccelerateCommand (command type 6) is declared in Game/CharCommand.h. */
 
 namespace Player {
 
@@ -170,7 +162,7 @@ class StreamCommand : public PlayerCommand {
   public:
     StreamCommand(bool on, int arg1);
 
-    /* 0x14 */ u32 m_on;
+    /* 0x14 */ s32 m_on; /* signed: Player::Behavior::LineHang compares it with cmpwi */
 };
 
 } // namespace Player

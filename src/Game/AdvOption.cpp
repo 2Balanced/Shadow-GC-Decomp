@@ -31,8 +31,12 @@ using Chao::CSD::CScene;
 using Chao::CSD::CTexList;
 using Chao::CSD::RCPtr;
 
-/* The loaded CSD project (class name unknown; declared as in TGi.h). */
-class UnkCsdResource_8003E808;
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject;
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown; declared as in TGi.h). */
 class UnkCsdHandle_80042DF0 {
@@ -97,12 +101,12 @@ extern "C" {
 /* The CSD project cache (Game/AdvCsdCache.cpp): loading a project, whether it holds one, and
  * reloading one (behaviour inferred). */
 void *fn_801E5F0C(void);
-UnkCsdResource_8003E808 *fn_802B5504(void *cache, const char *file);
-bool fn_802B5434(void *cache, UnkCsdResource_8003E808 *project);
-void fn_802B5760(void *cache, UnkCsdResource_8003E808 *project, const char *file);
+Chao::CSD::CProject *fn_802B5504(void *cache, const char *file);
+bool fn_802B5434(void *cache, Chao::CSD::CProject *project);
+void fn_802B5760(void *cache, Chao::CSD::CProject *project, const char *file);
 /* Projects (behaviour inferred; see Game/TGi.h). */
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-RCPtr<CTexList> fn_8036C628(UnkCsdResource_8003E808 *project);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+RCPtr<CTexList> fn_8036C628(Chao::CSD::CProject *project);
 /* Scenes and nodes (behaviour inferred; see Game/TGi.h and Game/TGiScoreDisplay.cpp). */
 RCPtr<CNode> fn_803666B4(CScene *scene, const char *name);
 void fn_8036AD78(CNode *node, int hidden);
@@ -296,7 +300,7 @@ class Impl {
     /* 0x00 */ s32 m_state; /* 0 opening, 1 grid, 2 list, 3 new language, 4 loading, 5 closing */
     /* 0x04 */ s32 field_0x4;
     /* 0x08 */ s32 m_step;
-    /* 0x0C */ UnkCsdResource_8003E808 *m_project;
+    /* 0x0C */ Chao::CSD::CProject *m_project;
     /* 0x10 */ UnkCsdSceneSet_8003D5D8 m_scenes;
     /* 0x1C */ u8 m_busy;
     /* 0x1D */ u8 field_0x1D;

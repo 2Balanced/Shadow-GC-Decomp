@@ -141,10 +141,10 @@ void fn_801D515C(void *sound);
 /* CSD projects (see Game/TGi.h). */
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
-int fn_8036E114(UnkCsdResource_8003E808 *resource, const char *file);
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-void fn_8036DA1C(UnkCsdResource_8003E808 *project, float dt);
-void fn_8036D94C(UnkCsdResource_8003E808 *project);
+int fn_8036E114(Chao::CSD::CProject *resource, const char *file);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+void fn_8036DA1C(Chao::CSD::CProject *project, float dt);
+void fn_8036D94C(Chao::CSD::CProject *project);
 }
 
 NowLoading *NowLoading::s_instance;

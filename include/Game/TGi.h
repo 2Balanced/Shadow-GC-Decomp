@@ -79,12 +79,15 @@ class TGiNumberDisplay {
 };
 SIZE_ASSERT(TGiNumberDisplay, 0x4E0);
 
-/* The loaded CSD project (class name unknown; 0x4C bytes, fn_8003E808 constructs it, fn_8036E114
- * loads a file into it; EggLastMechSlotDisp2D.cpp keeps its own copy of this declaration). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; 0x4C bytes, fn_8003E808
+ * constructs it, fn_8036E114 loads a file into it; EggLastMechSlotDisp2D.cpp keeps its own copy of
+ * this declaration). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -92,6 +95,8 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown; as in
  * EggLastMechSlotDisp2D.cpp). */
@@ -176,14 +181,14 @@ void fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x, int arg3,
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
 /* Loads file into resource (behaviour inferred). */
-void fn_8036E114(UnkCsdResource_8003E808 *resource, const char *file);
+void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing, drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */
-void fn_8036DAD4(UnkCsdResource_8003E808 *project);
-void fn_8036D94C(UnkCsdResource_8003E808 *project);
-Chao::CSD::RCPtr<Chao::CSD::CScene> fn_8036D660(UnkCsdResource_8003E808 *project, const char *name);
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
+void fn_8036DAD4(Chao::CSD::CProject *project);
+void fn_8036D94C(Chao::CSD::CProject *project);
+Chao::CSD::RCPtr<Chao::CSD::CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
 
 /* Scenes (behaviour inferred): the motion, its end frame (two variants), the motion frame, the
  * current frame, the speed, playing, two words of the scene, hiding, and a node by name. */

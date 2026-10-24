@@ -22,6 +22,49 @@ struct UnkEnemyMessage_8019DC9C {
     /* 0x7 */ u8 m_flags;
 };
 
+#ifdef ENEMY_BASE_AI_UNIT
+/* The three parts of an EnemyBaseAI as Game/EnemyBaseAI.cpp, which holds their code, sees them
+ * (layouts from that code; names inferred). Behind a macro so that the other units keep the
+ * opaque versions below; the sizes are the same. */
+class EnemyBaseAI;
+
+/* The state machine (code 0x8019F16C, 0x8019F86C..0x8019FA08): the AI that owns it, the current
+ * state and the one before it, and a lock that keeps the state from changing. */
+struct UnkAIStateMachine_8019F944 {
+    UnkAIStateMachine_8019F944() : m_owner(0), m_current(0), m_previous(0) {}
+
+    /* 0x0 */ EnemyBaseAI *m_owner;
+    /* 0x4 */ TEnemyAIState *m_current;
+    /* 0x8 */ TEnemyAIState *m_previous;
+    /* 0xC */ u8 m_locked;
+};
+
+/* The player the AI keeps track of (code 0x8019F160, 0x8019F65C..0x8019F85C): its offset from
+ * the enemy, distance and the angles to it, brought up to date by the first accessor called after
+ * vfAI_0x2C clears m_valid. */
+struct UnkAITarget_8019F65C {
+    UnkAITarget_8019F65C(); /* 0x8019F85C */
+
+    /* 0x00 */ Enemy *m_enemy;
+    /* 0x04 */ EnemyBaseAI *m_ai;
+    /* 0x08 */ u8 m_valid;
+    /* 0x0C */ Vec3f m_offset;   /* from the enemy to the player */
+    /* 0x18 */ float m_distance; /* on the ground plane */
+    /* 0x1C */ float m_angle;    /* how far the enemy has to turn to face the player */
+    /* 0x20 */ float m_backAngle; /* the same for the other way round */
+    /* 0x24 */ float m_yaw;      /* the yaw of the player as seen from the enemy */
+};
+
+/* What turns the enemy (code 0x8019F114, 0x8019F2D4..0x8019F65C): the enemy, the AI and the
+ * turn speed (radians a second, from the enemy's parameters). */
+struct UnkAITurn_8019F53C {
+    UnkAITurn_8019F53C(); /* 0x8019F2D4 */
+
+    /* 0x0 */ Enemy *m_enemy;
+    /* 0x4 */ EnemyBaseAI *m_ai;
+    /* 0x8 */ float m_speed;
+};
+#else
 /* The state machine of an EnemyBaseAI (class name unknown; code around 0x8019F944). */
 struct UnkAIStateMachine_8019F944 {
     /* 0x00 */ u8 field_0x0[0x10];
@@ -39,12 +82,18 @@ struct UnkAITarget_8019F65C {
 struct UnkAITurn_8019F53C {
     /* 0x00 */ u8 field_0x0[0xC];
 };
+#endif
 
 extern "C" {
 /* Switches the machine to state (behaviour inferred). */
 void fn_8019F944(UnkAIStateMachine_8019F944 *machine, TEnemyAIState *state);
 /* The tracked target's id and distance (behaviour inferred). */
+#ifdef ENEMY_BASE_AI_UNIT
+/* The offset to the tracked player (Game/EnemyBaseAI.cpp). */
+Vec3f *fn_8019F65C(UnkAITarget_8019F65C *target);
+#else
 int fn_8019F65C(UnkAITarget_8019F65C *target);
+#endif
 float fn_8019F710(UnkAITarget_8019F65C *target);
 /* The tracked target's angle (behaviour inferred). */
 float fn_8019F698(UnkAITarget_8019F65C *target);

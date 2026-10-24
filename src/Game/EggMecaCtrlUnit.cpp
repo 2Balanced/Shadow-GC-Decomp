@@ -322,8 +322,6 @@ const Vec3f *fn_8001E9BC(void *object);
 class UnkCameraManager_80009548;
 UnkCameraManager_80009548 *fn_80009548(void);
 void fn_8000D664(UnkCameraManager_80009548 *manager, int arg1, float arg2, float arg3, float arg4);
-/* The camera mode of a request (behaviour inferred). */
-boost::shared_ptr<CameraMode> fn_801CA8D0(ExternalCameraRequest *request);
 
 /* Vibration (see BKTank.cpp). */
 boost::weak_ptr<Vibration::RequestHandle> fn_8034DE08(int pattern, const Vec3f *position, int arg2);
@@ -602,7 +600,7 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
             boost::weak_ptr<ExternalCameraRequest> request = GetCameraRequest(*this);
             if (!request.expired()) {
                 boost::shared_ptr<ExternalCameraRequest> locked = request.lock();
-                boost::shared_ptr<CameraMode> mode = fn_801CA8D0(locked.get());
+                boost::shared_ptr<CameraMode> mode = locked->GetMode();
                 CameraModeFixLookChar *camera = dynamic_cast<CameraModeFixLookChar *>(mode.get());
                 if (camera != 0) {
                     if (350.0f <= distance) {
@@ -619,7 +617,7 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
         boost::weak_ptr<ExternalCameraRequest> request = GetCameraRequest(*this);
         if (!request.expired()) {
             boost::shared_ptr<ExternalCameraRequest> locked = request.lock();
-            boost::shared_ptr<CameraMode> mode = fn_801CA8D0(locked.get());
+            boost::shared_ptr<CameraMode> mode = locked->GetMode();
             dynamic_cast<CameraModeFixLookChar *>(mode.get());
         }
         float distance = m_owner->m_target.x * m_owner->m_target.x +
@@ -637,7 +635,7 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
         boost::weak_ptr<ExternalCameraRequest> request = GetCameraRequest(*this);
         if (!request.expired()) {
             boost::shared_ptr<ExternalCameraRequest> locked = request.lock();
-            boost::shared_ptr<CameraMode> mode = fn_801CA8D0(locked.get());
+            boost::shared_ptr<CameraMode> mode = locked->GetMode();
             CameraModeFixLookChar *camera = dynamic_cast<CameraModeFixLookChar *>(mode.get());
             if (camera != 0) {
                 if (distance >= 250.0f || m_owner->m_health < 0.5f * m_owner->m_maxHealth) {

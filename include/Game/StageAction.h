@@ -13,7 +13,11 @@
 class Task;
 class Render;
 struct RednerDrawArgs;
-class UnkCsdResource_8003E808;
+namespace Chao {
+namespace CSD {
+class CProject;
+} // namespace CSD
+} // namespace Chao
 struct UnkFlashbackEntry_803546C0;
 
 namespace StageAction {
@@ -174,7 +178,7 @@ class ShowAction : public IAction {
 
     /* 0x04 */ s32 m_state;
     /* 0x08 */ boost::shared_ptr<Render> m_render;
-    /* 0x10 */ UnkCsdResource_8003E808 *m_project;
+    /* 0x10 */ Chao::CSD::CProject *m_project;
     /* 0x14 */ u8 m_playing; /* the current scene is playing */
 };
 SIZE_ASSERT(ShowAction, 0x18);
@@ -204,7 +208,7 @@ class Result2PAction : public IAction {
 
     /* 0x04 */ s32 m_timer;
     /* 0x08 */ u8 m_savedD1; /* the game state's byte 0xD1 before the result (meaning unknown) */
-    /* 0x0C */ UnkCsdResource_8003E808 *m_project;
+    /* 0x0C */ Chao::CSD::CProject *m_project;
     /* 0x10 */ boost::shared_ptr<Render> m_render;
     /* 0x18 */ float m_wait;
     /* 0x1C */ void *m_texData; /* the loaded texture archive */

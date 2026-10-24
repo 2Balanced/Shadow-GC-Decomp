@@ -56,18 +56,8 @@ struct UnkPathRecord_8001CDA0 {
     /* 0x0 */ u32 flags; /* bit 22: a gun lift's path (inferred) */
 };
 
-/* The commands the gun lift takes (class names unknown; layouts from their use). */
-class UnkSteerCommand_GunLift : public CharCommand {
-  public:
-    /* 0x14 */ float x; /* turns the turret, degrees per call */
-    /* 0x18 */ float field_0x18;
-    /* 0x1C */ float y; /* tilts the gun, degrees per call */
-};
-
-class UnkActionCommand_GunLift : public CharCommand {
-  public:
-    /* 0x14 */ u32 action;
-};
+/* The commands the gun lift takes (AccelerateInputCommand: x turns the turret and z tilts the gun,
+ * degrees per call; ControlVehicleCommand) are declared in Game/CharCommand.h. */
 
 extern "C" {
 /* Helpers as in Game/GadgetUtil.h, which this unit does not include: it reads pi as the constant
@@ -653,15 +643,15 @@ inline float DegToRad(float degrees) {
 void GunLift::OnCommand(CharCommand *command) {
     switch (command->TypeId()) {
     case 1: {
-        UnkSteerCommand_GunLift *steer = static_cast<UnkSteerCommand_GunLift *>(command);
-        m_pitch += 1.5f * DegToRad(steer->y);
-        m_yaw -= 1.5f * DegToRad(steer->x);
+        AccelerateInputCommand *steer = static_cast<AccelerateInputCommand *>(command);
+        m_pitch += 1.5f * DegToRad(steer->m_direction.z);
+        m_yaw -= 1.5f * DegToRad(steer->m_direction.x);
         m_pitch = fn_80070460(m_pitch, DegToRad(-10.0f), DegToRad(60.0f));
         command->Flags() |= 2;
         break;
     }
     case 0x15:
-        switch (static_cast<UnkActionCommand_GunLift *>(command)->action) {
+        switch (static_cast<ControlVehicleCommand *>(command)->m_action) {
         case 1:
             LetOff();
             command->Flags() |= 2;

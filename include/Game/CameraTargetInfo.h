@@ -26,6 +26,21 @@ class CameraTargetInfo {
     /* 0x24 */ Vec3f field_0x24;
     /* 0x30 */ Vec3f field_0x30;
 
+    /* The vectors are copied through the out-of-line vector assignment (fn_800091D0); the
+     * assignment itself is out of line (0x801C41E8, where Game/CameraModeGeneral.cpp first uses
+     * PJSCameraTargetInfo's). */
+    CameraTargetInfo &operator=(const CameraTargetInfo &other) {
+        CopyVector(m_position, other.m_position);
+        CopyVector(field_0xC, other.field_0xC);
+        CopyVector(field_0x18, other.field_0x18);
+        CopyVector(field_0x24, other.field_0x24);
+        CopyVector(field_0x30, other.field_0x30);
+        return *this;
+    }
+    static void CopyVector(Vec3f &vector, const Vec3f &value) {
+        fn_800091D0(&vector, &value);
+    }
+
     /* 0x3C holds the vtable pointer. */
     virtual void Reset() = 0;
     virtual void Assign(const CameraTargetInfo &other) = 0;

@@ -19,15 +19,7 @@
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
 
-/* SetTransparentCommand (class name from RTTI): fades a character's model; its command type is
- * 0x17 (from its constructor). Only the members used here are named (inferred). */
-class SetTransparentCommand : public CharCommand {
-  public:
-    /* 0x14 */ u8 field_0x14;
-    /* 0x18 */ float m_alpha; /* 1 or more: opaque (inferred) */
-    /* 0x1C */ u32 field_0x1C;
-};
-SIZE_ASSERT(SetTransparentCommand, 0x20);
+/* SetTransparentCommand (command type 0x17) is declared in Game/CharCommand.h. */
 
 /* The command type CharCommand's constructor stores at 0x4 (inferred). */
 inline u16 GetCommandType(CharCommand &command) {

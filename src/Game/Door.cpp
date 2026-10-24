@@ -99,15 +99,7 @@ struct UnkSoundEntry_80208888 {
 };
 SIZE_ASSERT(UnkSoundEntry_80208888, 0x1C);
 
-/* SetTransparentCommand (class name from RTTI): fades a character's model; its command type is
- * 0x17 (as in ContainerUnbreak; only the members used here are named). */
-class SetTransparentCommand : public CharCommand {
-  public:
-    /* 0x14 */ u8 field_0x14;
-    /* 0x18 */ float m_alpha; /* 1 or more: opaque (inferred) */
-    /* 0x1C */ u32 field_0x1C;
-};
-SIZE_ASSERT(SetTransparentCommand, 0x20);
+/* SetTransparentCommand (command type 0x17) is declared in Game/CharCommand.h. */
 
 extern "C" {
 /* Returns the file loader, and a file of it: the model table of DOOR.BIN, a clump or a morph

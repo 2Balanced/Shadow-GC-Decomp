@@ -14,6 +14,10 @@ struct Fn8040CopyVector3 {
     Fn8040CopyVector3(const Fn8040CopyVector3 &v) {
         fn_800091EC(reinterpret_cast<Vec3f *>(this), reinterpret_cast<const Vec3f *>(&v));
     }
+    /* A copy of a plain vector (explicit, so that a Vec3f never converts to it implicitly). */
+    explicit Fn8040CopyVector3(const Vec3f &v) {
+        fn_800091EC(reinterpret_cast<Vec3f *>(this), &v);
+    }
     Fn8040CopyVector3 &operator=(const Fn8040CopyVector3 &v) {
         fn_800091D0(reinterpret_cast<Vec3f *>(this), reinterpret_cast<const Vec3f *>(&v));
         return *this;

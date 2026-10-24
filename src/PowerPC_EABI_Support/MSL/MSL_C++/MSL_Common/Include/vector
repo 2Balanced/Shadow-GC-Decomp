@@ -106,6 +106,12 @@ template <class T, class A> class __vec_base {
         return cap_.first().max_size();
     }
     void reserve(size_type n);
+#ifdef MSL_VECTOR_INDEX
+    /* Only where MSL_VECTOR_INDEX is defined before this header (Game/WeaponLockonBase.cpp). */
+    T &operator[](size_type n) {
+        return __vec_ref(data_)[n];
+    }
+#endif
 #ifdef MSL_VECTOR_AT
     /* Only where MSL_VECTOR_AT is defined before this header (Game/CameraScreenSet.cpp); defined
      * after the class, so the game emits it at the end of the unit with insert_n. */
@@ -329,6 +335,11 @@ template <class T, class A = allocator<T> > class vector : public __MSL_VECTOR_P
     void reserve(size_type n) {
         base::reserve(n);
     }
+#ifdef MSL_VECTOR_INDEX
+    T &operator[](size_type n) {
+        return base::operator[](n);
+    }
+#endif
 #ifdef MSL_VECTOR_BACK
     T &back() {
         return base::back();

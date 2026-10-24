@@ -68,7 +68,14 @@ class PlayerMotion : public Task {
     virtual void SetWeaponPose(int pose);
     virtual void vf_0x1C();
     virtual void vf_0x20(int arg);
+#ifdef PLAYER_MOTION_HAND_MATRIX
+    /* Slot 0x24 with the arguments its caller passes: a hand (2 or 3) and the matrix it is placed
+     * at (meaning inferred from Game/PlayerBehaviorDriveVehicle.cpp); the units that emit
+     * PlayerMotion's vtables name the symbol without them. */
+    virtual void vf_0x24(int hand, const Mtx34f *matrix);
+#else
     virtual void vf_0x24();
+#endif
     /* Installs the inverse-kinematics callback of a slot. */
     virtual void SetIKCallback(int slot, const IKCallback &callback);
     /* Slots 0x2C-0x38 (bodies at 0x8006C0A4, 0x8006C0A8, 0x800AA748, 0x800AA740; names unknown). */
@@ -163,7 +170,17 @@ class WeaponBase : public Task {
     virtual void GiveWeaponType(int type, int ammo) = 0;
     /* Gives the player a weapon (ammo as above). */
     virtual void GiveWeapon(const boost::shared_ptr<Weapon::WeaponBase> &weapon, int ammo);
+#ifdef PLAYER_WEAPON_BASE_GET_WEAPON_INLINE
+    /* Defined in the class: the game's copy at 0x800813B8 is the one emitted by
+     * Game/PlayerBehaviorGrind.cpp, the first unit to call the slot. Only defined there
+     * (PLAYER_WEAPON_BASE_GET_WEAPON_INLINE): a virtual call emits a copy, which the game does not
+     * keep elsewhere. */
+    virtual boost::shared_ptr<Weapon::WeaponBase> GetWeapon() {
+        return boost::shared_ptr<Weapon::WeaponBase>();
+    }
+#else
     virtual boost::shared_ptr<Weapon::WeaponBase> GetWeapon();
+#endif
     virtual int GetWeaponType() = 0;
     virtual int GetWeaponKind() = 0;
     virtual float GetWeaponValue() = 0;

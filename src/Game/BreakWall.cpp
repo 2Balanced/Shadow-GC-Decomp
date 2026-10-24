@@ -90,11 +90,7 @@ struct UnkDebrisParam_8015F0B8 {
 };
 SIZE_ASSERT(UnkDebrisParam_8015F0B8, 0x5C);
 
-/* The command of type 0xA (class name unknown): it names the character that broke the wall. */
-class UnkBreakCommand_0A : public CharCommand {
-  public:
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_attacker;
-};
+/* WallJumpCommand (command type 0xA) is declared in Game/CharCommand.h. */
 
 extern "C" {
 /* Loads the model file fileName (behaviour inferred; arg0 unknown). */
@@ -354,7 +350,7 @@ void BreakWall::OnCommand(CharCommand &command) {
         break;
     case 0xA:
         if (m_state == 2) {
-            m_attacker = static_cast<UnkBreakCommand_0A &>(command).m_attacker;
+            m_attacker = static_cast<WallJumpCommand &>(command).m_character;
             m_state = 3;
         }
         break;

@@ -7,14 +7,16 @@
 #include "boost/shared_ptr.hpp"
 
 /* The camera manager a mode is created for (class name unknown; the first argument of a mode's
- * constructor, handed on to CameraMode's). */
+ * constructor, handed on to CameraMode's, which copies it to 0x34 like a
+ * UnkCameraModeArgs_8000EBB0 when it is not null). */
 class UnkCameraOwner_8000E9BC;
 
 namespace PJSCamera {
 
-/* PJSCameraMode (class name and base from RTTI): the base of the game's own camera modes
- * (CameraModeFixEye, CameraModeFixLook, CameraModeFixLookChar, ...). It adds no members of its
- * own; its constructor (0x801D0730) and destructor (0x801D06D8) only set the vtable. */
+/* PJSCameraMode (class name and base from RTTI; Game/PJSCameraMode.cpp): the base of the game's
+ * own camera modes (CameraModeFixEye, CameraModeFixLook, CameraModeFixLookChar, ...). It adds no
+ * members of its own; its constructor (0x801D0730) and destructor (0x801D06D8) only set the
+ * vtable. */
 class PJSCameraMode : public SonicteamUSA::System::Camera::CameraMode {
   public:
     PJSCameraMode(UnkCameraOwner_8000E9BC *owner, int arg);
@@ -31,7 +33,7 @@ class ProcessBase {
   public:
     virtual ~ProcessBase();
     virtual void vf_0x0C() = 0;
-    virtual void Process(SonicteamUSA::System::Camera::CameraMode *mode, Vec3f *eye,
+    virtual bool Process(SonicteamUSA::System::Camera::CameraMode *mode, Vec3f *eye,
                          CharInfo *chara) = 0;
 };
 

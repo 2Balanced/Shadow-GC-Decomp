@@ -32,7 +32,11 @@ class Base {
 
 class Render;
 struct RednerDrawArgs;
-class UnkCsdResource_8003E808;
+namespace Chao {
+namespace CSD {
+class CProject;
+} // namespace CSD
+} // namespace Chao
 class StageMovieScript;
 
 /* StageMovie (vtable at 0x80558478; Game/StageMovie.cpp): a stage that plays a movie file, with
@@ -77,7 +81,7 @@ class StageRouteDisplay : public StageBase::Base {
     void Draw(RednerDrawArgs &args);
 
     /* 0x08 */ boost::shared_ptr<Render> m_render;
-    /* 0x10 */ UnkCsdResource_8003E808 *m_project; /* the CSD project "CsdFiles/RouteDisplay" */
+    /* 0x10 */ Chao::CSD::CProject *m_project; /* the CSD project "CsdFiles/RouteDisplay" */
     /* 0x14 */ float m_time;
     /* 0x18 */ s32 m_state;
 };

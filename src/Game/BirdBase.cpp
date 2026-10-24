@@ -55,22 +55,8 @@ struct BirdAttackParam {
 
 #define Param(param) (*(BirdAttackParam *)&(param))
 
-/* The bird's commands (class names unknown; layouts from their use). */
-class UnkVectorCommand_BirdBase : public CharCommand {
-  public:
-    /* 0x14 */ Vec3f m_vector;
-};
-
-class UnkDamageCommand_BirdBase : public CharCommand {
-  public:
-    /* 0x14 */ float m_power;
-    /* 0x18 */ Vec3f m_direction;
-};
-
-class UnkActionCommand_BirdBase : public CharCommand {
-  public:
-    /* 0x14 */ s32 m_action;
-};
+/* The commands the bird takes (AccelerateInputCommand, SetVelocityCommand, DamageCommand and
+ * ControlVehicleCommand) are declared in Game/CharCommand.h. */
 
 extern "C" {
 /* The 32-bit flag word (see Game/BAMine.cpp). */
@@ -242,7 +228,7 @@ void BirdBase::OnCommand(CharCommand *command) {
     switch (command->TypeId()) {
     case 1:
         if (fn_80014E34(&m_flags.m_bits, 3) && !fn_80014E34(&m_flags.m_bits, 9)) {
-            fn_8040CFF8(&m_input, &static_cast<UnkVectorCommand_BirdBase *>(command)->m_vector);
+            fn_8040CFF8(&m_input, &static_cast<AccelerateInputCommand *>(command)->m_direction);
             fn_80014E1C(&m_flags.m_bits, 1);
             fn_8006127C(&m_flags.m_bits, 7);
             command->Flags() |= 2;
@@ -255,17 +241,17 @@ void BirdBase::OnCommand(CharCommand *command) {
     case 5:
         AssignVector(m_offsetVelocity,
                      fn_8040B67C(&(const Mtx34f &)GetPathMatrix(),
-                                 &static_cast<UnkVectorCommand_BirdBase *>(command)->m_vector));
+                                 &static_cast<SetVelocityCommand *>(command)->m_velocity));
         command->Flags() |= 2;
         break;
     case 7: {
-        UnkDamageCommand_BirdBase *damage = static_cast<UnkDamageCommand_BirdBase *>(command);
-        Damage(damage->m_power, &m_position, &damage->m_direction);
+        DamageCommand *damage = static_cast<DamageCommand *>(command);
+        Damage(damage->m_amount, &m_position, &damage->m_direction);
         command->Flags() |= 2;
         break;
     }
     case 0x15:
-        switch (static_cast<UnkActionCommand_BirdBase *>(command)->m_action) {
+        switch (static_cast<ControlVehicleCommand *>(command)->m_action) {
         case 1:
             fn_801B6030(this, 0);
             command->Flags() |= 2;

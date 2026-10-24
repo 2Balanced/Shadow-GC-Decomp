@@ -20,9 +20,17 @@ template <class T1, class T2> struct pair {
     T2 second;
 };
 
+#ifdef MSL_MAKE_PAIR_BY_VALUE
+/* Where MSL_MAKE_PAIR_BY_VALUE is defined before this header (Game/csdmProject.cpp), make_pair takes
+ * its arguments by value, as the game's tree's equal_range calls it (each argument is copied first). */
+template <class T1, class T2> inline pair<T1, T2> make_pair(T1 a, T2 b) {
+    return pair<T1, T2>(a, b);
+}
+#else
 template <class T1, class T2> inline pair<T1, T2> make_pair(const T1 &a, const T2 &b) {
     return pair<T1, T2>(a, b);
 }
+#endif
 
 } // namespace std
 

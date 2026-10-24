@@ -54,19 +54,9 @@ class GadgetCharCollision {
     /* 0x30 */ float field_0x30;
 };
 
-/* RideCommand (class name from RTTI): command type 0xB, which names the character that rides the
- * gadget (member name inferred). */
-class RideCommand : public CharCommand {
-  public:
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_rider;
-};
+/* RideCommand (command type 0xB) is declared in Game/CharCommand.h. */
 
-/* AccelerateInputCommand (class name from RTTI): command type 1, which carries the rider's input
- * direction (member name inferred). */
-class AccelerateInputCommand : public CharCommand {
-  public:
-    /* 0x14 */ Vec3f m_input;
-};
+/* AccelerateInputCommand (command type 1) is declared in Game/CharCommand.h. */
 
 /* A 32-bit flag word whose constructor clears it (fn_80014E04): fn_80014E10 clears it, fn_80014E1C
  * sets bit, fn_8006127C clears bit and fn_80014E34 tests bit (behaviour inferred from their
@@ -444,7 +434,7 @@ void UpDownReel::OnCommand(CharCommand &command) {
             fn_80014E1C(&m_flags.m_bits, 0);
             fn_8006127C(&m_flags.m_bits, 1);
             fn_8006127C(&m_flags.m_bits, 2);
-            m_rider = static_cast<RideCommand &>(command).m_rider;
+            m_rider = static_cast<RideCommand &>(command).m_partner;
         }
         break;
     case 0xC: /* LeaveCommand */
@@ -461,7 +451,7 @@ void UpDownReel::OnCommand(CharCommand &command) {
         if (input != 0) {
             float yaw;
             float pitch;
-            fn_8003B9E8(&input->m_input, &pitch, &yaw);
+            fn_8003B9E8(&input->m_direction, &pitch, &yaw);
             yaw -= m_chara->m_rotation.y;
             m_rotation.y = TurnAngleToward(yaw, m_rotation.y, s_turnStep);
         }

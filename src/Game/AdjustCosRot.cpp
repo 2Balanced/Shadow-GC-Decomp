@@ -8,6 +8,7 @@
  * the class; other names are inferred. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first). */
 #include "Game/CameraAdjust.h"
+#include "Game/PJSCameraAdjust.h"
 #include "Game/CameraState.h"
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
@@ -117,24 +118,6 @@ static Vec3f Swing(const Vec3f &from, const Vec3f &to, const Vec3f &up, float t)
 }
 
 namespace PJSCamera {
-
-class AdjustCosRot : public CameraAdjust {
-  public:
-    AdjustCosRot(const UnkCameraBlend_8000B2C0 &blend);
-    virtual s32 GetType();
-    virtual void Start(const UnkCameraState_8000AA70 *from, CameraMode *mode);
-    virtual void UpdateEye(CameraMode *mode, float dt);
-    virtual float GetEyeRate(float time, float duration);
-    virtual ~AdjustCosRot();
-
-    /* The camera factory's maker of this adjust. */
-    static CameraAdjust *Create(const UnkCameraBlend_8000B2C0 &blend);
-
-    /* 0xB0 */ Vec3f m_startOffset;   /* the eye from the player */
-    /* 0xBC */ Vec3f m_startDirection; /* looked in, normalised */
-    /* 0xC8 */ float m_startDistance;  /* to the point looked at */
-};
-SIZE_ASSERT(AdjustCosRot, 0xCC);
 
 AdjustCosRot::AdjustCosRot(const UnkCameraBlend_8000B2C0 &blend) : CameraAdjust(blend) {}
 

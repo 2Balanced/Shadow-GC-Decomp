@@ -58,24 +58,7 @@ struct UnkDebrisParam_8015F0B8 {
 };
 SIZE_ASSERT(UnkDebrisParam_8015F0B8, 0x5C);
 
-/* BindCommand and ReleaseCommand (class names from RTTI): hold a character at, and let it go from,
- * the object whose character info they keep (behaviour inferred from the cages; declared as in
- * Cage.cpp). */
-class BindCommand : public CharCommand {
-  public:
-    BindCommand(const boost::weak_ptr<CharInfo> &binder);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_binder;
-};
-SIZE_ASSERT(BindCommand, 0x1C);
-
-class ReleaseCommand : public CharCommand {
-  public:
-    ReleaseCommand(const boost::weak_ptr<CharInfo> &binder);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_binder;
-};
-SIZE_ASSERT(ReleaseCommand, 0x1C);
+/* BindCommand and ReleaseCommand are declared in Game/CharCommand.h. */
 
 extern "C" {
 /* A 32-bit flag word: fn_80014E04 clears it, fn_80014E1C sets bit, fn_8006127C clears bit and

@@ -33,11 +33,13 @@ class CTexList;
 
 using Chao::CSD::CTexList;
 
-/* The loaded CSD project (class name unknown; declared as in Game/TGi.h). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in Game/TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -45,6 +47,8 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown; declared as in Game/TGi.h). */
 class UnkCsdHandle_80042DF0 {
@@ -159,12 +163,12 @@ void fn_80049B34(void *data);
  * advancing and drawing a project, a scene by name, and the scene calls. */
 RCPtr<CTexList> fn_80362094(u32 type);
 void fn_80361F30(CTexList *texList, void *data, u32 size, int arg3);
-void fn_8036C64C(UnkCsdResource_8003E808 *project, const RCPtr<CTexList> &texList);
-void fn_8036DB70(UnkCsdResource_8003E808 *project, void *data, u32 size, int arg3);
-void fn_8036DAD4(UnkCsdResource_8003E808 *project);
-void fn_8036D94C(UnkCsdResource_8003E808 *project);
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-RCPtr<CScene> fn_8036D660(UnkCsdResource_8003E808 *project, const char *name);
+void fn_8036C64C(Chao::CSD::CProject *project, const RCPtr<CTexList> &texList);
+void fn_8036DB70(Chao::CSD::CProject *project, void *data, u32 size, int arg3);
+void fn_8036DAD4(Chao::CSD::CProject *project);
+void fn_8036D94C(Chao::CSD::CProject *project);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
 void fn_80367238(CScene *scene, const char *motion);
 void fn_80367140(CScene *scene, float speed);
 void fn_803659DC(CScene *scene, int arg1);
@@ -279,7 +283,7 @@ void Result2PAction::Execute() {
     if (m_project != 0) {
         fn_8036DAD4(m_project);
     } else if (m_texData != 0 && m_projectData != 0) {
-        m_project = new UnkCsdResource_8003E808;
+        m_project = new Chao::CSD::CProject;
         RCPtr<CTexList> texList = fn_80362094(0x2E525754);
         fn_80361F30(texList.Get(), m_texData, m_texSize, 0);
         fn_8036C64C(m_project, texList);

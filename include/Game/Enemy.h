@@ -216,12 +216,25 @@ class EnemyStatFunc {
     /* The slot takes a flag (BkWormAI passes 0 or 1). Behind a macro because the symbols of this
      * slot carry the argument-less signature; only units that need the argument define it. */
     virtual void vfStat_0x90(bool value) {}
+#elif defined(ENEMY_STAT_SLOT_ARGS)
+    /* The same, declared only (see ENEMY_STAT_SLOT_ARGS below). */
+    virtual void vfStat_0x90(bool value);
 #else
     virtual void vfStat_0x90() {}
 #endif
     virtual void vfStat_0x94(int flags) {}
+#ifdef ENEMY_STAT_SLOT_ARGS
+    /* The slots take the character to reward: 0x98 for taking the enemy with the vacuum, 0x9C
+     * for recovering it (EnemyStatusCommon passes it on to fn_8020642C; Game/EnemyBaseAI.cpp
+     * calls them). Behind a macro because the symbols of these slots carry the argument-less
+     * signature; only units that call them with the argument define it. Declared only, so that
+     * those units emit no copies of the empty defaults under these signatures. */
+    virtual void vfStat_0x98(const boost::shared_ptr<CharInfo> &attacker);
+    virtual void vfStat_0x9C(const boost::shared_ptr<CharInfo> &attacker);
+#else
     virtual void vfStat_0x98() {}
     virtual void vfStat_0x9C() {}
+#endif
     virtual void vfStat_0xA0() {}
     virtual void vfStat_0xA4() {}
     virtual EnemyFlags *vfStat_0xA8() {
@@ -460,10 +473,14 @@ struct UnkEnemyArea_8018A374 {
 #endif
 
 extern "C" {
-/* The enemy registry (a singleton) and its add and remove calls (behaviour inferred). */
+#ifndef UNK_TREE_MAP
+/* The enemy registry (a singleton) and its add and remove calls (behaviour inferred). Not declared
+ * where UNK_TREE_MAP is defined: Game/UnkSingletons.h declares the registry's accessor there, and
+ * Game/EnemyEntry.cpp defines the two calls. */
 void *fn_80119178(void);
 u32 fn_801A29B0(void *registry, Enemy *enemy);
 void fn_801A2968(void *registry, u32 handle);
+#endif
 /* The character info of an enemy of type type (behaviour inferred). */
 boost::shared_ptr<UnkEnemyInfo_8017D014> fn_801A0030(int type);
 int fn_8019A8F4(int type);
@@ -729,14 +746,19 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x88(u32 value);         /* 0x8017B7B4 */
     virtual void vfStat_0x7C(bool arg0, bool arg1); /* 0x8017B7D8 */
     virtual void vfStat_0x8C(bool value);        /* 0x8017B7FC */
-#ifdef ENEMY_STAT_0x90_ARG
+#if defined(ENEMY_STAT_0x90_ARG) || defined(ENEMY_STAT_SLOT_ARGS)
     virtual void vfStat_0x90(bool value);        /* 0x801A7F64 */
 #else
     virtual void vfStat_0x90();                  /* 0x801A7F64 */
 #endif
     virtual void vfStat_0x94(int flags);         /* 0x801A8608 */
+#ifdef ENEMY_STAT_SLOT_ARGS
+    virtual void vfStat_0x98(const boost::shared_ptr<CharInfo> &attacker); /* 0x801A85B4 */
+    virtual void vfStat_0x9C(const boost::shared_ptr<CharInfo> &attacker); /* 0x801A8504 */
+#else
     virtual void vfStat_0x98();                  /* 0x801A85B4 */
     virtual void vfStat_0x9C();                  /* 0x801A8504 */
+#endif
     virtual void vfStat_0xA0();                  /* 0x801A84DC */
     virtual void vfStat_0xA4();                  /* 0x801A84D8 */
     virtual EnemyFlags *vfStat_0xA8();           /* 0x8017B83C */
@@ -771,6 +793,12 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     /* 0x94 */ float field_0x94;
 };
 
+#ifdef ENEMY_DISP_COMMON_UNIT
+/* The health gauge (Game/GiHPGaugeEnemy.h) and a sound (as Game/BkLarva.h names it). */
+class GiHPGaugeEnemy;
+class UnkSound_802B4254;
+#endif
+
 /* EnemyDispCommon (class name from RTTI; vtable 0x8053A928; constructor 0x801A1CB4). */
 class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
   public:
@@ -804,7 +832,21 @@ class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
     virtual void vfDisp_0x64() = 0;
 
     /* 0x14 */ boost::shared_ptr<EnemyRender> m_render;
+#ifdef ENEMY_DISP_COMMON_UNIT
+    /* The rest as Game/EnemyDispCommon.cpp, which holds the class's code, sees it (names
+     * inferred; the layout is the same). */
+    /* 0x1C */ float m_shakeTime;  /* the model shakes while it is above 0 */
+    /* 0x20 */ u8 m_hidden;        /* the model is hidden (dead, or blinking) */
+    /* 0x21 */ u8 m_moving;        /* set by vfDisp_0x3C */
+    /* 0x22 */ u8 m_soundOn;       /* m_sound plays (and follows the gauge) */
+    /* 0x24 */ boost::shared_ptr<GiHPGaugeEnemy> m_gauge;
+    /* 0x2C */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x34 */ float m_shadowSize;
+    /* 0x38 */ float m_shadowRatio;
+    /* 0x3C */ float m_speedScale; /* set each frame by vfDisp_0x30, back to 1 after the update */
+#else
     /* 0x1C */ u8 field_0x1C[0x40 - 0x1C];
+#endif
 };
 
 /* EnemyMoveCommon (class name from RTTI; vtable 0x8053AA04; constructor 0x801A5D14). */

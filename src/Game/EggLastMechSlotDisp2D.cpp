@@ -26,12 +26,14 @@ struct RednerDrawArgs {
     /* 0x4 */ float m_dt;
 };
 
-/* The loaded CSD resource the projects are built from (class name unknown; 0x4C bytes, fn_8003E808
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; 0x4C bytes, fn_8003E808
  * constructs it, fn_8036E114 loads a file into it). */
-class UnkCsdResource_8003E808 {
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -39,6 +41,8 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown). */
 class UnkCsdHandle_80042DF0 {
@@ -57,7 +61,7 @@ boost::shared_ptr<Render> fn_8004E24C(void *arg0);
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
 /* Loads file into resource (behaviour inferred). */
-void fn_8036E114(UnkCsdResource_8003E808 *resource, const char *file);
+void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing and drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */
@@ -109,7 +113,7 @@ class EggLastMechSlotDisp2D {
         /* Loads the CSD resource every Impl plays (name inferred). */
         static void Load();
 
-        static UnkCsdResource_8003E808 *s_resource;
+        static Chao::CSD::CProject *s_resource;
 
         /* 0x00 */ UnkCsdProject_800BFF30 *m_project;
         /* 0x04 */ RCPtr<CScene> m_large;
@@ -203,10 +207,10 @@ using EggLastMech::EggLastMechSlotDisp2D;
 
 namespace EggLastMech {
 
-UnkCsdResource_8003E808 *EggLastMechSlotDisp2D::Impl::s_resource;
+Chao::CSD::CProject *EggLastMechSlotDisp2D::Impl::s_resource;
 
 void EggLastMechSlotDisp2D::Impl::Load() {
-    s_resource = new UnkCsdResource_8003E808();
+    s_resource = new Chao::CSD::CProject();
     fn_8036E114(s_resource, fn_800423B8(fn_8003F8D4(), "CsdFiles/EggBoss", 0));
 }
 

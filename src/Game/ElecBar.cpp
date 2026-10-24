@@ -63,14 +63,7 @@ struct UnkPlayerPart_80078CEC {
     /* 0x0C */ Vec3f m_position;
 };
 
-/* RideCommand (class name from RTTI, base CharCommand): the command of type 0xB, which a character
- * sends to what it gets on; the character follows (layout from its use here). */
-class RideCommand : public CharCommand {
-  public:
-    virtual ~RideCommand();
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_rider;
-};
+/* RideCommand (command type 0xB) is declared in Game/CharCommand.h. */
 
 /* A colour of four bytes (as in ElecCristalWall.cpp). */
 struct UnkColor_8040D2D8 {
@@ -819,7 +812,7 @@ void ElecBarSub::OnCommand(CharCommand &command) {
     if (type == 0xB) {
         RideCommand *ride = dynamic_cast<RideCommand *>(&command);
         if (ride != 0) {
-            m_rider = ride->m_rider;
+            m_rider = ride->m_partner;
         }
     } else if (type == 0xC) {
         m_rider.reset();

@@ -100,15 +100,7 @@ class GadgetCharCollision {
     /* 0x24 */ UnkHandleBShape_802589F8 *m_shape;
 };
 
-/* ScoreCommand (class name from RTTI): command type 0x1C. Its five values are passed through
- * unchanged (meanings unknown). */
-class ScoreCommand : public CharCommand {
-  public:
-    ScoreCommand(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-
-    /* 0x14 */ s32 m_values[5];
-};
-SIZE_ASSERT(ScoreCommand, 0x28);
+/* ScoreCommand (command type 0x1C) is declared in Game/CharCommand.h. */
 
 /* What fn_8015FA78 passes to fn_80169E8C: the id of the model frame to find, and the frame found
  * (names inferred). */

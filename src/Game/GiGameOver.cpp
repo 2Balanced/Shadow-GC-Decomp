@@ -35,7 +35,7 @@ boost::shared_ptr<Render> fn_8004E24C(void *arg0);
 /* The path of a localized file, and loading a texture list file into resource (behaviour
  * inferred; see Game/TGiCommandWindow.cpp). */
 const char *fn_800C02CC(const char *name);
-void fn_800422A8(UnkCsdResource_8003E808 *resource, const char *file);
+void fn_800422A8(Chao::CSD::CProject *resource, const char *file);
 /* The sound manager, and playing sound id through it (behaviour inferred). */
 void *fn_80053164(void);
 void fn_801D51A0(void *manager, int id, int arg2, int arg3);
@@ -96,7 +96,7 @@ class GiGameOver : public Task {
     /* The screen being shown, if any (name inferred). */
     static GiGameOver *s_instance;
 
-    /* 0x28 */ UnkCsdResource_8003E808 *m_project;
+    /* 0x28 */ Chao::CSD::CProject *m_project;
     /* 0x2C */ boost::shared_ptr<Render> m_render;
     /* 0x34 */ float m_timer;
     /* 0x38 */ s32 m_state;
@@ -163,7 +163,7 @@ GiGameOver::GiGameOver(Task *parent) : Task(parent) {
     m_waiting = 1;
     m_name = "GiGameOver";
     s_instance = this;
-    m_project = new UnkCsdResource_8003E808();
+    m_project = new Chao::CSD::CProject();
     if (m_project != 0) {
         fn_8003F8D4();
         fn_800422A8(m_project, fn_800C02CC(s_fileName));

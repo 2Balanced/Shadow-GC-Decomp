@@ -58,15 +58,7 @@ class UnkLabelQuery_800CBC20 {
     /* 0x8 */ s32 value; /* its current value */
 };
 
-/* SetTransparentCommand (class name from RTTI): fades a character's model; its command type is
- * 0x17 (as in Door; only the members used here are named). */
-class SetTransparentCommand : public CharCommand {
-  public:
-    /* 0x14 */ u8 m_transparent; /* nonzero to fade, zero to restore (inferred) */
-    /* 0x18 */ float m_alpha;
-    /* 0x1C */ u32 field_0x1C;
-};
-SIZE_ASSERT(SetTransparentCommand, 0x20);
+/* SetTransparentCommand (command type 0x17) is declared in Game/CharCommand.h. */
 
 class UnkPathManager_8001B494;
 

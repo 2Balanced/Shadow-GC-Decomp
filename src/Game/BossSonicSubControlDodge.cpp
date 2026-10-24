@@ -30,15 +30,7 @@ bool fn_800B7AD0(const boost::shared_ptr<CharInfo> &chara);
 /* fn_8040CD74 called as returning a - b by value (see Game/VehicleColliMove.cpp). */
 typedef Vec3f (*VectorSubtractFn)(const Vec3f *a, const Vec3f *b);
 
-/* AccelerateInputCommand (class name from RTTI; vtable at 0x8053D524): pushes a character along
- * direction (the meaning of arg1 is unknown). */
-class AccelerateInputCommand : public CharCommand {
-  public:
-    AccelerateInputCommand(const Vec3f &direction, int arg1);
-
-    /* 0x14 */ Vec3f m_direction;
-};
-SIZE_ASSERT(AccelerateInputCommand, 0x20);
+/* AccelerateInputCommand (command type 1) is declared in Game/CharCommand.h. */
 
 namespace Player {
 namespace Npc {

@@ -19,6 +19,8 @@
  * the draw code passes bytes 1, 2, 3, 0 to RenderWare as red, green, blue and alpha. The copy
  * constructor is written out member by member (retail copies the bytes one by one). */
 struct UnkColor_8040D2D8 {
+    /* An unset colour (Game/WeaponLockonBase.cpp's search sets its colour in its constructor's body). */
+    UnkColor_8040D2D8() {}
     UnkColor_8040D2D8(u8 r, u8 g, u8 b, u8 a);
     UnkColor_8040D2D8(const UnkColor_8040D2D8 &other) : r(other.r), g(other.g), b(other.b), a(other.a) {}
 

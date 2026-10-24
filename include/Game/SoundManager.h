@@ -27,9 +27,9 @@ struct UnkSoundBankEntry {
     /* 0x04 */ u32 m_id;
     /* 0x08 */ u8 field_0x8;
     /* 0x09 */ s8 field_0x9; /* negative: disabled (meaning inferred) */
-    /* 0x0A */ u8 field_0xA[2];
+    /* 0x0A */ s16 m_volume; /* percent of full volume added to the channel's (meaning inferred) */
     /* 0x0C */ u8 m_range; /* scaled into the audible distance (meaning inferred) */
-    /* 0x0D */ u8 field_0xD;
+    /* 0x0D */ u8 m_time; /* frames to play; 0 means 120 (meaning inferred) */
     /* 0x0E */ u8 m_flags; /* 0x1 loops, 0x2 a voice, 0x4, 0x10 limited by distance (meanings inferred) */
     /* 0x0F */ u8 m_priority;
     /* 0x10 */ s32 m_playing; /* instances started since the last reset (meaning inferred) */
@@ -71,13 +71,21 @@ class UnkSoundBank_801D8890 {
 };
 SIZE_ASSERT(UnkSoundBank_801D8890, 0x80);
 
-/* A sound channel (class name unknown; 0x34 bytes). */
+/* A sound channel (class name unknown; 0x34 bytes; code in Game/AudioChannel.cpp). */
 class UnkSoundChannel_801D98FC {
   public:
     UnkSoundChannel_801D98FC();
     ~UnkSoundChannel_801D98FC() {}
     void fn_801D88EC();
     void fn_801D898C();
+    /* Sends the pan, or the surround value in surround mode (behaviour inferred). */
+    void fn_801D8FAC();
+    /* The pitch shift from the change in distance to the player (behaviour inferred). */
+    s16 fn_801D9068();
+    /* The pan from the direction of the camera, and the surround value (behaviour inferred). */
+    s8 fn_801D9214(s8 *surround);
+    /* The volume from the distance to the player (behaviour inferred). */
+    s8 fn_801D93FC();
     void fn_801D956C(void *source);
     void fn_801D95A4(u16 flags, s16 arg2);
     bool fn_801D9608();
@@ -85,7 +93,8 @@ class UnkSoundChannel_801D98FC {
     void fn_801D9714(u16 flags, s16 arg2);
     void fn_801D9780();
     void fn_801D978C(int id, UnkSoundBankEntry *entry, u8 priority);
-    void fn_801D984C(u8 *arg1, u8 *arg2);
+    /* The channel's group and voice in the back end (behaviour inferred). */
+    void fn_801D984C(s8 *group, u8 *voice);
     void fn_801D9888(s8 index);
 
     /* Whether the entry loops / has flag 0x4 (names inferred). */
@@ -96,26 +105,26 @@ class UnkSoundChannel_801D98FC {
         return m_entry != 0 && (m_entry->m_flags & 4) != 0;
     }
 
-    /* 0x00 */ u8 field_0x0;
-    /* 0x01 */ u8 field_0x1;
-    /* 0x02 */ u8 field_0x2;
+    /* 0x00 */ s8 m_index; /* selects the group and voice (meaning inferred) */
+    /* 0x01 */ s8 m_bank; /* the entry's bank and program (meanings inferred) */
+    /* 0x02 */ s8 m_program;
     /* 0x03 */ u8 m_priority;
     /* 0x04 */ s8 field_0x4;
     /* 0x05 */ s8 field_0x5;
     /* 0x06 */ s8 field_0x6;
-    /* 0x07 */ u8 field_0x7;
-    /* 0x08 */ u8 field_0x8;
+    /* 0x07 */ s8 field_0x7; /* volume (meaning inferred) */
+    /* 0x08 */ s8 field_0x8; /* volume limit (meaning inferred) */
     /* 0x09 */ u8 field_0x9;
-    /* 0x0A */ u16 field_0xA;
-    /* 0x0C */ s16 field_0xC;
-    /* 0x0E */ u16 field_0xE;
+    /* 0x0A */ s16 m_pitch; /* (meaning inferred) */
+    /* 0x0C */ s16 field_0xC; /* frames left */
+    /* 0x0E */ s16 field_0xE;
     /* 0x10 */ u16 m_age; /* compared to pick the channel to take over (meaning inferred) */
     /* 0x12 */ u16 m_id;
     /* 0x14 */ u32 m_flags;
     /* 0x18 */ void *m_owner;
     /* 0x1C */ Vec3f m_position;
-    /* 0x28 */ float field_0x28;
-    /* 0x2C */ float field_0x2C;
+    /* 0x28 */ float m_range; /* how far the sound is heard (meaning inferred) */
+    /* 0x2C */ float m_distance; /* the distance to the player last frame (meaning inferred) */
     /* 0x30 */ UnkSoundBankEntry *m_entry;
 };
 SIZE_ASSERT(UnkSoundChannel_801D98FC, 0x34);
@@ -156,15 +165,15 @@ class UnkSound_80053164 {
     void ApplyFlags(UnkSoundChannel_801D98FC *channel, u16 &flags);
     void Init();
     void LoadBanks();
-    /* Forwarders to the back end, used by the channels (names unknown). */
-    void fn_801D5D10();
-    void fn_801D5D48(u8 arg1, u8 arg2);
-    void fn_801D5D80();
-    void fn_801D5DB8();
-    void fn_801D5DF0();
-    void fn_801D5E28();
-    void fn_801D5E60(u8 arg1, u8 arg2);
-    void fn_801D5E98();
+    /* Forwarders to the back end, used by the channels (names unknown; see IAudio). */
+    void fn_801D5D10(s8 group, u8 voice, s8 bank, s8 program);
+    void fn_801D5D48(s8 group, u8 voice);
+    void fn_801D5D80(s16 pitch, s8 group, u8 voice);
+    void fn_801D5DB8(s8 volume, s8 group, u8 voice);
+    void fn_801D5DF0(s8 surround, s8 group, u8 voice);
+    void fn_801D5E28(s8 pan, s8 group, u8 voice);
+    void fn_801D5E60(s8 group, u8 voice);
+    void fn_801D5E98(s8 bank, s8 program, u8 priority, s8 group, u8 voice, float range);
 
     /* 0x00 */ IAudio *m_audio;
     /* 0x04 */ UnkSoundChannel_801D98FC *m_channels;

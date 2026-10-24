@@ -43,23 +43,7 @@ struct UnkMaterialAnim_801621F0 {
     /* 0x8 */ UnkColor_8040D2D8 color;
 };
 
-/* SwitchCommand (class name from RTTI; vtable at 0x8053D404): command 9, which switches path
- * m_index of a path-following object to its alternative (see BKTankController.cpp). Its virtual
- * functions are defined with the other commands, so this unit only refers to its vtable. */
-class SwitchCommand : public CharCommand {
-  public:
-    SwitchCommand(int index) : CharCommand(CommandType(9), 4), m_index(index) {}
-    virtual ~SwitchCommand();
-
-    /* The command type as CharCommand stores it. Calling this inline function keeps the
-     * constructor out of line, as the game has it (as GadgetCommand.h does). */
-    static u16 CommandType(int type) {
-        return type;
-    }
-
-    /* 0x14 */ s32 m_index;
-};
-SIZE_ASSERT(SwitchCommand, 0x18);
+/* SwitchCommand (command type 9) is declared in Game/CharCommand.h. */
 
 /* A path of the rails (struct name unknown); only the member read here is laid out. */
 struct UnkRailPath_8054B8E0 {

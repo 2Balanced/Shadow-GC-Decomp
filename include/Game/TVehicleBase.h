@@ -47,7 +47,13 @@ class TVehicleBase : public CharInfo {
     /* Per-frame work (pure; name inferred). */
     virtual void Tick(float dt) = 0;
     /* A rider gets on and off (0x801B62C4, 0x801B6254; names inferred from GunLift). */
+#ifdef VEHICLE_GET_ON_RIDER
+    /* Slot 0x48 with the rider its caller passes (Game/PlayerBehaviorDriveVehicle.cpp); the
+     * vehicles' own units, and the vtables they emit, name the symbol without it. */
+    virtual void OnGetOn(const boost::weak_ptr<CharInfo> &rider);
+#else
     virtual void OnGetOn();
+#endif
     virtual void OnGetOff();
     /* 0x801B624C, 0x801B6244 (meanings unknown; GunLift returns true from both). */
     virtual bool vf_0x50();

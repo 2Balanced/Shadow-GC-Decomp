@@ -13,14 +13,7 @@
 
 extern "C" void *memset(void *dst, int value, unsigned long count);
 
-/* ScoreCommand (class name from RTTI; see Game/TurnOver.cpp): command type 0x1C. */
-class ScoreCommand : public CharCommand {
-  public:
-    ScoreCommand(s32 arg0, s32 arg1, s32 arg2, s32 arg3, s32 arg4);
-
-    /* 0x14 */ s32 m_values[5];
-};
-SIZE_ASSERT(ScoreCommand, 0x28);
+/* ScoreCommand (command type 0x1C) is declared in Game/CharCommand.h. */
 
 /* A row of the score table: a ScoreCommand's values (struct names unknown). */
 struct UnkScoreValues {

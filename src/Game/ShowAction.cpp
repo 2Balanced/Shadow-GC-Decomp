@@ -13,11 +13,13 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
-/* The loaded CSD project (class name unknown; see Game/TGi.h). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; see Game/TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -25,6 +27,8 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 #define STAGEACTION_SHOWACTION_IMPL
 #include "Game/StageAction.h"
@@ -126,14 +130,14 @@ void fn_80173834(int arg0, float time);
  * project (behaviour inferred; see Game/GiGameOver.cpp). */
 void *fn_8003F8D4(void);
 const char *fn_800C02CC(const char *name);
-void fn_800422A8(UnkCsdResource_8003E808 *project, const char *file);
+void fn_800422A8(Chao::CSD::CProject *project, const char *file);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
-void fn_8036E114(UnkCsdResource_8003E808 *project, const char *file);
+void fn_8036E114(Chao::CSD::CProject *project, const char *file);
 /* Projects and scenes (behaviour inferred; see Game/TGi.h). */
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-RCPtr<CScene> fn_8036D660(UnkCsdResource_8003E808 *project, const char *name);
-void fn_8036D94C(UnkCsdResource_8003E808 *project);
-void fn_8036DAD4(UnkCsdResource_8003E808 *project);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+void fn_8036D94C(Chao::CSD::CProject *project);
+void fn_8036DAD4(Chao::CSD::CProject *project);
 void fn_80367238(CScene *scene, const char *motion);
 float fn_803644A0(CScene *scene, const char *motion);
 void fn_80366740(CScene *scene, float frame);
@@ -181,7 +185,7 @@ ShowAction::ShowAction() : m_state(0) {
     lbl_8057D6A0.field_0xD1 = 0;
     m_render = fn_8004E24C(fn_80046178()->field_0x54);
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&ShowAction::Draw, this, _1));
-    m_project = new UnkCsdResource_8003E808();
+    m_project = new Chao::CSD::CProject();
     if (m_project != 0) {
         fn_8003F8D4();
         fn_800422A8(m_project, fn_800C02CC("CsdFiles/2P_Start"));

@@ -307,12 +307,7 @@ struct HelicopterParams {
     /* 0x14 */ float pauseSec;
 };
 
-/* RideCommand (class name from RTTI): command type 0xB, which names the character that rides the
- * gadget (member name inferred). */
-class RideCommand : public CharCommand {
-  public:
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_rider;
-};
+/* RideCommand (command type 0xB) is declared in Game/CharCommand.h. */
 
 class Helicopter : public Gadget {
   public:
@@ -763,7 +758,7 @@ void Helicopter::OnCommand(CharCommand &command) {
     case 0xB:
         if (m_flags2.Test(1)) {
             m_flags2.Clear(1);
-            m_rider = static_cast<RideCommand &>(command).m_rider;
+            m_rider = static_cast<RideCommand &>(command).m_partner;
             m_frontHandle->TurnOff();
             m_backHandle->TurnOff();
             m_flags2.Set(2);

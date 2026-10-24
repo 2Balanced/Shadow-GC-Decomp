@@ -46,15 +46,7 @@ class Target {
     /* 0x30 */ u32 m_flags;
 };
 
-/* SetTransparentCommand (class name from RTTI): fades a character's model; its command type is
- * 0x17. Only the alpha is used here (as in ContainerUnbreak.cpp). */
-class SetTransparentCommand : public CharCommand {
-  public:
-    /* 0x14 */ u8 field_0x14;
-    /* 0x18 */ float m_alpha; /* 1 or more: opaque (inferred) */
-    /* 0x1C */ u32 field_0x1C;
-};
-SIZE_ASSERT(SetTransparentCommand, 0x20);
+/* SetTransparentCommand (command type 0x17) is declared in Game/CharCommand.h. */
 
 /* The cursor handed to a parameter's label callback (layout from fn_800CBC20; names inferred). */
 class UnkLabelQuery_800CBC20 {

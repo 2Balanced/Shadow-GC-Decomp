@@ -45,10 +45,22 @@ class ShowCommand : public NpcCommand {
     /* 0x14 */ u32 field_0x14;
 };
 
+/* EnemyDeadByPlayerCommand (class name from RTTI; vtable 0x8051FE28; constructor 0x80072FF4, which
+ * passes 0x403 and 4 to its base): tells the partner that the player destroyed an enemy of a kind,
+ * with the number of that kind the player has destroyed (Game/EnemyEntry.cpp; names inferred). */
+class EnemyDeadByPlayerCommand : public NpcCommand {
+  public:
+    EnemyDeadByPlayerCommand(int kind, int count);
+
+    /* 0x14 */ s32 m_kind;
+    /* 0x18 */ s32 m_count;
+};
+
 } // namespace Npc
 } // namespace Player
 
 SIZE_ASSERT(Player::Npc::Npc, 0x294);
 SIZE_ASSERT(Player::Npc::ShowCommand, 0x18);
+SIZE_ASSERT(Player::Npc::EnemyDeadByPlayerCommand, 0x1C);
 
 #endif

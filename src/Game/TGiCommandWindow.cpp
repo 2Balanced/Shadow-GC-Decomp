@@ -32,7 +32,7 @@ boost::shared_ptr<Render> fn_8004E24C(void *arg0);
 /* The path of a localized file (behaviour inferred). */
 const char *fn_800C02CC(const char *name);
 /* Loads a texture list file into resource (behaviour inferred). */
-void fn_800422A8(UnkCsdResource_8003E808 *resource, const char *file);
+void fn_800422A8(Chao::CSD::CProject *resource, const char *file);
 /* The player's command and vehicle kinds (behaviour inferred). */
 int fn_8016EEC8(UnkPlayerInfo_80178B5C *player);
 int fn_8016EED0(UnkPlayerInfo_80178B5C *player);
@@ -99,13 +99,13 @@ class TGiCommandWindowImpl {
     ~TGiCommandWindowImpl();
 
     /* Puts project's scenes at their first frames (name inferred). */
-    void InitProject(UnkCsdResource_8003E808 *project);
+    void InitProject(Chao::CSD::CProject *project);
     /* Advances the windows (name inferred). */
     void Tick(float dt);
     /* The Render's draw callback (name inferred). */
     void Draw(RednerDrawArgs &args);
     /* Opens and closes player's window on project (name inferred). */
-    void UpdateWindow(UnkCsdResource_8003E808 *project, UnkPlayerInfo_80178B5C *player,
+    void UpdateWindow(Chao::CSD::CProject *project, UnkPlayerInfo_80178B5C *player,
                       TGiCommandState *state);
 
     /* The weapon command player shows (name inferred). */
@@ -114,7 +114,7 @@ class TGiCommandWindowImpl {
     TGiCommand GetCarCommand(UnkPlayerInfo_80178B5C *player);
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
-    /* 0x08 */ UnkCsdResource_8003E808 *m_projects[2];
+    /* 0x08 */ Chao::CSD::CProject *m_projects[2];
     /* 0x10 */ TGiCommandState m_states[2];
     /* 0x40 */ boost::shared_ptr<TGiNumberDisplay> m_numbers[2];
 };
@@ -150,7 +150,7 @@ TGiCommandWindowImpl::TGiCommandWindowImpl() {
     m_render = fn_8004E24C(fn_80046178()->field_0x54);
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&TGiCommandWindowImpl::Draw, this, _1));
 
-    m_projects[0] = new UnkCsdResource_8003E808();
+    m_projects[0] = new Chao::CSD::CProject();
     fn_8036E114(m_projects[0], fn_800423B8(fn_8003F8D4(), "CsdFiles/CommandWindow", 0));
     fn_8036D598(m_projects[0], 0);
     InitProject(m_projects[0]);
@@ -164,7 +164,7 @@ TGiCommandWindowImpl::TGiCommandWindowImpl() {
 
     m_projects[1] = 0;
     if (lbl_8057D6A0.m_twoPlayer) {
-        m_projects[1] = new UnkCsdResource_8003E808();
+        m_projects[1] = new Chao::CSD::CProject();
         fn_8003F8D4();
         fn_800422A8(m_projects[0], fn_800C02CC("CsdFiles/2P_CommnandWindow"));
         fn_8036E114(m_projects[1], fn_800423B8(fn_8003F8D4(), "CsdFiles/2P_CommandWindow", 0));
@@ -195,7 +195,7 @@ TGiCommandWindowImpl::~TGiCommandWindowImpl() {
  * and one more use of project in the source gives retail's order (the compilers break the tie
  * differently). Local copies, casts, a const parameter, an inline accessor, named string arrays and
  * using this did not change it. */
-void TGiCommandWindowImpl::InitProject(UnkCsdResource_8003E808 *project) {
+void TGiCommandWindowImpl::InitProject(Chao::CSD::CProject *project) {
     RCPtr<CScene> scene;
 
     scene = fn_8036D660(project, "Window");
@@ -377,7 +377,7 @@ TGiCommand TGiCommandWindowImpl::GetCarCommand(UnkPlayerInfo_80178B5C *player) {
  * comparison, and gives `this` r27; GC/2.7 reloads both from memory. Naming the icon in a local makes
  * GC/2.7 move the whole command struct into registers instead (also with two TGiCommand locals, an
  * array, a reference, an inline operator= or operator!=). */
-void TGiCommandWindowImpl::UpdateWindow(UnkCsdResource_8003E808 *project, UnkPlayerInfo_80178B5C *player,
+void TGiCommandWindowImpl::UpdateWindow(Chao::CSD::CProject *project, UnkPlayerInfo_80178B5C *player,
                                         TGiCommandState *state) {
     RCPtr<CScene> scene;
     RCPtr<CNode> node;

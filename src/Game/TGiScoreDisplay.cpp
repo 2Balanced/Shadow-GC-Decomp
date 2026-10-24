@@ -130,7 +130,7 @@ class TGiScoreDisplayImpl {
     }
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
-    /* 0x08 */ UnkCsdResource_8003E808 *m_project;
+    /* 0x08 */ Chao::CSD::CProject *m_project;
     /* 0x0C */ boost::shared_ptr<TGiNumberDisplay> m_numbers[5];
     /* 0x34 */ UnkTime_801E46E4 m_time;
     /* 0x40 */ float m_scale;
@@ -168,7 +168,7 @@ TGiScoreDisplayImpl::TGiScoreDisplayImpl() {
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&TGiScoreDisplayImpl::Draw, this, _1));
 
     if (lbl_8057D6A0.m_twoPlayer) {
-        m_project = new UnkCsdResource_8003E808();
+        m_project = new Chao::CSD::CProject();
         fn_8036E114(m_project, fn_800423B8(fn_8003F8D4(), "CsdFiles/2P_Star", 0));
         fn_8036D598(m_project, 0);
         RCPtr<CScene> scene;

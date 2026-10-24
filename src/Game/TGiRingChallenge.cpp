@@ -82,7 +82,7 @@ class TGiRingChallengeImpl {
     void Draw(RednerDrawArgs &args);
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
-    /* 0x08 */ UnkCsdResource_8003E808 *m_project;
+    /* 0x08 */ Chao::CSD::CProject *m_project;
     /* 0x0C */ boost::shared_ptr<TGiNumberDisplay> m_numbers[3];
 };
 
@@ -119,7 +119,7 @@ TGiRingChallengeImpl::TGiRingChallengeImpl() {
 
     RCPtr<CScene> scene;
     if (lbl_8057D6A0.m_twoPlayer) {
-        m_project = new UnkCsdResource_8003E808();
+        m_project = new Chao::CSD::CProject();
         fn_8036E114(m_project, fn_800423B8(fn_8003F8D4(), "CsdFiles/2P_Ring", 0));
         fn_8036D598(m_project, 0);
         scene = fn_8036D660(m_project, "Ring1P");
@@ -135,7 +135,7 @@ TGiRingChallengeImpl::TGiRingChallengeImpl() {
             fn_803659DC(scene.Get(), 0);
         }
     } else {
-        m_project = new UnkCsdResource_8003E808();
+        m_project = new Chao::CSD::CProject();
         fn_8036E114(m_project, fn_800423B8(fn_8003F8D4(), "CsdFiles/InfoWindow", 0));
         fn_8036D598(m_project, 0);
         scene = fn_8036D660(m_project, "Ring");

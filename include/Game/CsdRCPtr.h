@@ -252,6 +252,50 @@ class RCPtr
             }
         }
 
+#ifdef CSD_PROJECT
+        /* Drops a reference; the last one deletes the object as m_dealloc says, and the holder
+         * (name inferred; Game/csdmProject.cpp, where RCPtr<CSceneList> calls it out of line). */
+        void Release() {
+            if (--m_count == 0) {
+                if (m_object != 0) {
+                    switch (m_dealloc) {
+                    case 0:
+                        if (m_object != 0) {
+                            fn_80360528(m_object);
+                            m_object = 0;
+                        }
+                        break;
+                    case 1:
+                        if (m_object != 0) {
+                            delete m_object;
+                            m_object = 0;
+                        }
+                        break;
+                    case 2:
+                        break;
+                    case 3:
+                        ((void (*)(U *))m_functor)(m_object);
+                        m_functor = 0;
+                        break;
+                    case 4:
+                        if (m_functor != 0) {
+                            (*m_functor)(m_object);
+                        }
+                        if (m_functor != 0) {
+                            delete m_functor;
+                            m_functor = 0;
+                        }
+                        break;
+                    default:
+                        fn_80361D18("Not inititalized m_eDealloctor\n");
+                        break;
+                    }
+                }
+                delete this;
+            }
+        }
+#endif
+
 #ifndef CSD_OBJECT_LAYER
         static void *operator new(u32 size) {
             return fn_803605AC()->Alloc(size, "csdRCObject.h", 410);
@@ -416,6 +460,27 @@ class RCPtr
 
     /* 0x0 */ RCObject<T> *m_object;
 };
+
+#ifdef CSD_PROJECT
+/* RCPtr comparison (name inferred; Game/csdmProject.cpp, as Game/ResultTask.cpp has it): equal when
+ * both hold the same object, or both hold none. It returns int, as retail tests the result as a word. */
+template <class T> inline int operator==(const RCPtr<T> &a, const RCPtr<T> &b) {
+    if (a.m_object != 0 && b.m_object != 0) {
+        return a.m_object->m_object == b.m_object->m_object;
+    }
+    return a.m_object == b.m_object;
+}
+/* Whether they hold different objects (name inferred; as the handle comparison of
+ * Game/ResultTask.cpp). */
+template <class T> inline bool operator!=(const RCPtr<T> &a, const RCPtr<T> &b) {
+    T *pa = a.m_object != 0 ? a.m_object->m_object : 0;
+    T *pb = b.m_object != 0 ? b.m_object->m_object : 0;
+    if (pa != pb) {
+        return true;
+    }
+    return false;
+}
+#endif
 
 } // namespace CSD
 } // namespace Chao

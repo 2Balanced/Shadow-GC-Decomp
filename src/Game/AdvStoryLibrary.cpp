@@ -26,8 +26,12 @@ using Chao::CSD::CScene;
 using Chao::CSD::CTexList;
 using Chao::CSD::RCPtr;
 
-/* The loaded CSD project (class name unknown; declared as in TGi.h). */
-class UnkCsdResource_8003E808;
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject;
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown; declared as in TGi.h). */
 class UnkCsdHandle_80042DF0 {
@@ -98,12 +102,12 @@ class UnkManager_801E5D48;
 extern "C" {
 /* The CSD project cache (Game/AdvCsdCache.cpp; behaviour inferred). */
 void *fn_801E5F0C(void);
-UnkCsdResource_8003E808 *fn_802B5504(void *cache, const char *file);
-bool fn_802B5434(void *cache, UnkCsdResource_8003E808 *project);
+Chao::CSD::CProject *fn_802B5504(void *cache, const char *file);
+bool fn_802B5434(void *cache, Chao::CSD::CProject *project);
 void fn_802B57FC(void *cache);
 /* Projects (behaviour inferred; see Game/TGi.h). */
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-RCPtr<CTexList> fn_8036C628(UnkCsdResource_8003E808 *project);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+RCPtr<CTexList> fn_8036C628(Chao::CSD::CProject *project);
 /* Scenes and nodes (behaviour inferred): a node by name, hiding a node, its pattern, the colour of
  * one of its corners, restoring that colour, and three calls on its colour as a whole. */
 RCPtr<CNode> fn_803666B4(CScene *scene, const char *name);
@@ -211,7 +215,7 @@ class Impl {
     /* 0x000 */ s32 m_state; /* 0 opening, 1 menu, 2 library, 3 starting, 4 closing, 5 synopsis */
     /* 0x004 */ s32 field_0x4;
     /* 0x008 */ s32 m_step;
-    /* 0x00C */ UnkCsdResource_8003E808 *m_project;
+    /* 0x00C */ Chao::CSD::CProject *m_project;
     /* 0x010 */ UnkCsdSceneSet_8003D5D8 m_scenes;
     /* 0x01C */ u8 m_busy;
     /* 0x01D */ u8 m_library;

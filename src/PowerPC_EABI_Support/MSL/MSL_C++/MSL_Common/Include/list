@@ -301,6 +301,12 @@ template <class T> class list : public __list_base<T> {
     void push_back(const T &x) {
         this->insert(this->end(), x);
     }
+#ifdef MSL_LIST_PUSH_FRONT
+    /* Only where MSL_LIST_PUSH_FRONT is defined before this header (Game/StageCameraManager.cpp). */
+    void push_front(const T &x) {
+        this->insert(this->begin(), x);
+    }
+#endif
     void clear() {
         this->erase(this->begin(), this->end());
     }

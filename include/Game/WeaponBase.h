@@ -4,6 +4,9 @@
 #include "Game/WeaponBullet.h"
 #include "Game/MathTypes.h"
 #include "boost/weak_ptr.hpp"
+#ifdef WEAPON_MODEL_IMPL_MEMBERS
+#include "boost/scoped_ptr.hpp"
+#endif
 #include "size_assert.h"
 
 class CharInfo;
@@ -40,6 +43,11 @@ struct UnkWeaponEffectSet_80063428 {
 };
 SIZE_ASSERT(UnkWeaponEffectSet_80063428, 0x10);
 
+#ifdef WEAPON_MODEL_IMPL_MEMBERS
+/* The state of a weapon model (class name unknown; Game/WeaponModel.cpp). */
+class UnkWeaponModelImpl_8006465C;
+#endif
+
 /* The model of a weapon held by a character (class name unknown; a 4-byte object built by
  * 0x80063428 and destroyed by 0x8006330C). The methods keep their address names; what is known of
  * them is inferred from the callers. */
@@ -69,10 +77,18 @@ class UnkWeaponModel_80063428 {
      * (behaviour unknown). */
     void fn_8006327C();
     void fn_8006310C(void *arg);
+    /* Makes the model blink (0x800631D0; behaviour inferred from Game/SetWeapon.cpp's dropped
+     * items, which Game/WeaponItem.cpp's 0x8005F09C passes on to it). */
+    void fn_800631D0();
     /* Places the model with a world matrix (behaviour inferred). */
     void fn_800632C4(const Mtx34f *matrix);
 
+#ifdef WEAPON_MODEL_IMPL_MEMBERS
+    /* The member as Game/WeaponModel.cpp sees it: the model keeps its state in an Impl. */
+    /* 0x0 */ boost::scoped_ptr<UnkWeaponModelImpl_8006465C> m_impl;
+#else
     /* 0x0 */ void *field_0x0;
+#endif
 };
 SIZE_ASSERT(UnkWeaponModel_80063428, 0x4);
 

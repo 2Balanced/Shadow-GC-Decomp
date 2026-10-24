@@ -61,6 +61,18 @@ inline OutputIterator copy(InputIterator first, InputIterator last, OutputIterat
 }
 #endif
 
+#ifdef MSL_ALGORITHM_FIND
+/* find (only units that define MSL_ALGORITHM_FIND see it, for the reason given at MSL_ALGORITHM_COPY;
+ * Game/StageCameraPostProcess.cpp). */
+template <class InputIterator, class T>
+inline InputIterator find(InputIterator first, InputIterator last, const T &value) {
+    while (first != last && !(*first == value)) {
+        ++first;
+    }
+    return first;
+}
+#endif
+
 #ifdef MSL_ALGORITHM_REMOVE_IF
 /* find_if, remove_copy_if and remove_if (only units that define MSL_ALGORITHM_REMOVE_IF see them,
  * for the reason given at MSL_ALGORITHM_COPY; Game/BasicMessage.cpp). find_if is inline, so the game

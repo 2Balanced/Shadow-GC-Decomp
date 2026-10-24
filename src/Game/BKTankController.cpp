@@ -28,12 +28,7 @@
 
 using SonicteamUSA::System::PathCtrl;
 
-/* SwitchCommand (class name from RTTI; vtable at 0x8053D404): command 9, which switches path
- * m_index of a path-following object to its alternative (member name inferred). */
-class SwitchCommand : public CharCommand {
-  public:
-    /* 0x14 */ s32 m_index;
-};
+/* SwitchCommand (command type 9) is declared in Game/CharCommand.h. */
 
 class UnkPlayerManager_8006D6A8;
 

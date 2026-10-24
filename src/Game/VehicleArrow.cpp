@@ -63,12 +63,14 @@ struct ScreenRect {
     ScreenPoint size;
 };
 
-/* The loaded CSD resource the projects are built from (class name unknown; 0x4C bytes, fn_8003E808
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; 0x4C bytes, fn_8003E808
  * constructs it, fn_8036E114 loads a file into it). */
-class UnkCsdResource_8003E808 {
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -76,6 +78,8 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 /* The value a project returns from fn_8036D598 (class name unknown). */
 class UnkCsdHandle_80042DF0 {
@@ -94,7 +98,7 @@ boost::shared_ptr<Render> fn_8004E24C(void *arg0);
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
 /* Loads file into resource (behaviour inferred). */
-void fn_8036E114(UnkCsdResource_8003E808 *resource, const char *file);
+void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing and drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */
@@ -135,7 +139,7 @@ class VehicleArrowImpl {
     /* Places the scene at the point within viewport (name inferred). */
     bool PlaceInViewport(RCPtr<CScene> scene, s32 viewport);
 
-    static UnkCsdResource_8003E808 *s_resource;
+    static Chao::CSD::CProject *s_resource;
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
     /* 0x08 */ UnkCsdProject_800BFF30 *m_project;
@@ -193,7 +197,7 @@ static const float s_far = Value(200.0f);
 static const float s_scale = Value(60.0f);
 
 
-UnkCsdResource_8003E808 *VehicleArrowImpl::s_resource;
+Chao::CSD::CProject *VehicleArrowImpl::s_resource;
 
 VehicleArrowImpl::VehicleArrowImpl()
     : m_project(0), m_visible(0), m_scale(s_scale), m_near(s_near), m_far(s_far) {
@@ -321,7 +325,7 @@ extern "C" boost::shared_ptr<VehicleArrow> fn_8033A9B8(void) {
 /* Loads the CSD resource (name inferred). */
 extern "C" void fn_8033A938(void) {
     if (VehicleArrowImpl::s_resource == 0) {
-        VehicleArrowImpl::s_resource = new UnkCsdResource_8003E808();
+        VehicleArrowImpl::s_resource = new Chao::CSD::CProject();
         fn_8036E114(VehicleArrowImpl::s_resource, fn_800423B8(fn_8003F8D4(), "CsdFiles/VHArrow", 0));
     }
 }

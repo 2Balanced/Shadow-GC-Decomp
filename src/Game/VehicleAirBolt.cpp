@@ -23,11 +23,7 @@ struct UnkVehicleEntry {
     Vehicle::TVehicleBase *(*create)(void *arg);
 };
 
-/* The commands the AirBolt takes itself (class name unknown; see Game/BirdBase.cpp). */
-class UnkActionCommand_AirBolt : public CharCommand {
-  public:
-    /* 0x14 */ s32 m_action;
-};
+/* ControlVehicleCommand (command type 0x15) is declared in Game/CharCommand.h. */
 
 extern "C" {
 /* The 32-bit flag word (see Game/BAMine.cpp). */
@@ -174,7 +170,7 @@ void AirBolt::Setup() {
 void AirBolt::OnCommand(CharCommand *command) {
     switch (command->TypeId()) {
     case 0x15:
-        switch (static_cast<UnkActionCommand_AirBolt *>(command)->m_action) {
+        switch (static_cast<ControlVehicleCommand *>(command)->m_action) {
         case 6:
             fn_80014E1C(&m_gunFlags.m_bits, 0);
             command->Flags() |= 2;

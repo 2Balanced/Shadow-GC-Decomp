@@ -30,6 +30,23 @@ class CharaColliBase {
         return reinterpret_cast<u8 *>(this)[0x2A];
     }
 
+#ifdef CHARACOLLI_BASE_TYPE_INLINE
+    /* The halfword at 0x4, and whether it is 4 or 5 (names inferred; meanings unknown). Inline
+     * functions in the game, each of which calls another, so that IsType4Or5 calls GetType out of
+     * line and is called out of line itself; Game/PlayerBehaviorLightDash.cpp, which defines
+     * CHARACOLLI_BASE_TYPE_INLINE, emits their out-of-line copies. */
+    u16 Halfword(int offset) const {
+        return *reinterpret_cast<const u16 *>(reinterpret_cast<const u8 *>(this) + offset);
+    }
+    u16 GetType() const {
+        return Halfword(0x4);
+    }
+    bool IsType4Or5() const {
+        int type = GetType();
+        return type == 4 || type == 5;
+    }
+#endif
+
     /* The number of shapes in the collider (meaning inferred; slot 0x08). */
     virtual u16 GetShapeCount();
     /* Turns the collider back on and off (names inferred from RegularRing; arg is -1 there). */

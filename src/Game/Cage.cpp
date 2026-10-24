@@ -37,23 +37,7 @@ struct RpClump;
 
 typedef RpAtomic *(*RpAtomicCallBack)(RpAtomic *atomic, void *data);
 
-/* BindCommand and ReleaseCommand (class names from RTTI): hold a character at, and let it go from,
- * the object whose character info they keep (behaviour inferred from the cage). */
-class BindCommand : public CharCommand {
-  public:
-    BindCommand(const boost::weak_ptr<CharInfo> &binder);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_binder;
-};
-SIZE_ASSERT(BindCommand, 0x1C);
-
-class ReleaseCommand : public CharCommand {
-  public:
-    ReleaseCommand(const boost::weak_ptr<CharInfo> &binder);
-
-    /* 0x14 */ boost::weak_ptr<CharInfo> m_binder;
-};
-SIZE_ASSERT(ReleaseCommand, 0x1C);
+/* BindCommand and ReleaseCommand are declared in Game/CharCommand.h. */
 
 /* What fn_8015FA78 passes for each part of a model (layout from fn_8015FA78; names inferred). */
 struct UnkModelPart_8015FA78 {

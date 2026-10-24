@@ -44,7 +44,7 @@ extern "C" {
  * (behaviour inferred from their bodies). */
 void fn_8000CD64(__tree_node_base *x, __tree_node_base *root);
 void fn_80012E90(__tree_node_base **iterator);
-#ifdef MSL_TREE_ERASE
+#if defined(MSL_TREE_ERASE) || defined(MSL_MULTIMAP)
 /* Rebalances the tree under root before z is unlinked (behaviour inferred from its body). */
 void fn_80013398(__tree_node_base *z, __tree_node_base *root);
 #endif
@@ -427,6 +427,211 @@ template <class Key, class T, class Compare = less<Key> > class map {
   private:
     /* 0x0 */ tree_type tree_;
 };
+
+#ifdef MSL_MULTIMAP
+/* The iterators of a multimap's tree (see below). The iterator is a const_iterator that also gives
+ * write access, so the multimap's erase hands the tree a const_iterator made by a plain copy. Both
+ * are copied word by word (the game copies a multimap's bounds and the iterators it passes that
+ * way), and stepping a const_iterator stays out of line (the tree's erase calls it). */
+template <class T> class __multi_tree_const_iterator {
+  public:
+    const T &operator*() const {
+        return static_cast<__tree_node<T> *>(node_)->value_;
+    }
+    const T *operator->() const {
+        return &operator*();
+    }
+    __multi_tree_const_iterator &operator++() {
+        fn_80012E90(&node_);
+        __tree_nothing();
+        return *this;
+    }
+    friend bool operator==(const __multi_tree_const_iterator &x, const __multi_tree_const_iterator &y) {
+        return x.node_ == y.node_;
+    }
+    friend bool operator!=(const __multi_tree_const_iterator &x, const __multi_tree_const_iterator &y) {
+        return x.node_ != y.node_;
+    }
+
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+template <class T> class __multi_tree_iterator : public __multi_tree_const_iterator<T> {
+  public:
+    __multi_tree_iterator() {}
+    __multi_tree_iterator(__tree_node_base *n) {
+        this->node_ = n;
+    }
+    __multi_tree_iterator &operator=(const __multi_tree_iterator &x) {
+        this->node_ = __tree_id(x.node_);
+        return *this;
+    }
+
+    T &operator*() const {
+        return static_cast<__tree_node<T> *>(this->node_)->value_;
+    }
+    T *operator->() const {
+        return &operator*();
+    }
+    __multi_tree_iterator &operator++() {
+        fn_80012E90(&this->node_);
+        return *this;
+    }
+    __multi_tree_iterator operator++(int) {
+        __tree_node_base *n = this->node_;
+        ++*this;
+        return __multi_tree_iterator(n);
+    }
+    bool operator==(const __multi_tree_iterator &x) const {
+        return this->node_ == x.node_;
+    }
+    bool operator!=(const __multi_tree_iterator &x) const {
+        return this->node_ != x.node_;
+    }
+};
+
+/* The tree of a multimap and the multimap (only where MSL_MULTIMAP is defined before this header,
+ * Game/csdmProject.cpp, so that other units' template declarations are unchanged). The tree is
+ * __tree's, with a node type of its own (in the game a map and a multimap of the same value type
+ * have their own node allocators), and the members for equal keys: inserting, erasing one value,
+ * and the range of a key. Its larger members are in <map_impl>. */
+template <class T, class C, class K = C> class __multi_tree {
+  public:
+    typedef size_t size_type;
+
+    struct node : public __tree_node_base {
+        /* 0xC */ T value_;
+    };
+
+    typedef __multi_tree_iterator<T> iterator;
+    typedef __multi_tree_const_iterator<T> const_iterator;
+    typedef __tree_value_allocator<T> value_allocator;
+    typedef __tree_node_allocator<node> node_allocator;
+
+    __multi_tree(const K &comp, const value_allocator &a);
+    ~__multi_tree() {
+        if (root() != 0) {
+            destroy(static_cast<node *>(root()));
+        }
+    }
+
+    iterator begin() {
+        return iterator(begin_node());
+    }
+    iterator end() {
+        return iterator(static_cast<__tree_node_base *>(header()));
+    }
+    size_type size() const {
+        return size_ref();
+    }
+    size_type max_size() const {
+        return __max_size_t();
+    }
+    iterator insert_equal(const T &v);
+    void erase(const_iterator &position);
+    template <class Key> iterator lower_bound(const Key &k);
+    template <class Key> iterator upper_bound(const Key &k);
+    template <class Key> pair<iterator, iterator> equal_range(const Key &k) {
+        return make_pair(lower_bound(k), upper_bound(k));
+    }
+
+  private:
+    size_type &size_ref() {
+        return size_.second();
+    }
+    const size_type &size_ref() const {
+        return size_.second();
+    }
+    value_allocator &value_alloc() {
+        return size_.first();
+    }
+    node_allocator &node_alloc() {
+        return header_.first();
+    }
+    __tree_end_node *header() {
+        return &header_.second();
+    }
+    __tree_node_base *&root() {
+        return header()->left_;
+    }
+    __tree_node_base *&begin_node() {
+        return begin_.second();
+    }
+    C &comp() {
+        return begin_.first();
+    }
+
+    node *insert_node(__tree_node_base *parent, bool left, bool leftmost, const T &v);
+    void destroy(node *n);
+
+    /* 0x0 */ __tree_size_pair<value_allocator, size_type> size_;
+    /* 0x4 */ __tree_end_pair<node_allocator> header_;
+    /* 0x8 */ __tree_begin_pair<C> begin_;
+};
+
+template <class Key, class T, class Compare = less<Key> > class multimap {
+  public:
+    typedef Key key_type;
+    typedef T mapped_type;
+    typedef pair<const Key, T> value_type;
+    typedef Compare key_compare;
+    typedef size_t size_type;
+
+    /* Orders values by key, and a key against a value. */
+    class value_compare {
+      public:
+        value_compare(const key_compare &c) : comp(c) {
+            __tree_nothing();
+        }
+
+        bool operator()(const value_type &x, const value_type &y) const {
+            return comp(x.first, y.first);
+        }
+        bool operator()(const key_type &x, const value_type &y) const {
+            return comp(x, y.first);
+        }
+        bool operator()(const value_type &x, const key_type &y) const {
+            return comp(x.first, y);
+        }
+
+      protected:
+        /* 0x0 */ key_compare comp;
+    };
+
+  private:
+    typedef __multi_tree<value_type, value_compare, key_compare> tree_type;
+
+  public:
+    typedef typename tree_type::iterator iterator;
+    typedef typename tree_type::const_iterator const_iterator;
+
+    multimap() : tree_(key_compare(), typename tree_type::value_allocator()) {}
+    ~multimap() {}
+
+    iterator begin() {
+        return tree_.begin();
+    }
+    iterator end() {
+        return tree_.end();
+    }
+    size_type size() const {
+        return tree_.size();
+    }
+    iterator insert(const value_type &x) {
+        return tree_.insert_equal(x);
+    }
+    void erase(const iterator &position) {
+        const_iterator p = position;
+        tree_.erase(p);
+    }
+    pair<iterator, iterator> equal_range(const key_type &k) {
+        return tree_.equal_range(k);
+    }
+
+  private:
+    /* 0x0 */ tree_type tree_;
+};
+#endif
 
 } // namespace std
 

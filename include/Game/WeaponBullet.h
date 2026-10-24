@@ -50,6 +50,11 @@ struct HitResult {
         : m_position(other.m_position), m_normal(other.m_normal), field_0x18(other.field_0x18),
           m_target(other.m_target), field_0x2C(other.field_0x2C), field_0x30(other.field_0x30),
           m_hit(other.m_hit), m_struck(other.m_struck), field_0x38(other.field_0x38) {}
+    /* A result at position with normal, for the move along direction, which hit or not, with no
+     * target (0x80057428; Game/BulletHoming.cpp is the first to emit it). */
+    HitResult(bool hit, const Vec3f &position, const Vec3f &normal, const Vec3f &direction)
+        : m_position(position), m_normal(normal), field_0x18(direction), field_0x2C(0), field_0x30(0),
+          m_hit(hit), m_struck(0) {}
 
     /* 0x00 */ Fn8040CopyVector3 m_position;
     /* 0x0C */ Fn8040CopyVector3 m_normal;
@@ -150,6 +155,8 @@ namespace Bullet {
 class BulletBase {
   public:
     BulletBase(const ShotInfo &info);
+    /* A copy of other's state, registered as a new bullet (0x800523A4). */
+    BulletBase(const BulletBase &other);
     virtual ~BulletBase();
     /* Per-frame work. */
     virtual void Tick(float dt) = 0;

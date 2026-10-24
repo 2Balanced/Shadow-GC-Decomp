@@ -28,11 +28,13 @@ class CTexList;
 using Chao::CSD::CTexList;
 using Chao::CSD::RCPtr;
 
-/* The loaded CSD project (class name unknown; declared as in Game/TGi.h). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in Game/TGi.h). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -40,11 +42,13 @@ class UnkCsdResource_8003E808 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 /* A cached project and the name of its file (class name unknown; member names inferred). */
 struct UnkCsdCacheEntry_801E5F0C {
     /* 0x0 */ std::string m_name;
-    /* 0xC */ UnkCsdResource_8003E808 *m_project;
+    /* 0xC */ Chao::CSD::CProject *m_project;
 };
 SIZE_ASSERT(UnkCsdCacheEntry_801E5F0C, 0x10);
 
@@ -65,10 +69,10 @@ extern "C" {
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
 /* Loads file into a project; zero when it did not fit in memory (behaviour inferred). */
-int fn_8036E114(UnkCsdResource_8003E808 *project, const char *file);
+int fn_8036E114(Chao::CSD::CProject *project, const char *file);
 /* A project's texture list, and setting it (behaviour inferred). */
-RCPtr<CTexList> fn_8036C628(UnkCsdResource_8003E808 *project);
-void fn_8036C64C(UnkCsdResource_8003E808 *project, const RCPtr<CTexList> &texList);
+RCPtr<CTexList> fn_8036C628(Chao::CSD::CProject *project);
+void fn_8036C64C(Chao::CSD::CProject *project, const RCPtr<CTexList> &texList);
 /* Creates a texture list of the given type (behaviour inferred). */
 RCPtr<CTexList> fn_80362094(u32 type);
 /* Loads the textures of a file into a list; zero when they did not fit in memory (behaviour
@@ -77,10 +81,10 @@ int fn_80361FB0(CTexList *texList, const char *file);
 /* The name of a file's texture archive, and loading it for a project (behaviour inferred; see
  * Game/GiGameOver.cpp). */
 const char *fn_800C02CC(const char *name);
-void fn_800422A8(UnkCsdResource_8003E808 *project, const char *file);
+void fn_800422A8(Chao::CSD::CProject *project, const char *file);
 
-UnkCsdResource_8003E808 *fn_802B5498(UnkCsdCache_801E5F0C *cache, const char *name);
-bool fn_802B52C0(UnkCsdCache_801E5F0C *cache, UnkCsdResource_8003E808 *project);
+Chao::CSD::CProject *fn_802B5498(UnkCsdCache_801E5F0C *cache, const char *name);
+bool fn_802B52C0(UnkCsdCache_801E5F0C *cache, Chao::CSD::CProject *project);
 bool fn_802B526C(UnkCsdCache_801E5F0C *cache);
 void fn_802B53B0(UnkCsdCache_801E5F0C *cache, const UnkCsdCacheEntry_801E5F0C &entry);
 const char *fn_802B5234(const char *file);
@@ -112,7 +116,7 @@ extern "C" void fn_802B57FC(UnkCsdCache_801E5F0C *cache) {
 }
 
 /* Frees every project but the given one and loads its file's texture archive (name unknown). */
-extern "C" void fn_802B5760(UnkCsdCache_801E5F0C *cache, UnkCsdResource_8003E808 *project, const char *file) {
+extern "C" void fn_802B5760(UnkCsdCache_801E5F0C *cache, Chao::CSD::CProject *project, const char *file) {
     for (UnkCsdCacheEntry_801E5F0C *it = cache->m_entries.begin(); it != cache->m_entries.end();) {
         if (it->m_project != project) {
             delete it->m_project;
@@ -134,14 +138,14 @@ static inline int SameTexList(const RCPtr<CTexList> &a, const RCPtr<CTexList> &b
 
 /* The project of a file: the cached one, or a newly loaded one, freeing the oldest projects while
  * it does not fit in memory; zero if it cannot be loaded (name unknown). */
-extern "C" UnkCsdResource_8003E808 *fn_802B5504(UnkCsdCache_801E5F0C *cache, const char *file) {
+extern "C" Chao::CSD::CProject *fn_802B5504(UnkCsdCache_801E5F0C *cache, const char *file) {
     UnkCsdCacheEntry_801E5F0C entry;
     entry.m_name = fn_802B5234(file);
-    UnkCsdResource_8003E808 *project = fn_802B5498(cache, entry.m_name.c_str());
+    Chao::CSD::CProject *project = fn_802B5498(cache, entry.m_name.c_str());
     if (project != 0) {
         return project;
     }
-    entry.m_project = new UnkCsdResource_8003E808;
+    entry.m_project = new Chao::CSD::CProject;
     fn_802B526C(cache);
     while (fn_8036E114(entry.m_project, entry.m_name.c_str()) == 0) {
         if (!fn_802B52C0(cache, 0)) {
@@ -162,7 +166,7 @@ extern "C" UnkCsdResource_8003E808 *fn_802B5504(UnkCsdCache_801E5F0C *cache, con
 }
 
 /* The cached project loaded from name (name unknown). */
-extern "C" UnkCsdResource_8003E808 *fn_802B5498(UnkCsdCache_801E5F0C *cache, const char *name) {
+extern "C" Chao::CSD::CProject *fn_802B5498(UnkCsdCache_801E5F0C *cache, const char *name) {
     for (UnkCsdCacheEntry_801E5F0C *it = cache->m_entries.begin(); it != cache->m_entries.end(); it++) {
         if (it->m_name == name) {
             return it->m_project;
@@ -172,7 +176,7 @@ extern "C" UnkCsdResource_8003E808 *fn_802B5498(UnkCsdCache_801E5F0C *cache, con
 }
 
 /* Whether project is cached (name unknown). */
-extern "C" bool fn_802B5434(UnkCsdCache_801E5F0C *cache, UnkCsdResource_8003E808 *project) {
+extern "C" bool fn_802B5434(UnkCsdCache_801E5F0C *cache, Chao::CSD::CProject *project) {
     for (UnkCsdCacheEntry_801E5F0C *it = cache->m_entries.begin(); it != cache->m_entries.end(); it++) {
         if (it->m_project == project) {
             return true;
@@ -187,7 +191,7 @@ extern "C" void fn_802B53B0(UnkCsdCache_801E5F0C *cache, const UnkCsdCacheEntry_
 }
 
 /* Frees project, or the oldest project when it is zero; false if there was none (name unknown). */
-extern "C" bool fn_802B52C0(UnkCsdCache_801E5F0C *cache, UnkCsdResource_8003E808 *project) {
+extern "C" bool fn_802B52C0(UnkCsdCache_801E5F0C *cache, Chao::CSD::CProject *project) {
     for (UnkCsdCacheEntry_801E5F0C *it = cache->m_entries.begin(); it != cache->m_entries.end(); it++) {
         if (it->m_project == project || project == 0) {
             delete it->m_project;

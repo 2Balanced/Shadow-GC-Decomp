@@ -18,15 +18,20 @@
 using Chao::CSD::CTexList;
 using Chao::CSD::RCPtr;
 
-/* The loaded CSD project (class name unknown; declared as in TGi.h, which gives its size). */
-class UnkCsdResource_8003E808 {
+/* The loaded CSD project (Chao::CSD::CProject, Game/csdmProject.cpp; declared as in TGi.h, which
+ * gives its size). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdResource_8003E808();
-    virtual ~UnkCsdResource_8003E808();
+    CProject();
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 };
-SIZE_ASSERT(UnkCsdResource_8003E808, 0x4C);
+} // namespace CSD
+} // namespace Chao
+SIZE_ASSERT(Chao::CSD::CProject, 0x4C);
 
 /* The value a project returns from fn_8036D598 (class name unknown; declared as in TGi.h). */
 class UnkCsdHandle_80042DF0 {
@@ -65,10 +70,10 @@ extern "C" {
 void *fn_8003F8D4(void);
 void *fn_800423B8(void *manager, const char *name, int arg2);
 /* Builds the project from loaded data; nonzero on success (behaviour inferred). */
-int fn_8036E114(UnkCsdResource_8003E808 *project, void *data);
+int fn_8036E114(Chao::CSD::CProject *project, void *data);
 /* Projects (behaviour inferred; see Game/AdvStoryLibrary.cpp). */
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdResource_8003E808 *project, int arg1);
-RCPtr<CTexList> fn_8036C628(UnkCsdResource_8003E808 *project);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
+RCPtr<CTexList> fn_8036C628(Chao::CSD::CProject *project);
 
 /* Starts loading a movie file, and a call made once it started (behaviour inferred; see
  * Game/AdvMovie.cpp). */
@@ -120,7 +125,7 @@ class Impl {
     /* 0x00 */ u8 m_busy;
     /* 0x01 */ u8 field_0x1[3]; /* (the scene set's own type has byte alignment) */
     /* 0x04 */ UnkCsdSceneSet_8003D5D8 m_scenes;
-    /* 0x10 */ UnkCsdResource_8003E808 m_project;
+    /* 0x10 */ Chao::CSD::CProject m_project;
     /* 0x5C */ u8 m_loaded;
     /* 0x60 */ s32 m_frame;
     /* 0x64 */ s32 m_state; /* 0 fading in, 1 loading, 2 playing, 3 done, 4 failed */

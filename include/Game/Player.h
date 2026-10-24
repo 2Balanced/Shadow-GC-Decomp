@@ -20,6 +20,7 @@ namespace Vehicle {
 class TVehicleBase;
 }
 
+class PickupCharInfo;
 class Task;
 
 namespace Player {
@@ -54,11 +55,25 @@ class PlayerBase : public PlayerObject {
     /* Asked before a newly given weapon is shown (true: keep it hidden). */
     virtual bool IsWeaponHidden();
     /* Slots 0x40 to 0x50 (0x800735F8, 0x800735FC, 0x80073600, 0x80073604, 0x80079770 in
-     * PlayerBase's vtable; roles unknown). */
+     * PlayerBase's vtable; roles unknown). Player::Player's slots 0x40 and 0x44 (0x80077180 and
+     * 0x8007707C) keep and drop the object the player carries (see
+     * Game/PlayerBehaviorPickupObject.cpp). */
+#ifdef PLAYER_PICKUP_SLOT
+    /* Slot 0x40 with the parameter its callers pass; the vtables of other units name the symbol
+     * without it. */
+    virtual void vf_0x40(const boost::weak_ptr<PickupCharInfo> &object);
+#else
     virtual void vf_0x40();
+#endif
     virtual void vf_0x44();
     virtual void vf_0x48();
+#ifdef PLAYER_PICKUP_SLOT
+    /* Slot 0x4C returns the object the player carries (Player::Player's 0x80076D24; see
+     * Game/PlayerBehaviorThrow.cpp). */
+    virtual boost::weak_ptr<PickupCharInfo> vf_0x4C();
+#else
     virtual void vf_0x4C();
+#endif
     virtual void vf_0x50();
 
     /* Members as Player::Shadow::ShadowWeapon reads them (Game/PlayerShadowWeapon.cpp; names

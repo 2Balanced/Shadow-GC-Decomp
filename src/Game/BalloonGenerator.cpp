@@ -48,12 +48,7 @@ class Target {
     void fn_800CCE38(const Vec3f *position);
 };
 
-/* DeadCommand (class name from the RTTI of the vtable its constructor, 0x8009EE8C, stores): a
- * command telling a character that something it owns has died (meaning inferred). */
-class DeadCommand : public CharCommand {
-  public:
-    DeadCommand(int arg0);
-};
+/* DeadCommand (command type 8) is declared in Game/CharCommand.h. */
 
 using ShootingGame::BalloonTable;
 

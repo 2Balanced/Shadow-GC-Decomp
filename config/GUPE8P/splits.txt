@@ -13,6 +13,559 @@ Sections:
 	.sdata2     type:rodata align:16
 	.sbss2      type:bss align:4
 
+Game/BulletBase.cpp:
+	.text       start:0x80052240 end:0x800524C4
+	.rodata     start:0x804ABF48 end:0x804ABF68
+	.data       start:0x8051D840 end:0x8051D850
+	.bss        start:0x80575E58 end:0x80575E68
+	.sdata      start:0x805E39D0 end:0x805E39D8
+	.sbss       start:0x805EE208 end:0x805EE218
+	.sdata2     start:0x805F1D60 end:0x805F1D68
+
+Game/BulletCannon.cpp:
+	.text       start:0x800524C4 end:0x800544A8
+	.ctors      start:0x804A9C2C end:0x804A9C30
+	.rodata     start:0x804ABF68 end:0x804AC0E0
+	.data       start:0x8051D850 end:0x8051DA28
+	.bss        start:0x80575E68 end:0x80575E78
+	.sdata      start:0x805E39D8 end:0x805E3A10
+	.sbss       start:0x805EE218 end:0x805EE238
+	.sdata2     start:0x805F1D68 end:0x805F1D88
+
+Game/BulletCannonBomb.cpp:
+	.text       start:0x800544A8 end:0x80055484
+	.ctors      start:0x804A9C30 end:0x804A9C34
+	.rodata     start:0x804AC0E0 end:0x804AC210
+	.data       start:0x8051DA28 end:0x8051DB10
+	.sdata      start:0x805E3A10 end:0x805E3A28
+	.sbss       start:0x805EE240 end:0x805EE250
+	.sdata2     start:0x805F1D88 end:0x805F1DA8
+
+Game/BulletGun.cpp:
+	.text       start:0x80055484 end:0x80056B3C
+	.ctors      start:0x804A9C34 end:0x804A9C38
+	.rodata     start:0x804AC210 end:0x804AC380
+	.data       start:0x8051DB10 end:0x8051DCF0
+	.sdata      start:0x805E3A28 end:0x805E3A50
+	.sbss       start:0x805EE250 end:0x805EE268
+	.sdata2     start:0x805F1DA8 end:0x805F1DE8
+
+Game/BulletHoming.cpp:
+	.text       start:0x80056B3C end:0x80058A04
+	.ctors      start:0x804A9C38 end:0x804A9C3C
+	.rodata     start:0x804AC380 end:0x804AC608
+	.data       start:0x8051DCF0 end:0x8051DE78
+	.sdata      start:0x805E3A50 end:0x805E3A98
+	.sbss       start:0x805EE268 end:0x805EE290
+	.sdata2     start:0x805F1DE8 end:0x805F1E08
+
+Game/BulletManagerTask.cpp:
+	.text       start:0x80058A04 end:0x800593E8
+	.rodata     start:0x804AC608 end:0x804AC640
+	.data       start:0x8051DE78 end:0x8051DE98
+	.sdata      start:0x805E3A98 end:0x805E3AA8
+	.sdata2     start:0x805F1E08 end:0x805F1E10
+
+Game/BulletRing.cpp:
+	.text       start:0x800593E8 end:0x8005A228
+	.ctors      start:0x804A9C3C end:0x804A9C40
+	.rodata     start:0x804AC640 end:0x804AC760
+	.data       start:0x8051DE98 end:0x8051DF08
+	.sdata      start:0x805E3AA8 end:0x805E3AC0
+	.sbss       start:0x805EE290 end:0x805EE2A8
+	.sdata2     start:0x805F1E10 end:0x805F1E28
+
+Game/BulletUtil.cpp:
+	.text       start:0x8005A228 end:0x8005B760
+	.rodata     start:0x804AC760 end:0x804AC8E8
+	.data       start:0x8051DF08 end:0x8051DF38
+	.bss        start:0x80575E78 end:0x80575E88
+	.sdata      start:0x805E3AC0 end:0x805E3AE8
+	.sbss       start:0x805EE2A8 end:0x805EE2B0
+	.sdata2     start:0x805F1E28 end:0x805F1E38
+
+Game/WeaponTable.cpp:
+	.text       start:0x8005B760 end:0x8005C0CC
+	.rodata     start:0x804AC8E8 end:0x804ACA20
+	.data       start:0x8051DF38 end:0x8051E410
+	.sdata      start:0x805E3AE8 end:0x805E3B10
+	.sbss       start:0x805EE2B0 end:0x805EE2B8
+	.sdata2     start:0x805F1E38 end:0x805F1E40
+
+Game/WeaponAntiAircraftRifle.cpp:
+	.text       start:0x8005C0CC end:0x8005C65C
+	.ctors      start:0x804A9C40 end:0x804A9C44
+	.rodata     start:0x804ACA20 end:0x804ACAF0
+	.data       start:0x8051E410 end:0x8051E4C8
+	.sdata      start:0x805E3B10 end:0x805E3B30
+	.sdata2     start:0x805F1E40 end:0x805F1E60
+
+Game/WeaponAntiTankMissile.cpp:
+	.text       start:0x8005C65C end:0x8005CA84
+	.ctors      start:0x804A9C44 end:0x804A9C48
+	.rodata     start:0x804ACAF0 end:0x804ACBF8
+	.data       start:0x8051E4C8 end:0x8051E578
+	.sdata      start:0x805E3B30 end:0x805E3B50
+	.sdata2     start:0x805F1E60 end:0x805F1E78
+
+Game/WeaponAutoRifle.cpp:
+	.text       start:0x8005CA84 end:0x8005CEAC
+	.ctors      start:0x804A9C48 end:0x804A9C4C
+	.rodata     start:0x804ACBF8 end:0x804ACCB8
+	.data       start:0x8051E578 end:0x8051E630
+	.sdata      start:0x805E3B50 end:0x805E3B70
+	.sdata2     start:0x805F1E78 end:0x805F1E98
+
+Game/WeaponBase.cpp:
+	.text       start:0x8005CEAC end:0x8005D17C
+	.rodata     start:0x804ACCB8 end:0x804ACCD0
+	.data       start:0x8051E630 end:0x8051E660
+	.sdata      start:0x805E3B70 end:0x805E3B78
+	.sdata2     start:0x805F1E98 end:0x805F1EA8
+
+Game/WeaponBazooka.cpp:
+	.text       start:0x8005D17C end:0x8005D404
+	.ctors      start:0x804A9C4C end:0x804A9C50
+	.rodata     start:0x804ACCD0 end:0x804ACDB0
+	.data       start:0x8051E660 end:0x8051E710
+	.sdata      start:0x805E3B78 end:0x805E3B98
+	.sdata2     start:0x805F1EA8 end:0x805F1EC8
+
+Game/WeaponBigBarrel.cpp:
+	.text       start:0x8005D404 end:0x8005D684
+	.ctors      start:0x804A9C50 end:0x804A9C54
+	.rodata     start:0x804ACDB0 end:0x804ACF10
+	.data       start:0x8051E710 end:0x8051E7C0
+	.sdata      start:0x805E3B98 end:0x805E3BB8
+	.sdata2     start:0x805F1EC8 end:0x805F1EE0
+
+Game/WeaponBlackBarrel.cpp:
+	.text       start:0x8005D684 end:0x8005D8FC
+	.ctors      start:0x804A9C54 end:0x804A9C58
+	.rodata     start:0x804ACF10 end:0x804AD070
+	.data       start:0x8051E7C0 end:0x8051E870
+	.sdata      start:0x805E3BB8 end:0x805E3BD8
+	.sdata2     start:0x805F1EE0 end:0x805F1EF8
+
+Game/WeaponBlackSword.cpp:
+	.text       start:0x8005D8FC end:0x8005E014
+	.ctors      start:0x804A9C58 end:0x804A9C5C
+	.rodata     start:0x804AD070 end:0x804AD160
+	.data       start:0x8051E870 end:0x8051E920
+	.sdata      start:0x805E3BD8 end:0x805E3BF8
+	.sdata2     start:0x805F1EF8 end:0x805F1F68
+
+Game/WeaponCannonBase.cpp:
+	.text       start:0x8005E014 end:0x8005E26C
+	.rodata     start:0x804AD160 end:0x804AD190
+	.data       start:0x8051E920 end:0x8051E968
+	.sdata      start:0x805E3BF8 end:0x805E3C08
+	.sdata2     start:0x805F1F68 end:0x805F1F70
+
+Game/WeaponData.cpp:
+	.text       start:0x8005E26C end:0x8005E52C
+	.rodata     start:0x804AD190 end:0x804AD1D0
+	.data       start:0x8051E968 end:0x8051E9B0
+
+Game/WeaponFlashShot.cpp:
+	.text       start:0x8005E52C end:0x8005E958
+	.ctors      start:0x804A9C5C end:0x804A9C60
+	.rodata     start:0x804AD1D0 end:0x804AD2F8
+	.data       start:0x8051E9B0 end:0x8051EA68
+	.sdata      start:0x805E3C08 end:0x805E3C28
+	.sdata2     start:0x805F1F70 end:0x805F1F88
+
+Game/WeaponGrenade.cpp:
+	.text       start:0x8005E958 end:0x8005EB94
+	.ctors      start:0x804A9C60 end:0x804A9C64
+	.rodata     start:0x804AD2F8 end:0x804AD3A8
+	.data       start:0x8051EA68 end:0x8051EB18
+	.sdata      start:0x805E3C28 end:0x805E3C48
+	.sdata2     start:0x805F1F88 end:0x805F1FA8
+
+Game/WeaponGunBase.cpp:
+	.text       start:0x8005EB94 end:0x8005EC50
+	.rodata     start:0x804AD3A8 end:0x804AD3D8
+	.data       start:0x8051EB18 end:0x8051EB68
+	.sdata      start:0x805E3C48 end:0x805E3C58
+
+Game/WeaponHandGun.cpp:
+	.text       start:0x8005EC50 end:0x8005F09C
+	.ctors      start:0x804A9C64 end:0x804A9C68
+	.rodata     start:0x804AD3D8 end:0x804AD4A0
+	.data       start:0x8051EB68 end:0x8051EC20
+	.sdata      start:0x805E3C58 end:0x805E3C78
+	.sdata2     start:0x805F1FA8 end:0x805F1FD0
+
+Game/WeaponItem.cpp:
+	.text       start:0x8005F09C end:0x8005F410
+	.rodata     start:0x804AD4A0 end:0x804AD4B0
+	.data       start:0x8051EC20 end:0x8051EC38
+	.sdata      start:0x805E3C78 end:0x805E3C80
+	.sdata2     start:0x805F1FD0 end:0x805F1FE0
+
+Game/WeaponLightShot.cpp:
+	.text       start:0x8005F410 end:0x8005F830
+	.ctors      start:0x804A9C68 end:0x804A9C6C
+	.rodata     start:0x804AD4B0 end:0x804AD5A8
+	.data       start:0x8051EC38 end:0x8051ECF0
+	.sdata      start:0x805E3C80 end:0x805E3CA0
+	.sdata2     start:0x805F1FE0 end:0x805F1FF8
+
+Game/WeaponLockonBase.cpp:
+	.text       start:0x8005F830 end:0x80061D04
+	.rodata     start:0x804AD5A8 end:0x804AD780
+	.data       start:0x8051ECF0 end:0x8051ED80
+	.bss        start:0x80575E88 end:0x80575EA8
+	.sdata      start:0x805E3CA0 end:0x805E3CD8
+	.sbss       start:0x805EE2B8 end:0x805EE2C0
+	.sdata2     start:0x805F1FF8 end:0x805F2008
+
+Game/WeaponLockonMark.cpp:
+	.text       start:0x80061D04 end:0x8006310C
+	.rodata     start:0x804AD780 end:0x804AD868
+	.data       start:0x8051ED80 end:0x8051EDA8
+	.sdata      start:0x805E3CD8 end:0x805E3CF0
+	.sbss       start:0x805EE2C0 end:0x805EE2D0
+	.sdata2     start:0x805F2008 end:0x805F2048
+
+Game/WeaponModel.cpp:
+	.text       start:0x8006310C end:0x80064710
+	.ctors      start:0x804A9C6C end:0x804A9C70
+	.bss        start:0x80575EA8 end:0x80575ED8
+	.sdata2     start:0x805F2048 end:0x805F2058
+
+Game/WeaponRingShot.cpp:
+	.text       start:0x80064710 end:0x80064B3C
+	.ctors      start:0x804A9C70 end:0x804A9C74
+	.rodata     start:0x804AD868 end:0x804AD990
+	.data       start:0x8051EDA8 end:0x8051EE60
+	.sdata      start:0x805E3CF0 end:0x805E3D10
+	.sdata2     start:0x805F2058 end:0x805F2070
+
+Game/WeaponRocketLauncher.cpp:
+	.text       start:0x80064B3C end:0x800651D8
+	.ctors      start:0x804A9C74 end:0x804A9C78
+	.rodata     start:0x804AD990 end:0x804ADB68
+	.data       start:0x8051EE60 end:0x8051EF9C
+	.sdata      start:0x805E3D10 end:0x805E3D48
+	.sdata2     start:0x805F2070 end:0x805F2088
+
+Game/WeaponStick.cpp:
+	.text       start:0x800651D8 end:0x80067870
+	.ctors      start:0x804A9C78 end:0x804A9C7C
+	.rodata     start:0x804ADB68 end:0x804AE598
+	.data       start:0x8051EFA0 end:0x8051F7AC
+	.sdata      start:0x805E3D48 end:0x805E3DC4
+	.sdata2     start:0x805F2088 end:0x805F2204
+
+Game/WeaponStickBase.cpp:
+	.text       start:0x80067870 end:0x80068A48
+	.ctors      start:0x804A9C7C end:0x804A9C80
+	.rodata     start:0x804AE598 end:0x804AE6C0
+	.data       start:0x8051F7B0 end:0x8051F810
+	.sdata      start:0x805E3DC8 end:0x805E3DE0
+	.sbss       start:0x805EE2D0 end:0x805EE2E8
+	.sdata2     start:0x805F2208 end:0x805F222C
+
+Game/WeaponSubMachineGun.cpp:
+	.text       start:0x80068A48 end:0x80068E70
+	.ctors      start:0x804A9C80 end:0x804A9C84
+	.rodata     start:0x804AE6C0 end:0x804AE788
+	.data       start:0x8051F810 end:0x8051F8C8
+	.sdata      start:0x805E3DE0 end:0x805E3E00
+	.sdata2     start:0x805F2230 end:0x805F2250
+
+Game/WeaponTankCannon.cpp:
+	.text       start:0x80068E70 end:0x800690D8
+	.ctors      start:0x804A9C84 end:0x804A9C88
+	.rodata     start:0x804AE788 end:0x804AE860
+	.data       start:0x8051F8C8 end:0x8051F978
+	.sdata      start:0x805E3E00 end:0x805E3E1C
+	.sdata2     start:0x805F2250 end:0x805F2264
+
+Game/WeaponUtil.cpp:
+	.text       start:0x800690D8 end:0x80069654
+	.sdata2     start:0x805F2268 end:0x805F2270
+
+Game/WeaponVulcan.cpp:
+	.text       start:0x80069654 end:0x80069AA0
+	.ctors      start:0x804A9C88 end:0x804A9C8C
+	.rodata     start:0x804AE860 end:0x804AE924
+	.data       start:0x8051F978 end:0x8051FA30
+	.sdata      start:0x805E3E20 end:0x805E3E3C
+	.sdata2     start:0x805F2270 end:0x805F2294
+
+Game/PlayerBehaviorAirAttack.cpp:
+	.text       start:0x8007A568 end:0x8007AC5C
+	.rodata     start:0x804AF778 end:0x804AF7C8
+	.data       start:0x805203B8 end:0x80520408
+	.sdata      start:0x805E40D8 end:0x805E40F0
+	.sdata2     start:0x805F24C8 end:0x805F24E0
+
+Game/PlayerBehaviorChaosBlast.cpp:
+	.text       start:0x8007AC5C end:0x8007B95C
+	.ctors      start:0x804A9C9C end:0x804A9CA0
+	.rodata     start:0x804AF7C8 end:0x804AF8F8
+	.data       start:0x80520408 end:0x80520448
+	.sdata      start:0x805E40F0 end:0x805E4110
+	.sbss       start:0x805EE388 end:0x805EE3A0
+	.sdata2     start:0x805F24E0 end:0x805F2508
+
+Game/PlayerBehaviorChaosControl.cpp:
+	.text       start:0x8007B95C end:0x8007C9A8
+	.ctors      start:0x804A9CA0 end:0x804A9CA4
+	.rodata     start:0x804AF8F8 end:0x804AFA30
+	.data       start:0x80520448 end:0x80520488
+	.sdata      start:0x805E4110 end:0x805E4130
+	.sbss       start:0x805EE3A0 end:0x805EE3B8
+	.sdata2     start:0x805F2508 end:0x805F2530
+
+Game/PlayerBehaviorDamage.cpp:
+	.text       start:0x8007C9A8 end:0x8007D030
+	.ctors      start:0x804A9CA4 end:0x804A9CA8
+	.rodata     start:0x804AFA30 end:0x804AFAC0
+	.data       start:0x80520488 end:0x805204C8
+	.sdata      start:0x805E4130 end:0x805E4158
+	.sbss       start:0x805EE3B8 end:0x805EE3C0
+	.sdata2     start:0x805F2530 end:0x805F2560
+
+Game/PlayerBehaviorDarkSpin.cpp:
+	.text       start:0x8007D030 end:0x8007D7A0
+	.ctors      start:0x804A9CA8 end:0x804A9CAC
+	.rodata     start:0x804AFAC0 end:0x804AFB10
+	.data       start:0x805204C8 end:0x805204F8
+	.sdata      start:0x805E4158 end:0x805E4170
+	.sbss       start:0x805EE3C0 end:0x805EE3C8
+	.sdata2     start:0x805F2560 end:0x805F2578
+
+Game/PlayerBehaviorDead.cpp:
+	.text       start:0x8007D7A0 end:0x8007DC14
+	.rodata     start:0x804AFB10 end:0x804AFB50
+	.data       start:0x805204F8 end:0x80520528
+	.sdata      start:0x805E4170 end:0x805E4180
+	.sdata2     start:0x805F2578 end:0x805F2588
+
+Game/PlayerBehaviorDriveVehicle.cpp:
+	.text       start:0x8007DC14 end:0x8007F00C
+	.ctors      start:0x804A9CAC end:0x804A9CB0
+	.rodata     start:0x804AFB50 end:0x804AFBA8
+	.data       start:0x80520528 end:0x80520558
+	.bss        start:0x80576780 end:0x805767B0
+	.sdata      start:0x805E4180 end:0x805E41A0
+	.sdata2     start:0x805F2588 end:0x805F25B8
+
+Game/PlayerBehaviorEdgeHang.cpp:
+	.text       start:0x8007F00C end:0x800800D4
+	.ctors      start:0x804A9CB0 end:0x804A9CB4
+	.rodata     start:0x804AFBA8 end:0x804AFD20
+	.data       start:0x80520558 end:0x805205A0
+	.sdata      start:0x805E41A0 end:0x805E41D0
+	.sbss       start:0x805EE3C8 end:0x805EE3E8
+	.sdata2     start:0x805F25B8 end:0x805F25E8
+
+Game/PlayerBehaviorExternalControl.cpp:
+	.text       start:0x800800D4 end:0x800805DC
+	.rodata     start:0x804AFD20 end:0x804AFDD0
+	.data       start:0x805205A0 end:0x805205E0
+	.sdata      start:0x805E41D0 end:0x805E41F0
+
+Game/PlayerBehaviorFall.cpp:
+	.text       start:0x800805DC end:0x80081030
+	.ctors      start:0x804A9CB4 end:0x804A9CB8
+	.rodata     start:0x804AFDD0 end:0x804AFE60
+	.data       start:0x805205E0 end:0x80520628
+	.sdata      start:0x805E41F0 end:0x805E4218
+	.sbss       start:0x805EE3E8 end:0x805EE3F0
+	.sdata2     start:0x805F25E8 end:0x805F2610
+
+Game/PlayerBehaviorGrind.cpp:
+	.text       start:0x80081030 end:0x80082BFC
+	.ctors      start:0x804A9CB8 end:0x804A9CBC
+	.rodata     start:0x804AFE60 end:0x804AFFC0
+	.data       start:0x80520628 end:0x80520670
+	.sdata      start:0x805E4218 end:0x805E4248
+	.sbss       start:0x805EE3F0 end:0x805EE410
+	.sdata2     start:0x805F2610 end:0x805F2660
+
+Game/PlayerBehaviorGround.cpp:
+	.text       start:0x80082BFC end:0x800840B8
+	.ctors      start:0x804A9CBC end:0x804A9CC0
+	.rodata     start:0x804AFFC0 end:0x804B0048
+	.data       start:0x80520670 end:0x805206C0
+	.sdata      start:0x805E4248 end:0x805E4278
+	.sbss       start:0x805EE410 end:0x805EE420
+	.sdata2     start:0x805F2660 end:0x805F2700
+
+Game/PlayerBehaviorGroundAttack.cpp:
+	.text       start:0x800840B8 end:0x80084E10
+	.rodata     start:0x804B0048 end:0x804B01D0
+	.data       start:0x805206C0 end:0x80520718
+	.sdata      start:0x805E4278 end:0x805E42A8
+	.sbss       start:0x805EE420 end:0x805EE430
+	.sdata2     start:0x805F2700 end:0x805F2710
+
+Game/PlayerBehaviorHomingAttack.cpp:
+	.text       start:0x80084E10 end:0x80086798
+	.rodata     start:0x804B01D0 end:0x804B0470
+	.data       start:0x80520718 end:0x80520788
+	.sdata      start:0x805E42A8 end:0x805E42E8
+	.sbss       start:0x805EE430 end:0x805EE450
+	.sdata2     start:0x805F2710 end:0x805F2730
+
+Game/PlayerBehaviorHomingJump.cpp:
+	.text       start:0x80086798 end:0x80086BF4
+	.rodata     start:0x804B0470 end:0x804B0518
+	.data       start:0x80520788 end:0x805207C8
+	.sdata      start:0x805E42E8 end:0x805E4310
+	.sdata2     start:0x805F2730 end:0x805F2750
+
+Game/PlayerBehaviorIdle.cpp:
+	.text       start:0x80086BF4 end:0x800870D8
+	.rodata     start:0x804B0518 end:0x804B0558
+	.data       start:0x805207C8 end:0x805207F8
+	.sdata      start:0x805E4310 end:0x805E4328
+	.sdata2     start:0x805F2750 end:0x805F2770
+
+Game/PlayerBehaviorJump.cpp:
+	.text       start:0x800870D8 end:0x800880AC
+	.rodata     start:0x804B0558 end:0x804B06D8
+	.data       start:0x805207F8 end:0x80520838
+	.sdata      start:0x805E4328 end:0x805E4350
+	.sdata2     start:0x805F2770 end:0x805F27A0
+
+Game/PlayerBehaviorJumpDash.cpp:
+	.text       start:0x800880AC end:0x80088D14
+	.rodata     start:0x804B06D8 end:0x804B0858
+	.data       start:0x80520838 end:0x80520890
+	.sdata      start:0x805E4350 end:0x805E4380
+	.sbss       start:0x805EE450 end:0x805EE460
+	.sdata2     start:0x805F27A0 end:0x805F27C8
+
+Game/PlayerBehaviorLanding.cpp:
+	.text       start:0x80088D14 end:0x800890B4
+	.rodata     start:0x804B0858 end:0x804B08A0
+	.data       start:0x80520890 end:0x805208C0
+	.sdata      start:0x805E4380 end:0x805E4390
+	.sdata2     start:0x805F27C8 end:0x805F27E0
+
+Game/PlayerBehaviorLaunch.cpp:
+	.text       start:0x800890B4 end:0x80089714
+	.rodata     start:0x804B08A0 end:0x804B08E8
+	.data       start:0x805208C0 end:0x805208F0
+	.sdata      start:0x805E4390 end:0x805E43A8
+	.sdata2     start:0x805F27E0 end:0x805F2808
+
+Game/PlayerBehaviorLightDash.cpp:
+	.text       start:0x80089714 end:0x8008A60C
+	.ctors      start:0x804A9CC0 end:0x804A9CC4
+	.rodata     start:0x804B08E8 end:0x804B0938
+	.data       start:0x805208F0 end:0x80520920
+	.sdata      start:0x805E43A8 end:0x805E43C0
+	.sbss       start:0x805EE460 end:0x805EE468
+	.sdata2     start:0x805F2808 end:0x805F2828
+
+Game/PlayerBehaviorLineHang.cpp:
+	.text       start:0x8008A60C end:0x8008BC5C
+	.ctors      start:0x804A9CC4 end:0x804A9CC8
+	.rodata     start:0x804B0938 end:0x804B0988
+	.data       start:0x80520920 end:0x80520950
+	.sdata      start:0x805E43C0 end:0x805E43D8
+	.sbss       start:0x805EE468 end:0x805EE478
+	.sdata2     start:0x805F2828 end:0x805F2868
+
+Game/PlayerBehaviorOttotto.cpp:
+	.text       start:0x8008BC5C end:0x8008BE98
+	.rodata     start:0x804B0988 end:0x804B09D0
+	.data       start:0x80520950 end:0x80520980
+	.sdata      start:0x805E43D8 end:0x805E43E8
+	.sdata2     start:0x805F2868 end:0x805F2878
+
+Game/PlayerBehaviorPickupObject.cpp:
+	.text       start:0x8008BE98 end:0x8008CCA8
+	.ctors      start:0x804A9CC8 end:0x804A9CCC
+	.rodata     start:0x804B09D0 end:0x804B0B78
+	.data       start:0x80520980 end:0x805209D8
+	.bss        start:0x805767B0 end:0x805767C0
+	.sdata      start:0x805E43E8 end:0x805E4428
+	.sbss       start:0x805EE478 end:0x805EE490
+	.sdata2     start:0x805F2878 end:0x805F2890
+
+Game/PlayerBehaviorPickupWeapon.cpp:
+	.text       start:0x8008CCA8 end:0x8008D838
+	.rodata     start:0x804B0B78 end:0x804B0D08
+	.data       start:0x805209D8 end:0x80520A20
+	.sdata      start:0x805E4428 end:0x805E4450
+	.sbss       start:0x805EE490 end:0x805EE4A0
+	.sdata2     start:0x805F2890 end:0x805F2898
+
+Game/PlayerBehaviorSliding.cpp:
+	.text       start:0x8008D838 end:0x8008E120
+	.ctors      start:0x804A9CCC end:0x804A9CD0
+	.rodata     start:0x804B0D08 end:0x804B0D50
+	.data       start:0x80520A20 end:0x80520A50
+	.sdata      start:0x805E4450 end:0x805E4468
+	.sbss       start:0x805EE4A0 end:0x805EE4A8
+	.sdata2     start:0x805F2898 end:0x805F28C0
+
+Game/PlayerBehaviorSomethingHang.cpp:
+	.text       start:0x8008E120 end:0x8008EBB4
+	.ctors      start:0x804A9CD0 end:0x804A9CD4
+	.rodata     start:0x804B0D50 end:0x804B0DA8
+	.data       start:0x80520A50 end:0x80520A80
+	.sdata      start:0x805E4468 end:0x805E4480
+	.sbss       start:0x805EE4A8 end:0x805EE4B0
+	.sdata2     start:0x805F28C0 end:0x805F28E0
+
+Game/PlayerBehaviorSpinDash.cpp:
+	.text       start:0x8008EBB4 end:0x8008F7C8
+	.ctors      start:0x804A9CD4 end:0x804A9CD8
+	.rodata     start:0x804B0DA8 end:0x804B0DF8
+	.data       start:0x80520A80 end:0x80520AB0
+	.sdata      start:0x805E4480 end:0x805E4498
+	.sbss       start:0x805EE4B0 end:0x805EE4B8
+	.sdata2     start:0x805F28E0 end:0x805F2908
+
+Game/PlayerBehaviorStream.cpp:
+	.text       start:0x8008F7C8 end:0x8008FA4C
+	.rodata     start:0x804B0DF8 end:0x804B0E40
+	.data       start:0x80520AB0 end:0x80520AE0
+	.sdata      start:0x805E4498 end:0x805E44B0
+	.sdata2     start:0x805F2908 end:0x805F2918
+
+Game/PlayerBehaviorThrow.cpp:
+	.text       start:0x8008FA4C end:0x80090388
+	.rodata     start:0x804B0E40 end:0x804B0FA0
+	.data       start:0x80520AE0 end:0x80520B28
+	.sdata      start:0x805E44B0 end:0x805E44E0
+	.sbss       start:0x805EE4B8 end:0x805EE4C8
+	.sdata2     start:0x805F2918 end:0x805F2928
+
+Game/PlayerBehaviorTurnOver.cpp:
+	.text       start:0x80090388 end:0x800911DC
+	.rodata     start:0x804B0FA0 end:0x804B1118
+	.data       start:0x80520B28 end:0x80520B70
+	.sdata      start:0x805E44E0 end:0x805E4510
+	.sbss       start:0x805EE4C8 end:0x805EE4D8
+	.sdata2     start:0x805F2928 end:0x805F2930
+
+Game/PlayerBehaviorWallHang.cpp:
+	.text       start:0x800911DC end:0x800924B4
+	.ctors      start:0x804A9CD8 end:0x804A9CDC
+	.rodata     start:0x804B1118 end:0x804B12C0
+	.data       start:0x80520B70 end:0x80520BD0
+	.sdata      start:0x805E4510 end:0x805E4550
+	.sbss       start:0x805EE4D8 end:0x805EE4F0
+	.sdata2     start:0x805F2930 end:0x805F2968
+
+Game/PlayerBehaviorWallJump.cpp:
+	.text       start:0x800924B4 end:0x800930AC
+	.rodata     start:0x804B12C0 end:0x804B1440
+	.data       start:0x80520BD0 end:0x80520C18
+	.sdata      start:0x805E4550 end:0x805E4580
+	.sbss       start:0x805EE4F0 end:0x805EE500
+	.sdata2     start:0x805F2968 end:0x805F29A0
+
 Game/BlastBreak.cpp:
 	.text       start:0x800EC944 end:0x800ED440
 	.rodata     start:0x804B91E8 end:0x804B92E8
@@ -1075,6 +1628,234 @@ Game/Enemy.cpp:
 	.sbss       start:0x805EF6E8 end:0x805EF6F8
 	.sdata2     start:0x805F56D0 end:0x805F5710
 
+Game/EnemyBaseAI.cpp:
+	.text       start:0x8019B500 end:0x8019FD5C
+	.rodata     start:0x804CB848 end:0x804CBAE0
+	.data       start:0x8053A5B0 end:0x8053A8A8
+	.bss        start:0x80580FA8 end:0x80581038
+	.sdata      start:0x805E80E0 end:0x805E8168
+	.sbss       start:0x805EF6F8 end:0x805EF708
+	.sdata2     start:0x805F5710 end:0x805F5760
+
+Game/EnemyCharInfo.cpp:
+	.text       start:0x8019FD5C end:0x801A04C0
+	.ctors      start:0x804A9DA8 end:0x804A9DAC
+	.rodata     start:0x804CBAE0 end:0x804CBBA0
+	.data       start:0x8053A8A8 end:0x8053A908
+	.sdata      start:0x805E8168 end:0x805E8190
+	.sbss       start:0x805EF708 end:0x805EF718
+	.sdata2     start:0x805F5760 end:0x805F5788
+
+Game/EnemyTypeData.cpp:
+	.text       start:0x801A04C0 end:0x801A04D4
+	.rodata     start:0x804CBBA0 end:0x804CC058
+	.sdata2     start:0x805F5788 end:0x805F5790
+
+Game/EnemyDispCommon.cpp:
+	.text       start:0x801A04D4 end:0x801A1E48
+	.rodata     start:0x804CC058 end:0x804CC148
+	.data       start:0x8053A908 end:0x8053A990
+	.sdata      start:0x805E8190 end:0x805E81B0
+	.sbss       start:0x805EF718 end:0x805EF728
+	.sdata2     start:0x805F5790 end:0x805F57B8
+
+Game/EnemyEntry.cpp:
+	.text       start:0x801A1E48 end:0x801A35AC
+	.rodata     start:0x804CC148 end:0x804CC1F8
+	.data       start:0x8053A990 end:0x8053A9F0
+	.sdata      start:0x805E81B0 end:0x805E81D0
+
+Game/EnemyModel.cpp:
+	.text       start:0x801A35AC end:0x801A4430
+	.sdata2     start:0x805F57B8 end:0x805F57C8
+
+Game/CameraModeFixEye.cpp:
+	.text       start:0x801C0AE0 end:0x801C0C9C
+	.rodata     start:0x804CE880 end:0x804CE8E8
+	.data       start:0x8053BF58 end:0x8053BF98
+	.sdata      start:0x805E8610 end:0x805E8628
+
+Game/CameraModeFixEye2.cpp:
+	.text       start:0x801C0C9C end:0x801C0FE0
+	.rodata     start:0x804CE8E8 end:0x804CE950
+	.data       start:0x8053BF98 end:0x8053BFD8
+	.sdata      start:0x805E8628 end:0x805E8640
+	.sdata2     start:0x805F5B50 end:0x805F5B58
+
+Game/CameraModeFixLook.cpp:
+	.text       start:0x801C0FE0 end:0x801C1328
+	.rodata     start:0x804CE950 end:0x804CE9B8
+	.data       start:0x8053BFD8 end:0x8053C018
+	.sdata      start:0x805E8640 end:0x805E8658
+	.sdata2     start:0x805F5B58 end:0x805F5B60
+
+Game/CameraModeFixLook2.cpp:
+	.text       start:0x801C1328 end:0x801C1884
+	.ctors      start:0x804A9DC0 end:0x804A9DC4
+	.rodata     start:0x804CE9B8 end:0x804CEA20
+	.data       start:0x8053C018 end:0x8053C058
+	.sdata      start:0x805E8658 end:0x805E8670
+	.sbss       start:0x805EF878 end:0x805EF880
+	.sdata2     start:0x805F5B60 end:0x805F5B70
+
+Game/CameraModeFree.cpp:
+	.text       start:0x801C1884 end:0x801C1D98
+	.rodata     start:0x804CEA20 end:0x804CEA88
+	.data       start:0x8053C058 end:0x8053C098
+	.sdata      start:0x805E8670 end:0x805E8688
+	.sdata2     start:0x805F5B70 end:0x805F5B90
+
+Game/CameraModeGeneral.cpp:
+	.text       start:0x801C1D98 end:0x801C4D60
+	.ctors      start:0x804A9DC4 end:0x804A9DC8
+	.rodata     start:0x804CEA88 end:0x804CEC00
+	.data       start:0x8053C098 end:0x8053C100
+	.sdata      start:0x805E8688 end:0x805E86D8
+	.sbss       start:0x805EF880 end:0x805EF8F8
+	.sdata2     start:0x805F5B90 end:0x805F5C08
+
+Game/CameraModeLookFront.cpp:
+	.text       start:0x801C4D60 end:0x801C55D4
+	.ctors      start:0x804A9DC8 end:0x804A9DCC
+	.rodata     start:0x804CEC00 end:0x804CEC68
+	.data       start:0x8053C100 end:0x8053C140
+	.sdata      start:0x805E86D8 end:0x805E86F0
+	.sbss       start:0x805EF8F8 end:0x805EF908
+	.sdata2     start:0x805F5C08 end:0x805F5C38
+
+Game/CameraModeSetCamEdit.cpp:
+	.text       start:0x801C55D4 end:0x801C5D50
+	.rodata     start:0x804CEC68 end:0x804CECD0
+	.data       start:0x8053C140 end:0x8053C180
+	.sdata      start:0x805E86F0 end:0x805E8708
+	.sdata2     start:0x805F5C38 end:0x805F5C50
+
+Game/CameraModeSetEditor.cpp:
+	.text       start:0x801C5D50 end:0x801C6068
+	.rodata     start:0x804CECD0 end:0x804CED38
+	.data       start:0x8053C180 end:0x8053C1C0
+	.sdata      start:0x805E8708 end:0x805E8720
+	.sdata2     start:0x805F5C50 end:0x805F5C68
+
+Game/CameraModeTestPlayer.cpp:
+	.text       start:0x801C6068 end:0x801C64AC
+	.rodata     start:0x804CED38 end:0x804CEDA0
+	.data       start:0x8053C1C0 end:0x8053C200
+	.sdata      start:0x805E8720 end:0x805E8738
+	.sdata2     start:0x805F5C68 end:0x805F5C90
+
+Game/CameraModeTestPlayerNoRot.cpp:
+	.text       start:0x801C64AC end:0x801C68E8
+	.rodata     start:0x804CEDA0 end:0x804CEE10
+	.data       start:0x8053C200 end:0x8053C240
+	.sdata      start:0x805E8738 end:0x805E8750
+	.sdata2     start:0x805F5C90 end:0x805F5CA8
+
+Game/PJSCameraCollision.cpp:
+	.text       start:0x801C68E8 end:0x801C72B8
+	.ctors      start:0x804A9DCC end:0x804A9DD0
+	.rodata     start:0x804CEE10 end:0x804CF060
+	.data       start:0x8053C240 end:0x8053C2E0
+	.sdata      start:0x805E8750 end:0x805E8790
+	.sbss       start:0x805EF908 end:0x805EF918
+	.sdata2     start:0x805F5CA8 end:0x805F5CB0
+
+Game/PJSCameraCollisionQuery.cpp:
+	.text       start:0x801C72B8 end:0x801C7D3C
+	.sbss       start:0x805EF918 end:0x805EF920
+	.sdata2     start:0x805F5CB0 end:0x805F5CC0
+
+Game/SetCameraDataManager.cpp:
+	.text       start:0x801C7D3C end:0x801C88A8
+	.rodata     start:0x804CF060 end:0x804CF130
+	.sdata2     start:0x805F5CC0 end:0x805F5CC8
+
+Game/SetCameraArea.cpp:
+	.text       start:0x801C88A8 end:0x801C8B30
+	.sdata2     start:0x805F5CC8 end:0x805F5CD0
+
+Game/StageCameraManager.cpp:
+	.text       start:0x801C8B30 end:0x801CC2FC
+	.rodata     start:0x804CF130 end:0x804CF180
+	.data       start:0x8053C2E0 end:0x8053C300
+	.sdata      start:0x805E8790 end:0x805E87A8
+	.sbss       start:0x805EF920 end:0x805EF928
+	.sdata2     start:0x805F5CD0 end:0x805F5CF8
+
+Game/StageCameraPostProcess.cpp:
+	.text       start:0x801CC2FC end:0x801CE644
+	.ctors      start:0x804A9DD0 end:0x804A9DD4
+	.rodata     start:0x804CF180 end:0x804CF218
+	.data       start:0x8053C300 end:0x8053C328
+	.sdata      start:0x805E87A8 end:0x805E87C0
+	.sbss       start:0x805EF928 end:0x805EF940
+	.sdata2     start:0x805F5CF8 end:0x805F5D18
+
+Game/StageCameraList.cpp:
+	.text       start:0x801CE644 end:0x801CF36C
+	.rodata     start:0x804CF218 end:0x804CF318
+	.data       start:0x8053C328 end:0x8053C350
+	.sdata      start:0x805E87C0 end:0x805E87D8
+	.sbss       start:0x805EF940 end:0x805EF948
+
+Game/StageCameraModeHolder.cpp:
+	.text       start:0x801CF36C end:0x801CF520
+	.ctors      start:0x804A9DD4 end:0x804A9DD8
+	.bss        start:0x805812D8 end:0x80581388
+	.sdata      start:0x805E87D8 end:0x805E87E0
+	.sdata2     start:0x805F5D18 end:0x805F5D20
+
+Game/StageCameraHandle.cpp:
+	.text       start:0x801CF520 end:0x801CF750
+	.sdata      start:0x805E87E0 end:0x805E87E8
+
+Game/AdjustLinerLocal.cpp:
+	.text       start:0x801CF750 end:0x801CFB28
+	.rodata     start:0x804CF318 end:0x804CF360
+	.data       start:0x8053C350 end:0x8053C380
+	.sdata      start:0x805E87E8 end:0x805E87F8
+	.sdata2     start:0x805F5D20 end:0x805F5D28
+
+Game/AdjustLinerWorld.cpp:
+	.text       start:0x801CFB28 end:0x801CFCCC
+	.rodata     start:0x804CF360 end:0x804CF3A8
+	.data       start:0x8053C380 end:0x8053C3B0
+	.sdata      start:0x805E87F8 end:0x805E8808
+
+Game/AdjustOnlyAov.cpp:
+	.text       start:0x801CFCCC end:0x801CFDA4
+	.rodata     start:0x804CF3A8 end:0x804CF3F0
+	.data       start:0x8053C3B0 end:0x8053C3E0
+	.sdata      start:0x805E8808 end:0x805E8818
+
+Game/CameraRender.cpp:
+	.text       start:0x801CFDA4 end:0x801D03FC
+	.rodata     start:0x804CF3F0 end:0x804CF480
+	.data       start:0x8053C3E0 end:0x8053C4A0
+	.sdata      start:0x805E8818 end:0x805E8860
+	.sbss       start:0x805EF948 end:0x805EF950
+	.sdata2     start:0x805F5D28 end:0x805F5D30
+
+Game/PJSCameraFactory.cpp:
+	.text       start:0x801D03FC end:0x801D06D8
+	.rodata     start:0x804CF480 end:0x804CF5C8
+	.data       start:0x8053C4A0 end:0x8053C4C0
+	.sdata      start:0x805E8860 end:0x805E8870
+	.sdata2     start:0x805F5D30 end:0x805F5D88
+
+Game/PJSCameraMode.cpp:
+	.text       start:0x801D06D8 end:0x801D076C
+	.rodata     start:0x804CF5C8 end:0x804CF610
+	.data       start:0x8053C4C0 end:0x8053C4F0
+	.sdata      start:0x805E8870 end:0x805E8880
+
+Game/PJSCameraPostTask.cpp:
+	.text       start:0x801D076C end:0x801D0AFC
+	.rodata     start:0x804CF610 end:0x804CF678
+	.data       start:0x8053C4F0 end:0x8053C528
+	.sdata      start:0x805E8880 end:0x805E88A0
+	.sdata2     start:0x805F5D88 end:0x805F5D90
+
 Game/EffectManagerPJS.cpp:
 	.text       start:0x801D0AFC end:0x801D1164
 	.rodata     start:0x804CF678 end:0x804CFBB0
@@ -1157,6 +1938,51 @@ Game/AudioDataBank.cpp:
 	.rodata     start:0x804D0550 end:0x804D0830
 	.data       start:0x8053CF20 end:0x8053D0E0
 	.sdata2     start:0x805F5E00 end:0x805F5E08
+
+Game/AudioChannel.cpp:
+	.text       start:0x801D88EC end:0x801D9964
+	.sdata2     start:0x805F5E08 end:0x805F5E50
+
+Game/AudioListener.cpp:
+	.text       start:0x801D9964 end:0x801D9C0C
+	.sdata2     start:0x805F5E50 end:0x805F5E68
+
+Game/CharCommand.cpp:
+	.text       start:0x801D9C0C end:0x801D9D00
+	.rodata     start:0x804D0830 end:0x804D0840
+	.data       start:0x8053D0E0 end:0x8053D0F8
+	.sdata      start:0x805E8B60 end:0x805E8B68
+	.sdata2     start:0x805F5E68 end:0x805F5E70
+
+Game/CharCommandManagerTask.cpp:
+	.text       start:0x801D9D00 end:0x801DA6D8
+	.rodata     start:0x804D0840 end:0x804D0858
+	.data       start:0x8053D0F8 end:0x8053D118
+	.sdata      start:0x805E8B68 end:0x805E8B80
+	.sdata2     start:0x805F5E70 end:0x805F5E78
+
+Game/CharCommandUnit.cpp:
+	.text       start:0x801DA6D8 end:0x801DA804
+	.rodata     start:0x804D0858 end:0x804D0868
+	.data       start:0x8053D118 end:0x8053D128
+	.sdata      start:0x805E8B80 end:0x805E8B88
+
+Game/CharCommands.cpp:
+	.text       start:0x801DA804 end:0x801DC97C
+	.rodata     start:0x804D0868 end:0x804D0B58
+	.data       start:0x8053D128 end:0x8053D540
+	.sdata      start:0x805E8B88 end:0x805E8C78
+	.sdata2     start:0x805F5E78 end:0x805F5F10
+
+Game/CharInfo.cpp:
+	.text       start:0x801DC97C end:0x801DCAF4
+	.ctors      start:0x804A9DE0 end:0x804A9DE4
+	.rodata     start:0x804D0B58 end:0x804D0B68
+	.data       start:0x8053D540 end:0x8053D570
+	.bss        start:0x80583850 end:0x80583860
+	.sdata      start:0x805E8C78 end:0x805E8C80
+	.sbss       start:0x805EF980 end:0x805EF988
+	.sdata2     start:0x805F5F10 end:0x805F5F18
 
 Game/GoalMission.cpp:
 	.text       start:0x801F38F0 end:0x801F398C
@@ -4053,6 +4879,21 @@ Game/csdmNode.cpp:
 	.text       start:0x8036A208 end:0x8036BCAC
 	.rodata     start:0x805131B8 end:0x805131F0
 	.data       start:0x8055FED8 end:0x8055FF70
+
+Game/csdmProject.cpp:
+	.text       start:0x8036BCAC end:0x8036F96C
+	.rodata     start:0x805131F0 end:0x80513310
+	.data       start:0x8055FF70 end:0x8055FF88
+	.bss        start:0x80585B58 end:0x80585B80
+
+Game/csdmScenePlayMode.cpp:
+	.text       start:0x8036F96C end:0x8036FAB4
+	.rodata     start:0x80513310 end:0x80513318
+	.data       start:0x8055FF88 end:0x8055FFB0
+
+Game/csdmSceneObserver.cpp:
+	.text       start:0x8036FAB4 end:0x8036FC94
+	.data       start:0x8055FFB0 end:0x8055FFD8
 
 dolphin/base/PPCArch.c:
 	.text       start:0x8036FC94 end:0x8036FDA8
