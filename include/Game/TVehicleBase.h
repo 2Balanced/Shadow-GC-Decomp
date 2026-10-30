@@ -4,19 +4,39 @@
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "boost/weak_ptr.hpp"
+#ifdef VEHICLE_BASE_IMPL
+#include "boost/scoped_ptr.hpp"
+#endif
 #include <dolphin/types.h>
 #include "size_assert.h"
 
 class CharCommand;
+#ifdef VEHICLE_BASE_IMPL
+extern "C" void fn_80014E04(u32 *flags);
+#endif
 /* A node of a collision hit list (see Game/BirdBase.cpp; name inferred). */
 struct UnkColliContactNode_800587A0;
 
 namespace Vehicle {
 
-/* TVehicleBase (class name from RTTI; vtable at 0x8053B87C): the base of the vehicles
- * (Vehicle::GunLift, Vehicle::TVehicleCar, Vehicle::Walker, ...), a CharInfo. Constructor
- * 0x801B6C4C (character type 0x33), destructor 0x801B6B50. Layout from them; member and virtual
- * function names other than PushCommand are inferred or placeholders. The slots after CharInfo's
+#ifdef VEHICLE_BASE_IMPL
+class VehicleBaseImpl;
+
+/* The flag word at 0x70 as Game/TVehicleBase.cpp sees it: its constructor initializes it (see
+ * Game/BirdBase.h, BirdFlags). */
+struct VehicleFlags {
+    VehicleFlags() {
+        fn_80014E04(&m_bits);
+    }
+
+    u32 m_bits;
+};
+#endif
+
+/* TVehicleBase (class name from RTTI; vtable at 0x8053B87C; Game/TVehicleBase.cpp): the base of
+ * the vehicles (Vehicle::GunLift, Vehicle::TVehicleCar, Vehicle::Walker, ...), a CharInfo.
+ * Constructor 0x801B6C4C (character type 0x33), destructor 0x801B6B50. Layout from them; member
+ * and virtual function names other than PushCommand are inferred or placeholders. The slots after CharInfo's
  * (0x30 to 0x7C) are the vehicle's own; slots 0x3C and 0x44 are pure (zero in its vtable). */
 class TVehicleBase : public CharInfo {
   public:
@@ -58,7 +78,9 @@ class TVehicleBase : public CharInfo {
     /* 0x801B624C, 0x801B6244 (meanings unknown; GunLift returns true from both). */
     virtual bool vf_0x50();
     virtual bool vf_0x54();
-    virtual void vf_0x58();
+    /* 0x801B623C returns true (Game/TVehicleBase.cpp; Vehicle::VehicleTask passes the answer
+     * on). */
+    virtual bool vf_0x58();
     /* 0x801B6234 returns false (Vehicle::Walker: true). */
     virtual bool vf_0x5C();
     /* 0x801B622C returns false, 0x801B6224 a float (BirdBase: true, and its motion's time). */
@@ -88,14 +110,23 @@ class TVehicleBase : public CharInfo {
     }
 
     /* 0x64 */ u8 field_0x64[0x70 - 0x64];
+#ifdef VEHICLE_BASE_IMPL
+    /* 0x70 */ VehicleFlags m_vehicleFlags; /* bit 0: someone rides it (inferred) */
+#else
     /* 0x70 */ u32 m_vehicleFlags; /* bit 0: someone rides it (inferred) */
+#endif
     /* 0x74 */ u32 field_0x74;
     /* 0x78 */ u32 field_0x78;
     /* 0x7C */ u32 field_0x7C;
     /* 0x80 */ boost::weak_ptr<CharInfo> m_rider;
     /* 0x88 */ boost::weak_ptr<CharInfo> m_shooter;
     /* 0x90 */ boost::weak_ptr<TVehicleBase> m_self;
+#ifdef VEHICLE_BASE_IMPL
+    /* The state, a pimpl (Game/TVehicleBase.cpp; other units see a pointer). */
+    /* 0x98 */ boost::scoped_ptr<VehicleBaseImpl> field_0x98;
+#else
     /* 0x98 */ void *field_0x98;
+#endif
 };
 SIZE_ASSERT(TVehicleBase, 0x9C);
 

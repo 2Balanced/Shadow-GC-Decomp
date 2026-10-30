@@ -99,10 +99,27 @@ public:
         pn = pn2;
     }
 
+#ifdef BOOST_WP_LESS
+    // boost 1.32's ordering, compiled only where BOOST_WP_LESS is defined before this header
+    // (Game/LightColli.cpp): another member template here renumbers the compiler's @N local
+    // symbols in every unit that includes this header.
+    template<class Y> bool _internal_less(weak_ptr<Y> const & rhs) const
+    {
+        return pn < rhs.pn;
+    }
+#endif
+
     T * px;                     // contained pointer
     detail::weak_count pn;      // reference counter
 
 };  // weak_ptr
+
+#ifdef BOOST_WP_LESS
+template<class T, class U> inline bool operator<(weak_ptr<T> const & a, weak_ptr<U> const & b)
+{
+    return a._internal_less(b);
+}
+#endif
 
 } // namespace boost
 

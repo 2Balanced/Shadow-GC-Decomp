@@ -9,6 +9,7 @@
  * own members are unknown and stand as padding up to their sizes. Member names other than the
  * classes' are inferred. */
 #include "Effect/System/EffectGlobalParam.h"
+#include "Game/ClumpFade.h"
 #include "Game/EffectPJSLauncher.h"
 #include "size_assert.h"
 
@@ -23,12 +24,24 @@ struct UnkEffectModel_801D1238 {
     /* 0x40 */ bool m_hasUvAnim; /* whether the effect file holds a UV animation for it */
 };
 
+/* A particle effect's textures (layout from Game/EffectParticleUSA.cpp). */
+struct UnkParticleTexture_80028034 {
+    /* 0x00 */ u8 field_0x0[0x20];
+    /* 0x20 */ char m_name[0x20]; /* the texture dictionary's name */
+};
+
 /* The description an element is created from (layout from its uses). */
 struct UnkEffectDesc_801D0AFC {
     /* 0x00 */ u8 field_0x0[0x20];
     /* 0x20 */ s16 m_type; /* which element class to create */
     /* 0x22 */ u8 field_0x22[0x3C - 0x22];
     /* 0x3C */ const UnkEffectModel_801D1238 *m_model; /* EffectObject's model */
+    /* 0x40 */ u8 field_0x40[0x4C - 0x40];
+    /* 0x4C */ s32 m_rayKind;      /* a ray effect's kind, which picks its draw pass */
+    /* 0x50 */ s32 m_particleKind; /* a particle effect's kind, which picks its draw pass */
+    /* 0x54 */ u8 field_0x54[0x58 - 0x54];
+    /* 0x58 */ const UnkParticleTexture_80028034 *m_texture; /* a particle effect's textures */
+    /* 0x5C */ const char *m_modelName; /* a 3D particle effect's model */
 };
 
 class EffectShimmer : public EffectElement {
@@ -53,6 +66,10 @@ class EffectRay : public EffectElement {
   public:
     virtual ~EffectRay();
     virtual void Update(float dt);
+
+    /* 0x054 */ u8 field_0x54[0x104 - 0x54];
+    /* 0x104 */ u32 m_request; /* as EffectParticle's */
+    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass (as EffectParticle's) */
 };
 
 class EffectArranger : public EffectElement {
@@ -63,10 +80,29 @@ class EffectArranger : public EffectElement {
     virtual void Draw() {}
 };
 
+/* One particle of a particle effect (layout from Game/EffectParticleUSA.cpp). */
+struct UnkParticle_80027DC4 {
+    /* 0x00 */ u8 field_0x0[0x54];
+    /* 0x54 */ u32 m_color[4]; /* red, green, blue, alpha: 8 bits each, from bit 22 */
+    /* 0x64 */ u8 field_0x64[0x68 - 0x64];
+    /* 0x68 */ UnkParticle_80027DC4 *m_next;
+};
+
 class EffectParticle : public EffectElement {
   public:
     virtual ~EffectParticle();
     virtual void Update(float dt);
+
+    /* 0x054 */ u8 field_0x54[0xFC - 0x54];
+    /* 0x0FC */ UnkParticle_80027DC4 *m_particles; /* the first particle */
+    /* 0x100 */ u8 field_0x100[0x104 - 0x100];
+    /* 0x104 */ u32 m_request; /* bit 1: show or hide requested, bit 2: hide (as EffectLocusRW3's
+                                * field_0x108) */
+    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass, bit 4: has textures, bit 15:
+                                * has a model */
+    /* 0x10C */ s32 m_count;   /* the number of particles */
+    /* 0x110 */ u8 field_0x110[0x13C - 0x110];
+    /* 0x13C */ void *m_model; /* the particles' RenderWare model data */
 };
 
 class EffectObject : public EffectElement {
@@ -121,36 +157,85 @@ SIZE_ASSERT(EffectLocusRW3, 0x17C);
 
 class EffectRayRW3 : public ::Effect::System::EffectRay {
   public:
+    /* 0x8042D150. */
+    EffectRayRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                 ::Effect::System::EffectLaunchInfo *info,
+                 ::Effect::System::EffectManager *manager);
     virtual ~EffectRayRW3();
     virtual void Update(float dt);
     virtual void Draw();
+
+    /* 0x10C */ u8 field_0x10C[0x138 - 0x10C];
 };
+SIZE_ASSERT(EffectRayRW3, 0x138);
 
 class EffectArrangerRW3 : public ::Effect::System::EffectArranger {
   public:
+    /* 0x8043418C. */
+    EffectArrangerRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                      ::Effect::System::EffectLaunchInfo *info,
+                      ::Effect::System::EffectManager *manager);
     virtual ~EffectArrangerRW3();
+
+    /* 0x054 */ u8 field_0x54[0x104 - 0x54];
+    /* The arranger's own copy of the launch description (Game/EffectArrangerUSA.cpp; inferred). */
+    /* 0x104 */ ::Effect::System::EffectLaunchInfo *m_launchInfo;
+    /* 0x108 */ u8 field_0x108[0x11C - 0x108];
 };
+SIZE_ASSERT(EffectArrangerRW3, 0x11C);
 
 class EffectParticleRW3 : public ::Effect::System::EffectParticle {
   public:
+    /* 0x80433CE0. */
+    EffectParticleRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                      ::Effect::System::EffectLaunchInfo *info,
+                      ::Effect::System::EffectManager *manager);
     virtual ~EffectParticleRW3();
     virtual void Update(float dt);
     virtual void Draw();
+
+    /* 0x140 */ u8 field_0x140[0x148 - 0x140];
 };
+SIZE_ASSERT(EffectParticleRW3, 0x148);
 
 class EffectObjectRW3 : public ::Effect::System::EffectObject {
   public:
+    /* 0x80432C80. */
+    EffectObjectRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                    ::Effect::System::EffectLaunchInfo *info,
+                    ::Effect::System::EffectManager *manager);
     virtual ~EffectObjectRW3();
     virtual void Update(float dt);
     virtual void Draw();
+
+    /* 0x054 */ u8 field_0x54[0x104 - 0x54];
+    /* 0x104 */ u32 m_color[4]; /* red, green, blue, alpha: 8 bits each, from bit 22 (inferred;
+                              * see Game/EffectObjectUSA.cpp) */
+    /* 0x114 */ u8 field_0x114[0x124 - 0x114];
+    /* 0x124 */ void *m_clump;   /* the model (a RenderWare clump) */
+    /* 0x128 */ void *m_uvAnim;  /* its UV animation, if any */
+    /* 0x12C */ void *m_world;   /* the world of the stage area the model is in */
+    /* 0x130 */ bool m_inWorld;  /* set once the model is added to m_world */
+    /* 0x131 */ u8 field_0x131[0x134 - 0x131];
 };
+SIZE_ASSERT(EffectObjectRW3, 0x134);
 
 class EffectParticle3DRW3 : public ::Effect::System::EffectParticle {
   public:
+    /* 0x804335E8. */
+    EffectParticle3DRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                        ::Effect::System::EffectLaunchInfo *info,
+                        ::Effect::System::EffectManager *manager);
     virtual ~EffectParticle3DRW3();
     virtual void Update(float dt);
     virtual void Draw();
+
+    /* 0x140 */ void *m_clump;   /* the particles' model (a RenderWare clump) */
+    /* 0x144 */ void *m_texDict; /* their texture dictionary */
+    /* 0x148 */ void *m_world;   /* the world of the stage area the model is in */
+    /* 0x14C */ u8 field_0x14C[0x17C - 0x14C];
 };
+SIZE_ASSERT(EffectParticle3DRW3, 0x17C);
 
 } // namespace RW3
 } // namespace Effect
@@ -196,7 +281,7 @@ class EffectRayUSA : public ::Effect::RW3::EffectRayRW3 {
     virtual ~EffectRayUSA() {}
     virtual void Update(float dt);
 
-    /* 0x054 */ u8 field_0x54[0x13C - 0x54];
+    /* 0x138 */ s32 m_shownDrawPass; /* as EffectParticleUSA's */
 };
 SIZE_ASSERT(EffectRayUSA, 0x13C);
 
@@ -206,8 +291,6 @@ class EffectArrangerUSA : public ::Effect::RW3::EffectArrangerRW3 {
                       ::Effect::System::EffectLaunchInfo *info,
                       ::Effect::System::EffectManager *manager);
     virtual ~EffectArrangerUSA();
-
-    /* 0x054 */ u8 field_0x54[0x11C - 0x54];
 };
 SIZE_ASSERT(EffectArrangerUSA, 0x11C);
 
@@ -219,7 +302,7 @@ class EffectParticleUSA : public ::Effect::RW3::EffectParticleRW3 {
     virtual ~EffectParticleUSA() {}
     virtual void Update(float dt);
 
-    /* 0x054 */ u8 field_0x54[0x14C - 0x54];
+    /* 0x148 */ s32 m_shownDrawPass; /* the draw pass to go back to when shown (inferred) */
 };
 SIZE_ASSERT(EffectParticleUSA, 0x14C);
 
@@ -231,12 +314,7 @@ class EffectObjectUSA : public ::Effect::RW3::EffectObjectRW3 {
     virtual ~EffectObjectUSA() {}
     virtual void Update(float dt);
 
-    /* 0x054 */ u8 field_0x54[0x124 - 0x54];
-    /* 0x124 */ void *m_clump;   /* the model (a RenderWare clump) */
-    /* 0x128 */ void *m_uvAnim;  /* its UV animation, if any */
-    /* 0x12C */ void *m_world;   /* the world of the stage area the model is in */
-    /* 0x130 */ bool m_inWorld;  /* set once the model is added to m_world */
-    /* 0x131 */ u8 field_0x131[0x160 - 0x131];
+    /* 0x134 */ UnkClumpFade_80027D5C m_fade; /* the model's colour (Game/EffectObjectUSA.cpp) */
 };
 SIZE_ASSERT(EffectObjectUSA, 0x160);
 
@@ -248,11 +326,9 @@ class EffectParticle3DUSA : public ::Effect::RW3::EffectParticle3DRW3 {
     virtual ~EffectParticle3DUSA();
     virtual void Update(float dt);
 
-    /* 0x054 */ u8 field_0x54[0x140 - 0x54];
-    /* 0x140 */ void *m_clump; /* the particles' model (a RenderWare clump) */
-    /* 0x144 */ u8 field_0x144[0x148 - 0x144];
-    /* 0x148 */ void *m_world; /* the world of the stage area the model is in */
-    /* 0x14C */ u8 field_0x14C[0x188 - 0x14C];
+    /* 0x17C */ s32 m_shownDrawPass;        /* as EffectParticleUSA's */
+    /* 0x180 */ UnkClumpFade_80027D5C *m_fades; /* one colour fade per particle */
+    /* 0x184 */ bool *m_fadeSet;            /* whether each fade is applied to its clump */
 };
 SIZE_ASSERT(EffectParticle3DUSA, 0x188);
 
@@ -297,11 +373,12 @@ class EffectLensFlarePJS : public ::Effect::RW3::EffectLensFlareRW3 {
 };
 SIZE_ASSERT(EffectLensFlarePJS, 0x128);
 
-/* EffectGlobalParamUSA's constructor is declared without its three arguments (see
- * Game/EffectGlobalParamUSA.cpp), so CreateElement builds this class by hand. */
 class EffectGlobalParamPJS : public SonicteamUSA::System::Effect::EffectGlobalParamUSA {
   public:
-    EffectGlobalParamPJS() {}
+    EffectGlobalParamPJS(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                         ::Effect::System::EffectLaunchInfo *info,
+                         ::Effect::System::EffectManager *manager)
+        : EffectGlobalParamUSA(desc, info, manager) {}
     virtual ~EffectGlobalParamPJS() {}
 };
 SIZE_ASSERT(EffectGlobalParamPJS, 0x20C);

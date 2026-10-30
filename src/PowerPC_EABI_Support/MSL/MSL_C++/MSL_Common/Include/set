@@ -1,0 +1,208 @@
+#ifndef MSL_SET_
+#define MSL_SET_
+
+#include <functional>
+#include <map>
+#include <memory>
+#include <vector>
+
+/* Stand-in for the MSL <set>, reconstructed from the set<boost::weak_ptr<CharInfo> > instances
+ * Game/LightColli.cpp emits (0x801EDCE8..0x801F1904). It is built on the tree of <map>: the same
+ * nodes, node allocator, end node and leftmost node, rebalancing and stepping. What differs from a
+ * map's tree is the storage of the size, which is kept with a std::allocator of the values (the
+ * vector's __vec_cap_pair, whose constructor the game calls by name), the ordering (the set's
+ * comparison itself, which takes no room, so the leftmost node follows the end node directly), and
+ * the values, constructed and destroyed through std::allocator. The set's iterator is a class of its
+ * own whose members are all out of line in the game.
+ *
+ * As in <map>, which members are written inline and which call an inline helper so that they stay
+ * out of line reproduces the game's call structure (deferred inlining one level deep), and the
+ * tree's larger members are defined in <set_impl>, which a unit includes after its own code. The
+ * electric panels' set<unsigned char> (Game/UnkSystemManager_801E2128.cpp) uses it too. Names are
+ * invented; the original MSL source is not used. */
+
+namespace std {
+
+/* The set's const_iterator, which erase takes: copied plainly, and converted to the tree's iterator
+ * out of line. */
+template <class T> class __set_const_iterator {
+  public:
+    /* The tree's iterator at the same node (the tree's erase takes one). */
+    operator __tree_iterator<T>() const {
+        __tree_nothing();
+        return __tree_iterator<T>(node_);
+    }
+
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+/* The set's iterator: its members are all called out of line. */
+template <class T> class __set_iterator : public __set_const_iterator<T> {
+  public:
+    __set_iterator() {
+        __tree_nothing();
+    }
+    __set_iterator(const __tree_iterator<T> &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+    __set_iterator(const __set_iterator &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+    __set_iterator &operator=(const __set_iterator &x) {
+        assign(x);
+        return *this;
+    }
+
+    const T &operator*() const {
+        __tree_nothing();
+        return static_cast<__tree_node<T> *>(this->node_)->value_;
+    }
+    __set_iterator &operator++() {
+        fn_80012E90(&this->node_);
+        return *this;
+    }
+    __set_iterator operator++(int) {
+        __set_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator!=(const __set_iterator &x) const {
+        __tree_nothing();
+        return this->node_ != x.node_;
+    }
+
+  private:
+    void assign(const __set_iterator &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+};
+
+/* The tree of a set: <map>'s __tree with the ordering less<T> and, in place of what the ordering is
+ * built from, the allocator of the values. In the game the sets and maps share one tree template:
+ * GC/2.7 emits the late members of one template's instances together, in the order the instances
+ * were made, so the set's tree is written as a partial specialization of __tree rather than as a
+ * template of its own. */
+template <class T, class A> class __tree<T, less<T>, A> {
+  public:
+    typedef less<T> C;
+    typedef size_t size_type;
+    typedef __tree_node<T> node;
+    typedef __tree_iterator<T> iterator;
+    typedef __tree_node_allocator<node> node_allocator;
+
+    __tree(const C &comp, const A &a);
+    ~__tree() {
+        if (root() != 0) {
+            destroy(static_cast<node *>(root()));
+        }
+    }
+
+    iterator begin() {
+        return iterator(begin_node());
+    }
+    iterator end() {
+        return iterator(static_cast<__tree_node_base *>(header()));
+    }
+    size_type size() const {
+        return size_ref();
+    }
+    size_type max_size() const {
+        return __max_size_t();
+    }
+    pair<iterator, bool> insert_unique(const T &v);
+    template <class Key> iterator find(const Key &k);
+    void erase(iterator position);
+    void clear();
+    /* Steps position (out of line: erase calls it). */
+    static iterator &increment(iterator &position) {
+        return ++position;
+    }
+
+  private:
+    size_type &size_ref() {
+        __tree_nothing();
+        return size_.second_;
+    }
+    const size_type &size_ref() const {
+        __tree_nothing();
+        return size_.second_;
+    }
+    A &value_alloc() {
+        __tree_nothing();
+        return size_;
+    }
+    node_allocator &node_alloc() {
+        return header_.first();
+    }
+    __tree_end_node *header() {
+        return &header_.second();
+    }
+    __tree_node_base *&root() {
+        return header()->left_;
+    }
+    __tree_node_base *&begin_node() {
+        return begin_.second();
+    }
+    C &comp() {
+        return begin_.first();
+    }
+
+    node *insert_node(__tree_node_base *parent, bool left, bool leftmost, const T &v);
+    void destroy(node *n);
+
+    /* 0x0 */ __vec_cap_pair<A, size_type> size_;
+    /* 0x4 */ __tree_end_pair<node_allocator> header_;
+    /* 0x8 */ __tree_begin_pair<C> begin_;
+};
+
+template <class Key, class Compare = less<Key>, class Allocator = allocator<Key> > class set {
+  public:
+    typedef Key key_type;
+    typedef Key value_type;
+    typedef Compare key_compare;
+    typedef Compare value_compare;
+    typedef Allocator allocator_type;
+    typedef size_t size_type;
+
+  private:
+    typedef __tree<value_type, value_compare, allocator_type> tree_type;
+
+  public:
+    typedef __set_iterator<value_type> iterator;
+    typedef __set_const_iterator<value_type> const_iterator;
+
+    set() : tree_(key_compare(), allocator_type()) {}
+
+    iterator begin() {
+        return iterator(tree_.begin());
+    }
+    iterator end() {
+        return iterator(tree_.end());
+    }
+    size_type size() const {
+        return tree_.size();
+    }
+    pair<iterator, bool> insert(const value_type &x) {
+        pair<typename tree_type::iterator, bool> p = tree_.insert_unique(x);
+        return pair<iterator, bool>(iterator(p.first), p.second);
+    }
+    void erase(const_iterator position) {
+        tree_.erase(position);
+    }
+    void clear() {
+        tree_.clear();
+    }
+    iterator find(const key_type &k) {
+        return iterator(tree_.find(k));
+    }
+
+  private:
+    /* 0x0 */ tree_type tree_;
+};
+
+} // namespace std
+
+#endif

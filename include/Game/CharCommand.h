@@ -656,6 +656,10 @@ class ActingAccelerateCommand : public PlayerCommand {
 class StartJumpCommand : public PlayerCommand {
   public:
     StartJumpCommand(int arg0);
+#if defined(CHARCOMMAND_START_JUMP_DIRECTION) && !defined(CHARCOMMAND_PLAYER_COMMANDS)
+    /* A jump in direction (0x8009C900; see below). Declared for Game/TVehicleBase.cpp. */
+    StartJumpCommand(const Vec3f &direction, int arg1);
+#endif
 #ifdef CHARCOMMAND_PLAYER_COMMANDS
     /* A jump in direction (normalized; zero when it is too short; 0x8009C900). */
     StartJumpCommand(const Vec3f &direction, int arg1);

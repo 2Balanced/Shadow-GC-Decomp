@@ -16,13 +16,6 @@ using SonicteamUSA::System::Effect::EffectManagerUSA;
 namespace Effect {
 namespace PJS {
 
-/* EffectGlobalParamUSA's constructor (0x801FA5D4), called with the arguments it passes on to its
- * base (see Game/EffectGlobalParamUSA.cpp). */
-extern "C" void __ct__Q412SonicteamUSA6System6Effect20EffectGlobalParamUSAFv(
-    void *self, const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfoUSA *info,
-    EffectManager *manager);
-extern "C" const void *__vt__Q36Effect3PJS20EffectGlobalParamPJS[];
-
 EffectElement *EffectManagerPJS::CreateElement(const UnkEffectDesc_801D0AFC *desc,
                                                EffectLaunchInfo *info) {
     EffectLaunchInfoUSA *usaInfo = dynamic_cast<EffectLaunchInfoUSA *>(info);
@@ -40,18 +33,8 @@ EffectElement *EffectManagerPJS::CreateElement(const UnkEffectDesc_801D0AFC *des
             return new EffectRayPJS(desc, usaInfo, this);
         case 7:
             return new EffectLocusPJS(desc, usaInfo, this);
-        case 8: {
-            if (0) {
-                new EffectGlobalParamPJS();
-            }
-            void *element = EffectElement::operator new(sizeof(EffectGlobalParamPJS));
-            if (element != 0) {
-                __ct__Q412SonicteamUSA6System6Effect20EffectGlobalParamUSAFv(element, desc, usaInfo,
-                                                                            this);
-                *(const void **)element = __vt__Q36Effect3PJS20EffectGlobalParamPJS;
-            }
-            return (EffectElement *)element;
-        }
+        case 8:
+            return new EffectGlobalParamPJS(desc, usaInfo, this);
         case 9:
             return new EffectLensFlarePJS(desc, usaInfo, this);
         case 10:

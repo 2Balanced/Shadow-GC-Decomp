@@ -202,6 +202,36 @@ typename __tree<T, C, K>::node *__tree<T, C, K>::insert_node(__tree_node_base *p
     return n;
 }
 
+#ifdef MSL_MAP_SUBSCRIPT
+/* The search of insert_unique, inserting a value with the default mapped value where k is not
+ * found (map::operator[]). */
+template <class T, class C, class K>
+template <class Key>
+T &__tree<T, C, K>::find_or_insert(const Key &k) {
+    __tree_node_base *last = 0;
+    __tree_node_base *y = static_cast<__tree_node_base *>(header());
+    __tree_node_base *x = root();
+    bool left = true;
+    bool leftmost = true;
+    while (x != 0) {
+        y = x;
+        if (comp()(k, static_cast<node *>(x)->value_)) {
+            x = x->left_;
+            left = true;
+        } else {
+            last = x;
+            x = x->right_;
+            left = false;
+            leftmost = false;
+        }
+    }
+    if (last == 0 || comp()(static_cast<node *>(last)->value_, k)) {
+        return insert_node(y, left, leftmost, T(k, typename T::second_type()))->value_;
+    }
+    return static_cast<node *>(last)->value_;
+}
+#endif
+
 #ifdef MSL_MULTIMAP
 /* The multimap's tree (see <map>): its constructor, destroy and insert_node are __tree's. Erasing
  * destroys the value through the value allocator and inlines its deallocation. */

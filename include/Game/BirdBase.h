@@ -57,22 +57,41 @@ struct BirdFlags {
     u32 m_bits;
 };
 
-/* The member at 0x104 (class name unknown; code at 0x801B42E0..0x801B4724, not yet matched): the
- * path the bird follows. It points to its state (0x7C bytes, holding a PathCtrl). */
+/* The member at 0x104 (class name unknown; Game/VehicleBirdPath.cpp): the path the bird follows.
+ * It points to its state (0x7C bytes, holding a PathCtrl). */
+#ifdef VEHICLE_BIRD_PATH_IMPL
+class UnkBirdPathImpl;
+#endif
 struct UnkBirdPath_801B446C {
     UnkBirdPath_801B446C();  /* 0x801B446C */
     ~UnkBirdPath_801B446C(); /* 0x801B4394 */
 
+#ifdef VEHICLE_BIRD_PATH_IMPL
+    /* The state, a pimpl (Game/VehicleBirdPath.cpp; other units see a pointer). */
+    /* 0x0 */ boost::scoped_ptr<UnkBirdPathImpl> m_impl;
+#else
     /* 0x0 */ void *m_impl;
+#endif
 };
 
-/* The member at 0x108 (class name unknown; code at 0x801B4CF4..0x801B4F04, not yet matched): the
- * bird's body collider and its hit callback. It points to its state (0x38 bytes). */
+/* The member at 0x108 (class name unknown; Game/VehicleAttack.cpp): the bird's body collider and
+ * its hit callback. It points to its state (0x38 bytes), a Vehicle::AttackImpl (class name from
+ * the RTTI of its bound callbacks), so probably Vehicle::Attack in the original. */
+} // namespace BirdBase
+#ifdef VEHICLE_ATTACK_IMPL
+class AttackImpl;
+#endif
+namespace BirdBase {
 struct UnkBirdCollision_801B4EBC {
     UnkBirdCollision_801B4EBC();  /* 0x801B4EBC */
     ~UnkBirdCollision_801B4EBC(); /* 0x801B4E00 */
 
+#ifdef VEHICLE_ATTACK_IMPL
+    /* The state, a pimpl (Game/VehicleAttack.cpp; other units see a pointer). */
+    /* 0x0 */ boost::scoped_ptr<AttackImpl> m_impl;
+#else
     /* 0x0 */ void *m_impl;
+#endif
 };
 
 /* The object at 0x100 (class name unknown; constructor 0x801B3148, destructor 0x801B308C). */

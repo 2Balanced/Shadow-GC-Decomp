@@ -3,6 +3,7 @@
 
 #include "Game/BossDesire.h"
 #include "Game/CharInfo.h"
+#include "Game/ClumpFade.h"
 #include "Game/MathTypes.h"
 #include "Game/Task.h"
 #include "boost/scoped_ptr.hpp"
@@ -53,21 +54,6 @@ namespace PJS {
 class Launcher;
 } // namespace PJS
 } // namespace Effect
-
-/* A clump's colour fade (struct name unknown; as in Game/BlackDoomCtrlUnit.cpp and
- * Game/BossRender.cpp); its constructor is out of line (0x80027D5C). */
-struct UnkClumpFade_80027D5C;
-extern "C" UnkClumpFade_80027D5C *fn_80027D5C(UnkClumpFade_80027D5C *fade);
-struct UnkClumpFade_80027D5C {
-    UnkClumpFade_80027D5C() {
-        fn_80027D5C(this);
-    }
-
-    /* 0x00 */ float m_color[4];
-    /* 0x10 */ u8 field_0x10[0x24 - 0x10];
-    /* 0x24 */ u8 m_mode;
-    /* 0x25 */ u8 field_0x25[0x2C - 0x25];
-};
 
 namespace Boss {
 namespace Diablon {

@@ -92,6 +92,6 @@ extern "C" void fn_802C8338(UnkHolder_801E5CF8 *holder) {
 /* Destroys the story check. */
 extern "C" void fn_802C8308(UnkHolder_801E5CF8 *holder) {
     if (holder->m_object != 0) {
-        fn_800BBC04(holder->m_object, 1);
+        delete holder->m_object;
     }
 }

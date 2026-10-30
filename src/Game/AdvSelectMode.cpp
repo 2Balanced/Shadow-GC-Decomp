@@ -210,9 +210,9 @@ template <class T> inline int operator==(const RCPtr<T> &a, const RCPtr<T> &b) {
 /* The empty node pointer (see Game/AdvMessage.cpp). */
 extern RCPtr<CNode> lbl_805EE11C;
 
-/* Deletes the story check (name inferred); its destructor keeps its fn_ name. */
+/* Deletes the story check (name inferred). */
 inline void DeleteStoryCheck(StoryCheck *check) {
-    fn_800BBC04(check, 1);
+    delete check;
 }
 
 /* Retail keeps checked_delete<StoryCheck> out of line (see checked_delete<Screen> below). */

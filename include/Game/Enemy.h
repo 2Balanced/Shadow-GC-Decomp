@@ -549,6 +549,11 @@ class Enemy : public EnemyParamObjBase,
     float GetFrameTime2() {
         return (*reinterpret_cast<float **>(m_chara->field_0x60))[1];
     }
+    /* The character info's vector at 0x24 (weak copy first at 0x8029C750, Game/EggShadowAndroid.cpp;
+     * name inferred: the acceleration a fall adds gravity to). */
+    Vec3f *GetAcceleration() {
+        return &m_chara->field_0x24;
+    }
 
     /* 0x1C */ s32 m_id;
     /* 0x20 */ s32 m_type;
@@ -1146,7 +1151,17 @@ class EnemyTemplate : public Base, public AI, public TEnemySetTask {
         this->m_enemy = this;
         this->m_ctrl = this;
     }
+#ifdef ENEMY_TEMPLATE_DTOR_OUT_OF_LINE
+    /* The destructor calls an empty inline function, so GC/2.7 keeps it out of line where retail
+     * has it (see Game/EggPierrot.cpp; ENEMY_REFERER_DTOR does the same with more weak
+     * destructors). Behind a macro, so other units' @N locals do not renumber. */
+    virtual ~EnemyTemplate() {
+        KeepOutOfLine();
+    }
+    void KeepOutOfLine() {}
+#else
     virtual ~EnemyTemplate() {}
+#endif
     virtual int vfSet_0x2C() {
         return this->TEnemySetTask::field_0x2C;
     }

@@ -144,6 +144,14 @@ template <> class vector<void *, allocator<void *> > {
     }
     /* Only declared: the game's copy is linked (the layer above calls it directly). */
     void **erase(void **position);
+#ifdef PTRVECTOR_INDEX
+    /* Only where PTRVECTOR_INDEX is defined before this header (Game/PathData.h, whose distance
+     * table reaches it through two layers of its own): the game's copy is Game/PathCtrl.cpp's. */
+    void *&operator[](size_t n) {
+        __ptrvec_nop();
+        return m_data[n];
+    }
+#endif
 #ifdef PTRVECTOR_ASSIGN
     /* Only where PTRVECTOR_ASSIGN is defined before this header (Game/TargetManageTask.cpp): the
      * const begin (a copy of the unit's own), the game's capacity, max_size and data, and the

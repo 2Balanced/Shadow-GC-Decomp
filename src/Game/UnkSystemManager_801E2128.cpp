@@ -14,6 +14,8 @@
  * use them first. */
 #define MSL_VECTOR_MIDDLE
 #define MSL_VECTOR_DESTROY_ALL_LATE
+#define MSL_MEMORY_DESTROY_OUTLINE
+#define MSL_MULTIMAP_TREE
 #include <dolphin/types.h>
 #include "size_assert.h"
 #include <boost/shared_ptr.hpp>
@@ -21,6 +23,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <set>
 
 #include "Game/FogTable.h"
 #include "Game/PjsCsd.h"
@@ -122,65 +125,24 @@ class UnkCsdCache_801E5F0C {
 };
 SIZE_ASSERT(UnkCsdCache_801E5F0C, 0xC);
 
-/* The list implementation the game's lists of pointers share (see Game/ElecSecurityCode.h). */
-struct UnkPtrListLink_8001B5B8 {
-    /* 0x0 */ UnkPtrListLink_8001B5B8 *prev;
-    /* 0x4 */ UnkPtrListLink_8001B5B8 *next;
-};
+/* The light colliders' shared state (see Game/LightColli.cpp). */
+#include "Game/LightColliState.h"
 
-struct UnkPtrList_8001B5B8 {
-    /* 0x0 */ u32 m_size;
-    /* 0x4 */ UnkPtrListLink_8001B5B8 m_end;
-};
-SIZE_ASSERT(UnkPtrList_8001B5B8, 0xC);
-
-extern "C" {
-/* The list implementation's destructor (the usual destructor flag in flag). */
-void fn_8001B5B8(UnkPtrList_8001B5B8 *list, short flag);
-}
-
-/* Keeps an inline function out of line (deferred inlining is one level deep). */
-inline void UnkLightColliListKeep() {}
-
-class LightColli;
-
-/* The light colliders' list (a std::list of pointers by its shape; name inferred). */
-class UnkLightColliList_801E6500 : public UnkPtrList_8001B5B8 {
-  public:
-    ~UnkLightColliList_801E6500() {
-        UnkLightColliListKeep();
-        fn_8001B5B8(this, 0);
-    }
-};
-
-/* The light colliders' shared state (class name unknown; constructed by fn_801EEA70, used by
- * LightColliMasterTask): the colliders, and per character the light effect and the lights. */
-class UnkLightColliState_801E6500 {
-  public:
-    ~UnkLightColliState_801E6500();
-
-    /* 0x00 */ u32 field_0x0;
-    /* 0x04 */ UnkLightColliList_801E6500 m_colliders;
-    /* 0x10 */ std::map<boost::weak_ptr<CharInfo>, boost::weak_ptr<Effect::System::EffectElement> >
-        m_effects;
-    /* 0x20 */ std::map<boost::weak_ptr<CharInfo>, int> m_lights;
-    /* 0x30 */ std::map<boost::weak_ptr<CharInfo>, int> m_nextLights;
-};
-SIZE_ASSERT(UnkLightColliState_801E6500, 0x40);
-
-/* The electric panels' tables (class name unknown; the panels' unit, around 0x80258D48, fills them;
- * the values' types are unknown). */
-struct UnkElecPanelEntryA_801E6114;
-struct UnkElecPanelEntryB_801E6114;
-struct UnkElecPanelEntryC_801E6114;
+/* The electric panels' tables (class name unknown; Game/ElecPanel.cpp's unit fills them): the
+ * owners of the panels by circuit id, the panels by id, the ids in use (meanings inferred from
+ * that unit), and the panels' manager task. */
+class UnkPlacement_800C9CD0;
+class ElecPanel;
+class ElecPanelManagerTask;
 
 class UnkElecPanelTables_801E6114 {
   public:
     ~UnkElecPanelTables_801E6114();
 
-    /* 0x00 */ std::map<int, UnkElecPanelEntryA_801E6114 *> m_tableA;
-    /* 0x10 */ std::map<int, UnkElecPanelEntryB_801E6114 *> m_tableB;
-    /* 0x20 */ std::map<int, UnkElecPanelEntryC_801E6114 *> m_tableC;
+    /* 0x00 */ std::multimap<unsigned char, UnkPlacement_800C9CD0 *> m_owners;
+    /* 0x10 */ std::map<unsigned char, ElecPanel *> m_panels;
+    /* 0x20 */ std::set<unsigned char> m_ids;
+    /* 0x2C */ ElecPanelManagerTask *m_task;
 };
 SIZE_ASSERT(UnkElecPanelTables_801E6114, 0x30);
 
@@ -243,7 +205,7 @@ void *__ct__17UnkReset_801DDE9CFv(void *object);
 void *fn_8025BEEC(void *object);
 void __dt__27UnkElecPanelTables_801E6114Fv(void *object, short flag);
 void *fn_8001C5C8(void *object);
-void *fn_801EEA70(void *object);
+void *__ct__27UnkLightColliState_801E6500Fv(void *object);
 void __dt__27UnkLightColliState_801E6500Fv(void *object, short flag);
 void *__ct__18UnkObject_801E67ECFv(void *object);
 void __dt__18UnkObject_801E67ECFv(void *object, short flag);
@@ -422,17 +384,17 @@ UnkLightColliState_801E6500::~UnkLightColliState_801E6500() {}
 extern "C" {
 
 /* The light colliders' shared state. */
-void *fn_801E6500(void) {
+UnkLightColliState_801E6500 *fn_801E6500(void) {
     if (lbl_805EF208 == 0) {
         if (!s_lightColliStateInitialized) {
-            __register_global_object(fn_801EEA70(s_lightColliState),
+            __register_global_object(__ct__27UnkLightColliState_801E6500Fv(s_lightColliState),
                                      __dt__27UnkLightColliState_801E6500Fv,
                                      s_lightColliStateRecord);
             s_lightColliStateInitialized = 1;
         }
         lbl_805EF208 = s_lightColliState;
     }
-    return lbl_805EF208;
+    return reinterpret_cast<UnkLightColliState_801E6500 *>(lbl_805EF208);
 }
 
 void *fn_801E64A8(void) {
@@ -792,4 +754,5 @@ int fn_801E5840(UnkSystemManager_801E2128 *manager) {
 }
 
 #include <map_impl>
+#include <set_impl>
 #include <vector_impl>

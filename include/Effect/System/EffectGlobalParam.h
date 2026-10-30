@@ -51,7 +51,9 @@ namespace RW3 {
 
 class EffectGlobalParamRW3 : public ::Effect::System::EffectGlobalParam {
   public:
-    EffectGlobalParamRW3();
+    EffectGlobalParamRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                         ::Effect::System::EffectLaunchInfo *info,
+                         ::Effect::System::EffectManager *manager);
     virtual ~EffectGlobalParamRW3();
     virtual void Update(float dt);
 
@@ -68,7 +70,9 @@ namespace Effect {
 
 class EffectGlobalParamUSA : public ::Effect::RW3::EffectGlobalParamRW3 {
   public:
-    EffectGlobalParamUSA();
+    EffectGlobalParamUSA(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                         ::Effect::System::EffectLaunchInfo *info,
+                         ::Effect::System::EffectManager *manager);
     virtual ~EffectGlobalParamUSA();
     virtual void Update(float dt);
 

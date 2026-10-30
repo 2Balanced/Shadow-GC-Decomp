@@ -8,6 +8,7 @@
  * unless the RTTI gives them. */
 
 #include "Game/CsdSceneCtrl.h"
+#include "Game/SavedataAnalyzer.h"
 #include "Game/TGi.h"
 #include "Game/Task.h"
 #include "boost/shared_ptr.hpp"
@@ -72,31 +73,66 @@ class folderPause {
 };
 SIZE_ASSERT(folderPause, 0xCC);
 
-/* The story route chart of the pause screen (fn_800BBD34 constructs it, fn_800BBB84 destroys
- * it). */
+/* The story route chart of the pause screen (Game/folderStoryRoute.cpp). The scenes are those of
+ * the project's scene list Root/StoryRoute. */
 class folderStoryRoute {
   public:
     folderStoryRoute(Chao::CSD::CProject *project);
     ~folderStoryRoute();
 
-    /* Advances the chart; true while it is open (name inferred). */
+    /* Advances the chart; true while a scene is still playing (name inferred). */
     bool Update();
+    /* Finds the scenes (name inferred). */
+    void InitScenes(Chao::CSD::CProject *project);
+    /* Shows the stages and endings reached, the lines gone along and the player icons (names
+     * inferred). */
+    void UpdateStages();
+    void UpdateLines();
+    void UpdateIcons();
 
-    /* 0x000 */ u8 field_0x0[0x150];
+    /* 0x00 */ s32 m_state;
+    /* 0x04 */ UnkCsdHandle_80042DF0 m_sceneList;
+    /* 0x08 */ UnkCsdSceneCtrl_8003DD20 m_route;  /* StoryRoute */
+    /* 0x1C */ UnkCsdSceneCtrl_8003DD20 m_stages; /* SRIconsBG */
+    /* 0x30 */ UnkCsdSceneCtrl_8003DD20 m_icons;  /* SRIcons */
+    /* 0x44 */ s32 m_managerState;
+    /* 0x48 */ s32 m_player;
+    /* 0x4C */ s32 m_cursor;
+    /* 0x50 */ SavedataAnalyzer::StoryCheck m_check;
 };
 SIZE_ASSERT(folderStoryRoute, 0x150);
 
-/* The window of the mission's targets (fn_800BC6E4 constructs it, fn_800BC620 destroys it). */
+/* The window of the mission's targets (Game/folderTargetWindow.cpp): a panel for the dark and for
+ * the hero mission, which shows the mission's count while the pause menu shows that mission. The
+ * scenes are those of the project's scene list Root/TargetWindow. */
 class folderTargetWindow {
   public:
+    /* A panel (struct name and member names inferred). */
+    struct Panel {
+        /* 0x00 */ s32 m_state;
+        /* 0x04 */ u8 m_selected; /* the pause menu shows this panel's player */
+        /* 0x05 */ u8 m_counting; /* the player's mission counts something */
+        /* 0x08 */ UnkCsdSceneCtrl_8003DD20 m_scene;
+    };
+
     folderTargetWindow(Chao::CSD::CProject *project);
     ~folderTargetWindow();
 
-    /* Advances and draws the window (names inferred). */
-    void Update();
+    /* Advances the window; true while a scene is still playing (name inferred). */
+    bool Update();
+    /* Draws the counts (name inferred). */
     void Draw();
+    /* Finds the scenes and loads the font (name inferred). */
+    void InitScenes(Chao::CSD::CProject *project);
+    /* Draws the count of panel index's mission (name inferred). */
+    void DrawCount(int index);
+    /* Sets up the number display, and scales its digits (names inferred). */
+    void InitNumbers();
+    void SetNumberScale(float scale);
 
-    /* 0x000 */ u8 field_0x0[0x51C];
+    /* 0x000 */ UnkCsdHandle_80042DF0 m_sceneList;
+    /* 0x004 */ Panel m_panels[2];
+    /* 0x03C */ TGiNumberDisplay m_numbers;
 };
 SIZE_ASSERT(folderTargetWindow, 0x51C);
 

@@ -83,7 +83,7 @@ class BkGiant : public EnemyWalkerCommon {
 SIZE_ASSERT(BkGiant, 0x2B4);
 
 /* BkGiant::BkGiantAI (class name from RTTI; vtable 0x80551EC4; constructor 0x8028EC8C,
- * destructor 0x8028EC30): the giant's AI. */
+ * destructor 0x8028EC30; Game/BkGiantAI.cpp): the giant's AI. */
 class BkGiantAI : public EnemyBaseAI {
   public:
     BkGiantAI();
@@ -94,7 +94,7 @@ class BkGiantAI : public EnemyBaseAI {
     virtual void vfAI_0x48();
     virtual void vfAI_0x50();
 
-    /* 0x74 */ u8 field_0x74[0x78 - 0x74];
+    /* 0x74 */ BkGiant *m_body;
 };
 
 } // namespace BkGiant

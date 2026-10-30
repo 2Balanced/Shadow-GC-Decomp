@@ -15,7 +15,12 @@ namespace System {
  * puts the RTTI records where Game/EffectPJS.cpp has them in retail. */
 class EffectLaunchInfo {
   public:
+    EffectLaunchInfo(void *data) : m_data(data) {}
     virtual ~EffectLaunchInfo() {}
+
+    /* 0x4 */ void *m_data; /* set once the resource is loaded (see Game/EffectPJS.cpp); a member
+                            * of this class, as the constructor's store order shows
+                            * (Game/EffectArrangerUSA.cpp) */
 };
 
 } // namespace System
@@ -31,10 +36,10 @@ namespace Effect {
  * Member names and meanings are inferred. */
 class EffectLaunchInfoUSA : public ::Effect::System::EffectLaunchInfo {
   public:
-    EffectLaunchInfoUSA(void *data, ResourceOneFile *file) : m_data(data), m_file(file) {}
+    EffectLaunchInfoUSA(void *data, ResourceOneFile *file)
+        : EffectLaunchInfo(data), m_file(file) {}
     virtual ~EffectLaunchInfoUSA() {}
 
-    /* 0x4 */ void *m_data; /* set once the resource is loaded (see Game/EffectPJS.cpp) */
     /* 0x8 */ ResourceOneFile *m_file;
 };
 SIZE_ASSERT(EffectLaunchInfoUSA, 0xC);

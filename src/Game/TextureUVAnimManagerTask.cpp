@@ -66,8 +66,8 @@ void fn_801EB764(UnkUVAnimManager_801EB994 *manager, float dt);
 
 class TextureUVAnimManagerTask : public Task {
   public:
-    /* Out of line: Game/GameSystem.cpp constructs the task (it calls it by its address,
-     * fn_801EB50C). */
+    /* Out of line: Game/GameSystem.cpp constructs the task (it calls the constructor by its
+     * mangled name on the memory it allocates). */
     TextureUVAnimManagerTask(Task *parent);
     virtual ~TextureUVAnimManagerTask();
     virtual void Tick(float dt);

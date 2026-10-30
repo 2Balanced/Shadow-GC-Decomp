@@ -60,10 +60,13 @@ class EffectManagerUSA : public ::Effect::RW3::EffectManagerRW3 {
      * (0x800A327C) inline them. */
     EffectManagerUSA() {}
     virtual ~EffectManagerUSA() {}
+    /* Declared before CreateElement: the vtable is emitted with the first non-inline virtual
+     * function, and retail has it with vf18 (0x80028BA4, in the unit after Game/EffectRayUSA.cpp),
+     * not with CreateElement (Game/EffectManagerUSA.cpp). */
+    virtual void vf18();
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
         ::Effect::System::EffectLaunchInfo *info);
-    virtual void vf18();
 };
 SIZE_ASSERT(EffectManagerUSA, 0x58);
 

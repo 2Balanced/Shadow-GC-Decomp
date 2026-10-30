@@ -14,6 +14,7 @@
  * (fn_801E2234) first calls their functions (fn_801E2178, fn_801E2878, fn_801E2128, fn_801E265C,
  * then fn_801E1BD4), with the instance pointers and lbl_805EF9E8 after them; .sbss and .bss
  * differ by that order. */
+#include "Effect/System/EffectSystem.h"
 #include "Game/GameSystem.h"
 #include "Game/NowLoading.h"
 #include "Game/Task.h"
@@ -132,57 +133,8 @@ class CScene {
 void *GetDeltaMorphAnimManager();
 void *GetUVAnimManager();
 
-/* The effect systems (class names from RTTI): the platform-independent interface, its RenderWare
- * version, the game's version and the version the game uses. Only the game's version has bodies
- * (in another unit; names of the functions inferred). */
-namespace Effect {
-namespace System {
-class EffectSystem {
-  public:
-    EffectSystem() {}
-    virtual void *Initialize(void *heap, u32 size) = 0;
-    virtual void *Finalize() = 0;
-    virtual void *Allocate(u32 size) = 0;
-    virtual void Free(void *memory) = 0;
-    virtual void Fill(void *memory, int value, u32 size) = 0;
-    virtual void Copy(void *to, const void *from, u32 size) = 0;
-    virtual void Flush(void *memory) = 0;
-
-    /* 0x4 */ u32 field_0x4;
-};
-} // namespace System
-
-namespace RW3 {
-class EffectSystemRW3 : public System::EffectSystem {
-  public:
-    EffectSystemRW3() {}
-    virtual void *GetCamera() = 0;
-};
-} // namespace RW3
-} // namespace Effect
-
-namespace SonicteamUSA {
-namespace System {
-namespace Effect {
-class EffectSystemUSA : public ::Effect::RW3::EffectSystemRW3 {
-  public:
-    EffectSystemUSA() {}
-    virtual void *Initialize(void *heap, u32 size);
-    virtual void *Finalize();
-    virtual void *Allocate(u32 size);
-    virtual void Free(void *memory);
-    virtual void Fill(void *memory, int value, u32 size);
-    virtual void Copy(void *to, const void *from, u32 size);
-    virtual void Flush(void *memory);
-    virtual void *GetCamera();
-
-    /* 0x8 */ void *m_heap;
-    /* 0xC */ void *m_allocator;
-};
-} // namespace Effect
-} // namespace System
-} // namespace SonicteamUSA
-
+/* The effect system the game uses (class name from RTTI; its bases are in
+ * Effect/System/EffectSystem.h). */
 namespace Effect {
 namespace PJS {
 class EffectSystemPJS : public SonicteamUSA::System::Effect::EffectSystemUSA {
@@ -317,7 +269,9 @@ UnkObject_800122D4 *fn_800122D4(void);
 void fn_800123B8(void *task, Task *parent);
 void fn_8003A840(void);
 void fn_8004414C(Task *task, void *object);
-void fn_801EB50C(void *task, Task *parent);
+/* TextureUVAnimManagerTask's constructor (Game/TextureUVAnimManagerTask.cpp), called by its
+ * mangled name on the memory allocated for the task. */
+void __ct__24TextureUVAnimManagerTaskFP4Task(void *task, Task *parent);
 void fn_801DDEF0(void);
 void fn_800AD3A8(int kinds);
 void fn_801D2DE8(int arg0);
@@ -508,7 +462,7 @@ extern "C" bool fn_801E2234(void) {
     GetUVAnimManager();
     memory = operator new(0x28);
     if (memory != 0) {
-        fn_801EB50C(memory, fn_801EB304(fn_8001C4F8(), 0));
+        __ct__24TextureUVAnimManagerTaskFP4Task(memory, fn_801EB304(fn_8001C4F8(), 0));
     }
     GetDeltaMorphAnimManager();
     fn_801DDEF0();

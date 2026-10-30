@@ -134,6 +134,46 @@ Game/ClumpUpdater.cpp:
 	.sbss       start:0x805EE000 end:0x805EE008
 	.sdata2     start:0x805F18A0 end:0x805F18C8
 
+Game/PathCtrl.cpp:
+	.text       start:0x80016478 end:0x80018F1C
+	.rodata     start:0x804AA6A0 end:0x804AA6E0
+	.data       start:0x8051C728 end:0x8051C748
+	.sdata      start:0x805E3520 end:0x805E3530
+	.sbss       start:0x805EE008 end:0x805EE010
+	.sdata2     start:0x805F18C8 end:0x805F18D8
+
+Game/EffectArrangerUSA.cpp:
+	.text       start:0x800273E4 end:0x8002761C
+	.rodata     start:0x804AA8B0 end:0x804AA998
+	.data       start:0x8051C780 end:0x8051C7F8
+	.sdata      start:0x805E3560 end:0x805E3590
+
+Game/EffectManagerUSA.cpp:
+	.text       start:0x8002761C end:0x80027A4C
+	.rodata     start:0x804AA998 end:0x804AAAF0
+	.data       start:0x8051C7F8 end:0x8051C8A0
+	.sdata      start:0x805E3590 end:0x805E35D8
+
+Game/EffectObjectUSA.cpp:
+	.text       start:0x80027A4C end:0x80027DC4
+	.rodata     start:0x804AAAF0 end:0x804AABD8
+	.data       start:0x8051C8A0 end:0x8051C900
+	.sdata      start:0x805E35D8 end:0x805E3608
+	.sdata2     start:0x805F1968 end:0x805F1990
+
+Game/EffectParticleUSA.cpp:
+	.text       start:0x80027DC4 end:0x80028548
+	.rodata     start:0x804AABD8 end:0x804AAD18
+	.data       start:0x8051C900 end:0x8051C9A0
+	.sdata      start:0x805E3608 end:0x805E3648
+	.sdata2     start:0x805F1990 end:0x805F19B0
+
+Game/EffectRayUSA.cpp:
+	.text       start:0x80028548 end:0x80028730
+	.rodata     start:0x804AAD18 end:0x804AADA0
+	.data       start:0x8051C9A0 end:0x8051C9F0
+	.sdata      start:0x805E3648 end:0x805E3668
+
 Game/BulletBase.cpp:
 	.text       start:0x80052240 end:0x800524C4
 	.rodata     start:0x804ABF48 end:0x804ABF68
@@ -1042,10 +1082,49 @@ Game/folderPause.cpp:
 	.data       start:0x805224C8 end:0x805224D8
 	.sdata2     start:0x805F2DC0 end:0x805F2E68
 
+Game/folderStoryRoute.cpp:
+	.text       start:0x800BADF0 end:0x800BBF9C
+	.rodata     start:0x804B4738 end:0x804B50D8
+	.data       start:0x805224D8 end:0x805224F0
+	.bss        start:0x80576958 end:0x8057A810
+	.sbss       start:0x805EE624 end:0x805EE630
+	.sdata2     start:0x805F2E68 end:0x805F2FD8
+
+Game/folderTargetWindow.cpp:
+	.text       start:0x800BBF9C end:0x800BC7BC
+	.rodata     start:0x804B50D8 end:0x804B5140
+	.data       start:0x805224F0 end:0x805225C0
+	.sdata      start:0x805E4BE8 end:0x805E4BF8
+	.sdata2     start:0x805F2FD8 end:0x805F2FF0
+
 Game/TGiNumberDisplay.cpp:
 	.text       start:0x800BC7BC end:0x800BCFA4
 	.sbss       start:0x805EE630 end:0x805EE638
 	.sdata2     start:0x805F2FF0 end:0x805F3008
+
+Game/TGiHdGage.cpp:
+	.text       start:0x800BCFA4 end:0x800BD950
+	.rodata     start:0x804B5140 end:0x804B5250
+	.data       start:0x805225C0 end:0x805225E8
+	.sdata      start:0x805E4BF8 end:0x805E4C10
+	.sbss       start:0x805EE638 end:0x805EE648
+	.sdata2     start:0x805F3008 end:0x805F3018
+
+Game/TGiHissatu.cpp:
+	.text       start:0x800BD950 end:0x800BE2DC
+	.rodata     start:0x804B5250 end:0x804B53D0
+	.data       start:0x805225E8 end:0x80522610
+	.sdata      start:0x805E4C10 end:0x805E4C28
+	.sbss       start:0x805EE648 end:0x805EE658
+	.sdata2     start:0x805F3018 end:0x805F3020
+
+Game/TGiHPGaugeBoss.cpp:
+	.text       start:0x800BE2DC end:0x800BECB0
+	.rodata     start:0x804B53D0 end:0x804B54D0
+	.data       start:0x80522610 end:0x80522638
+	.sdata      start:0x805E4C28 end:0x805E4C40
+	.sbss       start:0x805EE658 end:0x805EE670
+	.sdata2     start:0x805F3020 end:0x805F3030
 
 Game/BlastBreak.cpp:
 	.text       start:0x800EC944 end:0x800ED440
@@ -2256,6 +2335,49 @@ Game/VehicleAirWingCamera.cpp:
 	.sbss       start:0x805EF7C8 end:0x805EF7E8
 	.sdata2     start:0x805F5A00 end:0x805F5A18
 
+Game/AirWingModel.cpp:
+	.text       start:0x801B4204 end:0x801B42E0
+	.rodata     start:0x804CD558 end:0x804CD640
+	.data       start:0x8053B770 end:0x8053B788
+	.sdata      start:0x805E84A8 end:0x805E84B8
+	.sdata2     start:0x805F5A18 end:0x805F5A20
+
+Game/VehicleBirdPath.cpp:
+	.text       start:0x801B42E0 end:0x801B4850
+	.sdata2     start:0x805F5A20 end:0x805F5A30
+
+Game/VehicleTable.cpp:
+	.text       start:0x801B4850 end:0x801B4C44
+	.rodata     start:0x804CD640 end:0x804CD700
+	.data       start:0x8053B788 end:0x8053B820
+	.sdata      start:0x805E84B8 end:0x805E84D0
+	.sbss       start:0x805EF7E8 end:0x805EF7F0
+	.sdata2     start:0x805F5A30 end:0x805F5A38
+
+Game/VehicleAttack.cpp:
+	.text       start:0x801B4C44 end:0x801B5AA4
+	.rodata     start:0x804CD700 end:0x804CD7E8
+	.data       start:0x8053B820 end:0x8053B848
+	.sdata      start:0x805E84D0 end:0x805E84D8
+	.sbss       start:0x805EF7F0 end:0x805EF800
+	.sdata2     start:0x805F5A38 end:0x805F5A40
+
+Game/TVehicleBase.cpp:
+	.text       start:0x801B5AA4 end:0x801B7790
+	.rodata     start:0x804CD7E8 end:0x804CD8F0
+	.data       start:0x8053B848 end:0x8053B900
+	.sdata      start:0x805E84D8 end:0x805E8510
+	.sbss       start:0x805EF800 end:0x805EF818
+	.sdata2     start:0x805F5A40 end:0x805F5A50
+
+Game/TVehicleCamera.cpp:
+	.text       start:0x801B7790 end:0x801B8784
+	.rodata     start:0x804CD8F0 end:0x804CDAF8
+	.data       start:0x8053B900 end:0x8053B948
+	.sdata      start:0x805E8510 end:0x805E8530
+	.sbss       start:0x805EF818 end:0x805EF838
+	.sdata2     start:0x805F5A50 end:0x805F5A58
+
 Game/CameraModeFixEye.cpp:
 	.text       start:0x801C0AE0 end:0x801C0C9C
 	.rodata     start:0x804CE880 end:0x804CE8E8
@@ -2705,6 +2827,15 @@ Game/SetControl.cpp:
 	.sdata      start:0x805E8E28 end:0x805E8E38
 	.sdata2     start:0x805F6148 end:0x805F6150
 
+Game/LightColli.cpp:
+	.text       start:0x801ED780 end:0x801F1BA4
+	.ctors      start:0x804A9DEC end:0x804A9DF0
+	.rodata     start:0x804D2B18 end:0x804D2E38
+	.data       start:0x8053DE18 end:0x8053E188
+	.sdata      start:0x805E8E38 end:0x805E8EA0
+	.sbss       start:0x805EFAA8 end:0x805EFAE0
+	.sdata2     start:0x805F6150 end:0x805F61D0
+
 Game/BossAfterCtrl.cpp:
 	.text       start:0x801F1BA4 end:0x801F1E24
 	.rodata     start:0x804D2E38 end:0x804D2E58
@@ -2751,6 +2882,25 @@ Game/EnemyMission.cpp:
 	.rodata     start:0x804D31B0 end:0x804D31F8
 	.data       start:0x8053E490 end:0x8053E530
 	.sdata      start:0x805E8F20 end:0x805E8F38
+
+Game/WeaponEggBazooka.cpp:
+	.text       start:0x801F3C08 end:0x801F3E88
+	.ctors      start:0x804A9DF0 end:0x804A9DF4
+	.rodata     start:0x804EB398 end:0x804EB488
+	.data       start:0x80541DA8 end:0x80541E58
+	.sdata      start:0x805E8F38 end:0x805E8F58
+	.sdata2     start:0x805F64A0 end:0x805F64B8
+
+Game/WeaponEggGun.cpp:
+	.text       start:0x801F3E88 end:0x801F42C8
+	.ctors      start:0x804A9DF4 end:0x804A9DF8
+	.rodata     start:0x804EB488 end:0x804EB568
+	.data       start:0x80541E58 end:0x80541F10
+	.sdata      start:0x805E8F58 end:0x805E8F78
+	.sdata2     start:0x805F64B8 end:0x805F64E0
+
+Game/NpcRangeCheck.cpp:
+	.text       start:0x801F42C8 end:0x801F4498
 
 Game/ElecCoreProgram.cpp:
 	.text       start:0x801F4498 end:0x801F6488
@@ -3179,6 +3329,24 @@ Game/PopFooting.cpp:
 	.sdata      start:0x805E9BD8 end:0x805E9BF8
 	.sbss       start:0x805EFE68 end:0x805EFE70
 	.sdata2     start:0x805F7050 end:0x805F7078
+
+Game/SecurityLaser.cpp:
+	.text       start:0x8022C43C end:0x8022D998
+	.ctors      start:0x804A9EA8 end:0x804A9EAC
+	.rodata     start:0x804F2120 end:0x804F2300
+	.data       start:0x80546C08 end:0x80546E98
+	.sdata      start:0x805E9BF8 end:0x805E9C38
+	.sbss       start:0x805EFE70 end:0x805EFE90
+	.sdata2     start:0x805F7078 end:0x805F70F0
+
+Game/SuperComputer.cpp:
+	.text       start:0x8022D998 end:0x8022EC24
+	.ctors      start:0x804A9EAC end:0x804A9EB0
+	.rodata     start:0x804F2300 end:0x804F2458
+	.data       start:0x80546E98 end:0x80546F28
+	.sdata      start:0x805E9C38 end:0x805E9C60
+	.sbss       start:0x805EFE90 end:0x805EFEA8
+	.sdata2     start:0x805F70F0 end:0x805F7120
 
 Game/ElecKyuu.cpp:
 	.text       start:0x8023053C end:0x80230F98
@@ -3862,6 +4030,56 @@ Game/BkGiant.cpp:
 	.sbss       start:0x805F0260 end:0x805F0268
 	.sdata2     start:0x805F8358 end:0x805F83E8
 
+Game/EggPierrot.cpp:
+	.text       start:0x80289790 end:0x8028CD0C
+	.rodata     start:0x804F8DB0 end:0x804F9580
+	.data       start:0x80550580 end:0x80551B20
+	.sdata      start:0x805EAFD8 end:0x805EB120
+	.sbss       start:0x805F0268 end:0x805F0288
+	.sdata2     start:0x805F83E8 end:0x805F8498
+
+Game/EnemyVacuumBullet.cpp:
+	.text       start:0x8028CD0C end:0x8028CFBC
+	.ctors      start:0x804A9F5C end:0x804A9F60
+	.rodata     start:0x804F9580 end:0x804F95D8
+	.data       start:0x80551B20 end:0x80551B58
+	.sdata      start:0x805EB120 end:0x805EB138
+	.sbss       start:0x805F0288 end:0x805F0290
+	.sdata2     start:0x805F8498 end:0x805F84B8
+
+Game/EnemyVacuumObject.cpp:
+	.text       start:0x8028CFBC end:0x8028D834
+	.rodata     start:0x804F95D8 end:0x804F9730
+	.data       start:0x80551B58 end:0x80551BB0
+	.sdata      start:0x805EB138 end:0x805EB160
+	.sbss       start:0x805F0290 end:0x805F0298
+	.sdata2     start:0x805F84B8 end:0x805F84D0
+
+Game/PlayerShadowElectric.cpp:
+	.text       start:0x8028D834 end:0x8028DE38
+	.rodata     start:0x804F9730 end:0x804F9758
+	.data       start:0x80551BB0 end:0x80551BD0
+	.sdata      start:0x805EB160 end:0x805EB178
+	.sdata2     start:0x805F84D0 end:0x805F84E8
+
+Game/BkGiantAI.cpp:
+	.text       start:0x8028DE38 end:0x8028EECC
+	.rodata     start:0x804F9758 end:0x804F99D8
+	.data       start:0x80551BD0 end:0x80551FD8
+	.bss        start:0x805842D8 end:0x80584320
+	.sdata      start:0x805EB178 end:0x805EB270
+	.sbss       start:0x805F0298 end:0x805F02C8
+	.sdata2     start:0x805F84E8 end:0x805F8508
+
+Game/EggPierrotAI.cpp:
+	.text       start:0x8028EECC end:0x802901E4
+	.rodata     start:0x804F99D8 end:0x804F9CA0
+	.data       start:0x80551FD8 end:0x80552410
+	.bss        start:0x80584320 end:0x80584360
+	.sdata      start:0x805EB270 end:0x805EB370
+	.sbss       start:0x805F02C8 end:0x805F0308
+	.sdata2     start:0x805F8508 end:0x805F8530
+
 Game/PJSCameraTargetInfo.cpp:
 	.text       start:0x802901E4 end:0x80290394
 	.rodata     start:0x804F9CA0 end:0x804F9CF0
@@ -3971,6 +4189,24 @@ Game/MemoryCardCtrl.cpp:
 	.sdata      start:0x805EB570 end:0x805EB588
 	.sbss       start:0x805F0388 end:0x805F0398
 	.sdata2     start:0x805F85D8 end:0x805F8628
+
+Game/EggShadowAndroid.cpp:
+	.text       start:0x8029C1F4 end:0x8029DBAC
+	.ctors      start:0x804A9F6C end:0x804A9F70
+	.rodata     start:0x804FB9C0 end:0x804FBE30
+	.data       start:0x805529D0 end:0x80553948
+	.sdata      start:0x805EB588 end:0x805EB6A8
+	.sbss       start:0x805F0398 end:0x805F03A8
+	.sdata2     start:0x805F8628 end:0x805F86B0
+
+Game/EggShadowAndroidAI.cpp:
+	.text       start:0x8029DBAC end:0x8029F4D0
+	.rodata     start:0x804FBE30 end:0x804FC160
+	.data       start:0x80553948 end:0x80553D80
+	.bss        start:0x805843C8 end:0x80584420
+	.sdata      start:0x805EB6A8 end:0x805EB7A8
+	.sbss       start:0x805F03A8 end:0x805F03E8
+	.sdata2     start:0x805F86B0 end:0x805F86E8
 
 Game/EggMecaCtrlUnit.cpp:
 	.text       start:0x8029F4D0 end:0x802A7C9C
@@ -4476,6 +4712,12 @@ Game/BossForceClear.cpp:
 	.data       start:0x80559250 end:0x80559270
 	.sdata      start:0x805EC5B0 end:0x805EC5C0
 	.sdata2     start:0x805F90E0 end:0x805F90E8
+
+Game/UnkNameTable_802DFC7C.cpp:
+	.text       start:0x802DFAB4 end:0x802E0514
+	.rodata     start:0x80505880 end:0x805058E0
+	.sdata      start:0x805EC5C0 end:0x805EC5C8
+	.sdata2     start:0x805F90E8 end:0x805F90F0
 
 Game/TextureRasterCache.cpp:
 	.text       start:0x802E0514 end:0x802E0A34

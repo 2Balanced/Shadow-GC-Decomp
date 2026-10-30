@@ -14,7 +14,10 @@ template <class T> inline u8 BlendByte(T from, T to, float t) {
     return to * t + from * (1.0f - t);
 }
 
-EffectGlobalParamUSA::EffectGlobalParamUSA() {
+EffectGlobalParamUSA::EffectGlobalParamUSA(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                                           ::Effect::System::EffectLaunchInfo *info,
+                                           ::Effect::System::EffectManager *owner)
+    : EffectGlobalParamRW3(desc, info, owner) {
     m_size -= sizeof(EffectGlobalParamRW3);
     m_size += sizeof(EffectGlobalParamUSA);
     if (!(m_flags & 1)) {

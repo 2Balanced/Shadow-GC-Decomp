@@ -5,6 +5,7 @@
 #include "dolphin/types.h"
 
 class CharInfo;
+struct UnkColor_8040D2D8;
 
 namespace SonicteamUSA {
 namespace System {
@@ -74,7 +75,8 @@ class CharaColliBase {
      * unknown). */
     virtual void SetSize(float x, float y, float z, int arg);
     virtual void SetOffset(const Vec3f *offset, int arg);
-    virtual void vf_0x50();
+    /* Sets the collider's colour in the debug view (name inferred; Game/LightColli.cpp). */
+    virtual void SetDebugColor(const UnkColor_8040D2D8 *color);
     virtual void vf_0x54();
     /* Sets the collider's attributes (meaning of the arguments unknown). */
     virtual void SetAttributes(u32 attributes, int arg1);

@@ -341,6 +341,15 @@ template <class T, class C, class K = C> class __tree {
     static iterator &increment(iterator &position);
 #endif
     std::pair<iterator, bool> insert_unique(const T &v);
+#ifdef MSL_MAP_SUBSCRIPT
+    /* Only where MSL_MAP_SUBSCRIPT is defined before this header (Game/LightColli.cpp): whether a
+     * value with key k is there, and the value with key k, inserted with a default mapped value if
+     * it is not (map::count and map::operator[]). */
+    template <class Key> size_type count(const Key &k) const {
+        return find(k) != end();
+    }
+    template <class Key> T &find_or_insert(const Key &k);
+#endif
     template <class Key> iterator find(const Key &k);
     template <class Key> const_iterator find(const Key &k) const {
         return const_cast<__tree *>(this)->find(k);
@@ -467,10 +476,66 @@ template <class Key, class T, class Compare = less<Key> > class map {
     const_iterator find(const key_type &k) const {
         return tree_.find(k);
     }
+#ifdef MSL_MAP_SUBSCRIPT
+    size_type count(const key_type &k) const {
+        return tree_.count(k);
+    }
+    mapped_type &operator[](const key_type &k) {
+        return tree_.find_or_insert(k).second;
+    }
+#endif
 
   private:
     /* 0x0 */ tree_type tree_;
 };
+
+#ifdef MSL_MULTIMAP_TREE
+/* A multimap on the map's tree (only where MSL_MULTIMAP_TREE is defined before this header,
+ * Game/UnkSystemManager_801E2128.cpp; the electric panels' owners): in the game's own code the
+ * maps, multimaps and sets share one tree template (see <set>). Only what its users call is
+ * declared. Game/csdmProject.cpp's multimap (MSL_MULTIMAP below) is the Chao library's. */
+template <class Key, class T, class Compare = less<Key> > class multimap {
+  public:
+    typedef Key key_type;
+    typedef T mapped_type;
+    typedef pair<const Key, T> value_type;
+    typedef Compare key_compare;
+    typedef size_t size_type;
+
+    /* Orders values by key, and a key against a value. */
+    class value_compare {
+      public:
+        value_compare(const key_compare &c) : comp(c) {
+            __tree_nothing();
+        }
+
+        bool operator()(const value_type &x, const value_type &y) const {
+            return comp(x.first, y.first);
+        }
+        bool operator()(const key_type &x, const value_type &y) const {
+            return comp(x, y.first);
+        }
+        bool operator()(const value_type &x, const key_type &y) const {
+            return comp(x.first, y);
+        }
+
+      protected:
+        /* 0x0 */ key_compare comp;
+    };
+
+  private:
+    typedef __tree<value_type, value_compare, key_compare> tree_type;
+
+  public:
+    typedef typename tree_type::iterator iterator;
+
+    multimap() : tree_(key_compare(), typename tree_type::value_allocator()) {}
+    ~multimap() {}
+
+  private:
+    /* 0x0 */ tree_type tree_;
+};
+#endif
 
 #ifdef MSL_MULTIMAP
 /* The iterators of a multimap's tree (see below). The iterator is a const_iterator that also gives

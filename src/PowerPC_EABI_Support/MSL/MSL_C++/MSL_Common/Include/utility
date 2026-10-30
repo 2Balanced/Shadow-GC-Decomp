@@ -4,7 +4,7 @@
 /* Minimal stand-in for the MSL <utility>. */
 namespace std {
 
-#ifdef MSL_PAIR_COPY_CALL
+#if defined(MSL_PAIR_COPY_CALL) || defined(MSL_PAIR_DTOR_CALL)
 inline void __pair_nothing() {}
 #endif
 
@@ -25,6 +25,14 @@ template <class T1, class T2> struct pair {
      * the copy constructor calls an inline function, so that it stays out of line as the game has
      * it there. */
     pair(const pair &p) : first(p.first), second(p.second) {
+        __pair_nothing();
+    }
+#endif
+
+#ifdef MSL_PAIR_DTOR_CALL
+    /* Where MSL_PAIR_DTOR_CALL is defined before this header (Game/folderStoryRoute.cpp), the
+     * destructor calls an inline function, so that it stays out of line. */
+    ~pair() {
         __pair_nothing();
     }
 #endif

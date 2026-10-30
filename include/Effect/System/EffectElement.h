@@ -2,6 +2,10 @@
 #define EFFECT_SYSTEM_EFFECTELEMENT_H
 
 #include "Game/MathTypes.h"
+#ifdef EFFECT_ELEMENT_POLYMORPHIC
+/* The effect system fn_8042A5D0 returns gives elements their memory. */
+#include "Effect/System/EffectSystem.h"
+#endif
 #include <dolphin/types.h>
 
 namespace Effect {
@@ -9,19 +13,6 @@ namespace System {
 
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
 class EffectManager;
-
-/* The effect heap fn_8042A5D0 returns (class name unknown): its virtual functions set it up on a
- * block of memory, release it, and allocate and free memory (names inferred; see
- * Game/EffectTask.cpp). */
-class UnkEffectHeap_8042A5D0 {
-  public:
-    virtual void Initialize(void *memory, u32 size);
-    virtual void Finalize();
-    virtual void *Alloc(u32 size);
-    virtual void Free(void *p);
-};
-
-extern "C" UnkEffectHeap_8042A5D0 *fn_8042A5D0(void);
 #endif
 
 /* EffectElement (class name from the RTTI of its shared_ptr control block,
@@ -85,15 +76,15 @@ class EffectElement {
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
     /* The class's own view of itself, for the units that define classes derived from it (see
      * Effect/System/EffectGlobalParam.h): its virtual destructor (0x80425E8C) and its operator
-     * delete, which hands the memory back to the effect heap. Gadget code only reaches the members
-     * below, so the plain layout above stays the default. */
+     * delete, which hands the memory back to the effect system. Gadget code only reaches the
+     * members below, so the plain layout above stays the default. */
     virtual ~EffectElement();
     /* Advances the effect by dt, and draws it (names inferred; see Game/EffectManagerPJS.h). */
     virtual void Update(float dt) = 0;
     virtual void Draw() = 0;
-    /* Elements live on the effect heap (see Game/EffectManagerPJS.cpp). */
+    /* Elements live in the effect system's memory (see Game/EffectManagerPJS.cpp). */
     static void *operator new(unsigned long size) {
-        return fn_8042A5D0()->Alloc(size);
+        return fn_8042A5D0()->Allocate(size);
     }
     static void operator delete(void *p) {
         fn_8042A5D0()->Free(p);
@@ -101,7 +92,9 @@ class EffectElement {
 
     /* 0x04 */ u32 field_0x4;
     /* 0x08 */ u32 m_size; /* the size of the most derived class (inferred) */
-    /* 0x0C */ u8 field_0xC[0x14 - 0xC];
+    /* 0x0C */ float m_time; /* frames since launch (inferred; Game/EffectObjectUSA.cpp divides it
+                              * by 60) */
+    /* 0x10 */ u8 field_0x10[0x14 - 0x10];
 #else
     /* 0x00 */ u8 field_0x0[0x14];
 #endif

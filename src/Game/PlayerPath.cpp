@@ -26,6 +26,13 @@ using SonicteamUSA::System::PathCtrl;
 namespace SonicteamUSA {
 namespace System {
 
+/* A path's data (class name from the RTTI of its boost::shared_ptr control block; see
+ * Game/PathData.h): its first word holds its flags (inferred). */
+class PathData {
+  public:
+    /* 0x0 */ u32 m_flags;
+};
+
 /* A point of a path where it branches (class name from the RTTI of the bound callback; layout
  * unknown beyond the rotation at 0). */
 class JointPathData {
@@ -54,11 +61,6 @@ struct UnkMission_8006D6A8 {
     /* 0x20 */ s32 m_kind;
 };
 
-/* A point of a path (class name unknown): its first word holds its flags (inferred). */
-class UnkPathPoint_80016718 {
-  public:
-    /* 0x0 */ u32 m_flags;
-};
 
 /* An iterator over the branches of a joint (a list node pointer; type name unknown). */
 struct UnkJointIterator_80016E18 {
@@ -107,7 +109,7 @@ JointPathData *fn_80016BB4(PathCtrl *path, int arg1, int arg2, float distance);
 void fn_80018F1C(JointPathData *joint, PathCtrl *path, int *direction);
 void fn_80019910(JointPathData *joint, int arg1);
 /* The point the path is at (behaviour inferred). */
-boost::shared_ptr<UnkPathPoint_80016718> fn_80016718(PathCtrl *path);
+boost::shared_ptr<SonicteamUSA::System::PathData> fn_80016718(PathCtrl *path);
 /* Joint helpers (behaviour inferred). */
 JointPathData *fn_80016A34(JointPathData *joint);
 JointPathData *fn_800169C8(JointPathData *joint);

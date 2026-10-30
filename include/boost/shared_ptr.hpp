@@ -36,7 +36,7 @@
 #include <boost/detail/sp_counted_base_impl.hpp>
 
 #include <algorithm>            // for std::swap
-#ifdef BOOST_SP_LESS
+#if defined(BOOST_SP_LESS) || defined(BOOST_WP_LESS)
 #include <functional>           // for std::less
 #endif
 #include <new>                  // for std::bad_alloc
@@ -198,6 +198,15 @@ public:
     {
         return pi_ != 0? pi_->use_count(): 0;
     }
+#ifdef BOOST_WP_LESS
+    // boost 1.32's ordering of weak counts, compiled only where BOOST_WP_LESS is defined before
+    // this header (Game/LightColli.cpp, whose sets and maps are keyed by weak_ptr), for the reason
+    // given at the top.
+    friend inline bool operator<(weak_count const & a, weak_count const & b)
+    {
+        return std::less<sp_counted_base *>()(a.pi_, b.pi_);
+    }
+#endif
 };
 
 inline shared_count::shared_count(weak_count const & r): pi_(r.pi_)
