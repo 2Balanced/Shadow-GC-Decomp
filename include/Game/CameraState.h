@@ -6,10 +6,14 @@
 #include "size_assert.h"
 
 /* A camera's placement (struct name unknown; 0x34 bytes, from CameraManagerUnit's layout): the eye
- * and the point looked at come first; a CameraMode starts with one. Its constructor, destructor
- * and assignment are out of line (0x8000AA70, 0x8000A9AC, 0x8000B074). */
+ * and the point looked at come first; a CameraMode starts with one. Its constructors, destructor
+ * and assignment are out of line (0x8000AA70, 0x8000A9E8, 0x8000A9AC, 0x8000B074;
+ * Game/CameraState.cpp defines all but the assignment). The default placement is the eye
+ * (0, 20, 20) looking at the origin with the up vector (0, 1, 0); the view window at 0x1C is a
+ * pair of angles (Game/CameraState.cpp), and the word at 0x30 is set through fn_8000AAEC. */
 struct UnkCameraState_8000AA70 {
     UnkCameraState_8000AA70();
+    UnkCameraState_8000AA70(const Vec3f *eye, const Vec3f *target, float fov, const Vec2f *window);
     ~UnkCameraState_8000AA70();
     UnkCameraState_8000AA70 &operator=(const UnkCameraState_8000AA70 &state);
 

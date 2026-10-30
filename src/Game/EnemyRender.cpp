@@ -41,8 +41,8 @@ class UnkEnemyMotionCallback : public EnemyMotionCallback {
     }
 };
 
-/* The motion part of an enemy (class name unknown; 0x2C bytes; code at 0x801A4584..0x801A4D28,
- * not yet matched): its event callback is at 0x20. */
+/* The motion part of an enemy (class name unknown; 0x2C bytes; its code is Game/EnemyMotion.cpp):
+ * its event callback is at 0x20. */
 class UnkMotion_801A4D28 {
   public:
     UnkMotion_801A4D28();  /* 0x801A4D28 */

@@ -365,6 +365,8 @@ class EffectManagerPJS
       public Sonicteam::System::Singleton<EffectManagerPJS,
                                           Sonicteam::System::CreateStatic<EffectManagerPJS> > {
   public:
+    /* Out of line where Game/PlayerEffect.cpp makes the singleton (0x800A32E4). */
+    EffectManagerPJS() {}
     virtual ~EffectManagerPJS() {}
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,

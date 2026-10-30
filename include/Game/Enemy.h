@@ -849,6 +849,39 @@ class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
 #endif
 };
 
+#ifdef ENEMY_MOVE_COMMON_UNIT
+#include "Game/DebugDraw.h"
+
+/* The walls' initial touching flag (a byte in .sdata, defined in Game/EnemyMoveCommon.cpp; name
+ * unknown). */
+extern u8 lbl_805E81D0;
+
+/* The walls around an enemy (class name unknown; the object at EnemyMoveCommon+0x8): a sphere at
+ * the enemy's body, the push out of the walls it touches and whether it touches any (names
+ * inferred). */
+class UnkEnemyGround_801A5EA8 {
+  public:
+    UnkEnemyGround_801A5EA8() : m_enemy(0) {
+        m_push.x = 0.0f;
+        m_push.y = 0.0f;
+        m_push.z = 0.0f;
+        m_touching.Set(lbl_805E81D0);
+    }
+
+    void Init(Enemy *enemy);
+    /* Finds the walls the sphere touches at position. */
+    void Update(const Vec3f *position);
+    /* Inline, defined in Game/EnemyMoveCommon.cpp. */
+    Vec3f *GetPush();
+    int IsTouching();
+
+    /* 0x00 */ Enemy *m_enemy;
+    /* 0x04 */ UnkSphere_8004E6CC m_sphere;
+    /* 0x14 */ Vec3f m_push;
+    /* 0x20 */ EnemyStatusFlag m_touching;
+};
+
+#endif
 /* EnemyMoveCommon (class name from RTTI; vtable 0x8053AA04; constructor 0x801A5D14). */
 class EnemyMoveCommon : public virtual EnemyReferer, public EnemyMoveFunc {
   public:
@@ -875,7 +908,24 @@ class EnemyMoveCommon : public virtual EnemyReferer, public EnemyMoveFunc {
 #endif
     virtual void vfMove_0x34();          /* 0x801A560C */
 
+#ifdef ENEMY_MOVE_COMMON_UNIT
+    /* The rest as Game/EnemyMoveCommon.cpp, which holds the class's code, sees it (names
+     * inferred; the layout is the same). */
+    /* 0x08 */ UnkEnemyGround_801A5EA8 m_ground;
+    /* 0x2C */ Vec3f m_position;  /* where the enemy moves to this frame */
+    /* 0x38 */ float m_height;    /* above the floor */
+    /* 0x3C */ float m_floorY;    /* the floor's height, -999999 when there is none */
+    /* 0x40 */ Vec3f m_floorNormal;
+    /* 0x4C */ s32 m_floorKind; /* the floor's top four attribute bits, 0xF when there is none */
+    /* 0x50 */ Vec3f m_velocity; /* of a jump or a fall */
+    /* 0x5C */ u8 m_groundCheck; /* walls are checked */
+    /* 0x5D */ u8 m_jumping;
+    /* 0x5E */ u8 m_jumpStart;
+    /* 0x5F */ u8 m_onWater;
+    /* 0x60 */ u8 m_overWater;
+#else
     /* 0x08 */ u8 field_0x8[0x64 - 0x8];
+#endif
 };
 
 /* EnemyMoveWalker (class name from RTTI; vtable 0x80531764, emitted with Game/BkSoldier.cpp):

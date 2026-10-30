@@ -2,6 +2,11 @@
 #define MSL_STDEXCEPT_H_
 
 #include <exception>
+#ifdef MSL_RUNTIME_ERROR_IMPL
+#include <cstdio>
+#include <cstdlib>
+#include <cstring>
+#endif
 
 /* Declarations only (exceptions are off in the game); boost::bad_function_call derives from
  * std::runtime_error. */
@@ -12,6 +17,70 @@ class logic_error : public exception {
     explicit logic_error(const char *) {}
 };
 
+#ifdef MSL_RUNTIME_ERROR_IMPL
+/* The library's runtime_error itself, for the unit that emits its out-of-line copies
+ * (Game/CameraModeUser.cpp, the first user of boost::function). It keeps a copy of its message in
+ * a reference-counted array (class name from the library's out-of-memory message; the string class
+ * around it is named here). */
+template <class T> class _RefCountedPtr {
+  public:
+    ~_RefCountedPtr();
+    _RefCountedPtr(T *ptr);
+    T *get() const {
+        return m_ptr;
+    }
+
+  private:
+    T *m_ptr;
+    int *m_count;
+};
+
+/* The constructor and destructor are defined outside the class (not inline), so they stay out
+ * of line, as the library's are; they come out at the end of the unit in the order they are
+ * declared (the destructor first, as in the game). */
+template <class T> _RefCountedPtr<T>::_RefCountedPtr(T *ptr) : m_ptr(ptr), m_count(0) {
+    if (m_ptr != 0) {
+        m_count = new int(1);
+        if (m_count == 0) {
+            delete[] m_ptr;
+            fprintf(stderr, "_RefCountedPtr out of memory");
+            abort();
+        }
+    }
+}
+
+template <class T> _RefCountedPtr<T>::~_RefCountedPtr() {
+    if (m_count != 0 && --*m_count == 0) {
+        delete[] m_ptr;
+        delete m_count;
+    }
+}
+
+/* The message: a copy of the string in the reference-counted array. */
+template <class T> class _RefCountedString {
+  public:
+    _RefCountedString(const T *s) : m_data(new T[strlen(s) + 1]) {
+        strcpy(m_data.get(), s);
+    }
+    const T *c_str() const {
+        return m_data.get();
+    }
+
+  private:
+    _RefCountedPtr<T> m_data;
+};
+
+class runtime_error : public exception {
+  public:
+    explicit runtime_error(const char *what_arg) : m_what(what_arg) {}
+    virtual const char *what() const {
+        return m_what.c_str();
+    }
+
+  private:
+    _RefCountedString<char> m_what;
+};
+#else
 class runtime_error : public exception {
   public:
     explicit runtime_error(const char *) {}
@@ -24,6 +93,7 @@ class runtime_error : public exception {
     char m_what[8];
 #endif
 };
+#endif
 
 class invalid_argument : public logic_error {
   public:

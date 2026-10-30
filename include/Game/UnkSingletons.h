@@ -77,6 +77,10 @@ class Enemy;
 extern "C" {
 /* Rebalances the tree under root after x was linked in (the library code <map> also calls). */
 void fn_8000CD64(UnkTreeNodeBase *x, UnkTreeNodeBase *root);
+#ifdef UNK_TREE_ITERATE
+/* Steps an iterator to the next node (the library code <map> also calls). */
+void fn_80012E90(UnkTreeNodeBase **iterator);
+#endif
 }
 #endif
 
@@ -123,6 +127,15 @@ template <class T> class UnkTree {
         bool operator!=(const Iterator &x) const {
             return m_node != x.m_node;
         }
+#ifdef UNK_TREE_ITERATE
+        bool operator==(const Iterator &x) const {
+            return m_node == x.m_node;
+        }
+        Iterator &operator++() {
+            fn_80012E90(&m_node);
+            return *this;
+        }
+#endif
 
         /* 0x0 */ UnkTreeNodeBase *m_node;
     };
@@ -173,6 +186,11 @@ template <class T> class UnkTree {
     void destroy(Node *n);
 
 #ifdef UNK_TREE_MAP
+#ifdef UNK_TREE_ITERATE
+    Iterator begin() {
+        return Iterator(begin_node());
+    }
+#endif
     Iterator end() {
         return Iterator(header());
     }

@@ -131,7 +131,20 @@ SIZE_ASSERT(AccelerateInputCommand, 0x20);
 /* Type 2: moves the character to m_position (constructor inline in the game, 0x8009E51C). */
 class SetPositionCommand : public CharCommand {
   public:
+#ifdef CHARCOMMAND_INLINE_CONSTRUCTORS
+    /* The inline constructor, where CHARCOMMAND_INLINE_CONSTRUCTORS is defined
+     * (Game/PlayerControlBukuu.cpp, which has the copy the game links). The inline type accessor
+     * keeps it out of line, as with Player::CancelBehaviorCommand (Game/GadgetCharCommands.h). */
+    static int Id() {
+        return 2;
+    }
+
+    SetPositionCommand(const Vec3f &position, int arg1) : CharCommand(Id(), arg1) {
+        fn_800091EC(&m_position, &position);
+    }
+#else
     SetPositionCommand(const Vec3f &position, int arg1);
+#endif
     virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
 #ifdef CHARCOMMAND_IMPLEMENTATION
     virtual std::string vf_0x10() const;
@@ -161,7 +174,16 @@ SIZE_ASSERT(SetAngleCommand, 0x24);
 /* Type 4: clears the character's velocity (constructor inline in the game, 0x8009E934). */
 class ClrVelocityCommand : public CharCommand {
   public:
+#ifdef CHARCOMMAND_INLINE_CONSTRUCTORS
+    /* As SetPositionCommand's (Game/PlayerControlBukuu.cpp). */
+    static int Id() {
+        return 4;
+    }
+
+    ClrVelocityCommand(int arg0) : CharCommand(Id(), arg0) {}
+#else
     ClrVelocityCommand(int arg0);
+#endif
     virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
     virtual const char *GetName();
 };
@@ -572,6 +594,29 @@ class SetGravityCommand : public PlayerCommand {
     /* 0x14 */ Vec3f m_direction;
 };
 
+/* TurnOverCommand and PickupObjectCommand (class names from RTTI; vtables 0x8052112C and
+ * 0x80521184): commands 0x11F and 0x11D, which make a player turn a target's owner over or pick
+ * it up (Player::Control::Approach sends them; arg1's meaning unknown). Their constructors are
+ * inline (Game/PlayerControlApproach.cpp has the copies); Reject and the destructors are in the
+ * player commands' unit. */
+class TurnOverCommand : public PlayerCommand {
+  public:
+    TurnOverCommand(const boost::weak_ptr<Target> &target, int arg1)
+        : PlayerCommand(0x11F, arg1), m_target(target) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Target> m_target;
+};
+
+class PickupObjectCommand : public PlayerCommand {
+  public:
+    PickupObjectCommand(const boost::weak_ptr<Target> &target, int arg1)
+        : PlayerCommand(0x11D, arg1), m_target(target) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Target> m_target;
+};
+
 #ifdef CHARCOMMAND_SET_LOOP_PATH
 /* SetLoopPathCommand (class name from RTTI; vtable 0x805213EC): the command of type 0x10C, which
  * puts a running player on a loop's path (Player::Behavior::Ground takes it). Only the path is
@@ -590,5 +635,7 @@ SIZE_ASSERT(Player::SetGravityCommand, 0x20);
 SIZE_ASSERT(Player::LaunchCommand, 0x18);
 SIZE_ASSERT(Player::IgnoreInputCommand, 0x20);
 SIZE_ASSERT(Player::ActingAccelerateCommand, 0x24);
+SIZE_ASSERT(Player::TurnOverCommand, 0x1C);
+SIZE_ASSERT(Player::PickupObjectCommand, 0x1C);
 
 #endif

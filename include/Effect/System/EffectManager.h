@@ -36,6 +36,8 @@ namespace RW3 {
 
 class EffectManagerRW3 : public ::Effect::System::EffectManager {
   public:
+    /* 0x804329C4 (the PJS manager's constructor calls it; Game/PlayerEffect.cpp). */
+    EffectManagerRW3();
     virtual ~EffectManagerRW3();
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
@@ -54,7 +56,9 @@ namespace Effect {
 
 class EffectManagerUSA : public ::Effect::RW3::EffectManagerRW3 {
   public:
-    /* Inline: the PJS manager's destructor (0x800A327C) inlines it. */
+    /* Inline, as is the destructor: the PJS manager's constructor (0x800A32E4) and destructor
+     * (0x800A327C) inline them. */
+    EffectManagerUSA() {}
     virtual ~EffectManagerUSA() {}
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,

@@ -23,8 +23,12 @@ class Render {
 SIZE_ASSERT(Render, 0x28);
 
 /* The object fn_80046178 returns; the word at 0x8 is passed when creating a Render (meaning
- * unknown). */
+ * unknown). It holds the tasks of the render levels, 0x17 of them, under four roots;
+ * Game/RenderStatic.cpp builds them (its constructor and destructor are there). */
 struct UnkRenderOwner_80046178 {
+    UnkRenderOwner_80046178();  /* 0x801E47FC */
+    ~UnkRenderOwner_80046178(); /* 0x801E47A0 */
+
     /* 0x0 */ u32 field_0x0;
     /* 0x4 */ u32 field_0x4;
     /* 0x8 */ void *field_0x8;
@@ -47,7 +51,9 @@ struct UnkRenderOwner_80046178 {
     /* 0x50 */ u8 field_0x50[0x54 - 0x50];
     /* 0x54 */ void *field_0x54; /* passed by EggLastMechSlotDisp2D (meaning unknown) */
     /* 0x58 */ Task *field_0x58; /* the parent of the PJS effects' screen tasks */
+    /* 0x5C */ Task *m_roots[4];  /* CameraStart, RenderDiv, RenderStatic and CameraEnd */
 };
+SIZE_ASSERT(UnkRenderOwner_80046178, 0x6C);
 
 extern "C" {
 UnkRenderOwner_80046178 *fn_80046178(void);

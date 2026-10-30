@@ -81,12 +81,52 @@ class CameraModeUser : public CameraMode {
      * event raised when the mode is switched to (meaning inferred). Its contents are unknown. */
     struct SwitchEventArgs;
 
-    typedef boost::function1<void, UpdateEventArgs &> UpdateCallback;
     typedef boost::function1<void, SwitchEventArgs &> SwitchCallback;
+    typedef boost::function1<void, UpdateEventArgs &> UpdateCallback;
 
+    /* (Game/CameraModeUser.cpp; the constructor 0x80009CC0, Create 0x80009894.) */
+    CameraModeUser(UnkCameraOwner_8000E9BC *owner, int screen);
+    static CameraMode *Create(UnkCameraOwner_8000E9BC *owner, int screen);
+
+    virtual int GetModeId();
+    /* Each raises its event, when a handler is set: Update the update event, OnSwitch the switch
+     * event and vf_0x14 the third (at 0xB8), which takes the same arguments. */
+    virtual void Update(float dt, UnkCameraUpdateArg_800099B8 *arg);
+    virtual void OnSwitch(UnkCameraSwitchArg_8000996C *arg);
+    virtual void vf_0x14(UnkCameraArg_800098E4 *arg);
+    virtual ~CameraModeUser();
+
+    /* The handlers are objects of a class around function1 (template name unknown: its
+     * constructor and destructor are out of line, 0x80009D58 and 0x80009AD0 for the switch
+     * handlers; member names inferred); only the unit that builds and destroys the mode declares
+     * the members with that type (template instances renumber a unit's @N locals). Its implicit
+     * assignment is the fn_800A673C and fn_800A6A24 below. */
+    template <class Args> class UnkEvent_80009D58 {
+      public:
+        bool empty() const {
+            return m_function.empty();
+        }
+        /* Calls the handler if one is set. */
+        void Raise(Args &args) const {
+            if (!m_function.empty()) {
+                m_function(args);
+            }
+        }
+
+        boost::function1<void, Args &> m_function;
+    };
+    typedef UnkEvent_80009D58<UpdateEventArgs> UpdateEvent;
+    typedef UnkEvent_80009D58<SwitchEventArgs> SwitchEvent;
+
+#ifdef CAMERAMODEUSER_EVENTS
+    /* 0xAC */ SwitchEvent m_onSwitch;
+    /* 0xB8 */ SwitchEvent field_0xB8;
+    /* 0xC4 */ UpdateEvent m_onUpdate;
+#else
     /* 0xAC */ SwitchCallback m_onSwitch;
     /* 0xB8 */ u8 field_0xB8[0xC4 - 0xAC - sizeof(SwitchCallback)];
     /* 0xC4 */ UpdateCallback m_onUpdate;
+#endif
 };
 
 } // namespace Camera
@@ -100,6 +140,8 @@ class CameraModeUser : public CameraMode {
 struct UnkCameraBlend_8000B2C0 {
     UnkCameraBlend_8000B2C0();
     UnkCameraBlend_8000B2C0(float time);
+    /* With the time and the value at 0x4 (0x8000B264; Game/PlayerEffect.cpp). */
+    UnkCameraBlend_8000B2C0(float time, float value);
     ~UnkCameraBlend_8000B2C0();
 
     /* 0x00 */ float m_time;
@@ -133,19 +175,21 @@ void fn_801CE9F4(UnkCameraManager_80099954 *manager,
                  const boost::shared_ptr<SonicteamUSA::System::Camera::CameraMode> &mode);
 /* Creates a user camera mode (behaviour inferred; the arguments' meanings are unknown). */
 boost::shared_ptr<SonicteamUSA::System::Camera::CameraModeUser> fn_80009704(int arg0, int arg1);
-/* Assigns source to a user camera mode's update handler (behaviour inferred, as fn_800729B0 does for
- * command units). */
-SonicteamUSA::System::Camera::CameraModeUser::UpdateCallback *
-fn_800A673C(SonicteamUSA::System::Camera::CameraModeUser::UpdateCallback *callback,
-            const SonicteamUSA::System::Camera::CameraModeUser::UpdateCallback *source);
-/* Assigns source to a user camera mode's switch handler (behaviour inferred, as fn_800A673C). */
-SonicteamUSA::System::Camera::CameraModeUser::SwitchCallback *
-fn_800A6A24(SonicteamUSA::System::Camera::CameraModeUser::SwitchCallback *callback,
-            const SonicteamUSA::System::Camera::CameraModeUser::SwitchCallback *source);
 /* Sets a user camera mode's eye and point looked at, and its up vector (behaviour inferred). */
 void fn_8000A5D4(SonicteamUSA::System::Camera::CameraMode *mode, const Vec3f *eye,
                  const Vec3f *target);
 void fn_8000ACE4(SonicteamUSA::System::Camera::CameraModeUser *mode, const Vec3f *up);
 }
+
+/* A handler is assigned through UnkEvent_80009D58's implicit copy assignment (weak instances in
+ * Game/PlayerEffect.cpp: 0x800A673C for the update handler, 0x800A6A24 for the switch handler; they
+ * call function1's own assignment). Units that keep the plain callback members assign a handler
+ * with these two macros, which keep the functions' former names. */
+#define fn_800A673C(callback, source) \
+    (*reinterpret_cast<SonicteamUSA::System::Camera::CameraModeUser::UpdateEvent *>(callback) = \
+         *reinterpret_cast<const SonicteamUSA::System::Camera::CameraModeUser::UpdateEvent *>(source))
+#define fn_800A6A24(callback, source) \
+    (*reinterpret_cast<SonicteamUSA::System::Camera::CameraModeUser::SwitchEvent *>(callback) = \
+         *reinterpret_cast<const SonicteamUSA::System::Camera::CameraModeUser::SwitchEvent *>(source))
 
 #endif

@@ -81,7 +81,19 @@ class TouchLineCommand : public PlayerCommand {
  * gives it back (meanings inferred from the names; arguments unknown). */
 class StartExternalControlCommand : public PlayerCommand {
   public:
+#ifdef GADGETCHARCOMMANDS_INLINE_EXTERNAL_CONTROL
+    /* Defined in the class where GADGETCHARCOMMANDS_INLINE_EXTERNAL_CONTROL is defined
+     * (Game/PlayerControlBukuu.cpp, which has the copy the game links); the inline id accessor
+     * keeps it out of line, as with CancelBehaviorCommand. */
+    static int Id() {
+        return 0x12B;
+    }
+
+    StartExternalControlCommand(int arg0, int arg1)
+        : PlayerCommand(Id(), arg1), field_0x1C(0), field_0x20(0), field_0x24(arg0) {}
+#else
     StartExternalControlCommand(int arg0, int arg1);
+#endif
     /* Hands the character to target, which holds it at *position facing *rotation (the stretch
      * grass's use; names inferred). Defined in the class but not inlined, so its user emits a weak
      * copy (0x8014D730). */
@@ -101,7 +113,19 @@ class StartExternalControlCommand : public PlayerCommand {
  * player (names inferred; the meaning of the float is unknown). */
 class SetMotionCommand : public PlayerCommand {
   public:
+#ifdef GADGETCHARCOMMANDS_INLINE_EXTERNAL_CONTROL
+    /* As StartExternalControlCommand's (Game/PlayerControlBukuu.cpp). */
+    static int Id() {
+        return 0x129;
+    }
+
+    SetMotionCommand(int motion, int arg1, float arg2)
+        : PlayerCommand(Id(), arg1), m_motion(motion), field_0x18(arg2) {}
+    /* Out of line in the player commands' unit (0x8009CF78), which has the vtable. */
+    virtual ~SetMotionCommand();
+#else
     SetMotionCommand(int motion, int arg1, float arg2);
+#endif
 
     /* 0x14 */ s32 m_motion;
     /* 0x18 */ float field_0x18;

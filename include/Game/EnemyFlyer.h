@@ -90,7 +90,7 @@ class EnemyFlyerCommon : public TEnemyCommonBase,
 };
 
 /* The path a flyer follows (class name unknown; constructor 0x801A6844 and destructor 0x801A67F0
- * are in the Enemy unit). */
+ * are in Game/EnemyPath.cpp). */
 class UnkEnemyPath_801A6844 {
   public:
     UnkEnemyPath_801A6844();
@@ -98,7 +98,15 @@ class UnkEnemyPath_801A6844 {
 
     /* 0x00 */ SonicteamUSA::System::PathCtrl m_path;
     /* 0x58 */ float field_0x58;
+#ifdef ENEMY_PATH_UNIT
+    /* The rest as Game/EnemyPath.cpp, which holds the class's code, sees it (names inferred; the
+     * layout is the same). */
+    /* 0x5C */ s32 m_backward; /* the path is followed from its end */
+    /* 0x60 */ Vec3f field_0x60;
+    /* 0x6C */ u8 field_0x6C[0x70 - 0x6C];
+#else
     /* 0x5C */ u8 field_0x5C[0x70 - 0x5C];
+#endif
 };
 
 /* FlyerCommonBase (class name from RTTI; vtable 0x80535B0C, with its unit around 0x801938F8): the
