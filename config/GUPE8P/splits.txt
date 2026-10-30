@@ -142,6 +142,15 @@ Game/PathCtrl.cpp:
 	.sbss       start:0x805EE008 end:0x805EE010
 	.sdata2     start:0x805F18C8 end:0x805F18D8
 
+Game/PathData.cpp:
+	.text       start:0x80018F1C end:0x8001C4F8
+	.ctors      start:0x804A9C08 end:0x804A9C0C
+	.rodata     start:0x804AA6E0 end:0x804AA720
+	.bss        start:0x80570B50 end:0x80570BA0
+	.sdata      start:0x805E3530 end:0x805E3538
+	.sbss       start:0x805EE010 end:0x805EE028
+	.sdata2     start:0x805F18D8 end:0x805F18E8
+
 Game/EffectArrangerUSA.cpp:
 	.text       start:0x800273E4 end:0x8002761C
 	.rodata     start:0x804AA8B0 end:0x804AA998
@@ -173,6 +182,15 @@ Game/EffectRayUSA.cpp:
 	.rodata     start:0x804AAD18 end:0x804AADA0
 	.data       start:0x8051C9A0 end:0x8051C9F0
 	.sdata      start:0x805E3648 end:0x805E3668
+
+Game/EffectSystemUSA.cpp:
+	.text       start:0x80028730 end:0x80028C94
+	.rodata     start:0x804AADA0 end:0x804AAE80
+	.data       start:0x8051C9F0 end:0x8051CA78
+	.bss        start:0x80570CF0 end:0x80571178
+	.sdata      start:0x805E3668 end:0x805E3698
+	.sbss       start:0x805EE090 end:0x805EE0A0
+	.sdata2     start:0x805F19B0 end:0x805F19C0
 
 Game/BulletBase.cpp:
 	.text       start:0x80052240 end:0x800524C4
@@ -1125,6 +1143,62 @@ Game/TGiHPGaugeBoss.cpp:
 	.sdata      start:0x805E4C28 end:0x805E4C40
 	.sbss       start:0x805EE658 end:0x805EE670
 	.sdata2     start:0x805F3020 end:0x805F3030
+
+Game/GiHPGaugeEnemy.cpp:
+	.text       start:0x800BECB0 end:0x800C02CC
+	.rodata     start:0x804B54D0 end:0x804B5A00
+	.data       start:0x80522638 end:0x80522668
+	.sdata      start:0x805E4C40 end:0x805E4C60
+	.sbss       start:0x805EE670 end:0x805EE688
+	.sdata2     start:0x805F3030 end:0x805F3070
+
+Game/TGameInfomation.cpp:
+	.text       start:0x800C02CC end:0x800C06A0
+	.rodata     start:0x804B5A00 end:0x804B5A28
+	.data       start:0x80522668 end:0x80522688
+	.bss        start:0x8057A810 end:0x8057A850
+	.sdata      start:0x805E4C60 end:0x805E4C70
+	.sbss       start:0x805EE688 end:0x805EE698
+	.sdata2     start:0x805F3070 end:0x805F3078
+
+Game/CharaColliBaseCharInfo.cpp:
+	.text       start:0x800C06A0 end:0x800C07C8
+	.ctors      start:0x804A9CF4 end:0x804A9CF8
+	.rodata     start:0x804B5A28 end:0x804B5A98
+	.data       start:0x80522688 end:0x80522728
+	.bss        start:0x8057A850 end:0x8057A868
+	.sdata      start:0x805E4C70 end:0x805E4C80
+	.sbss       start:0x805EE698 end:0x805EE6A8
+
+Game/CharaColliBody.cpp:
+	.text       start:0x800C07C8 end:0x800C162C
+	.rodata     start:0x804B5A98 end:0x804B5B90
+	.data       start:0x80522728 end:0x805227D8
+	.sdata      start:0x805E4C80 end:0x805E4C98
+
+Game/CharaColliBodyCharInfo.cpp:
+	.text       start:0x800C162C end:0x800C18BC
+	.rodata     start:0x804B5B90 end:0x804B5C70
+	.data       start:0x805227D8 end:0x805228A8
+	.sdata      start:0x805E4C98 end:0x805E4CB8
+
+Game/CharaColliGeneral.cpp:
+	.text       start:0x800C18BC end:0x800C384C
+	.rodata     start:0x804B5C70 end:0x804B5DB8
+	.data       start:0x805228A8 end:0x80522958
+	.sdata      start:0x805E4CB8 end:0x805E4CD0
+
+Game/CharaColliGeneralBone.cpp:
+	.text       start:0x800C384C end:0x800C3C5C
+	.rodata     start:0x804B5DB8 end:0x804B5ED0
+	.data       start:0x80522958 end:0x80522A50
+	.sdata      start:0x805E4CD0 end:0x805E4CF8
+
+Game/CharaColliGeneralCharInfo.cpp:
+	.text       start:0x800C3C5C end:0x800C3ED4
+	.rodata     start:0x804B5ED0 end:0x804B5FB0
+	.data       start:0x80522A50 end:0x80522B20
+	.sdata      start:0x805E4CF8 end:0x805E4D18
 
 Game/BlastBreak.cpp:
 	.text       start:0x800EC944 end:0x800ED440
@@ -3634,6 +3708,21 @@ Game/GravitySignBoard.cpp:
 	.sdata      start:0x805EA500 end:0x805EA520
 	.sdata2     start:0x805F7788 end:0x805F77A8
 
+Game/ElecPanel.cpp:
+	.text       start:0x802593B0 end:0x8025B414
+	.rodata     start:0x804F4E70 end:0x804F5110
+	.data       start:0x80549FA8 end:0x8054A210
+	.sdata      start:0x805EA520 end:0x805EA590
+	.sbss       start:0x805F0008 end:0x805F0028
+	.sdata2     start:0x805F77A8 end:0x805F77F0
+
+Game/ElecPanelManagerTask.cpp:
+	.text       start:0x8025B414 end:0x8025D104
+	.rodata     start:0x804F5110 end:0x804F5160
+	.data       start:0x8054A210 end:0x8054A230
+	.sdata      start:0x805EA590 end:0x805EA5A8
+	.sdata2     start:0x805F77F0 end:0x805F77F8
+
 Game/StageEventList.cpp:
 	.text       start:0x8025D104 end:0x8025DBC0
 	.rodata     start:0x804F5160 end:0x804F5180
@@ -3676,6 +3765,9 @@ Game/CommandCollision.cpp:
 	.sdata      start:0x805EA650 end:0x805EA678
 	.sbss       start:0x805F0060 end:0x805F0070
 	.sdata2     start:0x805F7B18 end:0x805F7B40
+
+Game/UnkGadgetRegistry_80260E48.cpp:
+	.text       start:0x80260C18 end:0x80260E88
 
 Game/FootingRoll.cpp:
 	.text       start:0x80260E88 end:0x80261DE8

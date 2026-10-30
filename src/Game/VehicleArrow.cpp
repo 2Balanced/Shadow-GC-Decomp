@@ -70,6 +70,8 @@ namespace CSD {
 class CProject {
   public:
     CProject();
+    /* A project that plays other's data (Game/GiHPGaugeEnemy.cpp, 0x800BFF30). */
+    CProject(const CProject &other);
     virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
@@ -102,10 +104,10 @@ void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing and drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */
-void fn_8036DA1C(UnkCsdProject_800BFF30 *project, float dt);
-void fn_8036D94C(UnkCsdProject_800BFF30 *project);
-RCPtr<CScene> fn_8036D660(UnkCsdProject_800BFF30 *project, const char *name);
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdProject_800BFF30 *project, int arg1);
+void fn_8036DA1C(Chao::CSD::CProject *project, float dt);
+void fn_8036D94C(Chao::CSD::CProject *project);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
 
 /* Scenes (behaviour inferred): the position and the scale. */
 void fn_80365AC8(CScene *scene, float x, float y);
@@ -142,7 +144,7 @@ class VehicleArrowImpl {
     static Chao::CSD::CProject *s_resource;
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
-    /* 0x08 */ UnkCsdProject_800BFF30 *m_project;
+    /* 0x08 */ Chao::CSD::CProject *m_project;
     /* 0x0C */ u8 m_visible;
     /* 0x10 */ float m_scale; /* the scene's scale at depth 1 (meaning inferred) */
     /* 0x14 */ float m_near;  /* the depth range the arrow is shown in (meaning inferred) */
@@ -204,7 +206,7 @@ VehicleArrowImpl::VehicleArrowImpl()
     m_render = fn_8004E24C(fn_80046178()->field_0x30);
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&VehicleArrowImpl::Draw, this, _1));
     if (s_resource != 0) {
-        m_project = new UnkCsdProject_800BFF30(s_resource);
+        m_project = new Chao::CSD::CProject(*s_resource);
         if (m_project != 0) {
             fn_8036D598(m_project, 0);
         }

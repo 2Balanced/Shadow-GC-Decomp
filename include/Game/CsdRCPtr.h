@@ -6,7 +6,8 @@
  * (class names from RTTI: Chao::CSD::RCPtr<T>::RCObject<T>, its CFunctorBase and Chao::CSD::CBase).
  * The source file names and line numbers are the ones retail passes to the allocator (csdBase.h,
  * csdRCObject.h). Member names are inferred. Game/Gong.cpp keeps its own copy of the RCPtr
- * declaration and of UnkCsdProject_800BFF30. */
+ * declaration. Game code declares the CSD project, Chao::CSD::CProject, in its own units (see
+ * Game/GiHPGaugeEnemy.cpp, which emits its copy constructor). */
 
 #include <dolphin/types.h>
 
@@ -37,20 +38,6 @@ void fn_80361D18(const char *format, ...);
 void fn_80361DC4(const char *format, ...);
 #endif
 }
-
-/* The 0x4C-byte CSD project (name inferred); fn_800BFF30 constructs it from a loaded resource. Its
- * allocation goes through the CSD allocator (the class operator new of csdBase.h, line 40). */
-class UnkCsdProject_800BFF30 {
-  public:
-    UnkCsdProject_800BFF30(void *resource);
-    virtual ~UnkCsdProject_800BFF30();
-
-    /* 0x04 */ u8 field_0x4[0x4C - 0x4];
-
-    static void *operator new(u32 size) {
-        return fn_803605AC()->Alloc(size, "csdBase.h", 40);
-    }
-};
 
 namespace Chao {
 namespace CSD {

@@ -18,11 +18,125 @@
  * As in <map>, which members are written inline and which call an inline helper so that they stay
  * out of line reproduces the game's call structure (deferred inlining one level deep), and the
  * tree's larger members are defined in <set_impl>, which a unit includes after its own code. The
- * electric panels' set<unsigned char> (Game/UnkSystemManager_801E2128.cpp) uses it too. Names are
+ * electric panels' set<int> (Game/ElecPanel.h, Game/ElecPanelManagerTask.cpp) uses it too. Names are
  * invented; the original MSL source is not used. */
 
 namespace std {
 
+#ifdef MSL_SET_CONST_ITERATOR
+/* Where MSL_SET_CONST_ITERATOR is defined before this header (Game/ElecPanelManagerTask.cpp), the
+ * set's const_iterator is a class of its own, not a base of the iterator: it is made from an
+ * iterator out of line (through the iterator's conversion to the tree's iterator), and its members
+ * are all out of line too. */
+template <class T> class __set_iterator;
+
+template <class T> class __set_const_iterator {
+  public:
+    __set_const_iterator() {
+        __tree_nothing();
+    }
+    __set_const_iterator(const __set_const_iterator &x) {
+        node_ = x.node_;
+        __tree_nothing();
+    }
+    __set_const_iterator(const __set_iterator<T> &x);
+    __set_const_iterator &operator=(const __set_const_iterator &x) {
+        assign(x);
+        return *this;
+    }
+
+    /* The tree's iterator at the same node (the tree's erase takes one). */
+    operator __tree_iterator<T>() const {
+        __tree_nothing();
+        return __tree_iterator<T>(node_);
+    }
+    const T &operator*() const {
+        __tree_nothing();
+        return static_cast<__tree_node<T> *>(node_)->value_;
+    }
+    __set_const_iterator &operator++() {
+        fn_80012E90(&node_);
+        return *this;
+    }
+    __set_const_iterator operator++(int) {
+        __set_const_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator!=(const __set_const_iterator &x) const {
+        __tree_nothing();
+        return node_ != x.node_;
+    }
+    bool operator!=(const __set_iterator<T> &x) const {
+        return *this != __set_const_iterator(x);
+    }
+
+  private:
+    void assign(const __set_const_iterator &x) {
+        node_ = x.node_;
+        __tree_nothing();
+    }
+
+  public:
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+/* The set's iterator: its members are all called out of line. */
+template <class T> class __set_iterator {
+  public:
+    __set_iterator() {
+        __tree_nothing();
+    }
+    __set_iterator(const __tree_iterator<T> &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+    __set_iterator(const __set_iterator &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+    __set_iterator &operator=(const __set_iterator &x) {
+        assign(x);
+        return *this;
+    }
+
+    /* The tree's iterator at the same node. */
+    operator __tree_iterator<T>() const {
+        __tree_nothing();
+        return __tree_iterator<T>(node_);
+    }
+    const T &operator*() const {
+        __tree_nothing();
+        return static_cast<__tree_node<T> *>(this->node_)->value_;
+    }
+    __set_iterator &operator++() {
+        fn_80012E90(&this->node_);
+        return *this;
+    }
+    __set_iterator operator++(int) {
+        __set_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator!=(const __set_iterator &x) const {
+        __tree_nothing();
+        return this->node_ != x.node_;
+    }
+
+  private:
+    void assign(const __set_iterator &x) {
+        this->node_ = x.node_;
+        __tree_nothing();
+    }
+
+  public:
+    /* 0x0 */ __tree_node_base *node_;
+};
+
+template <class T> inline __set_const_iterator<T>::__set_const_iterator(const __set_iterator<T> &x) {
+    node_ = __tree_iterator<T>(x).node_;
+}
+#else
 /* The set's const_iterator, which erase takes: copied plainly, and converted to the tree's iterator
  * out of line. */
 template <class T> class __set_const_iterator {
@@ -72,6 +186,12 @@ template <class T> class __set_iterator : public __set_const_iterator<T> {
         __tree_nothing();
         return this->node_ != x.node_;
     }
+#ifdef MSL_SET_TREE_ASSIGN
+    bool operator==(const __set_iterator &x) const {
+        __tree_nothing();
+        return this->node_ == x.node_;
+    }
+#endif
 
   private:
     void assign(const __set_iterator &x) {
@@ -79,6 +199,8 @@ template <class T> class __set_iterator : public __set_const_iterator<T> {
         __tree_nothing();
     }
 };
+
+#endif
 
 /* The tree of a set: <map>'s __tree with the ordering less<T> and, in place of what the ordering is
  * built from, the allocator of the values. In the game the sets and maps share one tree template:
@@ -116,6 +238,11 @@ template <class T, class A> class __tree<T, less<T>, A> {
     template <class Key> iterator find(const Key &k);
     void erase(iterator position);
     void clear();
+#ifdef MSL_SET_TREE_ASSIGN
+    /* Only where MSL_SET_TREE_ASSIGN is defined before this header (Game/ElecPanel.cpp): the
+     * assignment (set::operator=), which copies x's nodes, and the iterator's ==. */
+    __tree &operator=(const __tree &x);
+#endif
     /* Steps position (out of line: erase calls it). */
     static iterator &increment(iterator &position) {
         return ++position;
@@ -149,6 +276,18 @@ template <class T, class A> class __tree<T, less<T>, A> {
     C &comp() {
         return begin_.first();
     }
+#ifdef MSL_SET_TREE_ASSIGN
+    const __tree_end_node *header() const {
+        return &header_.second();
+    }
+    __tree_node_base *root() const {
+        return header()->left_;
+    }
+    const C &comp() const {
+        return begin_.first();
+    }
+    node *copy(const node *x);
+#endif
 
     node *insert_node(__tree_node_base *parent, bool left, bool leftmost, const T &v);
     void destroy(node *n);

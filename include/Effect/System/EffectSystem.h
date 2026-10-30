@@ -21,7 +21,7 @@ class EffectSystem {
     /* Allocates and frees the effect library's memory. */
     virtual void *Allocate(u32 size) = 0;
     virtual void Free(void *memory) = 0;
-    virtual void Fill(void *memory, int value, u32 size) = 0;
+    virtual void Fill(void *memory, char value, u32 size) = 0;
     virtual void Copy(void *to, const void *from, u32 size) = 0;
     virtual void Flush(void *memory) = 0;
 
@@ -55,7 +55,7 @@ class EffectSystemUSA : public ::Effect::RW3::EffectSystemRW3 {
     virtual void *Finalize();
     virtual void *Allocate(u32 size);
     virtual void Free(void *memory);
-    virtual void Fill(void *memory, int value, u32 size);
+    virtual void Fill(void *memory, char value, u32 size);
     virtual void Copy(void *to, const void *from, u32 size);
     virtual void Flush(void *memory);
     virtual void *GetCamera();

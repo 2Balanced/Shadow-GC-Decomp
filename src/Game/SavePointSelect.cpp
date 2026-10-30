@@ -57,6 +57,25 @@ struct UnkCsdPosition_8036AE98 {
     float y;
 };
 
+/* The 0x4C-byte CSD project (Chao::CSD::CProject, Game/csdmProject.cpp); its copy constructor
+ * (Game/GiHPGaugeEnemy.cpp, 0x800BFF30) makes one from a loaded resource. Its allocation goes
+ * through the CSD allocator (the class operator new of csdBase.h, line 40). */
+namespace Chao {
+namespace CSD {
+class CProject {
+  public:
+    CProject(const CProject &other);
+    virtual ~CProject();
+
+    /* 0x04 */ u8 field_0x4[0x4C - 0x4];
+
+    static void *operator new(u32 size) {
+        return fn_803605AC()->Alloc(size, "csdBase.h", 40);
+    }
+};
+} // namespace CSD
+} // namespace Chao
+
 class UnkObject_801175AC;
 class UnkObject_802E5B2C;
 class UnkPlacement_800C9CD0;
@@ -73,11 +92,11 @@ void *fn_80012700(void *loader, int arg1, const char *fileName);
 
 /* Projects (behaviour inferred): drawing, advancing, resetting, a scene by name and playing a
  * scene's motion. */
-void fn_8036D94C(UnkCsdProject_800BFF30 *project);
-void fn_8036DA1C(UnkCsdProject_800BFF30 *project, float dt);
-void fn_8036C248(UnkCsdProject_800BFF30 *project);
-RCPtr<CScene> fn_8036D660(UnkCsdProject_800BFF30 *project, const char *name);
-RCPtr<CScene> fn_8036D890(UnkCsdProject_800BFF30 *project, const char *name, int motion, int arg3);
+void fn_8036D94C(Chao::CSD::CProject *project);
+void fn_8036DA1C(Chao::CSD::CProject *project, float dt);
+void fn_8036C248(Chao::CSD::CProject *project);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+RCPtr<CScene> fn_8036D890(Chao::CSD::CProject *project, const char *name, int motion, int arg3);
 /* Scenes and nodes (behaviour inferred): a node by name, a node's position, placing a scene at a
  * position, and a word of the scene. */
 RCPtr<CNode> fn_803666B4(CScene *scene, const char *name);
@@ -234,9 +253,9 @@ class SavePointSelectImpl {
     }
 
     /* 0x00 */ boost::shared_ptr<Render> m_render;
-    /* 0x08 */ UnkCsdProject_800BFF30 *m_box;
-    /* 0x0C */ UnkCsdProject_800BFF30 *m_icons[8];
-    /* 0x2C */ UnkCsdProject_800BFF30 *m_shadow;
+    /* 0x08 */ Chao::CSD::CProject *m_box;
+    /* 0x0C */ Chao::CSD::CProject *m_icons[8];
+    /* 0x2C */ Chao::CSD::CProject *m_shadow;
     /* 0x30 */ s32 m_state;
     /* 0x34 */ s32 m_cursor;
     /* 0x38 */ s32 m_count;
@@ -298,7 +317,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
     m_render = fn_8004DFB0(fn_80046178()->field_0x38, "SavePointSelectImpll");
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&SavePointSelectImpl::Draw, this, _1));
 
-    m_box = new UnkCsdProject_800BFF30(resource);
+    m_box = new Chao::CSD::CProject(*(Chao::CSD::CProject *)resource);
     {
         RCPtr<CScene> scene = fn_8036D890(m_box, s_boxScene, 0, 0);
         fn_803659DC(scene.Get(), 0);
@@ -320,7 +339,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
     SkipDisabled(1);
 
     for (int i = 0; i < m_count; i++) {
-        m_icons[i] = new UnkCsdProject_800BFF30(resource);
+        m_icons[i] = new Chao::CSD::CProject(*(Chao::CSD::CProject *)resource);
         if (m_entries[i].m_enabled) {
             const char *name;
             int motion;
@@ -354,7 +373,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
 
     for (int i = 0; i < m_count; i++) {
         if (m_entries[i].m_number == m_current) {
-            m_shadow = new UnkCsdProject_800BFF30(resource);
+            m_shadow = new Chao::CSD::CProject(*(Chao::CSD::CProject *)resource);
             fn_8036D890(m_shadow, s_shadowScene, 1, 0);
             RCPtr<CScene> scene = fn_8036D660(m_shadow, s_shadowScene);
             char text[32];

@@ -31,6 +31,11 @@ template <class T> class __podvec_imp : public vector<void *, allocator<void *> 
     T &operator[](size_t n) {
         return (T &)base::operator[](n);
     }
+#ifdef PATHDATA_CODE
+    void assign(size_t n, const T &x) {
+        base::assign(n, (void *const &)x);
+    }
+#endif
 };
 
 template <class T> class __podvec : public __podvec_imp<T> {
@@ -40,6 +45,11 @@ template <class T> class __podvec : public __podvec_imp<T> {
     T &operator[](size_t n) {
         return imp::operator[](n);
     }
+#ifdef PATHDATA_CODE
+    void assign(size_t n, const T &x) {
+        imp::assign(n, x);
+    }
+#endif
 };
 
 } // namespace std
@@ -65,11 +75,17 @@ template <> inline __list_imp<SonicteamUSA::System::JointPathData>::~__list_imp(
           fn_80016D84(static_cast<list<SonicteamUSA::System::JointPathData> *>(this)));
 }
 
+#ifdef PATHDATA_CODE
+/* Game/PathData.cpp calls Game/PathCtrl.cpp's copy. */
+template <>
+void list<SonicteamUSA::System::JointPathData>::push_back(const SonicteamUSA::System::JointPathData &x);
+#else
 template <>
 inline void
 list<SonicteamUSA::System::JointPathData>::push_back(const SonicteamUSA::System::JointPathData &x) {
     this->insert(fn_80016D84(this), x);
 }
+#endif
 } // namespace std
 
 namespace SonicteamUSA {
@@ -87,22 +103,28 @@ struct PathPoint {
 };
 SIZE_ASSERT(PathPoint, 0x20);
 
-/* A path as loaded: its point count, length and points, then the flags and bounds PathData
- * copies. */
+/* A path as loaded: its point count, length and points, then the flags and bounds (the largest
+ * coordinates first) PathData copies, and its name. */
 struct PathPoints {
     /* 0x00 */ u32 m_count;
     /* 0x04 */ float m_length;
     /* 0x08 */ PathPoint *m_points;
     /* 0x0C */ u32 m_flags;
-    /* 0x10 */ Vec3f m_min;
+    /* 0x10 */ Vec3f m_max;
     /* 0x1C */ u32 field_0x1C;
-    /* 0x20 */ Vec3f m_max;
+    /* 0x20 */ Vec3f m_min;
+    /* 0x2C */ const char *m_name;
 };
 
 /* Where a path meets another one: the direction of the branch, the other path, whether the joint
  * is at the other path's start and whether going on reverses the direction. */
 class JointPathData {
   public:
+#ifdef PATHDATA_CODE
+    /* Only where PATHDATA_CODE is defined before this header (Game/PathData.cpp). */
+    JointPathData() : m_rotation(0.0f, 0.0f, 0.0f), m_atStart(false), m_flip(false) {}
+#endif
+
     /* 0x00 */ Vec3f m_rotation;
     /* 0x0C */ boost::weak_ptr<PathData> m_path;
     /* 0x14 */ bool m_atStart;
@@ -125,28 +147,63 @@ class UnkJointList_80016BB4 : public std::list<JointPathData> {
     UnkJointList_80016BB4() {}
 };
 
-/* Paths linked into one (class name unknown; the next unit builds and searches them): the length
- * of them all, their bounds, the first and the last path, and the paths (a std::list of
- * shared_ptr<PathData> at 0x2C, not yet modelled). */
+#ifdef PATHDATA_CODE
+typedef std::list<boost::shared_ptr<PathData> > PathList;
+#endif
+
+/* Paths linked into one (class name unknown; Game/PathData.cpp builds them, the next unit searches
+ * them): the length of them all, their bounds (the largest coordinates first), the first and the
+ * last path, and, where Game/PathData.cpp defines PATHDATA_CODE, the paths, whether a path joins
+ * the link in the middle of another one, and the name of its first path. */
 struct UnkPathLink_80017DBC {
+#ifdef PATHDATA_CODE
+    UnkPathLink_80017DBC(const boost::shared_ptr<PathData> &path);
+    static void *operator new(size_t size);
+
+    void Join(boost::shared_ptr<PathData> other, boost::shared_ptr<PathData> path, bool atStart,
+              bool flip);
+    bool Connect(boost::shared_ptr<PathData> path);
+    void UpdateOffsets();
+    void UpdateJoints();
+    void UpdateJoint(boost::shared_ptr<PathData> path, JointPathData *joint, bool atStart);
+#endif
+
     /* 0x00 */ float m_length;
-    /* 0x04 */ Vec3f m_min;
-    /* 0x10 */ Vec3f m_max;
+#ifdef PATHDATA_CODE
+    /* 0x04 */ Fn8040CopyVector3 m_max;
+    /* 0x10 */ Fn8040CopyVector3 m_min;
+#else
+    /* 0x04 */ Vec3f m_max;
+    /* 0x10 */ Vec3f m_min;
+#endif
     /* 0x1C */ boost::weak_ptr<PathData> m_first;
     /* 0x24 */ boost::weak_ptr<PathData> m_last;
+#ifdef PATHDATA_CODE
+    /* 0x2C */ PathList m_paths;
+    /* 0x38 */ bool m_branched;
+    /* 0x39 */ char m_name[0x14];
+    /* 0x4D */ u8 field_0x4D[7];
+#endif
 };
 
-/* A path (0x54 bytes; the next unit's constructor at 0x8001995C sets it up from the file data):
- * its flags and bounds from the file, its offset in its link, its points, the distance of each
- * point from the start, the joints at its start and end, its link, and whether it owns the
- * points. */
+/* A path (0x54 bytes; its constructor in Game/PathData.cpp sets it up from the file data): its
+ * flags and bounds (the largest coordinates first) from the file, its offset in its link, its
+ * points, the distance of each point from the start, the joints at its start and end, its link,
+ * and whether it owns the points. */
 class PathData {
   public:
+#ifdef PATHDATA_CODE
+    PathData(PathPoints *points, bool ownsPoints);
+    static void *operator new(size_t size);
+
+    void UpdateDistances();
+#endif
+
     /* 0x00 */ u32 m_flags;
     /* 0x04 */ u32 field_0x4;
     /* 0x08 */ float m_linkOffset;
-    /* 0x0C */ Fn8040CopyVector3 m_min;
-    /* 0x18 */ Fn8040CopyVector3 m_max;
+    /* 0x0C */ Fn8040CopyVector3 m_max;
+    /* 0x18 */ Fn8040CopyVector3 m_min;
     /* 0x24 */ PathPoints *m_points;
     /* 0x28 */ std::__podvec<float> m_distances;
     /* 0x34 */ UnkJointList_80016BB4 m_startJoints;

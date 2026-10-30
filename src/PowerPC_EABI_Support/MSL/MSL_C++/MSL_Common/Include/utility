@@ -4,7 +4,7 @@
 /* Minimal stand-in for the MSL <utility>. */
 namespace std {
 
-#if defined(MSL_PAIR_COPY_CALL) || defined(MSL_PAIR_DTOR_CALL)
+#if defined(MSL_PAIR_COPY_CALL) || defined(MSL_PAIR_DTOR_CALL) || defined(MSL_PAIR_CONST_FIRST)
 inline void __pair_nothing() {}
 #endif
 
@@ -40,6 +40,26 @@ template <class T1, class T2> struct pair {
     T1 first;
     T2 second;
 };
+
+#ifdef MSL_PAIR_CONST_FIRST
+/* Where MSL_PAIR_CONST_FIRST is defined before this header (Game/ElecPanelManagerTask.cpp and
+ * Game/UnkGadgetRegistry_80260E48.cpp), a pair with a const first member (a map's value) is made
+ * from the pair with the plain first member by a constructor of its own, not by a member template:
+ * the game links one copy of it for both units. It calls an inline function, so that it stays out
+ * of line as the game has it. */
+template <class T1, class T2> struct pair<const T1, T2> {
+    typedef const T1 first_type;
+    typedef T2 second_type;
+
+    pair(const T1 &a, const T2 &b) : first(a), second(b) {}
+    pair(const pair<T1, T2> &p) : first(p.first), second(p.second) {
+        __pair_nothing();
+    }
+
+    const T1 first;
+    T2 second;
+};
+#endif
 
 #ifdef MSL_MAKE_PAIR_BY_VALUE
 /* Where MSL_MAKE_PAIR_BY_VALUE is defined before this header (Game/csdmProject.cpp), make_pair takes

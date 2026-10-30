@@ -47,6 +47,13 @@ struct PooledListPoolNode {
 };
 
 struct PooledListPool {
+    /* Out of line (0x8004E920, 0x8004E870): the pool of fn_80028B30 is a function-local static. */
+    PooledListPool(s32 capacity);
+    ~PooledListPool();
+
+    /* The pool's address once created (see fn_80028B30; name inferred). */
+    static PooledListPool *s_cached;
+
     /* Links node into the free list. */
     void Push(PooledListPoolNode *node) {
         m_free->m_prev = node;

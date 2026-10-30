@@ -9,7 +9,7 @@
  * and CResourceBase<Chao::CSD::Project> are named by game code's RTTI records (the project data
  * is SProject here, as in Game/csdAccess.cpp), CProject by the allocator's file names and the
  * library's naming, and every other name is inferred. Game code declares its own copies of
- * CProject (Game/TGi.h; UnkCsdProject_800BFF30 in Game/CsdRCPtr.h is the same class) and of
+ * CProject (Game/TGi.h and others; Game/GiHPGaugeEnemy.cpp emits its copy constructor) and of
  * UnkCsdHandle_80042DF0, so a unit includes either those or this header. */
 
 #include <functional>

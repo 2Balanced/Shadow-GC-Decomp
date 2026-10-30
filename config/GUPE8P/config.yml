@@ -14,3 +14,5 @@ force_active:
 - __fini_cpp_exceptions_reference
 # Game/StageInitalizeTask.cpp's unused vector: nothing refers to it, but retail kept it.
 - lbl_80580250
+# Game/EffectSystemUSA.cpp's unused word after UnkRenderer_800289B0::s_cached: retail kept it.
+- lbl_805EE094

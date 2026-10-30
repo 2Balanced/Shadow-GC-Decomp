@@ -40,11 +40,24 @@ template <class T> struct equal_to : binary_function<T, T, bool> {
     }
 };
 
+#ifdef MSL_BINDER_OUTLINE
+template <class T> inline const T &__binder_id(const T &x) {
+    return x;
+}
+#endif
+
 template <class Operation>
 class binder2nd
     : public unary_function<typename Operation::first_argument_type, typename Operation::result_type> {
   public:
+#ifdef MSL_BINDER_OUTLINE
+    /* Where MSL_BINDER_OUTLINE is defined before this header (Game/PathData.cpp, whose binder of a
+     * pointer the game constructs out of line), an inline call keeps it out of line. */
+    binder2nd(const Operation &x, const typename Operation::second_argument_type &y)
+        : op(x), value(__binder_id(y)) {}
+#else
     binder2nd(const Operation &x, const typename Operation::second_argument_type &y) : op(x), value(y) {}
+#endif
 
     typename Operation::result_type operator()(const typename Operation::first_argument_type &x) const {
         return op(x, value);

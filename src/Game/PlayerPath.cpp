@@ -46,6 +46,12 @@ class BranchCallBackParam {
     /* 0x0 */ JointPathData *m_joint; /* the joint reached (inferred) */
 };
 
+/* The list of joints fn_80016BB4 returns (Game/PathData.h); only its destructor is needed here. */
+class UnkJointList_80016BB4 {
+  public:
+    ~UnkJointList_80016BB4();
+};
+
 } // namespace System
 } // namespace SonicteamUSA
 
@@ -107,7 +113,6 @@ bool fn_80018150(PathCtrl *path, const Vec3f *position, const Vec3f *direction, 
 void fn_80018FFC(PathCtrl *path, PathCtrl *from);
 JointPathData *fn_80016BB4(PathCtrl *path, int arg1, int arg2, float distance);
 void fn_80018F1C(JointPathData *joint, PathCtrl *path, int *direction);
-void fn_80019910(JointPathData *joint, int arg1);
 /* The point the path is at (behaviour inferred). */
 boost::shared_ptr<SonicteamUSA::System::PathData> fn_80016718(PathCtrl *path);
 /* Joint helpers (behaviour inferred). */
@@ -293,7 +298,7 @@ int PathImpl::FindJoint() {
             if (branch != 0) {
                 fn_80018F1C(branch, &m_path, &m_direction);
             }
-            fn_80019910(joint, 1);
+            delete reinterpret_cast<SonicteamUSA::System::UnkJointList_80016BB4 *>(joint);
         }
         Advance(0.0f);
         m_direction = 0;

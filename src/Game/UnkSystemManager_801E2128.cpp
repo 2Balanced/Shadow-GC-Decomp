@@ -128,23 +128,8 @@ SIZE_ASSERT(UnkCsdCache_801E5F0C, 0xC);
 /* The light colliders' shared state (see Game/LightColli.cpp). */
 #include "Game/LightColliState.h"
 
-/* The electric panels' tables (class name unknown; Game/ElecPanel.cpp's unit fills them): the
- * owners of the panels by circuit id, the panels by id, the ids in use (meanings inferred from
- * that unit), and the panels' manager task. */
-class UnkPlacement_800C9CD0;
-class ElecPanel;
-class ElecPanelManagerTask;
-
-class UnkElecPanelTables_801E6114 {
-  public:
-    ~UnkElecPanelTables_801E6114();
-
-    /* 0x00 */ std::multimap<unsigned char, UnkPlacement_800C9CD0 *> m_owners;
-    /* 0x10 */ std::map<unsigned char, ElecPanel *> m_panels;
-    /* 0x20 */ std::set<unsigned char> m_ids;
-    /* 0x2C */ ElecPanelManagerTask *m_task;
-};
-SIZE_ASSERT(UnkElecPanelTables_801E6114, 0x30);
+/* The electric panels' tables (see Game/ElecPanel.h). */
+#include "Game/ElecPanel.h"
 
 /* The stage title (class name unknown; see Game/StageTitleTask.cpp). */
 class UnkObject_801E67EC {
@@ -202,7 +187,7 @@ void __dt__20UnkCsdCache_801E5F0CFv(void *object, short flag);
 void *__ct__21UnkBuildDate_801E4700Fv(void *object);
 void *fn_801E29CC(void *object);
 void *__ct__17UnkReset_801DDE9CFv(void *object);
-void *fn_8025BEEC(void *object);
+void *__ct__27UnkElecPanelTables_801E6114Fv(void *object);
 void __dt__27UnkElecPanelTables_801E6114Fv(void *object, short flag);
 void *fn_8001C5C8(void *object);
 void *__ct__27UnkLightColliState_801E6500Fv(void *object);
@@ -423,7 +408,7 @@ UnkElecPanelTables_801E6114::~UnkElecPanelTables_801E6114() {}
 extern "C" UnkElecPanelTables_801E6114 *fn_801E6114(void) {
     if (s_elecPanelTablesInstance == 0) {
         if (!s_elecPanelTablesInitialized) {
-            __register_global_object(fn_8025BEEC(s_elecPanelTables),
+            __register_global_object(__ct__27UnkElecPanelTables_801E6114Fv(s_elecPanelTables),
                                      __dt__27UnkElecPanelTables_801E6114Fv,
                                      s_elecPanelTablesRecord);
             s_elecPanelTablesInitialized = 1;

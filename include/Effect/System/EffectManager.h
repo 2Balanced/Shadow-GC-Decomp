@@ -4,6 +4,8 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+struct RpClump;
+
 /* The effect managers (class names and bases from RTTI): Effect::System::EffectManager, its
  * RenderWare implementation Effect::RW3::EffectManagerRW3 and the game's
  * SonicteamUSA::System::Effect::EffectManagerUSA. Only what other classes use is declared; the
@@ -43,8 +45,9 @@ class EffectManagerRW3 : public ::Effect::System::EffectManager {
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
         ::Effect::System::EffectLaunchInfo *info);
     /* A virtual function the RenderWare manager adds (purpose unknown; 0x80437C14, and
-     * 0x80028BA4 in EffectManagerUSA). */
-    virtual void vf18();
+     * 0x80028BA4 in EffectManagerUSA): it draws clump with the manager's effects of the given
+     * number of passes (arguments inferred from the calls). */
+    virtual void vf18(RpClump *clump, void *arg2, int count, void *arg4);
 };
 
 } // namespace RW3
@@ -63,7 +66,7 @@ class EffectManagerUSA : public ::Effect::RW3::EffectManagerRW3 {
     /* Declared before CreateElement: the vtable is emitted with the first non-inline virtual
      * function, and retail has it with vf18 (0x80028BA4, in the unit after Game/EffectRayUSA.cpp),
      * not with CreateElement (Game/EffectManagerUSA.cpp). */
-    virtual void vf18();
+    virtual void vf18(RpClump *clump, void *arg2, int count, void *arg4);
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
         ::Effect::System::EffectLaunchInfo *info);
@@ -87,7 +90,20 @@ SIZE_ASSERT(UnkFogColor_8002893C, 0x4);
  * blends its values): on/off, a second switch, a distance-like integer and a colour. The
  * constructor (fn_8002893C) clears both switches and sets 8 and a default colour. */
 struct UnkFogParam_8002893C {
+#ifdef UNK_FOG_PARAM_CONSTRUCTOR
+    /* Defined in the class only in Game/EffectSystemUSA.cpp, where GC/2.7 emits it after its first
+     * caller (fn_800288D8) and pools its colour constant first, as retail has them; elsewhere a
+     * declaration (the body would renumber every unit's @N locals). */
+    UnkFogParam_8002893C() {
+        enabled = false;
+        field_0x1 = false;
+        field_0x4 = 8;
+        UnkFogColor_8002893C white = {0xFF, 0xFF, 0xFF, 0xFF};
+        color = white;
+    }
+#else
     UnkFogParam_8002893C();
+#endif
 
     /* 0x0 */ bool enabled;
     /* 0x1 */ bool field_0x1;

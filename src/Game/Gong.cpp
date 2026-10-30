@@ -77,13 +77,16 @@ class UnkCsdAllocator_803605AC {
 
 extern "C" UnkCsdAllocator_803605AC *fn_803605AC(void);
 
-/* The 0x4C-byte CSD project the GongCSD plays (name inferred); fn_800BFF30 constructs it from a
- * loaded resource. Its allocation goes through the CSD allocator (the class operator new of the
- * CSD headers, csdBase.h line 40). */
-class UnkCsdProject_800BFF30 {
+/* The 0x4C-byte CSD project the GongCSD plays (Chao::CSD::CProject, Game/csdmProject.cpp); its copy
+ * constructor (Game/GiHPGaugeEnemy.cpp, 0x800BFF30) makes one from a loaded resource. Its
+ * allocation goes through the CSD allocator (the class operator new of the CSD headers, csdBase.h
+ * line 40). */
+namespace Chao {
+namespace CSD {
+class CProject {
   public:
-    UnkCsdProject_800BFF30(void *resource);
-    virtual ~UnkCsdProject_800BFF30();
+    CProject(const CProject &other);
+    virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
 
@@ -91,16 +94,18 @@ class UnkCsdProject_800BFF30 {
         return fn_803605AC()->Alloc(size, "csdBase.h", 40);
     }
 };
+} // namespace CSD
+} // namespace Chao
 
 extern "C" {
 /* Advances and draws the project (behaviour inferred). */
-void fn_8036DA1C(UnkCsdProject_800BFF30 *project);
-void fn_8036D94C(UnkCsdProject_800BFF30 *project);
+void fn_8036DA1C(Chao::CSD::CProject *project);
+void fn_8036D94C(Chao::CSD::CProject *project);
 /* Releases the project's scenes (behaviour inferred). */
-void fn_8036C248(UnkCsdProject_800BFF30 *project);
+void fn_8036C248(Chao::CSD::CProject *project);
 /* The project's scene name, and a new scene name played kind times (behaviour inferred). */
-RCPtr<CScene> fn_8036D660(UnkCsdProject_800BFF30 *project, const char *name);
-RCPtr<CScene> fn_8036D890(UnkCsdProject_800BFF30 *project, const char *name, int arg2, int arg3);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+RCPtr<CScene> fn_8036D890(Chao::CSD::CProject *project, const char *name, int arg2, int arg3);
 /* A scene's end frame and current frame (behaviour inferred). */
 float fn_80366728(CScene *scene);
 float fn_80366738(CScene *scene);
@@ -160,7 +165,7 @@ class GongCSD : public Task {
     void Draw(RednerDrawArgs &args);
 
     /* 0x28 */ boost::shared_ptr<Render> m_render;
-    /* 0x30 */ UnkCsdProject_800BFF30 *m_project;
+    /* 0x30 */ Chao::CSD::CProject *m_project;
     /* 0x34 */ float m_timer; /* the time to the next tick sound (inferred) */
     /* 0x38 */ u32 m_tickFlags; /* bit 0: tick (inferred) */
     /* 0x3C */ u32 pad_0x3C;  /* the class size is a multiple of 8 */
@@ -497,7 +502,7 @@ GongCSD::GongCSD(Task *parent, int kind) : Task(parent) {
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&GongCSD::Draw, this, _1));
     void *manager = fn_800122D4();
     void *resource = fn_80012700(manager, 1, fn_8004237C(fn_8003F8D4(), "PR0302RINGANM", 1));
-    m_project = new UnkCsdProject_800BFF30(resource);
+    m_project = new Chao::CSD::CProject(*(Chao::CSD::CProject *)resource);
     fn_8036D890(m_project, "Scene_0000", kind, 0);
     m_timer = 0.0f;
     if (kind == 0 || kind == 5) {

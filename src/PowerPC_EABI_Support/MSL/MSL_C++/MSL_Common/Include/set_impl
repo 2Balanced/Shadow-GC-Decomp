@@ -148,6 +148,57 @@ typename __tree<T, less<T>, A>::node *__tree<T, less<T>, A>::insert_node(__tree_
     return n;
 }
 
+#ifdef MSL_SET_TREE_ASSIGN
+} // namespace std
+
+extern "C" {
+/* A node's colour, and setting it (behaviour inferred; see Game/CameraFactory.cpp). */
+bool fn_8000CF60(std::__tree_node_base *node);
+void fn_8000CF6C(std::__tree_node_base *node, bool red);
+}
+
+namespace std {
+
+template <class T, class A> __tree<T, less<T>, A> &__tree<T, less<T>, A>::operator=(const __tree &x) {
+    if (this == &x) {
+        return *this;
+    }
+    clear();
+    if (x.root() != 0) {
+        root() = copy(static_cast<node *>(x.root()));
+        root()->set_parent(static_cast<__tree_node_base *>(header()));
+    }
+    size_ref() = x.size_ref();
+    comp() = x.comp();
+    if (root() != 0) {
+        __tree_node_base *n = root();
+        while (n->left_ != 0) {
+            n = n->left_;
+        }
+        begin_node() = n;
+    } else {
+        begin_node() = static_cast<__tree_node_base *>(header());
+    }
+    return *this;
+}
+
+template <class T, class A>
+typename __tree<T, less<T>, A>::node *__tree<T, less<T>, A>::copy(const node *x) {
+    node *n = node_alloc().allocate(1);
+    n->left_ = n->right_ = 0;
+    if (x->left_ != 0) {
+        n->left_ = copy(static_cast<node *>(x->left_));
+        n->left_->set_parent(n);
+    }
+    if (x->right_ != 0) {
+        n->right_ = copy(static_cast<node *>(x->right_));
+        n->right_->set_parent(n);
+    }
+    value_alloc().construct(&n->value_, x->value_);
+    fn_8000CF6C(n, fn_8000CF60(const_cast<node *>(x)));
+    return n;
+}
+#endif
 
 #undef __SET_TREE_TRUE
 #undef __SET_TREE_FALSE

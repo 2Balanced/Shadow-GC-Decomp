@@ -132,7 +132,7 @@ struct __list_input_tag {};
 template <class T> class __list_value_allocator {
   public:
     __list_value_allocator() {}
-#ifdef MSL_LIST_RANGE_INSERT
+#if defined(MSL_LIST_RANGE_INSERT) || defined(MSL_LIST_MERGE)
     bool operator==(const __list_value_allocator &) const {
         return true;
     }
@@ -303,6 +303,12 @@ template <class T> class __list_imp {
     typedef __list_value_allocator<T> value_allocator;
     typedef __list_node_allocator<node> node_allocator;
 
+#ifdef MSL_LIST_MERGE
+    /* Only where MSL_LIST_MERGE is defined before this header (Game/PathData.cpp, whose list merge
+     * moves what is left of the other list with it): defined after the class (the unit writes its
+     * copy as an explicit specialization, which places it). */
+    void do_splice(iterator position, __list_imp &x);
+#endif
     __list_imp();
     ~__list_imp() {
         erase(begin(), end());

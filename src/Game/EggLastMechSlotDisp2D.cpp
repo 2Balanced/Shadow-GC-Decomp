@@ -33,6 +33,8 @@ namespace CSD {
 class CProject {
   public:
     CProject();
+    /* A project that plays other's data (Game/GiHPGaugeEnemy.cpp, 0x800BFF30). */
+    CProject(const CProject &other);
     virtual ~CProject();
 
     /* 0x04 */ u8 field_0x4[0x4C - 0x4];
@@ -65,10 +67,10 @@ void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing and drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */
-void fn_8036DA1C(UnkCsdProject_800BFF30 *project, float dt);
-void fn_8036D94C(UnkCsdProject_800BFF30 *project);
-RCPtr<CScene> fn_8036D660(UnkCsdProject_800BFF30 *project, const char *name);
-UnkCsdHandle_80042DF0 fn_8036D598(UnkCsdProject_800BFF30 *project, int arg1);
+void fn_8036DA1C(Chao::CSD::CProject *project, float dt);
+void fn_8036D94C(Chao::CSD::CProject *project);
+RCPtr<CScene> fn_8036D660(Chao::CSD::CProject *project, const char *name);
+UnkCsdHandle_80042DF0 fn_8036D598(Chao::CSD::CProject *project, int arg1);
 
 /* Scenes (behaviour inferred): the motion frame, the speed, stopping and playing, two words of the
  * scene, a node by name, attaching to a node, and the pattern. */
@@ -115,7 +117,7 @@ class EggLastMechSlotDisp2D {
 
         static Chao::CSD::CProject *s_resource;
 
-        /* 0x00 */ UnkCsdProject_800BFF30 *m_project;
+        /* 0x00 */ Chao::CSD::CProject *m_project;
         /* 0x04 */ RCPtr<CScene> m_large;
         /* 0x08 */ RCPtr<CScene> m_small;
         /* 0x0C */ RCPtr<CScene> m_reels[3];
@@ -222,7 +224,7 @@ EggLastMechSlotDisp2D::Impl::Impl()
     m_render = fn_8004E24C(fn_80046178()->field_0x54);
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&Impl::Draw, this, _1));
     if (s_resource != 0) {
-        m_project = new UnkCsdProject_800BFF30(s_resource);
+        m_project = new Chao::CSD::CProject(*s_resource);
         if (m_project != 0) {
             fn_8036D598(m_project, 0);
             m_large = fn_8036D660(m_project, "DisplayLg");

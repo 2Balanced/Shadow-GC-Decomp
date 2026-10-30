@@ -105,6 +105,39 @@ template <class A> void vector<void *, A>::insert(void **position, size_t n, voi
         }
     }
 }
+#elif defined(PTRVECTOR_CORE)
+/* Where PTRVECTOR_CORE is defined before this header (Game/PathData.cpp, the unit that holds the
+ * game's constructor, destructor and fill-assignment of vector<void *> and the helpers they call out
+ * of line: the pair's first and second, data, capacity, max_size and allocate), the functions have
+ * their bodies. The capacity is stored with the (empty) allocator, as in <vector>. assign is only
+ * declared: the unit defines it among its own functions, where the game emits it. */
+template <> class vector<void *, allocator<void *> > {
+  public:
+    vector() : m_cap(0), m_size(0), m_data(0) {}
+    ~vector() {
+        if (m_data != 0) {
+            m_cap.first().deallocate(data(), m_cap.second());
+        }
+    }
+    size_t capacity() const {
+        return m_cap.second();
+    }
+    size_t max_size() const {
+        return m_cap.first().max_size();
+    }
+    void assign(size_t n, void *const &x);
+    void *&operator[](size_t n) {
+        __ptrvec_nop();
+        return m_data[n];
+    }
+    void **&data() {
+        return __vec_ref(m_data);
+    }
+
+    /* 0x0 */ __vec_cap_pair<allocator<void *>, size_t> m_cap;
+    /* 0x4 */ size_t m_size;
+    /* 0x8 */ void **m_data;
+};
 #else
 template <> class vector<void *, allocator<void *> > {
   public:
