@@ -80,7 +80,7 @@ UnkStage_8003A840 *fn_8003A840(void);
 void fn_80485550(UnkCamera_8000DCC0 *camera, float start);
 void fn_8048560C(UnkCamera_8000DCC0 *camera, float end);
 /* Whether block id of the block set is in state (behaviour inferred). */
-bool fn_8003AA30(UnkBlockSet_8003AAB0 *blocks, int id, int state);
+bool IsRequested__12TBlockManageFii(UnkBlockSet_8003AAB0 *blocks, int id, int state);
 }
 
 class TFogSet : public Task {
@@ -213,7 +213,7 @@ void TFogSet::GetActiveAreas(u8 *active) {
         u32 on[4];
         memset(on, 0, sizeof(on));
         for (int i = 0; i < 0xA8; i++) {
-            if (fn_8003AA30(blocks, i, 1)) {
+            if (IsRequested__12TBlockManageFii(blocks, i, 1)) {
                 on[i / 32] |= 1 << (i % 32);
             }
         }

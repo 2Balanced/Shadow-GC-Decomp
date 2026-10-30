@@ -57,7 +57,7 @@ struct UnkColliContactIter_8001EDFC {
 };
 
 /* What a player stands on (as declared in Game/PlayerBehaviorEdgeHang.cpp). */
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA { namespace System { namespace Range { class RangeBase; } } }
 
 struct UnkColliMoveContact_803334A4 {
     UnkColliMoveContact_803334A4();
@@ -68,7 +68,7 @@ struct UnkColliMoveContact_803334A4 {
     /* 0x00 */ u8 m_isCollider;
     /* 0x04 */ boost::weak_ptr<CharInfo> m_chara;
     /* 0x0C */ boost::weak_ptr<CharaColliBase> m_collider;
-    /* 0x14 */ UnkColliObject_80028CA4 *m_object;
+    /* 0x14 */ SonicteamUSA::System::Range::RangeBase *m_object;
 };
 SIZE_ASSERT(UnkColliMoveContact_803334A4, 0x18);
 

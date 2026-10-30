@@ -22,7 +22,8 @@ template <class T> inline const T &max(const T &a, const T &b) {
 #ifdef MSL_ALGORITHM_OUTLINE
 /* Where MSL_ALGORITHM_OUTLINE is defined before this header (Game/NpcControlSonicType.cpp, whose
  * vector of floats has them out of line), fill_n and __copy_backward call this, so that they are not
- * inlined themselves (deferred inlining is one level deep). */
+ * inlined themselves (deferred inlining is one level deep). __copy calls it too (Game/TOneFileAsync.cpp,
+ * whose vector of pointers has it out of line). */
 inline void __msl_algorithm_outline() {}
 #endif
 
@@ -61,6 +62,9 @@ inline BidirectionalIterator2 copy_backward(BidirectionalIterator1 first, Bidire
  * the compiler's @N local symbols in every unit that includes this header). */
 template <class InputIterator, class OutputIterator>
 inline OutputIterator __copy(InputIterator first, InputIterator last, OutputIterator result) {
+#ifdef MSL_ALGORITHM_OUTLINE
+    __msl_algorithm_outline();
+#endif
     for (; first < last; ++first, ++result) {
         *result = *first;
     }

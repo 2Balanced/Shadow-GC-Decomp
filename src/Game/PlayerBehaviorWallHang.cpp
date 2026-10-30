@@ -42,7 +42,13 @@ class CharaColliBase;
 } // namespace SonicteamUSA
 
 /* A collision object of the world (see Game/VehicleColliMove.cpp). */
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 
 /* What a mover stands on (as declared in Game/PlayerBehaviorEdgeHang.cpp). */
 struct UnkColliMoveContact_803334A4 {
@@ -55,7 +61,7 @@ struct UnkColliMoveContact_803334A4 {
     /* 0x00 */ u8 m_isCollider;
     /* 0x04 */ boost::weak_ptr<CharInfo> m_chara;
     /* 0x0C */ boost::weak_ptr<SonicteamUSA::System::CharaColli::CharaColliBase> m_collider;
-    /* 0x14 */ UnkColliObject_80028CA4 *m_object;
+    /* 0x14 */ SonicteamUSA::System::Range::RangeBase *m_object;
 };
 SIZE_ASSERT(UnkColliMoveContact_803334A4, 0x18);
 

@@ -104,7 +104,7 @@ extern "C" {
 UnkCsdHandle_80042DF0 fn_8036D2FC(Chao::CSD::CProject *project, const char *path, void *factory);
 RCPtr<CScene> fn_8036F470(void *object, const char *name);
 /* Whether a scene's queued motions have all been played (see Game/CsdSceneSet.h). */
-bool fn_8003DBB0(UnkCsdSceneCtrl_8003DD20 *scene);
+bool fn_8003DBB0(TPjsSceneTour *scene);
 /* Nodes: the position, moving, hiding and a corner's colour (behaviour inferred). */
 UnkCsdPosition_8036AE98 fn_8036AE98(CNode *node);
 void fn_8036AE70(CNode *node, const UnkCsdPosition_8036AE98 *position);

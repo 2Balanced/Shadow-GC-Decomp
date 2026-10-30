@@ -126,6 +126,10 @@ struct ShotInfo {
     /* The same shot without a target (0x800693AC; BA GUNSHIP passes true as the side). */
     ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,
              const Vec3f &direction, const Vec3f &aim);
+    /* The shot from a muzzle matrix's translation, forwards along the matrix (0x80051D10;
+     * Game/BulletTypeTable.cpp). */
+    ShotInfo(const boost::weak_ptr<CharInfo> &owner, const boost::shared_ptr<LockonTarget> &target,
+             int side, const Mtx34f *matrix, const Vec3f &aim);
     /* The same shot aimed along the owner's velocity, or with a zero aim when the owner is gone
      * (0x80051FC8; EGG_BALLOON passes true as the side). */
     ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,

@@ -1,5 +1,5 @@
 /* SonicteamUSA::System::CharaColli::CharaColliGeneral (class name from RTTI): a collider of several
- * shapes (UnkColliObject_80028CA4, RTTI's Range::RangeBase) kept in a list of pointers, sharing the
+ * shapes (SonicteamUSA::System::Range::RangeBase, RTTI's Range::RangeBase) kept in a list of pointers, sharing the
  * collider's position and rotation. Shapes can be turned on and off one by one (byte 0x19 of a
  * shape). A query without a result returns the first shape hit; with a result it returns the
  * nearest one and leaves that one's contact in the result. Member and function names are
@@ -8,7 +8,7 @@
 #include "Game/CharaColliGeneral.h"
 #include "Game/DebugDraw.h"
 #include "Game/MathTypes.h"
-#include "Game/UnkColliObject_80028CA4.h"
+#include "Game/RangeBase.h"
 #include "boost/weak_ptr.hpp"
 
 using SonicteamUSA::System::CharaColli::CharaColliBase;
@@ -23,7 +23,7 @@ struct UnkSegment_80020A20 {
 
 extern "C" {
 /* Makes the shape the description asks for (behaviour inferred). */
-UnkColliObject_80028CA4 *fn_80037668(CharaColliBase *owner, const UnkColliShapeDesc_80037668 *shape,
+SonicteamUSA::System::Range::RangeBase *fn_80037668(CharaColliBase *owner, const UnkColliShapeDesc_80037668 *shape,
                                      const Vec3f *position, const Vec3f *rotation, s32 arg);
 /* The squared distance from point to the segment (t: where along it; may be 0). */
 float fn_8003C660(const Vec3f *point, const UnkDebugLine_80020A20 *segment, float *t);
@@ -72,7 +72,7 @@ void CharaColliGeneral::SetAttributes(u32 attributes, int arg1) {
             (*it)->m_attributes = attributes;
         }
     } else {
-        UnkColliObject_80028CA4 *shape = vf_0x28(arg1);
+        SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(arg1);
         if (shape != 0) {
             shape->m_attributes = attributes;
         }
@@ -80,7 +80,7 @@ void CharaColliGeneral::SetAttributes(u32 attributes, int arg1) {
 }
 
 void CharaColliGeneral::vf_0x5C(u32 attributes, u32 id) {
-    UnkColliObject_80028CA4 *shape = vf_0x2C(id);
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x2C(id);
     if (shape != 0) {
         shape->m_attributes = attributes;
     }
@@ -94,7 +94,7 @@ void CharaColliGeneral::TurnOn(u32 arg) {
             m_moved = 1;
         }
     } else {
-        UnkColliObject_80028CA4 *shape = vf_0x2C(arg);
+        SonicteamUSA::System::Range::RangeBase *shape = vf_0x2C(arg);
         if (shape != 0 && arg == shape->m_id && !shape->m_enabled) {
             field_0x2B = 0;
             shape->m_enabled = 1;
@@ -108,7 +108,7 @@ void CharaColliGeneral::TurnOff(u32 arg) {
         field_0x2B = field_0x2A;
         field_0x2A = 0;
     } else {
-        UnkColliObject_80028CA4 *shape = vf_0x2C(arg);
+        SonicteamUSA::System::Range::RangeBase *shape = vf_0x2C(arg);
         if (shape != 0 && arg == shape->m_id && shape->m_enabled) {
             field_0x2B = 0;
             shape->m_enabled = 0;
@@ -142,7 +142,7 @@ void CharaColliGeneral::vf_0x8C() {
     }
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
                                                     Filter filter, u32 arg) {
     vf_0x88();
     if (fn_8003C660(vf_0x14(), line, 0) > m_radius * m_radius) {
@@ -152,7 +152,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x60(const UnkDebugLine_80020A20 
     if (result == 0) {
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -166,12 +166,12 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x60(const UnkDebugLine_80020A20 
         return 0;
     } else {
         bool restore = false;
-        UnkColliObject_80028CA4 *nearest = 0;
+        SonicteamUSA::System::Range::RangeBase *nearest = 0;
         UnkColliContact_8001FF00 best;
         fn_8001FF00(&best);
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -195,7 +195,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x60(const UnkDebugLine_80020A20 
     }
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x64(const UnkDebugLine_80020A20 *segment,
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x64(const UnkDebugLine_80020A20 *segment,
                                                     UnkColliContact_8001FF00 *result, Filter filter, u32 arg) {
     vf_0x88();
     if (fn_8003C660(vf_0x14(), segment, 0) > m_radius * m_radius) {
@@ -205,7 +205,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x64(const UnkDebugLine_80020A20 
     if (result == 0) {
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -219,12 +219,12 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x64(const UnkDebugLine_80020A20 
         return 0;
     } else {
         bool restore = false;
-        UnkColliObject_80028CA4 *nearest = 0;
+        SonicteamUSA::System::Range::RangeBase *nearest = 0;
         UnkColliContact_8001FF00 best;
         fn_8001FF00(&best);
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -248,7 +248,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x64(const UnkDebugLine_80020A20 
     }
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
                                                     Filter filter, u32 arg) {
     vf_0x88();
     float radius = m_radius + sphere->m_radius;
@@ -259,7 +259,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x68(const UnkSphere_8004E6CC *sp
     if (result == 0) {
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -273,12 +273,12 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x68(const UnkSphere_8004E6CC *sp
         return 0;
     } else {
         bool restore = false;
-        UnkColliObject_80028CA4 *nearest = 0;
+        SonicteamUSA::System::Range::RangeBase *nearest = 0;
         UnkColliContact_8001FF00 best;
         fn_8001FF00(&best);
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -302,7 +302,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x68(const UnkSphere_8004E6CC *sp
     }
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                                                     UnkColliContact_8001FF00 *result, Filter filter, u32 arg) {
     vf_0x88();
     float radius = m_radius + sphere->m_radius;
@@ -316,7 +316,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x6C(const UnkSphere_8004E6CC *sp
     if (result == 0) {
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -330,12 +330,12 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x6C(const UnkSphere_8004E6CC *sp
         return 0;
     } else {
         bool restore = false;
-        UnkColliObject_80028CA4 *nearest = 0;
+        SonicteamUSA::System::Range::RangeBase *nearest = 0;
         UnkColliContact_8001FF00 best;
         fn_8001FF00(&best);
         ColliShapeList::iterator it;
         for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
-            UnkColliObject_80028CA4 *shape = *it;
+            SonicteamUSA::System::Range::RangeBase *shape = *it;
             if (filter != 0) {
                 UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
                 if (!filter(&query)) {
@@ -359,21 +359,21 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x6C(const UnkSphere_8004E6CC *sp
     }
 }
 
-bool CharaColliGeneral::vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 **mine,
-                                UnkColliObject_80028CA4 **theirs, UnkColliHit_8002686C **mineHit,
+bool CharaColliGeneral::vf_0x80(CharaColliBase *other, SonicteamUSA::System::Range::RangeBase **mine,
+                                SonicteamUSA::System::Range::RangeBase **theirs, UnkColliHit_8002686C **mineHit,
                                 UnkColliHit_8002686C **theirHit) {
     for (int i = 0; i < GetShapeCount(); i++) {
-        UnkColliObject_80028CA4 *shape = vf_0x28(i);
+        SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(i);
         if (!shape->m_enabled) {
             continue;
         }
         for (int j = 0; j < other->GetShapeCount(); j++) {
-            UnkColliObject_80028CA4 *otherShape = other->vf_0x28(j);
+            SonicteamUSA::System::Range::RangeBase *otherShape = other->vf_0x28(j);
             if (!otherShape->m_enabled) {
                 continue;
             }
-            UnkColliObject_80028CA4 *first;
-            UnkColliObject_80028CA4 *second;
+            SonicteamUSA::System::Range::RangeBase *first;
+            SonicteamUSA::System::Range::RangeBase *second;
             bool firstSolid;
             bool secondSolid;
             s32 priority = shape->m_priority;
@@ -453,7 +453,7 @@ bool CharaColliGeneral::vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 *
     return false;
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x28(int index) const {
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x28(int index) const {
     ColliShapeList::const_iterator it;
     u32 i = 0;
     for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
@@ -465,7 +465,7 @@ UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x28(int index) const {
     return 0;
 }
 
-UnkColliObject_80028CA4 *CharaColliGeneral::vf_0x2C(u32 id) const {
+SonicteamUSA::System::Range::RangeBase *CharaColliGeneral::vf_0x2C(u32 id) const {
     ColliShapeList::const_iterator it;
     for (it = m_shapes.begin(); it != m_shapes.end(); it++) {
         if (id == (*it)->m_id) {
@@ -523,10 +523,10 @@ void CharaColliGeneral::vf_0x74() {
 
 void CharaColliGeneral::vf_0x84() {
     ColliShapeList::iterator it = m_shapes.begin();
-    UnkColliObject_80028CA4 *first = *it;
+    SonicteamUSA::System::Range::RangeBase *first = *it;
     float radius = fn_8040CF50(&(const Vec3f &)first->GetExtent()) + first->GetMargin();
     for (; it != m_shapes.end(); it++) {
-        UnkColliObject_80028CA4 *shape = *it;
+        SonicteamUSA::System::Range::RangeBase *shape = *it;
         if (shape->m_enabled) {
             float reach = fn_8040CF50(&(const Vec3f &)shape->GetExtent()) + shape->GetMargin();
             if (radius < reach) {

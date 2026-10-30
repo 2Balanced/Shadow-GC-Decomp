@@ -41,7 +41,7 @@ extern "C" {
 UnkCsdHandle_80042DF0 fn_8036D2FC(Chao::CSD::CProject *project, const char *path, void *factory);
 RCPtr<CScene> fn_8036F470(void *object, const char *name);
 /* Whether a scene's queued motions have all been played (see Game/CsdSceneSet.h). */
-bool fn_8003DBB0(UnkCsdSceneCtrl_8003DD20 *scene);
+bool fn_8003DBB0(TPjsSceneTour *scene);
 /* Nodes: the position, moving, and hiding (behaviour inferred). */
 UnkCsdPosition_8036AE98 fn_8036AE98(CNode *node);
 void fn_8036AE70(CNode *node, const UnkCsdPosition_8036AE98 *position);
@@ -164,7 +164,7 @@ folderPause::~folderPause() {}
  * the scene control's header whose body called other inline functions (so it stayed out of line);
  * outside the CSD library this unit sees RCPtr's assignment only as a declaration, so a plain
  * definition stands in for it. */
-void UnkCsdSceneCtrl_8003DD20::SetScene(const RCPtr<CScene> &scene) {
+void TPjsSceneTour::SetScene(const RCPtr<CScene> &scene) {
     m_scene = scene;
 }
 

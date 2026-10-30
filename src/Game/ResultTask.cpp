@@ -72,8 +72,6 @@ extern s32 lbl_805EE690;
 void fn_8036DB70(Chao::CSD::CProject *project, void *data, u32 size, int arg3);
 /* A scene of the object a project handle holds, by name (behaviour inferred). */
 RCPtr<CScene> fn_8036F470(void *object, const char *name);
-/* Assigns a project handle (behaviour inferred). */
-void fn_80042A90(UnkCsdHandle_80042DF0 *handle, const UnkCsdHandle_80042DF0 *other);
 /* The stage table (see Game/CenFile.cpp). */
 UnkStageTable_800CBAA4 *fn_800CBAA4(void);
 /* The ring count of a player's record (see Game/TGi.h). */
@@ -264,8 +262,8 @@ class ResultTask : public Task {
     void ComputeTotal();
 
     /* 0x28 */ Chao::CSD::CProject m_project;
-    /* 0x74 */ UnkCsdSceneCtrl_8003DD20 m_main;
-    /* 0x88 */ UnkCsdSceneCtrl_8003DD20 m_rankScene;
+    /* 0x74 */ TPjsSceneTour m_main;
+    /* 0x88 */ TPjsSceneTour m_rankScene;
     /* 0x9C */ s32 m_kind;
     /* 0xA0 */ s32 m_state;
     /* 0xA4 */ u32 field_0xA4;
@@ -301,10 +299,10 @@ inline bool operator!=(const UnkCsdHandle_80042DF0 &a, const UnkCsdHandle_80042D
     return false;
 }
 
-/* Stands in for the handle's inline assignment (fn_80042A90, out of line in retail): calling an inline
- * function keeps the copy constructor below out of line, as retail has it at 0x802032F0. */
+/* Stands in for the handle's inline assignment (Assign, out of line in retail at 0x80042A90): calling
+ * an inline function keeps the copy constructor below out of line, as retail has it at 0x802032F0. */
 inline void AssignHandle(UnkCsdHandle_80042DF0 *handle, const UnkCsdHandle_80042DF0 &other) {
-    fn_80042A90(handle, &other);
+    handle->Assign(other);
 }
 
 inline UnkCsdHandle_80042DF0::UnkCsdHandle_80042DF0(const UnkCsdHandle_80042DF0 &other) : m_object(0) {

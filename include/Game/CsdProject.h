@@ -26,13 +26,26 @@ class CSceneList;
 /* The counted pointer to a list of scenes a project returns (RCPtr<CSceneList> by the RTTI of its
  * RCObject; game code declares it under this name, Game/TGi.h). Its copy constructor and
  * destructor are the game's; the library's own members are inline here. */
-class UnkCsdHandle_80042DF0 {
+class UnkCsdHandle_80042DF0
+#ifdef CSD_SCENE_LIST_HANDLE
+    /* (Where CSD_SCENE_LIST_HANDLE is defined: its destructor frees through CBase's operator delete.) */
+    : public Chao::CSD::CBase
+#endif
+{
   public:
     typedef Chao::CSD::RCPtr<Chao::CSD::CSceneList>::RCObject<Chao::CSD::CSceneList> Object;
 
     UnkCsdHandle_80042DF0(void *object);
     UnkCsdHandle_80042DF0(const UnkCsdHandle_80042DF0 &other);
     ~UnkCsdHandle_80042DF0();
+#ifdef CSD_SCENE_LIST_HANDLE
+    /* The library's inline members the game's TCsdSystem needs (Game/TCsdSystem.cpp; defined
+     * at the end of this header, where CSceneList is complete). */
+    UnkCsdHandle_80042DF0();
+    UnkCsdHandle_80042DF0 &operator=(const UnkCsdHandle_80042DF0 &other);
+    void Assign(const UnkCsdHandle_80042DF0 &other);
+    void Set(Chao::CSD::CSceneList *object);
+#endif
 
     /* Takes object with the deallocation d says. */
     template <class D>
@@ -248,5 +261,60 @@ class CProject : public CResourceBase<SProject>, public CBase {
 
 } // namespace CSD
 } // namespace Chao
+
+#ifdef CSD_SCENE_LIST_HANDLE
+inline UnkCsdHandle_80042DF0::UnkCsdHandle_80042DF0() : m_object(0) {
+    Set((Chao::CSD::CSceneList *)0);
+}
+
+inline UnkCsdHandle_80042DF0::UnkCsdHandle_80042DF0(void *object) : m_object(0) {
+    Chao::CSD::RCDeleteTag tag;
+    Set((Chao::CSD::CSceneList *)object, tag);
+}
+
+inline UnkCsdHandle_80042DF0::~UnkCsdHandle_80042DF0() {
+    if (m_object != 0) {
+        m_object->Release();
+        m_object = 0;
+    }
+}
+
+inline UnkCsdHandle_80042DF0 &UnkCsdHandle_80042DF0::operator=(const UnkCsdHandle_80042DF0 &other) {
+    Assign(other);
+    return *this;
+}
+
+/* Shares other's list (name inferred). */
+inline void UnkCsdHandle_80042DF0::Assign(const UnkCsdHandle_80042DF0 &other) {
+    Object *current = m_object;
+    if (current != 0) {
+        if (other.m_object != 0 && current->m_object == other.m_object->m_object) {
+            return;
+        }
+        current->Release();
+        m_object = 0;
+    }
+    if (other.m_object != 0) {
+        m_object = other.m_object;
+        m_object->m_count++;
+    }
+}
+
+/* Takes object with its deallocation left unset (name inferred). */
+inline void UnkCsdHandle_80042DF0::Set(Chao::CSD::CSceneList *object) {
+    Object *current = m_object;
+    if (current != 0) {
+        if (current->m_object == object) {
+            return;
+        }
+        current->Release();
+        m_object = 0;
+    }
+    if (object != 0) {
+        m_object = CSD_RCOBJECT_NEW(428) Object(object);
+        m_object->m_count++;
+    }
+}
+#endif
 
 #endif

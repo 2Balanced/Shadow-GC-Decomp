@@ -37,7 +37,13 @@ Vec3f fn_8040B67C(const Mtx34f *matrix, const Vec3f *point);
 }
 
 /* A collision object of the world (see Game/VehicleColliMove.cpp). */
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 
 /* What a mover stands on (see Game/VehicleColliMove.cpp, whose unit holds its functions; the
  * assignment is a weak function of the player's collision move, 0x800943D4). */
@@ -50,7 +56,7 @@ struct UnkColliMoveContact_803334A4 {
     /* 0x00 */ u8 m_isCollider;
     /* 0x04 */ boost::weak_ptr<CharInfo> m_chara;
     /* 0x0C */ boost::weak_ptr<CharaColliBase> m_collider;
-    /* 0x14 */ UnkColliObject_80028CA4 *m_object;
+    /* 0x14 */ SonicteamUSA::System::Range::RangeBase *m_object;
 };
 SIZE_ASSERT(UnkColliMoveContact_803334A4, 0x18);
 

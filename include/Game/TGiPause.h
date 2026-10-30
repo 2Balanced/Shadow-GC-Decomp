@@ -58,15 +58,15 @@ class folderPause {
     /* 0x00 */ s32 m_state;
     /* 0x04 */ u8 m_showStoryRoute; /* whether the story route is shown (meaning inferred) */
     /* 0x08 */ UnkCsdHandle_80042DF0 m_sceneList;
-    /* 0x0C */ UnkCsdSceneCtrl_8003DD20 m_mission;
-    /* 0x20 */ UnkCsdSceneCtrl_8003DD20 m_heroIcon;
-    /* 0x34 */ UnkCsdSceneCtrl_8003DD20 m_normalIcon;
-    /* 0x48 */ UnkCsdSceneCtrl_8003DD20 m_darkIcon;
-    /* 0x5C */ UnkCsdSceneCtrl_8003DD20 m_missionBoard;
-    /* 0x70 */ UnkCsdSceneCtrl_8003DD20 m_changeMission;
-    /* 0x84 */ UnkCsdSceneCtrl_8003DD20 m_pause;
-    /* 0x98 */ UnkCsdSceneCtrl_8003DD20 m_text;
-    /* 0xAC */ UnkCsdSceneCtrl_8003DD20 m_storyRouteText;
+    /* 0x0C */ TPjsSceneTour m_mission;
+    /* 0x20 */ TPjsSceneTour m_heroIcon;
+    /* 0x34 */ TPjsSceneTour m_normalIcon;
+    /* 0x48 */ TPjsSceneTour m_darkIcon;
+    /* 0x5C */ TPjsSceneTour m_missionBoard;
+    /* 0x70 */ TPjsSceneTour m_changeMission;
+    /* 0x84 */ TPjsSceneTour m_pause;
+    /* 0x98 */ TPjsSceneTour m_text;
+    /* 0xAC */ TPjsSceneTour m_storyRouteText;
     /* 0xC0 */ s32 m_managerState;
     /* 0xC4 */ s32 m_player;
     /* 0xC8 */ s32 m_cursor;
@@ -92,9 +92,9 @@ class folderStoryRoute {
 
     /* 0x00 */ s32 m_state;
     /* 0x04 */ UnkCsdHandle_80042DF0 m_sceneList;
-    /* 0x08 */ UnkCsdSceneCtrl_8003DD20 m_route;  /* StoryRoute */
-    /* 0x1C */ UnkCsdSceneCtrl_8003DD20 m_stages; /* SRIconsBG */
-    /* 0x30 */ UnkCsdSceneCtrl_8003DD20 m_icons;  /* SRIcons */
+    /* 0x08 */ TPjsSceneTour m_route;  /* StoryRoute */
+    /* 0x1C */ TPjsSceneTour m_stages; /* SRIconsBG */
+    /* 0x30 */ TPjsSceneTour m_icons;  /* SRIcons */
     /* 0x44 */ s32 m_managerState;
     /* 0x48 */ s32 m_player;
     /* 0x4C */ s32 m_cursor;
@@ -112,7 +112,7 @@ class folderTargetWindow {
         /* 0x00 */ s32 m_state;
         /* 0x04 */ u8 m_selected; /* the pause menu shows this panel's player */
         /* 0x05 */ u8 m_counting; /* the player's mission counts something */
-        /* 0x08 */ UnkCsdSceneCtrl_8003DD20 m_scene;
+        /* 0x08 */ TPjsSceneTour m_scene;
     };
 
     folderTargetWindow(Chao::CSD::CProject *project);

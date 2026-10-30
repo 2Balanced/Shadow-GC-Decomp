@@ -27,6 +27,7 @@
 
 #include "Game/FogTable.h"
 #include "Game/PjsCsd.h"
+#include "Game/VehicleCarResource.h"
 
 class CharInfo;
 class UnkHintTarget_801FB180;
@@ -209,7 +210,6 @@ void *fn_8001FB68(void);
 void *fn_80020054(void);
 void *fn_80117578(void);
 void *fn_80170D8C(void);
-void *fn_801B8828(void);
 void *fn_800289B0(void);
 void *fn_80013BC4(void);
 void *fn_802E05A8(void);
@@ -588,7 +588,7 @@ void fn_801E59C4(void) {
     fn_801E67EC();
     fn_80170D8C();
     FogTable::Get();
-    fn_801B8828();
+    UnkCarResource_801B9950::GetInstance();
     fn_800289B0();
     fn_801E6500();
     fn_80013BC4();
@@ -672,7 +672,7 @@ void fn_801E59C4(void) {
     fn_801E6114();
     fn_8006D6A8();
     fn_801E265C();
-    fn_801B8828();
+    UnkCarResource_801B9950::GetInstance();
     fn_800522A8();
 }
 

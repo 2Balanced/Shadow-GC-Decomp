@@ -61,14 +61,21 @@ struct UnkCopyVector3_800091EC {
     float z;
 };
 
-/* A collision object of the world (class name unknown): its position at 0x4, and its rotation
- * (slot 0x08; name inferred). */
-class UnkColliObject_80028CA4 {
+/* A collision shape of the world (SonicteamUSA::System::Range::RangeBase, from RTTI; see
+ * Game/RangeBase.h): its position at 0x4, and its rotation (slot 0x08; name
+ * inferred). */
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase {
   public:
     virtual Vec3f GetRotation();
 
     /* 0x04 */ Vec3f m_position;
 };
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 
 /* A length (name inferred). As a call it is not a constant expression, so the constants below are
  * stored by a static initializer, as in retail (see CityBombBig.cpp). */
@@ -207,7 +214,7 @@ struct UnkColliContactNode_800587A0 {
     }
 
     /* 0x00 */ u8 field_0x0[0xC];
-    /* 0x0C */ UnkColliObject_80028CA4 *m_collider;
+    /* 0x0C */ SonicteamUSA::System::Range::RangeBase *m_collider;
     /* 0x10 */ u8 field_0x10[0x14 - 0x10];
     /* 0x14 */ void *m_object;
 };
@@ -306,8 +313,8 @@ boost::weak_ptr<CharaColliBase> fn_800587A0(UnkColliContactNode_800587A0 *node);
  * behaviour from its body). */
 boost::weak_ptr<CharInfo> fn_800586EC(CharaColliBaseCharInfo *collider);
 /* A collision object's update and its kind (behaviour inferred). */
-void fn_80028CA4(UnkColliObject_80028CA4 *object);
-u32 fn_80028ECC(UnkColliObject_80028CA4 *object);
+void fn_80028CA4(SonicteamUSA::System::Range::RangeBase *object);
+u32 fn_80028ECC(SonicteamUSA::System::Range::RangeBase *object);
 
 /* The vehicle's body and second collider, its ground hooks (behaviour inferred). */
 boost::shared_ptr<CharaColliBase> fn_801B6350(TVehicleBase *vehicle);
@@ -357,13 +364,13 @@ struct UnkColliMoveContact_803334A4 {
     bool IsValid() const;
     void SetCharInfo(const boost::weak_ptr<CharInfo> &charInfo);
     void Set(const boost::weak_ptr<CharInfo> &charInfo, const boost::weak_ptr<CharaColliBase> &collider,
-             UnkColliObject_80028CA4 *object);
+             SonicteamUSA::System::Range::RangeBase *object);
     void Reset();
 
     /* 0x00 */ u8 m_isCollider;
     /* 0x04 */ boost::weak_ptr<CharInfo> m_chara;
     /* 0x0C */ boost::weak_ptr<CharaColliBase> m_collider;
-    /* 0x14 */ UnkColliObject_80028CA4 *m_object;
+    /* 0x14 */ SonicteamUSA::System::Range::RangeBase *m_object;
 };
 SIZE_ASSERT(UnkColliMoveContact_803334A4, 0x18);
 
@@ -730,7 +737,7 @@ void UnkColliMoveContact_803334A4::SetCharInfo(const boost::weak_ptr<CharInfo> &
 
 void UnkColliMoveContact_803334A4::Set(const boost::weak_ptr<CharInfo> &charInfo,
                                        const boost::weak_ptr<CharaColliBase> &collider,
-                                       UnkColliObject_80028CA4 *object) {
+                                       SonicteamUSA::System::Range::RangeBase *object) {
     m_chara = charInfo;
     m_collider = collider;
     m_object = object;

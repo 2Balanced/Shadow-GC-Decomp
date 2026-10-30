@@ -58,7 +58,7 @@ void fn_8022EC24(UnkMotion_8022F058 *motion, void *arg);
 bool fn_8022EC48(UnkMotion_8022F058 *motion); /* the motion has ended */
 void fn_8022EC6C(UnkMotion_8022F058 *motion); /* pauses */
 void fn_8022EC90(UnkMotion_8022F058 *motion); /* resumes */
-float fn_8022EEC4(UnkMotion_8022F058 *motion);
+float fn_8022EEC4(const UnkMotion_8022F058 *motion);
 void *fn_8022EEE8(UnkMotion_8022F058 *motion, int index);
 void fn_8022EF30(UnkMotion_8022F058 *motion, int motionId, float blend); /* changes the motion */
 void fn_8022EF54(UnkMotion_8022F058 *motion, float dt);

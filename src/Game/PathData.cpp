@@ -145,8 +145,7 @@ struct UnkPtrListPosition_8001B674 {
     /* 0x0 */ UnkPtrListLink_8001B5B8 *node;
 };
 
-/* The (empty) allocators of the values and of the nodes. */
-struct UnkPtrListAlloc_8001B5B8 {};
+/* The (empty) allocator of the nodes. */
 struct UnkPtrListNodeAlloc_8001B5B8 {};
 
 struct UnkPtrList_8001B5B8 {
@@ -177,10 +176,13 @@ extern "C" inline UnkPtrListNodeAlloc_8001B5B8 &fn_8001BDEC(PtrList *list) {
     return *reinterpret_cast<UnkPtrListNodeAlloc_8001B5B8 *>(&list->m_end);
 }
 
-extern "C" inline UnkPtrListAlloc_8001B5B8 &fn_8001BDF4(PtrList *list) {
+/* The value allocator: list<void *>'s own alloc(), placed here as an explicit specialization. */
+namespace std {
+template <> inline __list_imp<void *>::value_allocator &__list_imp<void *>::alloc() {
     PathKeep();
-    return *reinterpret_cast<UnkPtrListAlloc_8001B5B8 *>(list);
+    return *reinterpret_cast<value_allocator *>(this);
 }
+} // namespace std
 
 extern "C" inline UnkPtrListLink_8001B5B8 *fn_8001B6A8(PtrList *list) {
     PathKeep();
@@ -412,7 +414,7 @@ __list_imp<boost::shared_ptr<PathData> >::erase(iterator first, iterator last) {
 extern "C" PtrList *fn_8001BE04(PtrList *list) {
     UnkPtrListNodeAlloc_8001B5B8 alloc;
     fn_8001BE90(&list->m_size, 0);
-    fn_8001BDF4(list);
+    reinterpret_cast<std::__list_imp<void *> *>(list)->alloc();
     fn_8001BE5C(&list->m_end, &alloc);
     UnkPtrListLink_8001B5B8 *t = fn_8001B6A8(list);
     t->prev = t->next = t;
@@ -430,7 +432,7 @@ extern "C" PtrListPos fn_8001BD24(PtrList *list, PtrListPos first, PtrListPos la
     lp->next->prev = fp->prev;
     while (first.node != last.node) {
         first.operator->();
-        fn_8001BDF4(list);
+        reinterpret_cast<std::__list_imp<void *> *>(list)->alloc();
         UnkPtrListLink_8001B5B8 *p = first.node;
         first.node = first.node->next;
         fn_8001BDEC(list);

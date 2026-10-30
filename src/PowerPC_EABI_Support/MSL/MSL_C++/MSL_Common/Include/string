@@ -9,8 +9,11 @@
  * reproduces that message: the copy built from it is never linked. */
 #include <cstring>
 #include <memory>
-#ifdef MSL_STRING_IMPL
+#if defined(MSL_STRING_IMPL) || defined(MSL_STRING_APPEND)
 #include <algorithm>
+#endif
+#ifdef MSL_STRING_APPEND
+#include <iterator>
 #endif
 
 namespace std {
@@ -24,13 +27,26 @@ template <> struct char_traits<char> {
     static size_t length(const char_type *s) {
         return strlen(s);
     }
-#ifdef MSL_STRING_IMPL
+#if defined(MSL_STRING_IMPL) || defined(MSL_STRING_APPEND)
     static char_type *copy(char_type *s1, const char_type *s2, size_t n) {
         memcpy(s1, s2, n);
         return s1;
     }
 #endif
+#ifdef MSL_STRING_REPLACE
+    /* (Where MSL_STRING_REPLACE is defined, Game/TPjsCsd.cpp: the terminator it writes is a
+     * constant the compiler places in .sdata, one per use.) */
+    static void assign(char_type &c1, const char_type &c2) {
+        c1 = c2;
+    }
+    static int compare(const char_type *s1, const char_type *s2, size_t n);
+#endif
 };
+
+#ifdef MSL_STRING_REPLACE
+/* Does nothing (an inline call that keeps its caller out of line). */
+inline void __string_nothing() {}
+#endif
 
 template <class charT, class traits = char_traits<charT>, class Allocator = allocator<charT> >
 class basic_string {
@@ -91,7 +107,15 @@ class basic_string {
     basic_string &operator=(const basic_string &str) {
         return assign(str);
     }
+#ifdef MSL_STRING_REPLACE
+    /* (The empty inline call keeps it out of line, as the game has it, 0x80040384.) */
+    basic_string &assign(const basic_string &str) {
+        __string_nothing();
+        return assign(str, 0, npos);
+    }
+#else
     basic_string &assign(const basic_string &str);
+#endif
 #endif
 
 #ifdef MSL_STRING_IMPL
@@ -138,6 +162,61 @@ class basic_string {
     /* 0x0 */ size_type size_;
     /* 0x4 */ __cap_pair capacity_;
     /* 0x8 */ charT *data_;
+#elif defined(MSL_STRING_APPEND)
+    /* Declared only where MSL_STRING_APPEND is defined before this header (Game/TTextureChange.cpp,
+     * the unit that emits the game's copies of the constructor from a C string (0x8004F888) and of
+     * append (0x8004F760, 0x8004F7C0), which concatenation uses). The other members are the game's
+     * copies elsewhere: data (0x80014EB8), begin (0x80041E2C), the initialization from a range
+     * (0x80041EB8), __set_size (0x80014F14) and the capacity's constructor (0x80014DA0). */
+    static const size_type npos = size_type(-1);
+
+    size_type size() const {
+        return size_;
+    }
+    basic_string &append(const charT *s) {
+        return append(s, traits::length(s));
+    }
+    basic_string &append(const charT *s, size_type n);
+    basic_string &append(const basic_string &str, size_type pos = 0, size_type n = npos);
+    charT *data();
+    const charT *begin() const;
+#ifdef MSL_STRING_REPLACE
+    /* Only where MSL_STRING_REPLACE is also defined (Game/TPjsCsd.cpp, the unit that emits the
+     * game's copies of the copy constructor (0x80041E34), assign (0x80040384, 0x80041D40), the
+     * fill replace (0x80041F48), compare (0x8003C864, 0x8004013C), data (0x80040224), begin and
+     * __init). The game links one copy each of get_allocator (0x800150F8) and max_size
+     * (0x800150BC). */
+    typedef Allocator allocator_type;
+
+    size_type length() const {
+        return size();
+    }
+    size_type max_size() const;
+    allocator_type get_allocator() const;
+    const charT *data() const;
+    basic_string &assign(const basic_string &str, size_type pos, size_type n);
+    basic_string &replace(size_type pos, size_type n1, size_type n2, charT c);
+    int compare(size_type pos1, size_type n1, const charT *s, size_type n2) const;
+    int compare(const charT *s) const {
+        return compare(0, size(), s, traits::length(s));
+    }
+#endif
+
+  private:
+    template <class InputIterator>
+    void __init(InputIterator first, InputIterator last, const Allocator &a, forward_iterator_tag);
+    void __set_size(size_type n, bool keep);
+
+    /* The capacity, behind the (empty) allocator. */
+    struct __cap_pair : public Allocator {
+        __cap_pair(const Allocator &a);
+
+        size_type second_;
+    };
+
+    /* 0x0 */ size_type size_;
+    /* 0x4 */ __cap_pair capacity_;
+    /* 0x8 */ charT *data_;
 #else
     size_type max_size() const {
         return size_type(-1) / sizeof(charT) - 1;
@@ -150,7 +229,44 @@ class basic_string {
 #endif
 };
 
-#ifndef MSL_STRING_CTOR_EXTERN
+#if defined(MSL_STRING_APPEND)
+/* The game's copy of the constructor from a C string (Game/TTextureChange.cpp). */
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Allocator &a) : capacity_(a) {
+    size_type n = traits::length(s);
+    if (n > a.max_size() - 1) {
+        __msl_error("string constructor: n > max_size\n");
+    }
+    __init(s, s + n, a, forward_iterator_tag());
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::append(const charT *s,
+                                                                                    size_type n) {
+    if (n != 0) {
+        size_type old = size_;
+        __set_size(old + n, true);
+        traits::copy(data() + old, s, n);
+    }
+    return *this;
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator> &
+basic_string<charT, traits, Allocator>::append(const basic_string &str, size_type pos, size_type n) {
+    if (pos > str.size()) {
+        __msl_error("basic_string::append pos out of range");
+    }
+    size_type old;
+    size_type len = min(n, str.size() - pos);
+    if (len != 0) {
+        old = size_;
+        __set_size(old + len, true);
+        traits::copy(data() + old, str.begin() + pos, len);
+    }
+    return *this;
+}
+#elif !defined(MSL_STRING_CTOR_EXTERN)
 /* Where MSL_STRING_CTOR_EXTERN is defined before this header (Game/csdRW.cpp), the unit compiles no
  * copy of the constructor (retail has none of its message there) and calls the game's. */
 template <class charT, class traits, class Allocator>
@@ -233,10 +349,139 @@ void basic_string<charT, traits, Allocator>::__set_size(size_type n, bool keep) 
 
 #endif
 
-#ifdef MSL_STRING_COPY
+#ifdef MSL_STRING_REPLACE
+extern "C" int fn_803A8DA8(const void *a, const void *b, size_t n); /* memcmp */
+
+inline int char_traits<char>::compare(const char_type *s1, const char_type *s2, size_t n) {
+    return fn_803A8DA8(s1, s2, n);
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator>::basic_string(const basic_string &str) : capacity_(str.capacity_) {
+    allocator_type a = get_allocator();
+    size_type n = str.length();
+    forward_iterator_tag tag;
+    __init(static_cast<const charT *>(str.data_), static_cast<const charT *>(str.data_ + n), a, tag);
+}
+
+template <class charT, class traits, class Allocator>
+const charT *basic_string<charT, traits, Allocator>::begin() const {
+    return data_;
+}
+
+template <class charT, class traits, class Allocator>
+const charT *basic_string<charT, traits, Allocator>::data() const {
+    return data_;
+}
+
+template <class charT, class traits, class Allocator>
+template <class InputIterator>
+void basic_string<charT, traits, Allocator>::__init(InputIterator first, InputIterator last, const Allocator &a,
+                                                    forward_iterator_tag) {
+    data_ = 0;
+    size_ = 0;
+    capacity_.second_ = 0;
+    if (first != last) {
+        size_type n = last - first;
+        capacity_.second_ = n + 3 - (n & 3);
+        data_ = capacity_.allocate(capacity_.second_ + 1);
+        memcpy(data_, first, n);
+        size_ = n;
+        traits::assign(data_[n], charT());
+    }
+}
+
+template <class charT> charT *__fill_chars(charT *p, size_t n, charT c) {
+    return (charT *)memset(p, (unsigned char)c, n);
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::replace(size_type pos, size_type n1,
+                                                                                     size_type n2, charT c) {
+    if (pos > size_) {
+        __msl_error("basic_string::replace pos out of range\n");
+    }
+    size_type xlen = min(n1, size_ - pos);
+    if (n2 > max_size() || size() - xlen > max_size() - n2) {
+        __msl_error("basic_string::length error\n");
+    }
+    size_type n = size_ - xlen + n2;
+    if (n > capacity_.second_) {
+        size_type cap = n + 3 - (n & 3);
+        charT *p = capacity_.allocate(cap + 1);
+        if (data_ != 0) {
+            memcpy(p, data_, pos);
+        }
+        if (n2 != 0) {
+            __fill_chars(p + pos, n2, c);
+        }
+        if (data_ != 0) {
+            memcpy(p + pos + n2, data_ + pos + xlen, length() - (pos + xlen));
+        }
+        traits::assign(p[n], charT());
+        if (data_ != 0) {
+            ::operator delete(data_);
+        }
+        data_ = p;
+        capacity_.second_ = cap;
+        size_ = n;
+    } else if (data_ != 0) {
+        size_type rest = length() - (pos + xlen);
+        charT *p = data_ + pos;
+        memmove(p + n2, p + xlen, rest);
+        if (n2 != 0) {
+            __fill_chars(data_ + pos, n2, c);
+        }
+        traits::assign(data_[n], charT());
+        size_ = n;
+    }
+    return *this;
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::assign(const basic_string &str,
+                                                                                    size_type pos, size_type n) {
+    if (pos > str.size_) {
+        __msl_error("basic_string::assign pos out of range");
+    }
+    size_type len = min(n, str.size_ - pos);
+    if (this == &str) {
+        replace(0, pos, 0, charT());
+        __set_size(len, true);
+    } else {
+        __set_size(len, false);
+        traits::copy(data(), str.begin() + pos, len);
+    }
+    return *this;
+}
+
+template <class charT, class traits, class Allocator>
+int basic_string<charT, traits, Allocator>::compare(size_type pos1, size_type n1, const charT *s,
+                                                    size_type n2) const {
+    if (pos1 > size_) {
+        __msl_error("string compare: pos > len\n");
+    }
+    size_type rlen = min(size_ - pos1, n1);
+    int result = traits::compare(data() + pos1, s, min(rlen, n2));
+    if (result == 0) {
+        if (rlen < n2) {
+            result = -1;
+        } else {
+            result = rlen == n2 ? 0 : 1;
+        }
+    }
+    return result;
+}
+
+template <class charT, class traits, class Allocator>
+inline bool operator==(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs) {
+    return lhs.compare(rhs) == 0;
+}
+#elif defined(MSL_STRING_COPY)
 template <class charT, class traits, class Allocator>
 bool operator==(const basic_string<charT, traits, Allocator> &lhs, const charT *rhs);
 #endif
+
 
 #ifdef MSL_STRING_COMPARE
 /* Only where MSL_STRING_COMPARE is defined before this header (Game/csdFileSystem.cpp), for the

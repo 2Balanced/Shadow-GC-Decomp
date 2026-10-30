@@ -6,7 +6,13 @@
 
 class CharInfo;
 struct UnkColor_8040D2D8;
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 struct UnkColliQuery_800C0D20;
 struct UnkColliContact_8001FF00;
 struct UnkColliHit_8002686C;
@@ -20,6 +26,12 @@ template <class T> class weak_ptr;
 /* Retail's vtable of CharaColliBaseCharInfo (Game/CharaColliBaseCharInfo.cpp, which defines
  * CHARACOLLI_BASE_PURE) has null entries for the virtuals of CharaColliBase it does not override:
  * they are pure there. Other units keep the plain declarations, so that they are unchanged. */
+/* The type vf_0x20 returns: Game/CharaColliBase.cpp, whose copy of the empty extent goes through
+ * the out-of-line vector copy (fn_800091EC), defines it as Fn8040CopyVector3 (same layout). */
+#ifndef CHARACOLLI_EXTENT
+#define CHARACOLLI_EXTENT Vec3f
+#endif
+
 #ifdef CHARACOLLI_BASE_PURE
 #define CHARACOLLI_PURE = 0
 #else
@@ -83,11 +95,11 @@ class CharaColliBase {
      * priority, -1 when there is no such shape (names inferred). */
     virtual s32 vf_0x1C(float *x, float *y, float *z, u32 id);
     /* The extent of shape id (-1: the first; meaning inferred). */
-    virtual Vec3f vf_0x20(u32 id);
+    virtual CHARACOLLI_EXTENT vf_0x20(u32 id);
     virtual s32 vf_0x24();
     /* The shape at index, and the shape with the given id (0 if none; names inferred). */
-    virtual UnkColliObject_80028CA4 *vf_0x28(int index) const CHARACOLLI_PURE;
-    virtual UnkColliObject_80028CA4 *vf_0x2C(u32 id) const CHARACOLLI_PURE;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x28(int index) const CHARACOLLI_PURE;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x2C(u32 id) const CHARACOLLI_PURE;
     /* Returns the collider's attributes (the counterpart of SetAttributes; meaning of arg
      * unknown). */
     virtual u32 GetAttributes(int arg) const CHARACOLLI_PURE;
@@ -115,13 +127,13 @@ class CharaColliBase {
     virtual void vf_0x5C(u32 attributes, u32 id) CHARACOLLI_PURE;
     /* Tests a line, a segment, a sphere and a moving sphere against the collider; filter (when
      * set) is asked first with arg. They return the shape hit (names and meanings inferred). */
-    virtual UnkColliObject_80028CA4 *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg) CHARACOLLI_PURE;
-    virtual UnkColliObject_80028CA4 *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg) CHARACOLLI_PURE;
-    virtual UnkColliObject_80028CA4 *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg) CHARACOLLI_PURE;
-    virtual UnkColliObject_80028CA4 *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                                              UnkColliContact_8001FF00 *result, Filter filter, u32 arg) CHARACOLLI_PURE;
     /* Re-registers the collision after its owner moved. */
     virtual void Reset() CHARACOLLI_PURE;
@@ -131,7 +143,7 @@ class CharaColliBase {
     virtual void vf_0x7C() CHARACOLLI_PURE;
     /* Tests the collider against other; on a hit it returns the two shapes and, when asked,
      * the contacts on each side (meanings inferred). */
-    virtual bool vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 **mine, UnkColliObject_80028CA4 **theirs,
+    virtual bool vf_0x80(CharaColliBase *other, SonicteamUSA::System::Range::RangeBase **mine, SonicteamUSA::System::Range::RangeBase **theirs,
                          UnkColliHit_8002686C **mineHit, UnkColliHit_8002686C **theirHit) CHARACOLLI_PURE;
     /* Recomputes the radius (meaning inferred). */
     virtual void vf_0x84() CHARACOLLI_PURE;

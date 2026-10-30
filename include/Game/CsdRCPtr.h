@@ -11,6 +11,35 @@
 
 #include <dolphin/types.h>
 
+#ifdef CSD_MEMORY_ALLOC_INLINE
+/* Where CSD_MEMORY_ALLOC_INLINE is defined (Game/TPjsCsd.cpp), the allocator is the library's
+ * CMemoryAlloc with its inline members (defined here instead of in Game/CsdLib.h): a unit that
+ * calls Alloc and Free through it emits the game's copies of them (0x8003DF84, 0x8003CB64). */
+namespace Chao {
+namespace CSD {
+class CMemoryAlloc {
+  public:
+    CMemoryAlloc() {}
+    virtual ~CMemoryAlloc() {}
+    virtual void *Allocate(u32 size) = 0;
+    virtual void Deallocate(void *p) = 0;
+    virtual void *Alloc(u32 size, const char *file, int line) {
+        return Allocate(size);
+    }
+    virtual void Free(void *p) {
+        Deallocate(p);
+    }
+    virtual void *AllocDebug(u32 size, const char *file, int line) {
+        return Allocate(size);
+    }
+    virtual void FreeDebug(void *p) {
+        Deallocate(p);
+    }
+};
+} // namespace CSD
+} // namespace Chao
+typedef Chao::CSD::CMemoryAlloc UnkCsdAllocator_803605AC;
+#else
 /* The CSD memory allocator fn_803605AC returns (name inferred). Slot 0x14 allocates size bytes,
  * recording the source file and line. */
 class UnkCsdAllocator_803605AC {
@@ -26,6 +55,7 @@ class UnkCsdAllocator_803605AC {
     /* Frees memory from AllocDebug (name inferred; fn_80360528). */
     virtual void FreeDebug(void *p);
 };
+#endif
 
 extern "C" {
 UnkCsdAllocator_803605AC *fn_803605AC(void);
@@ -148,7 +178,9 @@ class RCPtr
           public:
 #ifdef CSD_OBJECT_LAYER
             virtual void operator()(U *p) = 0;
-#ifdef CSD_RCOBJECT_DTOR_DECL_ONLY
+#if defined(CSD_RCOBJECT_DTOR_DECL_ONLY) || defined(CSD_FUNCTOR_DTOR_DECL_ONLY)
+            /* (Also where CSD_FUNCTOR_DTOR_DECL_ONLY is defined, Game/TPjsCsd.cpp, which emits the
+             * RCObjects' destructors but not their functors'.) */
             virtual ~CFunctorBase();
 #else
             virtual ~CFunctorBase() {}

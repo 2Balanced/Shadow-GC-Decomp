@@ -39,7 +39,7 @@ extern "C" {
 UnkCsdHandle_80042DF0 fn_8036D2FC(Chao::CSD::CProject *project, const char *path, void *factory);
 RCPtr<CScene> fn_8036F470(void *object, const char *name);
 /* Whether a scene's queued motions have all been played (see Game/CsdSceneSet.h). */
-bool fn_8003DBB0(UnkCsdSceneCtrl_8003DD20 *scene);
+bool fn_8003DBB0(TPjsSceneTour *scene);
 /* The player manager, and a player's mission (see Game/BASwitch.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
 boost::weak_ptr<Mission::Mission> fn_800740E4(UnkPlayerManager_8006D6A8 *manager, int player);

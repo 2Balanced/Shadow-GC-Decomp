@@ -16,14 +16,37 @@ typedef struct RwRGBA {
     u8 alpha;
 } RwRGBA;
 
+/* RenderWare's immediate-mode 2D vertex (rw/rwcore.h), as the fader lays it out. */
+struct UnkFadeVertex_80044254 {
+    /* 0x00 */ float x;
+    /* 0x04 */ float y;
+    /* 0x08 */ float z;
+    /* 0x0C */ RwRGBA emissiveColor;
+    /* 0x10 */ float u;
+    /* 0x14 */ float v;
+};
+
+struct RwRaster;
+
 struct UnkFader_80044254 {
+    /* Defined in Game/FadeTask.cpp. */
+    UnkFader_80044254();
+    ~UnkFader_80044254();
+
     /* 0x00 */ float m_level;
     /* 0x04 */ float m_time;
     /* 0x08 */ float m_rate; /* 1 / m_time */
-    /* 0x0C */ u8 field_0xC[0x10 - 0xC];
+    /* 0x0C */ float m_target; /* the level the fade ends at */
     /* 0x10 */ RwRGBA m_color;
     /* 0x14 */ s32 m_state; /* 1 once a fade is over (meaning inferred) */
+    /* 0x18 */ UnkFadeVertex_80044254 m_vertices[40]; /* ten strips of four */
+    /* 0x3D8 */ float m_logoTimer;
+    /* 0x3DC */ float m_logoAlpha;
+    /* 0x3E0 */ RwRaster *m_logoRaster;
+    /* 0x3E4 */ UnkFadeVertex_80044254 m_logo[4];
+    /* 0x444 */ s32 m_withLogo;
 };
+SIZE_ASSERT(UnkFader_80044254, 0x448);
 
 extern "C" {
 UnkFader_80044254 *fn_80044254(void);

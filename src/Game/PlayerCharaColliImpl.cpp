@@ -358,7 +358,13 @@ struct UnkHitList_800270CC {
 
 /* A hit (see Game/VehicleColliMove.cpp): its collision object at 0xC and its world object at
  * 0x14. */
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 
 extern "C" u32 fn_80026588(UnkColliContactNode_800587A0 *node);
 
@@ -373,7 +379,7 @@ struct UnkColliContactNode_800587A0 {
     }
 
     /* 0x00 */ u8 field_0x0[0xC];
-    /* 0x0C */ UnkColliObject_80028CA4 *m_collider;
+    /* 0x0C */ SonicteamUSA::System::Range::RangeBase *m_collider;
     /* 0x10 */ u8 field_0x10[0x14 - 0x10];
     /* 0x14 */ void *m_object;
 };
@@ -390,13 +396,13 @@ struct UnkColliMoveContact_803334A4 {
     ~UnkColliMoveContact_803334A4();
 
     void Set(const boost::weak_ptr<CharInfo> &charInfo, const boost::weak_ptr<CharaColliBase> &collider,
-             UnkColliObject_80028CA4 *object);
+             SonicteamUSA::System::Range::RangeBase *object);
     void Reset();
 
     /* 0x00 */ u8 m_isCollider;
     /* 0x04 */ boost::weak_ptr<CharInfo> m_chara;
     /* 0x0C */ boost::weak_ptr<CharaColliBase> m_collider;
-    /* 0x14 */ UnkColliObject_80028CA4 *m_object;
+    /* 0x14 */ SonicteamUSA::System::Range::RangeBase *m_object;
 };
 SIZE_ASSERT(UnkColliMoveContact_803334A4, 0x18);
 

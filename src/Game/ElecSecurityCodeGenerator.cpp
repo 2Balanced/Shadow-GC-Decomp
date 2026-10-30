@@ -67,6 +67,17 @@ inline Vec3f operator-(const Vec3f &a, const Vec3f &b) {
     return result;
 }
 
+/* The list's allocator is list<void *>'s alloc(), an instance in Game/PathData.cpp's range. Only
+ * what the call needs is declared here (with <list> this unit would make its own copy). */
+namespace std {
+template <class T> class __list_imp;
+
+template <> class __list_imp<void *> {
+  public:
+    void *alloc();
+};
+} // namespace std
+
 const char *ElecSecurityCodeGenerator::s_taskName = "ElecSecurityCodeGenerator";
 
 /* Created by the load hook and destroyed by the unload hook. */
@@ -78,7 +89,7 @@ UnkPtrListPosition_8001B674 ElecSecurityCodeList::EraseNode(UnkPtrListPosition_8
     where.node = where.node->next;
     node->prev->next = node->next;
     node->next->prev = node->prev;
-    fn_8001BDF4(this);
+    reinterpret_cast<std::__list_imp<void *> *>(this)->alloc();
     fn_8001BDEC(this);
     delete node;
     --*fn_8001BDE8(this);

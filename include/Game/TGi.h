@@ -127,6 +127,8 @@ class UnkCsdHandle_80042DF0 {
      * so that the other units keep the implicit one). */
     UnkCsdHandle_80042DF0 &operator=(const UnkCsdHandle_80042DF0 &other);
 #endif
+    /* Shares other's object (0x80042A90, the assignment's out-of-line helper; Game/TCsdSystem.cpp). */
+    void Assign(const UnkCsdHandle_80042DF0 &other);
 
     /* The object the handle holds (name inferred; ResultTask). */
     void *Get() const {

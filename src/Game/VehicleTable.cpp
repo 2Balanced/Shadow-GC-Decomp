@@ -7,6 +7,7 @@
  * first). */
 #include "Game/CharaColliMove.h"
 #include "Game/TVehicleBase.h"
+#include "Game/TVehicleCarRecord.h"
 #include "Game/Task.h"
 #include "Game/VehicleTask.h"
 #include "boost/shared_ptr.hpp"
@@ -21,12 +22,9 @@ struct UnkVehicleEntry {
     TVehicleBase *(*create)(int kind);
 };
 
-/* The vehicle kinds' entries, defined by their units (the four cars of Vehicle::TVehicleCar, the
- * Walker, the AirSaucer, the AirWing, the AirBolt, the gun lifts, ...). */
-extern UnkVehicleEntry lbl_8053B96C;
-extern UnkVehicleEntry lbl_8053B998;
-extern UnkVehicleEntry lbl_8053B9C4;
-extern UnkVehicleEntry lbl_8053B9F0;
+/* The vehicle kinds' entries, defined by their units (the four cars of Vehicle::TVehicleCar are in
+ * lbl_8053B948, Game/TVehicleCarRecord.h; the Walker, the AirSaucer, the AirWing, the AirBolt, the
+ * gun lifts, ...). */
 extern UnkVehicleEntry lbl_805E83D8;
 extern UnkVehicleEntry lbl_805E83E4;
 extern UnkVehicleEntry lbl_805E8440;
@@ -55,10 +53,10 @@ struct UnkVehicleSlot {
 
 static UnkVehicleSlot s_vehicles[14] = {
     {0, false},
-    {&lbl_8053B96C, false},
-    {&lbl_8053B998, false},
-    {&lbl_8053B9C4, false},
-    {&lbl_8053B9F0, false},
+    {(UnkVehicleEntry *)&lbl_8053B948[0].name, false},
+    {(UnkVehicleEntry *)&lbl_8053B948[1].name, false},
+    {(UnkVehicleEntry *)&lbl_8053B948[2].name, false},
+    {(UnkVehicleEntry *)&lbl_8053B948[3].name, false},
     {&lbl_805E83D8, false},
     {&lbl_805E83E4, false},
     {&lbl_805E8440, false},

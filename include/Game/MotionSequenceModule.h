@@ -37,8 +37,8 @@ extern "C" {
 /* Starts sequence index of the table; false when there is none (behaviour inferred from its
  * body). */
 bool fn_800C9484(MotionSequenceModule *module, int index);
-/* Starts sequence (behaviour inferred). */
-void fn_800C961C(MotionSequenceModule *module, const MotionSequence *sequence);
+/* Starts sequence; false when it has no steps (behaviour inferred). */
+bool fn_800C961C(MotionSequenceModule *module, const MotionSequence *sequence);
 /* Advances the sequence by dt on work, whose motion numbers start at base, and updates the end
  * flag from work (behaviour inferred). */
 void fn_800C9178(MotionSequenceModule *module, _stMtnPlayWork *work, int base, float dt);
@@ -56,6 +56,13 @@ class MotionSequenceModule {
     MotionSequenceModule() {
         Clear();
     }
+#ifdef MOTION_SEQUENCE_MODULE_OUT_OF_LINE
+    /* Game/SetAdapterState.cpp defines the next two out of line (where retail has them); declared
+     * this way, the destructor keeps the vtable out of that unit. */
+    virtual ~MotionSequenceModule();
+    virtual bool vf_0x0C();
+    virtual void Reset();
+#else
     virtual ~MotionSequenceModule() {}
     /* Called when a looping step ends; true when it changed the sequence (0x800C954C; meaning
      * inferred). */
@@ -66,6 +73,7 @@ class MotionSequenceModule {
     virtual void Reset() {
         fn_800C9484(this, m_defaultIndex);
     }
+#endif
 
     /* Resets every field (name inferred). */
     void Clear() {

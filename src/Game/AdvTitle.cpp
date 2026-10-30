@@ -114,7 +114,7 @@ Chao::CSD::RCPtr<Chao::CSD::CNode> fn_803666B4(Chao::CSD::CScene *scene, const c
 void fn_8036AD14(Chao::CSD::CNode *node, int pattern);
 void fn_8036AD78(Chao::CSD::CNode *node, int hidden);
 /* Stops the scene's motion (behaviour inferred). */
-void fn_8003D870(UnkCsdSceneCtrl_8003DD20 *ctrl);
+void fn_8003D870(TPjsSceneTour *ctrl);
 
 /* Menu input: whether button (1 decide, 2 cancel, 3 up, 4 down, 0 start) was pressed, and two
  * values of the input (behaviour inferred). */

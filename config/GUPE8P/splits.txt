@@ -151,6 +151,40 @@ Game/PathData.cpp:
 	.sbss       start:0x805EE010 end:0x805EE028
 	.sdata2     start:0x805F18D8 end:0x805F18E8
 
+Game/UnkPathManager_8001B494.cpp:
+	.text       start:0x8001C4F8 end:0x8001E858
+	.rodata     start:0x804AA720 end:0x804AA820
+	.data       start:0x8051C748 end:0x8051C770
+	.bss        start:0x80570BA0 end:0x80570C00
+	.sdata      start:0x805E3538 end:0x805E3550
+	.sbss       start:0x805EE028 end:0x805EE040
+	.sdata2     start:0x805F18E8 end:0x805F1908
+	.sbss2      start:0x805FB4C0 end:0x805FB4D0
+
+Game/UnkCollisionQuery_80020D40.cpp:
+	.text       start:0x8001E858 end:0x800221A8
+	.ctors      start:0x804A9C0C end:0x804A9C10
+	.rodata     start:0x804AA820 end:0x804AA8B0
+	.data       start:0x8051C770 end:0x8051C780
+	.bss        start:0x80570C00 end:0x80570CD0
+	.sdata      start:0x805E3550 end:0x805E3560
+	.sbss       start:0x805EE040 end:0x805EE088
+	.sdata2     start:0x805F1908 end:0x805F1928
+
+Game/UnkSphereSweep_800221A8.cpp:
+	.text       start:0x800221A8 end:0x8002483C
+	.sdata2     start:0x805F1928 end:0x805F1944
+
+Game/UnkSphereTriangle_8002483C.cpp:
+	.text       start:0x8002483C end:0x80026430
+	.sdata2     start:0x805F1948 end:0x805F1960
+
+Game/CollisionResult.cpp:
+	.text       start:0x80026430 end:0x800273E4
+	.bss        start:0x80570CD0 end:0x80570CF0
+	.sbss       start:0x805EE088 end:0x805EE090
+	.sdata2     start:0x805F1960 end:0x805F1968
+
 Game/EffectArrangerUSA.cpp:
 	.text       start:0x800273E4 end:0x8002761C
 	.rodata     start:0x804AA8B0 end:0x804AA998
@@ -191,6 +225,325 @@ Game/EffectSystemUSA.cpp:
 	.sdata      start:0x805E3668 end:0x805E3698
 	.sbss       start:0x805EE090 end:0x805EE0A0
 	.sdata2     start:0x805F19B0 end:0x805F19C0
+
+Game/RangeBase.cpp:
+	.text       start:0x80028C94 end:0x80029378
+	.rodata     start:0x804AAE80 end:0x804AAEA8
+	.data       start:0x8051CA78 end:0x8051CAD8
+	.sdata      start:0x805E3698 end:0x805E36A0
+	.sdata2     start:0x805F19C0 end:0x805F19D0
+
+Game/RangeBox.cpp:
+	.text       start:0x80029378 end:0x8002DC88
+	.rodata     start:0x804AAEA8 end:0x804AAF08
+	.data       start:0x8051CAD8 end:0x8051CB50
+	.sdata      start:0x805E36A0 end:0x805E36B8
+	.sdata2     start:0x805F19D0 end:0x805F19E0
+
+Game/RangeCapsule.cpp:
+	.text       start:0x8002DC88 end:0x80030ADC
+	.rodata     start:0x804AAF08 end:0x804AAF68
+	.data       start:0x8051CB50 end:0x8051CBC8
+	.sdata      start:0x805E36B8 end:0x805E36C8
+	.sdata2     start:0x805F19E0 end:0x805F1A10
+
+Game/RangeCylinder.cpp:
+	.text       start:0x80030ADC end:0x800348D4
+	.rodata     start:0x804AAF68 end:0x804AAFC8
+	.data       start:0x8051CBC8 end:0x8051CC48
+	.sdata      start:0x805E36C8 end:0x805E36D8
+	.sdata2     start:0x805F1A10 end:0x805F1A38
+
+Game/RangePlane.cpp:
+	.text       start:0x800348D4 end:0x80034AD4
+	.rodata     start:0x804AAFC8 end:0x804AB040
+	.data       start:0x8051CC48 end:0x8051CCE8
+	.sdata      start:0x805E36D8 end:0x805E36F0
+
+Game/RangeSphere.cpp:
+	.text       start:0x80034AD4 end:0x80035D84
+	.ctors      start:0x804A9C10 end:0x804A9C14
+	.rodata     start:0x804AB040 end:0x804AB0A0
+	.data       start:0x8051CCE8 end:0x8051CD60
+	.bss        start:0x80571178 end:0x80571188
+	.sdata      start:0x805E36F0 end:0x805E3708
+	.sbss       start:0x805EE0A0 end:0x805EE0A8
+	.sdata2     start:0x805F1A38 end:0x805F1A50
+
+Game/RangeTriangle.cpp:
+	.text       start:0x80035D84 end:0x800361D8
+	.rodata     start:0x804AB0A0 end:0x804AB0F8
+	.data       start:0x8051CD60 end:0x8051CDD0
+	.sdata      start:0x805E3708 end:0x805E3718
+
+Game/TMovieManager.cpp:
+	.text       start:0x800361D8 end:0x80037358
+	.rodata     start:0x804AB0F8 end:0x804AB1E8
+	.data       start:0x8051CDD0 end:0x8051CDF0
+	.bss        start:0x80571188 end:0x805712B8
+	.sdata      start:0x805E3718 end:0x805E3730
+	.sbss       start:0x805EE0A8 end:0x805EE0D0
+	.sdata2     start:0x805F1A50 end:0x805F1A80
+
+Game/CharaColliBase.cpp:
+	.text       start:0x80037358 end:0x800379DC
+	.rodata     start:0x804AB1E8 end:0x804AB220
+	.data       start:0x8051CDF0 end:0x8051CE78
+	.sdata      start:0x805E3730 end:0x805E3738
+
+Game/UnkAtomicColor_800379DC.cpp:
+	.text       start:0x800379DC end:0x80038120
+	.sdata      start:0x805E3738 end:0x805E3740
+	.sdata2     start:0x805F1A80 end:0x805F1A88
+	.sbss2      start:0x805FB4D0 end:0x805FB4D8
+
+Game/UnkClumpFade_80038120.cpp:
+	.text       start:0x80038120 end:0x800396D0
+	.rodata     start:0x804AB220 end:0x804AB230
+	.bss        start:0x805712B8 end:0x805712F8
+	.sbss       start:0x805EE0D0 end:0x805EE0F0
+	.sdata2     start:0x805F1A88 end:0x805F1AB8
+
+Game/UnkImmediateDraw_800396D0.cpp:
+	.text       start:0x800396D0 end:0x80039B94
+	.ctors      start:0x804A9C14 end:0x804A9C18
+	.bss        start:0x805712F8 end:0x80571478
+	.sbss       start:0x805EE0F0 end:0x805EE0F8
+	.sdata2     start:0x805F1AB8 end:0x805F1AC8
+	.sbss2      start:0x805FB4D8 end:0x805FB4E0
+
+Game/UnkClumpLight_80039B94.cpp:
+	.text       start:0x80039B94 end:0x80039CA0
+	.sdata2     start:0x805F1AC8 end:0x805F1AD0
+
+Game/BitTable.cpp:
+	.text       start:0x80039CA0 end:0x80039ED4
+	.rodata     start:0x804AB230 end:0x804AB250
+	.data       start:0x8051CE78 end:0x8051CE88
+	.sdata      start:0x805E3740 end:0x805E3748
+
+Game/TBlockManage.cpp:
+	.text       start:0x80039ED4 end:0x8003B03C
+	.ctors      start:0x804A9C18 end:0x804A9C1C
+	.rodata     start:0x804AB250 end:0x804AB348
+	.data       start:0x8051CE88 end:0x8051CF00
+	.bss        start:0x80571478 end:0x80572CB8
+	.sdata      start:0x805E3748 end:0x805E3780
+	.sbss       start:0x805EE0F8 end:0x805EE100
+	.sdata2     start:0x805F1AD0 end:0x805F1AD8
+
+Game/UnkGeometry_8003B03C.cpp:
+	.text       start:0x8003B03C end:0x8003C79C
+	.sdata2     start:0x805F1AD8 end:0x805F1B20
+
+Game/TPjsCsd.cpp:
+	.text       start:0x8003C79C end:0x80042164
+	.rodata     start:0x804AB348 end:0x804AB638
+	.data       start:0x8051CF00 end:0x8051CFA0
+	.bss        start:0x80572CB8 end:0x80572CC8
+	.sdata      start:0x805E3780 end:0x805E37D8
+	.sbss       start:0x805EE100 end:0x805EE110
+	.sdata2     start:0x805F1B20 end:0x805F1B30
+
+Game/TCsdSystem.cpp:
+	.text       start:0x80042164 end:0x800436FC
+	.ctors      start:0x804A9C1C end:0x804A9C20
+	.rodata     start:0x804AB638 end:0x804AB748
+	.data       start:0x8051CFA0 end:0x8051D018
+	.bss        start:0x80572CC8 end:0x80572D88
+	.sdata      start:0x805E37D8 end:0x805E3800
+	.sbss       start:0x805EE110 end:0x805EE120
+	.sdata2     start:0x805F1B30 end:0x805F1B48
+
+Game/TDestroyManager.cpp:
+	.text       start:0x800436FC end:0x80043C58
+	.rodata     start:0x804AB748 end:0x804AB768
+	.data       start:0x8051D018 end:0x8051D038
+	.sdata      start:0x805E3800 end:0x805E3810
+	.sbss       start:0x805EE120 end:0x805EE128
+	.sdata2     start:0x805F1B48 end:0x805F1B50
+
+Game/TExpandBG.cpp:
+	.text       start:0x80043C58 end:0x80044148
+	.rodata     start:0x804AB768 end:0x804AB7B0
+	.data       start:0x8051D038 end:0x8051D150
+	.sdata      start:0x805E3810 end:0x805E3838
+	.sdata2     start:0x805F1B50 end:0x805F1B58
+
+Game/FadeTask.cpp:
+	.text       start:0x80044148 end:0x80044E34
+	.rodata     start:0x804AB7B0 end:0x804AB870
+	.data       start:0x8051D150 end:0x8051D188
+	.bss        start:0x80572D88 end:0x805731E0
+	.sdata      start:0x805E3838 end:0x805E3850
+	.sbss       start:0x805EE128 end:0x805EE130
+	.sdata2     start:0x805F1B58 end:0x805F1B98
+
+Game/UnkFileSystem_800371D8.cpp:
+	.text       start:0x80044E34 end:0x800452A0
+	.sdata      start:0x805E3850 end:0x805E3858
+	.sdata2     start:0x805F1B98 end:0x805F1BA0
+
+Game/TBGRead.cpp:
+	.text       start:0x800452A0 end:0x800459CC
+	.rodata     start:0x804AB870 end:0x804AB8E0
+	.data       start:0x8051D188 end:0x8051D1E0
+	.bss        start:0x805731E0 end:0x805731F0
+	.sdata      start:0x805E3858 end:0x805E3888
+	.sbss       start:0x805EE138 end:0x805EE140
+	.sdata2     start:0x805F1BA0 end:0x805F1BB0
+
+Game/UnkHandles_800459CC.cpp:
+	.text       start:0x800459CC end:0x80045AD0
+	.bss        start:0x805731F0 end:0x80573200
+	.sbss       start:0x805EE140 end:0x805EE150
+
+Game/UnkHandleTable_80045AD0.cpp:
+	.text       start:0x80045AD0 end:0x80045EFC
+	.bss        start:0x80573200 end:0x80573220
+	.sbss       start:0x805EE150 end:0x805EE158
+
+Game/ScreenRect.cpp:
+	.text       start:0x80045EFC end:0x80045F9C
+	.ctors      start:0x804A9C20 end:0x804A9C24
+	.sbss       start:0x805EE158 end:0x805EE168
+
+Game/IHeap.cpp:
+	.text       start:0x80045F9C end:0x80045FB4
+	.rodata     start:0x804AB8E0 end:0x804AB900
+	.data       start:0x8051D1E0 end:0x8051D208
+	.sdata      start:0x805E3888 end:0x805E3890
+
+Game/LandManager.cpp:
+	.text       start:0x80045FB4 end:0x80047780
+	.ctors      start:0x804A9C24 end:0x804A9C28
+	.rodata     start:0x804AB900 end:0x804ABAA8
+	.data       start:0x8051D208 end:0x8051D3F8
+	.bss        start:0x80573220 end:0x80573330
+	.sdata      start:0x805E3890 end:0x805E38B8
+	.sbss       start:0x805EE168 end:0x805EE170
+	.sdata2     start:0x805F1BB0 end:0x805F1C38
+
+Game/UnkRenderer_800289B0.cpp:
+	.text       start:0x80047780 end:0x8004883C
+	.rodata     start:0x804ABAA8 end:0x804ABAD8
+	.data       start:0x8051D3F8 end:0x8051D478
+	.sdata      start:0x805E38B8 end:0x805E38C0
+	.sdata2     start:0x805F1C38 end:0x805F1C48
+
+Game/UnkSnnAnim_80048A44.cpp:
+	.text       start:0x8004883C end:0x80048E90
+	.rodata     start:0x804ABAD8 end:0x804ABAE8
+	.data       start:0x8051D478 end:0x8051D4C0
+	.sdata2     start:0x805F1C48 end:0x805F1C70
+
+Game/DebugListener.cpp:
+	.text       start:0x80048E90 end:0x8004924C
+	.rodata     start:0x804ABAE8 end:0x804ABB88
+	.data       start:0x8051D4C0 end:0x8051D528
+	.bss        start:0x80573330 end:0x80573340
+	.sdata      start:0x805E38C0 end:0x805E38C8
+	.sbss       start:0x805EE170 end:0x805EE180
+	.sdata2     start:0x805F1C70 end:0x805F1C78
+
+Game/UnkEulerAngles_80049290.cpp:
+	.text       start:0x8004924C end:0x80049778
+	.sdata2     start:0x805F1C78 end:0x805F1C80
+
+Game/UnkAxisRotation_80049778.cpp:
+	.text       start:0x80049778 end:0x80049AF4
+	.sdata2     start:0x805F1C80 end:0x805F1C88
+
+Game/UnkSkeletonWrappers_80049AF4.cpp:
+	.text       start:0x80049AF4 end:0x80049BC0
+
+Game/TMessageDisp.cpp:
+	.text       start:0x80049BC0 end:0x8004AC50
+	.rodata     start:0x804ABB88 end:0x804ABBE8
+	.data       start:0x8051D528 end:0x8051D540
+	.bss        start:0x80573340 end:0x80573B60
+	.sdata      start:0x805E38C8 end:0x805E38D0
+	.sbss       start:0x805EE180 end:0x805EE190
+	.sdata2     start:0x805F1C88 end:0x805F1CD8
+	.sbss2      start:0x805FB4E0 end:0x805FB4F0
+
+Game/TOneFileAsync.cpp:
+	.text       start:0x8004AC50 end:0x8004DEDC
+	.rodata     start:0x804ABBE8 end:0x804ABD88
+	.data       start:0x8051D540 end:0x8051D608
+	.bss        start:0x80573B60 end:0x80573B78
+	.sdata      start:0x805E38D0 end:0x805E3948
+	.sbss       start:0x805EE190 end:0x805EE1A8
+	.sdata2     start:0x805F1CD8 end:0x805F1CF0
+
+Game/UnkGlobals_8004DEDC.cpp:
+	.text       start:0x8004DEDC end:0x8004DFB0
+	.ctors      start:0x804A9C28 end:0x804A9C2C
+	.bss        start:0x80573B78 end:0x80573BB8
+	.sbss       start:0x805EE1A8 end:0x805EE1C8
+
+Game/RenderUnit.cpp:
+	.text       start:0x8004DFB0 end:0x8004E85C
+	.rodata     start:0x804ABD88 end:0x804ABE28
+	.data       start:0x8051D608 end:0x8051D648
+	.sdata      start:0x805E3948 end:0x805E3978
+	.sbss       start:0x805EE1C8 end:0x805EE1D0
+	.sdata2     start:0x805F1CF0 end:0x805F1CF8
+
+Game/PooledListPool.cpp:
+	.text       start:0x8004E85C end:0x8004EA3C
+
+Game/Task.cpp:
+	.text       start:0x8004EA3C end:0x8004F0A4
+	.data       start:0x8051D648 end:0x8051D658
+	.sdata      start:0x805E3978 end:0x805E3988
+	.sbss       start:0x805EE1D0 end:0x805EE1E8
+	.sdata2     start:0x805F1CF8 end:0x805F1D00
+
+Game/TTextureChange.cpp:
+	.text       start:0x8004F0A4 end:0x8004F930
+	.rodata     start:0x804ABE28 end:0x804ABEA8
+	.data       start:0x8051D658 end:0x8051D690
+	.sdata      start:0x805E3988 end:0x805E39A0
+	.sdata2     start:0x805F1D00 end:0x805F1D28
+
+Game/AdbManager.cpp:
+	.text       start:0x8004F930 end:0x8005097C
+	.rodata     start:0x804ABEA8 end:0x804ABF20
+	.data       start:0x8051D690 end:0x8051D6A8
+	.bss        start:0x80573BB8 end:0x80573CC0
+	.sdata      start:0x805E39A0 end:0x805E39C0
+	.sbss       start:0x805EE1E8 end:0x805EE1F0
+	.sdata2     start:0x805F1D28 end:0x805F1D38
+
+Game/AttackIgnorePool.cpp:
+	.text       start:0x8005097C end:0x80050BA0
+
+Game/gcn.cpp:
+	.text       start:0x80050BA0 end:0x80051528
+	.rodata     start:0x804ABF20 end:0x804ABF30
+	.bss        start:0x80573CC0 end:0x80575CE0
+	.sbss       start:0x805EE1F0 end:0x805EE1F8
+	.sdata2     start:0x805F1D38 end:0x805F1D50
+
+Game/RwSkeleton.cpp:
+	.text       start:0x80051528 end:0x80051AB4
+	.rodata     start:0x804ABF30 end:0x804ABF48
+	.data       start:0x8051D6A8 end:0x8051D720
+	.bss        start:0x80575CE0 end:0x80575E58
+	.sdata      start:0x805E39C0 end:0x805E39C8
+	.sbss       start:0x805EE1F8 end:0x805EE200
+	.sdata2     start:0x805F1D50 end:0x805F1D58
+
+Game/UnkSkeletonSetting_80051AB4.cpp:
+	.text       start:0x80051AB4 end:0x80051AC8
+	.sdata      start:0x805E39C8 end:0x805E39D0
+
+Game/BulletTypeTable.cpp:
+	.text       start:0x80051AC8 end:0x80052240
+	.data       start:0x8051D720 end:0x8051D840
+	.sbss       start:0x805EE200 end:0x805EE208
+	.sdata2     start:0x805F1D58 end:0x805F1D60
 
 Game/BulletBase.cpp:
 	.text       start:0x80052240 end:0x800524C4
@@ -1199,6 +1552,31 @@ Game/CharaColliGeneralCharInfo.cpp:
 	.rodata     start:0x804B5ED0 end:0x804B5FB0
 	.data       start:0x80522A50 end:0x80522B20
 	.sdata      start:0x805E4CF8 end:0x805E4D18
+
+Game/CharaColliManager.cpp:
+	.text       start:0x800C3ED4 end:0x800C90B4
+	.rodata     start:0x804B5FB0 end:0x804B6638
+	.data       start:0x80522B20 end:0x80522BE0
+	.sdata      start:0x805E4D18 end:0x805E4D80
+	.sbss       start:0x805EE6B0 end:0x805EE6C8
+	.sdata2     start:0x805F3078 end:0x805F3088
+
+Game/CharaColliManageTask.cpp:
+	.text       start:0x800C90B4 end:0x800C9178
+	.rodata     start:0x804B6638 end:0x804B6688
+	.data       start:0x80522BE0 end:0x80522C00
+	.sdata      start:0x805E4D80 end:0x805E4D98
+	.sdata2     start:0x805F3088 end:0x805F3090
+
+Game/SetAdapterState.cpp:
+	.text       start:0x800C9178 end:0x800C9F68
+	.ctors      start:0x804A9CF8 end:0x804A9CFC
+	.rodata     start:0x804B6688 end:0x804B6698
+	.data       start:0x80522C00 end:0x80522C10
+	.bss        start:0x8057A868 end:0x8057A878
+	.sdata      start:0x805E4D98 end:0x805E4DA0
+	.sbss       start:0x805EE6C8 end:0x805EE6E0
+	.sdata2     start:0x805F3090 end:0x805F30B8
 
 Game/BlastBreak.cpp:
 	.text       start:0x800EC944 end:0x800ED440
@@ -2452,6 +2830,42 @@ Game/TVehicleCamera.cpp:
 	.sbss       start:0x805EF818 end:0x805EF838
 	.sdata2     start:0x805F5A50 end:0x805F5A58
 
+Game/TVehicleCar.cpp:
+	.text       start:0x801B8784 end:0x801B982C
+	.rodata     start:0x804CDAF8 end:0x804CE270
+	.data       start:0x8053B948 end:0x8053BAC0
+	.sdata      start:0x805E8530 end:0x805E8560
+	.sbss       start:0x805EF838 end:0x805EF848
+	.sdata2     start:0x805F5A58 end:0x805F5A60
+
+Game/VehicleCarResource.cpp:
+	.text       start:0x801B982C end:0x801B995C
+	.rodata     start:0x804CE270 end:0x804CE390
+	.bss        start:0x80581058 end:0x80581068
+
+Game/TVehicleCarMove.cpp:
+	.text       start:0x801B995C end:0x801BFB70
+	.ctors      start:0x804A9DB8 end:0x804A9DBC
+	.rodata     start:0x804CE390 end:0x804CE840
+	.data       start:0x8053BAC0 end:0x8053BF10
+	.bss        start:0x80581068 end:0x80581110
+	.sdata      start:0x805E8560 end:0x805E8610
+	.sbss       start:0x805EF848 end:0x805EF868
+	.sdata2     start:0x805F5A60 end:0x805F5B20
+
+Game/VehicleSweep.cpp:
+	.text       start:0x801BFB70 end:0x801C05CC
+	.ctors      start:0x804A9DBC end:0x804A9DC0
+	.sbss       start:0x805EF868 end:0x805EF870
+	.sdata2     start:0x805F5B20 end:0x805F5B48
+
+Game/VehicleData.cpp:
+	.text       start:0x801C05CC end:0x801C0AE0
+	.rodata     start:0x804CE840 end:0x804CE880
+	.data       start:0x8053BF10 end:0x8053BF58
+	.sbss       start:0x805EF870 end:0x805EF878
+	.sdata2     start:0x805F5B48 end:0x805F5B50
+
 Game/CameraModeFixEye.cpp:
 	.text       start:0x801C0AE0 end:0x801C0C9C
 	.rodata     start:0x804CE880 end:0x804CE8E8
@@ -3421,6 +3835,11 @@ Game/SuperComputer.cpp:
 	.sdata      start:0x805E9C38 end:0x805E9C60
 	.sbss       start:0x805EFE90 end:0x805EFEA8
 	.sdata2     start:0x805F70F0 end:0x805F7120
+
+Game/UnkMotion_8022F058.cpp:
+	.text       start:0x8022EC24 end:0x8023053C
+	.rodata     start:0x804F2458 end:0x804F2488
+	.sdata2     start:0x805F7120 end:0x805F7130
 
 Game/ElecKyuu.cpp:
 	.text       start:0x8023053C end:0x80230F98
@@ -5958,6 +6377,11 @@ Game/StageSequencePlayHard.cpp:
 	.sdata      start:0x805EDA58 end:0x805EDA68
 	.sbss       start:0x805F0E20 end:0x805F0E30
 	.sdata2     start:0x805FA560 end:0x805FA568
+
+Game/UnkAttackHitList_803555CC.cpp:
+	.text       start:0x8035511C end:0x80355D0C
+	.rodata     start:0x80512970 end:0x80512990
+	.sbss       start:0x805F0E30 end:0x805F0E38
 
 Game/AdvCsdEffect.cpp:
 	.text       start:0x80355D0C end:0x803560B8

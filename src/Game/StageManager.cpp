@@ -278,7 +278,7 @@ bool fn_8004CAF8(UnkArchive_8004CFB0 *archive);
 void *fn_8001C4F8(void);
 Task *fn_801EB304(void *manager, int kind);
 void fn_801EB314(void *manager);
-void *fn_8003AD8C(void *block, Task *parent, int arg2, int arg3, int arg4);
+void *__ct__12TBlockManageFP4TaskiPCcPC5Vec3f(void *block, Task *parent, int arg2, int arg3, int arg4);
 void fn_8003AB68(void *block, void *data);
 void *fn_80013BC4(void);
 void fn_8004FE88(void *manager, void *data);
@@ -339,7 +339,7 @@ void fn_800CB438(void *task, Task *parent);
 bool fn_8025DD20(UnkFlag_80178678 *flag);
 void fn_801D3980(Task *parent, s32 stageId);
 void fn_801D9DA0(void *task, Task *parent);
-void fn_800C9130(void *task, Task *parent);
+void __ct__Q412SonicteamUSA6System10CharaColli20CharaColliManageTaskFP4Task(void *task, Task *parent);
 void fn_801D20F8(void *task, Task *parent, u32 arg2);
 UnkTable_800CBAA4 *fn_800CBAA4(void);
 UnkStage_8003A840 *fn_8003A840(void);
@@ -535,7 +535,7 @@ bool StageManager::Start() {
     Task *layer9 = fn_801EB304(fn_8001C4F8(), 9);
     task = operator new(0x28);
     if (task != 0) {
-        fn_800C9130(task, layer9);
+        __ct__Q412SonicteamUSA6System10CharaColli20CharaColliManageTaskFP4Task(task, layer9);
     }
     Task *layer16 = fn_801EB304(fn_8001C4F8(), 0x10);
     task = operator new(0x30);
@@ -820,7 +820,7 @@ void StageManager::OnStageDataLoaded(StageManager *manager) {
             void *data = fn_8004C358(s_archive, i, 0, 0);
             block = operator new(0x980);
             if (block != 0) {
-                block = fn_8003AD8C(block, fn_801EB304(fn_8001C4F8(), 10), 0, 0, 0);
+                block = __ct__12TBlockManageFP4TaskiPCcPC5Vec3f(block, fn_801EB304(fn_8001C4F8(), 10), 0, 0, 0);
             }
             fn_8003AB68(block, data);
             fn_803A953C("\x83u\x83\x8D\x83" "b\x83N\x83" "f\x81[\x83^%s\x82\xCC\x93\xC7\x82\xDD"

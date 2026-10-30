@@ -1,5 +1,5 @@
 /* SonicteamUSA::System::CharaColli::CharaColliBody (class name from RTTI): a collider of one shape
- * (UnkColliObject_80028CA4, RTTI's Range::RangeBase) with a position and rotation of its own. A
+ * (SonicteamUSA::System::Range::RangeBase, RTTI's Range::RangeBase) with a position and rotation of its own. A
  * move only marks the collider (m_moved); slot 0x8C hands it to the shape. The queries (slots
  * 0x60 to 0x6C) first ask an optional filter, then reject by the collider's bounding sphere before
  * they ask the shape. Member and function names are inferred. Definitions are in reverse address
@@ -7,7 +7,7 @@
 #include "Game/CharaColliBody.h"
 #include "Game/DebugDraw.h"
 #include "Game/MathTypes.h"
-#include "Game/UnkColliObject_80028CA4.h"
+#include "Game/RangeBase.h"
 #include "boost/weak_ptr.hpp"
 
 using SonicteamUSA::System::CharaColli::CharaColliBase;
@@ -21,7 +21,7 @@ struct UnkSegment_80020A20 {
 
 extern "C" {
 /* Makes the shape the description asks for (behaviour inferred). */
-UnkColliObject_80028CA4 *fn_80037668(CharaColliBase *owner, const UnkColliShapeDesc_80037668 *shape,
+SonicteamUSA::System::Range::RangeBase *fn_80037668(CharaColliBase *owner, const UnkColliShapeDesc_80037668 *shape,
                                      const Vec3f *position, const Vec3f *rotation, s32 arg);
 /* The squared distance from point to the segment (t: where along it; may be 0). */
 float fn_8003C660(const Vec3f *point, const UnkDebugLine_80020A20 *segment, float *t);
@@ -76,10 +76,10 @@ void CharaColliBody::vf_0x8C() {
     }
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
                                                  Filter filter, u32 arg) {
     vf_0x88();
-    UnkColliObject_80028CA4 *shape = vf_0x28(0);
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(0);
     float radius = m_radius;
     if (filter != 0) {
         UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
@@ -97,10 +97,10 @@ UnkColliObject_80028CA4 *CharaColliBody::vf_0x60(const UnkDebugLine_80020A20 *li
     return 0;
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
                                                  Filter filter, u32 arg) {
     vf_0x88();
-    UnkColliObject_80028CA4 *shape = vf_0x28(0);
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(0);
     float radius = m_radius;
     if (filter != 0) {
         UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
@@ -118,10 +118,10 @@ UnkColliObject_80028CA4 *CharaColliBody::vf_0x64(const UnkDebugLine_80020A20 *se
     return 0;
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
                                                  Filter filter, u32 arg) {
     vf_0x88();
-    UnkColliObject_80028CA4 *shape = vf_0x28(0);
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(0);
     float radius = m_radius + sphere->m_radius;
     if (filter != 0) {
         UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
@@ -139,10 +139,10 @@ UnkColliObject_80028CA4 *CharaColliBody::vf_0x68(const UnkSphere_8004E6CC *spher
     return 0;
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                                                  UnkColliContact_8001FF00 *result, Filter filter, u32 arg) {
     vf_0x88();
-    UnkColliObject_80028CA4 *shape = vf_0x28(0);
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(0);
     float radius = m_radius + sphere->m_radius;
     if (filter != 0) {
         UnkColliQuery_800C0D20 query = {0, shape, this, shape->m_attributes, arg};
@@ -163,15 +163,15 @@ UnkColliObject_80028CA4 *CharaColliBody::vf_0x6C(const UnkSphere_8004E6CC *spher
     return 0;
 }
 
-bool CharaColliBody::vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 **mine,
-                             UnkColliObject_80028CA4 **theirs, UnkColliHit_8002686C **mineHit,
+bool CharaColliBody::vf_0x80(CharaColliBase *other, SonicteamUSA::System::Range::RangeBase **mine,
+                             SonicteamUSA::System::Range::RangeBase **theirs, UnkColliHit_8002686C **mineHit,
                              UnkColliHit_8002686C **theirHit) {
-    UnkColliObject_80028CA4 *shape = vf_0x28(0);
-    UnkColliObject_80028CA4 *own = m_shape;
+    SonicteamUSA::System::Range::RangeBase *shape = vf_0x28(0);
+    SonicteamUSA::System::Range::RangeBase *own = m_shape;
     for (int i = 0; i < other->GetShapeCount(); i++) {
-        UnkColliObject_80028CA4 *otherShape = other->vf_0x28(i);
-        UnkColliObject_80028CA4 *first;
-        UnkColliObject_80028CA4 *second;
+        SonicteamUSA::System::Range::RangeBase *otherShape = other->vf_0x28(i);
+        SonicteamUSA::System::Range::RangeBase *first;
+        SonicteamUSA::System::Range::RangeBase *second;
         bool firstSolid;
         bool secondSolid;
         s32 priority = shape->m_priority;
@@ -275,7 +275,7 @@ void CharaColliBody::vf_0x84() {
 void CharaColliBody::vf_0x88() {}
 
 void CharaColliBody::vf_0x5C(u32 attributes, u32 id) {
-    UnkColliObject_80028CA4 *shape = m_shape;
+    SonicteamUSA::System::Range::RangeBase *shape = m_shape;
     if (id == shape->m_id) {
         shape->m_attributes = attributes;
     }
@@ -298,7 +298,7 @@ void CharaColliBody::SetCharInfo(CharInfo *info) {
 }
 
 u32 CharaColliBody::vf_0x34(u32 id) const {
-    UnkColliObject_80028CA4 *shape = m_shape;
+    SonicteamUSA::System::Range::RangeBase *shape = m_shape;
     if (id == shape->m_id) {
         return shape->m_attributes;
     }
@@ -309,15 +309,15 @@ u32 CharaColliBody::GetAttributes(int arg) const {
     return m_shape->m_attributes;
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x2C(u32 id) const {
-    UnkColliObject_80028CA4 *shape = m_shape;
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x2C(u32 id) const {
+    SonicteamUSA::System::Range::RangeBase *shape = m_shape;
     if (id == shape->m_id) {
         return shape;
     }
     return 0;
 }
 
-UnkColliObject_80028CA4 *CharaColliBody::vf_0x28(int index) const {
+SonicteamUSA::System::Range::RangeBase *CharaColliBody::vf_0x28(int index) const {
     return m_shape;
 }
 

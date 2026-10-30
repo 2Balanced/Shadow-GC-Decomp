@@ -45,6 +45,10 @@ SIZE_ASSERT(UnkDebugLine_80020A20, 0x18);
  * 0x8002DBC8; the meaning of the last member is unknown). */
 struct UnkBox_8002DBC8 {
     UnkBox_8002DBC8(const Vec3f &center, const Vec3f &size, const Vec3f &rotation, int arg3);
+#ifdef RANGE_UNIT
+    /* The copy Game/RangeBox.cpp makes (out of line; the centre and size are copied as words). */
+    UnkBox_8002DBC8(const UnkBox_8002DBC8 &other);
+#endif
 
     /* 0x00 */ Vec3f m_center;
     /* 0x0C */ Vec3f m_size;
@@ -59,6 +63,10 @@ SIZE_ASSERT(UnkBox_8002DBC8, 0x28);
 struct UnkCapsule_80030A5C {
     UnkCapsule_80030A5C(const Vec3f &center, float halfHeight, float radius, const Vec3f &rotation,
                         int arg4);
+#ifdef RANGE_UNIT
+    /* The copy Game/RangeCapsule.cpp makes (out of line; the centre is copied as words). */
+    UnkCapsule_80030A5C(const UnkCapsule_80030A5C &other);
+#endif
 
     /* 0x00 */ Vec3f m_center;
     /* 0x0C */ float m_halfHeight;
@@ -71,6 +79,10 @@ SIZE_ASSERT(UnkCapsule_80030A5C, 0x24);
 struct UnkCylinder_80034854 {
     UnkCylinder_80034854(const Vec3f &center, float halfHeight, float radius, const Vec3f &rotation,
                          int arg4);
+#ifdef RANGE_UNIT
+    /* The copy Game/RangeCylinder.cpp makes (out of line; the centre is copied as words). */
+    UnkCylinder_80034854(const UnkCylinder_80034854 &other);
+#endif
 
     /* 0x00 */ Vec3f m_center;
     /* 0x0C */ float m_halfHeight;

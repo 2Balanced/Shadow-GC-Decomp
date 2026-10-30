@@ -128,8 +128,9 @@ void *__register_global_object(void *object, void *destructor, void *record);
 UnkTaskRegistry_80014B90 *fn_8025D240(UnkTaskRegistry_80014B90 *registry);
 UnkClumpManager_800144C8 *fn_802E2ADC(UnkClumpManager_800144C8 *manager);
 void fn_802E2AA0(UnkClumpManager_800144C8 *manager, int flags);
-UnkAdbManager_80013BC4 *fn_800500E8(UnkAdbManager_80013BC4 *manager);
-void fn_80050048(UnkAdbManager_80013BC4 *manager, int flags);
+/* The .ADB manager's constructor and destructor (Game/AdbManager.cpp). */
+UnkAdbManager_80013BC4 *__ct__22UnkAdbManager_80013BC4Fv(UnkAdbManager_80013BC4 *manager);
+void __dt__22UnkAdbManager_80013BC4Fv(UnkAdbManager_80013BC4 *manager, int flags);
 }
 
 /* The singletons are function-local statics in effect (guard, destructor record, object and the
@@ -531,8 +532,8 @@ bool ResourceOneFile::LoadFiles(UnkOneFile_8004CFB0 *file) {
 extern "C" UnkAdbManager_80013BC4 *fn_80013BC4(void) {
     if (s_adbManagerInstance == 0) {
         if (!s_adbManagerInitialized) {
-            __register_global_object(fn_800500E8(&s_adbManager), fn_80050048,
-                                     s_adbManagerRecord);
+            __register_global_object(__ct__22UnkAdbManager_80013BC4Fv(&s_adbManager),
+                                     __dt__22UnkAdbManager_80013BC4Fv, s_adbManagerRecord);
             s_adbManagerInitialized = 1;
         }
         s_adbManagerInstance = &s_adbManager;

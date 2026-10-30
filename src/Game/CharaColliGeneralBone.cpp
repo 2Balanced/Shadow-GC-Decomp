@@ -7,7 +7,7 @@
  * inlining emits functions last-defined first). */
 #include "Game/CharaColliGeneral.h"
 #include "Game/MathTypes.h"
-#include "Game/UnkColliObject_80028CA4.h"
+#include "Game/RangeBase.h"
 #include "boost/weak_ptr.hpp"
 
 using SonicteamUSA::System::CharaColli::CharaColliGeneralBone;
@@ -65,12 +65,12 @@ void CharaColliGeneralBone::vf_0x88() {
 
 void CharaColliGeneralBone::vf_0x84() {
     ColliShapeList::iterator it = m_shapes.begin();
-    UnkColliObject_80028CA4 *first = *it;
+    SonicteamUSA::System::Range::RangeBase *first = *it;
     Vec3f offset;
     fn_8040CD74(&offset, &first->m_position, vf_0x14());
     float radius = fn_8040CF50(&offset) + first->GetMargin();
     for (; it != m_shapes.end(); it++) {
-        UnkColliObject_80028CA4 *shape = *it;
+        SonicteamUSA::System::Range::RangeBase *shape = *it;
         if (shape->m_enabled) {
             Vec3f shapeOffset;
             fn_8040CD74(&shapeOffset, &shape->m_position, vf_0x14());

@@ -101,6 +101,14 @@ class AudioManagerTask {
     /* 0x00 */ u8 field_0x0[0x28];
 };
 
+/* TDestroyManager (class name from RTTI; see Game/TDestroyManager.cpp), as far as it is used here. */
+class TDestroyManager {
+  public:
+    TDestroyManager(Task *parent);
+
+    /* 0x00 */ u8 field_0x0[0x38];
+};
+
 class AudioLoopManagerTask {
   public:
     AudioLoopManagerTask(Task *parent);
@@ -260,7 +268,6 @@ void fn_803563C0(void);
 void fn_80177F38(void);
 void fn_8034B4F4(void);
 void fn_801D0AD8(void);
-void fn_80043908(void *task, Task *parent);
 void fn_8003727C(Task *task, int pal);
 void fn_8003F8D4(void);
 void fn_802BEBE0(s32 stage);
@@ -431,10 +438,7 @@ extern "C" bool fn_801E2234(void) {
     fn_80053164()->Init();
     new AudioManagerTask(fn_801EB304(fn_8001C4F8(), 1));
     new AudioLoopManagerTask(fn_801EB304(fn_8001C4F8(), 1));
-    void *memory = operator new(0x38);
-    if (memory != 0) {
-        fn_80043908(memory, fn_801EB304(fn_8001C4F8(), 0));
-    }
+    new TDestroyManager(fn_801EB304(fn_8001C4F8(), 0));
     fn_80053164()->LoadBanks();
     fn_801D656C(fn_80053164());
     if (lbl_8057D6A0.m_refRate == 50) {
@@ -451,7 +455,7 @@ extern "C" bool fn_801E2234(void) {
     fn_80170234();
     UnkObject_800122D4 *object122D4 = fn_800122D4();
     object122D4->field_0x14 = 0x17;
-    memory = operator new(0x28);
+    void *memory = operator new(0x28);
     if (memory != 0) {
         fn_800123B8(memory, fn_801EB304(fn_8001C4F8(), 0));
     }

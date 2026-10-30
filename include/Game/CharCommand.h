@@ -790,6 +790,11 @@ class ToSuperCommand : public PlayerCommand {
 /* Plays motions m_motions on the player's external motion for m_time. */
 class SetExternalMotionCommand : public PlayerCommand {
   public:
+#ifdef CHARCOMMAND_EXTERNAL_MOTION_INLINE
+    /* Inline in the game where CHARCOMMAND_EXTERNAL_MOTION_INLINE is defined (Game/TVehicleCarMove.cpp,
+     * which defines the body; its weak copy is 0x801BC8A0). */
+    SetExternalMotionCommand(const s32 *motions, int arg1, float time);
+#endif
     virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
     virtual std::string vf_0x10() const;
 
@@ -1104,6 +1109,18 @@ class StartAttackCommand : public PlayerCommand {
 class EndJumpCommand : public PlayerCommand {
   public:
     EndJumpCommand(int arg1);
+};
+#endif
+
+#if defined(CHARCOMMAND_SET_EXTERNAL_MOTION) && !defined(CHARCOMMAND_PLAYER_COMMANDS)
+/* SetExternalMotionCommand (see above) as Game/UnkMotion_8022F058.cpp sends it: its constructor
+ * (0x801BC8A0, command 0x12A; argument names inferred). */
+class SetExternalMotionCommand : public PlayerCommand {
+  public:
+    SetExternalMotionCommand(const s32 *motions, int arg1, float time);
+
+    /* 0x14 */ s32 m_motions[3];
+    /* 0x20 */ float m_time;
 };
 #endif
 

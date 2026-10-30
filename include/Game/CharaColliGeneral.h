@@ -13,7 +13,13 @@
 #include "size_assert.h"
 
 class CharInfo;
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 struct _stMtnPlayWork;
 
 /* The links of a node of a list of pointers; the node keeps its value after them (see
@@ -85,7 +91,7 @@ namespace CharaColli {
 class ColliShapeList : public UnkPtrList_8001B5B8 {
   public:
     struct Node : public UnkPtrListLink_8001B5B8 {
-        /* 0x8 */ UnkColliObject_80028CA4 *value;
+        /* 0x8 */ SonicteamUSA::System::Range::RangeBase *value;
     };
 
     class iterator {
@@ -100,7 +106,7 @@ class ColliShapeList : public UnkPtrList_8001B5B8 {
             ColliShapeListKeep();
         }
 
-        UnkColliObject_80028CA4 *&operator*() const {
+        SonicteamUSA::System::Range::RangeBase *&operator*() const {
             ColliShapeListKeep();
             return static_cast<Node *>(m_node)->value;
         }
@@ -129,7 +135,7 @@ class ColliShapeList : public UnkPtrList_8001B5B8 {
             ColliShapeListKeep();
         }
 
-        UnkColliObject_80028CA4 *const &operator*() const {
+        SonicteamUSA::System::Range::RangeBase *const &operator*() const {
             ColliShapeListKeep();
             return static_cast<const Node *>(m_node)->value;
         }
@@ -167,7 +173,7 @@ class ColliShapeList : public UnkPtrList_8001B5B8 {
     const_iterator end() const {
         return const_iterator(UnkPtrListPosition_8001B674(EndPosition()));
     }
-    void push_back(UnkColliObject_80028CA4 *const &value) {
+    void push_back(SonicteamUSA::System::Range::RangeBase *const &value) {
         ColliShapeListKeep();
         fn_8001D820(this, reinterpret_cast<void *const &>(value));
     }
@@ -200,8 +206,8 @@ class CharaColliGeneral : public CharaColliBaseCharInfo {
     virtual Vec3f *vf_0x14();
     virtual Vec3f *vf_0x18();
     virtual s32 vf_0x24();
-    virtual UnkColliObject_80028CA4 *vf_0x28(int index) const;
-    virtual UnkColliObject_80028CA4 *vf_0x2C(u32 id) const;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x28(int index) const;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x2C(u32 id) const;
     virtual u32 GetAttributes(int arg) const;
     virtual u32 vf_0x34(u32 id) const;
     virtual void SetCharInfo(CharInfo *info);
@@ -211,19 +217,19 @@ class CharaColliGeneral : public CharaColliBaseCharInfo {
     virtual void vf_0x54(const boost::weak_ptr<CharaColliBase> &owner);
     virtual void SetAttributes(u32 attributes, int arg1);
     virtual void vf_0x5C(u32 attributes, u32 id);
-    virtual UnkColliObject_80028CA4 *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                                              UnkColliContact_8001FF00 *result, Filter filter, u32 arg);
     virtual void Reset();
     virtual void vf_0x74();
     virtual ~CharaColliGeneral();
     virtual void vf_0x7C();
-    virtual bool vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 **mine, UnkColliObject_80028CA4 **theirs,
+    virtual bool vf_0x80(CharaColliBase *other, SonicteamUSA::System::Range::RangeBase **mine, SonicteamUSA::System::Range::RangeBase **theirs,
                          UnkColliHit_8002686C **mineHit, UnkColliHit_8002686C **theirHit);
     virtual void vf_0x84();
     virtual void vf_0x88();

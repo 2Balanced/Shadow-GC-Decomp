@@ -13,7 +13,13 @@
 #include "size_assert.h"
 
 class CharInfo;
-class UnkColliObject_80028CA4;
+namespace SonicteamUSA {
+namespace System {
+namespace Range {
+class RangeBase;
+} // namespace Range
+} // namespace System
+} // namespace SonicteamUSA
 
 /* The description of a shape that fn_80037668 makes (struct name unknown; its first word selects
  * the kind). */
@@ -34,8 +40,8 @@ class CharaColliBody : public CharaColliBaseCharInfo {
     virtual Vec3f *vf_0x14();
     virtual Vec3f *vf_0x18();
     virtual s32 vf_0x24();
-    virtual UnkColliObject_80028CA4 *vf_0x28(int index) const;
-    virtual UnkColliObject_80028CA4 *vf_0x2C(u32 id) const;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x28(int index) const;
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x2C(u32 id) const;
     virtual u32 GetAttributes(int arg) const;
     virtual u32 vf_0x34(u32 id) const;
     virtual void SetCharInfo(CharInfo *info);
@@ -45,19 +51,19 @@ class CharaColliBody : public CharaColliBaseCharInfo {
     virtual void vf_0x54(const boost::weak_ptr<CharaColliBase> &owner);
     virtual void SetAttributes(u32 attributes, int arg1);
     virtual void vf_0x5C(u32 attributes, u32 id);
-    virtual UnkColliObject_80028CA4 *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x60(const UnkDebugLine_80020A20 *line, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x64(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x68(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result,
                                              Filter filter, u32 arg);
-    virtual UnkColliObject_80028CA4 *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
+    virtual SonicteamUSA::System::Range::RangeBase *vf_0x6C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                                              UnkColliContact_8001FF00 *result, Filter filter, u32 arg);
     virtual void Reset();
     virtual void vf_0x74();
     virtual ~CharaColliBody();
     virtual void vf_0x7C();
-    virtual bool vf_0x80(CharaColliBase *other, UnkColliObject_80028CA4 **mine, UnkColliObject_80028CA4 **theirs,
+    virtual bool vf_0x80(CharaColliBase *other, SonicteamUSA::System::Range::RangeBase **mine, SonicteamUSA::System::Range::RangeBase **theirs,
                          UnkColliHit_8002686C **mineHit, UnkColliHit_8002686C **theirHit);
     virtual void vf_0x84();
     virtual void vf_0x88();
@@ -66,9 +72,10 @@ class CharaColliBody : public CharaColliBaseCharInfo {
     /* 0x40 */ Vec3f m_position;
     /* 0x4C */ Vec3f m_rotation;
     /* 0x58 */ s32 field_0x58;
-    /* 0x5C */ UnkColliObject_80028CA4 *m_shape;
+    /* 0x5C */ SonicteamUSA::System::Range::RangeBase *m_shape;
+    /* 0x60 */ u32 field_0x60; /* never set (CharaColliManageTask allocates 0x64 bytes) */
 };
-SIZE_ASSERT(CharaColliBody, 0x60);
+SIZE_ASSERT(CharaColliBody, 0x64);
 
 /* CharaColliBodyCharInfo (class name from RTTI): a CharaColliBody that follows its character's
  * position, rotation and word 0x30 (slot 0x88). Names inferred. */

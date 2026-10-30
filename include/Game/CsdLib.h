@@ -229,7 +229,9 @@ struct SSceneState {
  * library's memory allocator, of which the game installs one (Game/csdRW.cpp; the game's own code
  * declares it as UnkCsdAllocator_803605AC in Game/CsdRCPtr.h). A derived class supplies Allocate
  * and Deallocate; the rest are inline here, and the game links one copy of each (0x8003DF84...).
- * Names other than the class name are inferred. */
+ * Names other than the class name are inferred. (Where CSD_MEMORY_ALLOC_INLINE is defined,
+ * Game/CsdRCPtr.h defines it.) */
+#ifndef CSD_MEMORY_ALLOC_INLINE
 class CMemoryAlloc {
   public:
     CMemoryAlloc() {}
@@ -249,6 +251,7 @@ class CMemoryAlloc {
         Deallocate(p);
     }
 };
+#endif
 
 /* The texture list of a project (Game/csdTexList.cpp; virtual functions inferred). It is abstract:
  * every slot of its own virtual table is zero, the destructor's included. A texture list of each

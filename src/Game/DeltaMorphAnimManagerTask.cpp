@@ -20,6 +20,7 @@
 #define MSL_MAP_ERASE_KEY
 #define MSL_TREE_CONST_ITERATOR_MIXED
 #define MSL_TREE_END_NODE_NAME __tree_end_node_DeltaMorph
+#include "Game/BitTable.h"
 #include "Game/Task.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -36,16 +37,6 @@ Task *fn_801EB304(void *root, int layer);
 /* Plays a clump's delta morph animation on by dt (behaviour inferred). */
 void fn_80037A48(RpClump *clump, float dt);
 
-/* A matrix of flags (class unknown; layout not used here): constructor, set, clear, assignment and
- * destructor. */
-typedef struct UnkFlagMatrix_80039E38 {
-    u32 field_0x0[5];
-} UnkFlagMatrix_80039E38;
-void fn_80039E38(void *matrix, int rows, int columns, int value);
-void fn_80039D0C(void *matrix, int row, int column);
-void fn_80039CD8(void *matrix, int row, int column);
-void fn_80039D40(void *dest, const void *src);
-void fn_80039DD8(void *matrix, int flags);
 /* The collider manager (see Game/ArkLaser.cpp) and setting its number of kinds (inferred). */
 void *fn_80021B08(void);
 void fn_800C76C0(void *manager, int kinds);
@@ -220,20 +211,18 @@ UnkReset_801DDE9C::UnkReset_801DDE9C() {
 
 /* Sets up the collider manager's table of which collision kinds meet (name inferred). */
 extern "C" void fn_801DDDD4(void) {
-    UnkFlagMatrix_80039E38 matrix;
-    fn_80039E38(&matrix, 18, 18, 0);
+    SonicteamUSA::System::BitTable matrix(18, 18, false);
     for (s32 i = 0; i < 18; i++) {
         for (s32 j = 0; j < 18; j++) {
             if (s_collisionTable.kinds[i][j]) {
-                fn_80039D0C(&matrix, i, j);
+                matrix.Set(i, j);
             } else {
-                fn_80039CD8(&matrix, i, j);
+                matrix.Clear(i, j);
             }
         }
     }
     fn_800C76C0(fn_80021B08(), 18);
-    fn_80039D40((u8 *)fn_80021B08() + 8, &matrix);
-    fn_80039DD8(&matrix, -1);
+    *reinterpret_cast<SonicteamUSA::System::BitTable *>((u8 *)fn_80021B08() + 8) = matrix;
 }
 
 #include <map_impl>

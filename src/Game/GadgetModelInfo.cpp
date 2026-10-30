@@ -48,6 +48,7 @@ static const RwV3d s_zAxis = {0.0f, 0.0f, 1.0f};
 #include "Game/GadgetClassDesc.h"
 #include "Game/GadgetModelInfo.h"
 #include "Game/GadgetUtil.h"
+#include "Game/TVehicleCarRecord.h"
 #include "boost/detail/sp_counted_base_impl.hpp"
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
@@ -327,7 +328,7 @@ extern GadgetClassDesc lbl_8052AFC8, lbl_805591D0, lbl_80525470, lbl_80525658, l
     lbl_8053081C, lbl_80555FA8, lbl_80554B40, lbl_8052C3BC, lbl_80550810, lbl_80552BB0,
     lbl_80547374, lbl_80548404, lbl_80549164, lbl_80549A34, lbl_8054E2F8, lbl_80559A74,
     lbl_8055994C, lbl_8055980C, lbl_80558BE0, lbl_8055A7F8, lbl_8055B7A4, lbl_8053A9CC,
-    lbl_8053BF10, lbl_8053B948, lbl_8053B974, lbl_8053B9A0, lbl_8053B9CC, lbl_8053B2D8,
+    lbl_8053BF10, lbl_8053B2D8,
     lbl_8053B2FC, lbl_8053B4B0, lbl_8053B644, lbl_80557FB4, lbl_8053BF34, lbl_8054D978,
     lbl_8054D99C, lbl_8054D9C0, lbl_8054D9E4, lbl_8054DA08, lbl_8054DA2C, lbl_8054DA50,
     lbl_8054DA74, lbl_8054DA98, lbl_8054DABC, lbl_8054DAE0, lbl_8054DB04;
@@ -377,10 +378,10 @@ GadgetClassDesc *lbl_8052B080[] = {
     &lbl_80555FA8, &lbl_80554B40, &lbl_8052C3BC, &lbl_80550810, &lbl_80552BB0, &lbl_80547374,
     &lbl_80548404, &lbl_80549164, &lbl_80549A34, &lbl_8054E2F8, &lbl_80559A74, &lbl_8055994C,
     &lbl_8055980C, &lbl_80558BE0, &lbl_8055A7F8, &lbl_8055B7A4, &lbl_8053A9CC, &lbl_8053BF10,
-    &lbl_8053B948, &lbl_8053B974, &lbl_8053B9A0, &lbl_8053B9CC, &lbl_8053B2D8, &lbl_8053B2FC,
-    &lbl_8053B4B0, &lbl_8053B644, &lbl_80557FB4, &lbl_8053BF34, &lbl_8054D978, &lbl_8054D99C,
-    &lbl_8054D9C0, &lbl_8054D9E4, &lbl_8054DA08, &lbl_8054DA2C, &lbl_8054DA50, &lbl_8054DA74,
-    &lbl_8054DA98, &lbl_8054DABC, &lbl_8054DAE0, &lbl_8054DB04,
+    &lbl_8053B948[0].desc, &lbl_8053B948[1].desc, &lbl_8053B948[2].desc, &lbl_8053B948[3].desc,
+    &lbl_8053B2D8, &lbl_8053B2FC, &lbl_8053B4B0, &lbl_8053B644, &lbl_80557FB4, &lbl_8053BF34,
+    &lbl_8054D978, &lbl_8054D99C, &lbl_8054D9C0, &lbl_8054D9E4, &lbl_8054DA08, &lbl_8054DA2C,
+    &lbl_8054DA50, &lbl_8054DA74, &lbl_8054DA98, &lbl_8054DABC, &lbl_8054DAE0, &lbl_8054DB04,
     0,
 };
 

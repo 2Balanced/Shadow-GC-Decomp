@@ -15,6 +15,12 @@
 #include <memory>
 #include "size_assert.h"
 
+/* The Render a layer callback is held by (Game/RenderUnit.cpp; only its destructor is needed). */
+class Render {
+  public:
+    ~Render();
+};
+
 using SonicteamUSA::System::DebugDispBase;
 using SonicteamUSA::System::DebugDispBox;
 using SonicteamUSA::System::DebugDispCapsule;
@@ -39,19 +45,40 @@ void fn_8004CF68(UnkOneFile_8004CFB0 *file, int flags);
 /* Destroys a clump (behaviour inferred). */
 void fn_80457468(RpClump *clump);
 
-/* Render layers (see Game/Render.h): adding a callback, which returns a handle, and removing one
- * by its handle (behaviour inferred). */
+/* Render layers (see Game/Render.h): adding a callback, which returns the Render that calls it
+ * (Game/RenderUnit.cpp; deleted to remove it). */
 struct UnkRenderOwner_80046178 *fn_80046178(void);
 void *fn_8004E2D4(void *layer, void *user, void (*callback)(void *user));
-void fn_8004E4B0(void *handle, int arg1);
 
-/* More of the list implementation of Game/ElecSecurityCode.h: its end node, its first value, and
- * inserting value before position (behaviour inferred). */
+/* More of the list implementation of Game/ElecSecurityCode.h: its end node and its first value
+ * (behaviour inferred). */
 ElecSecurityCodeLink *fn_8001B6A8(UnkPtrList_8001B5B8 *list);
 DebugDispBase *&fn_80058F48(UnkPtrList_8001B5B8 *list);
-UnkPtrListPosition_8001B674 fn_8001E528(UnkPtrList_8001B5B8 *list,
-                                        UnkPtrListPosition_8001B674 position,
-                                        DebugDispBase *const &value);
+}
+
+/* The list is list<void *>: inserting a value before a position is its insert, an instance in
+ * Game/UnkPathManager_8001B494.cpp. Only what the call needs is declared here (with <list> this
+ * unit would make its own copy). */
+namespace std {
+template <class T> class __list_iterator;
+template <class T> class __list_imp;
+
+template <> class __list_iterator<void *> {
+  public:
+    __list_iterator(const __list_iterator &x) : node_(x.node_) {}
+
+    /* 0x0 */ void *node_;
+};
+
+template <> class __list_imp<void *> {
+  public:
+    __list_iterator<void *> insert(__list_iterator<void *> position, void *const &x);
+};
+} // namespace std
+
+/* The list's first position, as list<void *>'s iterator (the same function as fn_8001B6B0). */
+namespace DebugDispListBegin {
+extern "C" std::__list_iterator<void *> fn_8001B6B0(UnkPtrList_8001B5B8 *list);
 }
 
 /* The render layers DebugDisp draws in (see Game/Render.h; meanings unknown). */
@@ -141,7 +168,8 @@ class DebugDispList : public UnkPtrList_8001B5B8 {
     }
     void PushFront(DebugDispBase *const &value) {
         DebugDispListKeep();
-        fn_8001E528(this, fn_8001B6B0(this), value);
+        reinterpret_cast<std::__list_imp<void *> *>(static_cast<UnkPtrList_8001B5B8 *>(this))
+            ->insert(DebugDispListBegin::fn_8001B6B0(this), reinterpret_cast<void *const &>(value));
     }
     void push_back(DebugDispBase *const &value) {
         DebugDispListKeep();
@@ -306,9 +334,9 @@ DebugDisp::~DebugDisp() {
         fn_80457468(lbl_805F06EC);
         lbl_805F06EC = 0;
     }
-    fn_8004E4B0(m_layerHandles[0], 1);
-    fn_8004E4B0(m_layerHandles[1], 1);
-    fn_8004E4B0(m_layerHandles[2], 1);
+    delete static_cast<Render *>(m_layerHandles[0]);
+    delete static_cast<Render *>(m_layerHandles[1]);
+    delete static_cast<Render *>(m_layerHandles[2]);
 }
 
 void DebugDisp::Tick(float dt) {
