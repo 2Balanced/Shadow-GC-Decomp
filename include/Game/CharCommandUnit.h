@@ -16,6 +16,13 @@ typedef boost::function1<void, CharCommand &> CharCommandCallback;
  * (behaviours inferred). */
 class UnkCharCommandCallback_801DA7C0 {
   public:
+#ifdef CHARCOMMANDUNIT_CALLBACK_CLEAR
+    /* Unsets the function (name inferred; Game/PlayerBase.cpp emits the copy, 0x80078C2C). */
+    void Clear() {
+        m_function.clear();
+    }
+#endif
+
     /* 0x0 */ CharCommandCallback m_function;
 };
 

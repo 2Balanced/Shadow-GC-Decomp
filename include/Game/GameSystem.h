@@ -14,8 +14,9 @@ class GameSystem {
     virtual ~GameSystem();
     /* Starts the system (true; meaning inferred). */
     virtual bool Initialize() = 0;
-    /* Whether the system finished (meaning inferred). */
-    virtual bool IsFinished() = 0;
+    /* Whether the system finished (meaning inferred; an int: the caller, Game/GameSystem.cpp, tests it
+     * without masking a bool). */
+    virtual int IsFinished() = 0;
     /* Shuts the system down (true; meaning inferred). */
     virtual bool Finalize() = 0;
     /* Asks the system to end early (meaning inferred). */

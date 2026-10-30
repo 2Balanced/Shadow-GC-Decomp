@@ -16,9 +16,18 @@ template <class Arg1, class Arg2, class Result> struct binary_function {
 };
 
 template <class T> struct less : binary_function<T, T, bool> {
+#ifdef MSL_LESS_CAST
+    /* Where MSL_LESS_CAST is defined before this header (Game/SavedataAnalyzer.cpp), the result is
+     * cast to bool, which tests the out-of-line operator<'s result again, as the game's
+     * less<string> does (0x801AC308). */
+    bool operator()(const T &a, const T &b) const {
+        return static_cast<bool>(a < b);
+    }
+#else
     bool operator()(const T &a, const T &b) const {
         return a < b;
     }
+#endif
 };
 
 #ifdef MSL_FUNCTIONAL_BINDERS

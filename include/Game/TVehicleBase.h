@@ -59,13 +59,15 @@ class TVehicleBase : public CharInfo {
     virtual bool vf_0x50();
     virtual bool vf_0x54();
     virtual void vf_0x58();
-    virtual void vf_0x5C();
+    /* 0x801B6234 returns false (Vehicle::Walker: true). */
+    virtual bool vf_0x5C();
     /* 0x801B622C returns false, 0x801B6224 a float (BirdBase: true, and its motion's time). */
     virtual bool vf_0x60();
     virtual float vf_0x64();
     virtual void vf_0x68();
     virtual void vf_0x6C();
-    virtual void vf_0x70();
+    /* 0x801B6214 returns false (Vehicle::Walker: its model's answer). */
+    virtual bool vf_0x70();
     virtual void vf_0x74();
     virtual void vf_0x78();
     /* 0x801B6208 (empty; BirdBase passes arg on to its model's motion). */

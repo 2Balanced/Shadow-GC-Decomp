@@ -8,6 +8,7 @@
  * last-defined first). */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
+#include "Game/AirWingCamera.h"
 #include "Game/BirdBase.h"
 #include "Game/BirdModelBase.h"
 #include "Game/CharCommand.h"
@@ -17,6 +18,11 @@
 #include "Game/VehicleEffect.h"
 #include "Effect/System/EffectElement.h"
 #include "boost/weak_ptr.hpp"
+
+/* The float floor of <cmath> (out of line; the copy linked is Game/VehicleAirSaucer.cpp's). */
+namespace std {
+float floor(float x);
+} // namespace std
 
 using Effect::System::EffectElement;
 using SonicteamUSA::System::CharaColli::AttackCallback;
@@ -80,10 +86,6 @@ boost::shared_ptr<CharaColliBase> fn_801B4D84(UnkBirdCollision_801B4EBC *collisi
 void fn_801B4D18(UnkBirdCollision_801B4EBC *collision, const AttackCallback &callback);
 void fn_801B4CF4(UnkBirdCollision_801B4EBC *collision);
 void fn_801B4D60(UnkBirdCollision_801B4EBC *collision);
-/* The object at 0x100 (behaviour unknown). */
-UnkBirdTrail_801B3148 *fn_801B3148(UnkBirdTrail_801B3148 *trail, Vehicle::TVehicleBase *vehicle,
-                                   UnkBirdPath_801B446C *path);
-void fn_801B308C(UnkBirdTrail_801B3148 *trail, int deleteFlag);
 
 /* TVehicleBase's other functions (behaviour inferred): the rider leaves, the vehicle's life and a
  * change of it, whether the rider steers, the end of the ride, and the default command handling. */
@@ -129,8 +131,6 @@ boost::weak_ptr<EffectElement> fn_801D2AFC(int arg0, const Vec3f *position, cons
 void *fn_80053164(void);
 void fn_801D54F4(void *manager, int id, const void *source, int arg3, int arg4);
 boost::weak_ptr<Vibration::RequestHandle> fn_8034DF48(int pattern, int player);
-/* The damage of a hit of the given power (behaviour inferred). */
-float fn_801AF9F8(float power);
 
 /* Clamps (see Game/GunLift.cpp), and whether a value is zero. */
 const float &fn_80070460(const float &value, const float &low, const float &high);
@@ -216,7 +216,7 @@ BirdBase::BirdBase(void *arg, const BirdParam *param)
 
 BirdBase::~BirdBase() {
     if (m_trail != 0) {
-        fn_801B308C(m_trail, 1);
+        delete m_trail;
         m_trail = 0;
     }
 }
@@ -405,7 +405,7 @@ void BirdBase::OnGetOff() {
         m_step = 0;
     }
     if (m_trail != 0) {
-        fn_801B308C(m_trail, 1);
+        delete m_trail;
         m_trail = 0;
     }
 }
@@ -429,11 +429,7 @@ void BirdBase::vf_0x7C(void *arg) {
 void BirdBase::UpdateLaunch(float dt) {
     fn_80014E1C(&m_flags.m_bits, 7);
     if (fn_801B42E0(&m_path) && m_trail == 0) {
-        UnkBirdTrail_801B3148 *trail = (UnkBirdTrail_801B3148 *)operator new(4);
-        if (trail != 0) {
-            trail = fn_801B3148(trail, this, &m_path);
-        }
-        m_trail = trail;
+        m_trail = new UnkBirdTrail_801B3148(this, &m_path);
     }
     switch (m_step) {
     case 0:
@@ -525,7 +521,7 @@ void BirdBase::Damage(float power, const Vec3f *position, const Vec3f *direction
         fn_801D2AFC(0, position, direction, 0x17, 0);
         if (m_flinchTimer <= 0.0f) {
             m_model->SetState(3);
-            fn_801B6510(this, -fn_801AF9F8(power));
+            fn_801B6510(this, -std::floor(power));
             m_flinchTimer = m_param->m_flinchTime;
             fn_801D54F4(fn_80053164(), 0x205A, this, 0, 1);
             pattern = 4;
@@ -553,7 +549,7 @@ void BirdBase::OnAttackHit(AttackCallbackParam &param) {
             Param(param).m_damage *= facing;
         }
     }
-    Param(param).m_damage = fn_801AF9F8(Param(param).m_damage);
+    Param(param).m_damage = std::floor(Param(param).m_damage);
 }
 
 void BirdBase::OnAttackEnd(AttackCallbackParam &param) {

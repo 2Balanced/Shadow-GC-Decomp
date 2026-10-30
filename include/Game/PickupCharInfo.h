@@ -10,6 +10,7 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+class CharCommand;
 class CharCommandUnit;
 class Target;
 
@@ -26,20 +27,26 @@ class PickupCharInfo : public CharInfo {
         /* 0x0 */ const Mtx34f *m_matrix;
     };
 
-    /* The callback member type: a function1 whose assignment from a function1 is a function of its
-     * own (class name unknown; the first copy is the BOMB unit's, 0x800F03D4). */
-    class GrabCallback : public boost::function1<void, SetGrabPositionArgs &> {
+    /* The callback member type: a class of the game's own holding the function1, whose assignment
+     * from a function1 is a function of its own (class name unknown; the first copy is the BOMB
+     * unit's, 0x800F03D4). The function1 is a member, not a base: the class's destructor
+     * (0x801E431C) destroys it as a complete object. */
+    class GrabCallback {
       public:
         GrabCallback &operator=(const boost::function1<void, SetGrabPositionArgs &> &f) {
-            boost::function1<void, SetGrabPositionArgs &>::operator=(f);
+            m_function = f;
             return *this;
         }
+
+        /* 0x0 */ boost::function1<void, SetGrabPositionArgs &> m_function;
     };
 
     /* type is the character type (0xE for a bomb). */
     PickupCharInfo(int type);
     /* 0x801E429C */
     virtual ~PickupCharInfo();
+    /* Passes command to the command unit (0x801E424C). */
+    virtual void PushCommand(CharCommand *command);
 
     /* Sets the word at 0x5C (meaning unknown; 4 for a bomb). */
     void SetKind(s32 kind) {

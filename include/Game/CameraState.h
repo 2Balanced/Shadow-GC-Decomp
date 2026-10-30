@@ -45,6 +45,7 @@ struct UnkCameraState_80359164 {
  * member, so the parts are single floats (names inferred). */
 struct UnkCameraView_8000B4AC {
     UnkCameraView_8000B4AC();
+    UnkCameraView_8000B4AC(const Vec3f *eye, const Vec3f *target, float fov, const Vec2f *window);
     ~UnkCameraView_8000B4AC();
 
     /* 0x00 */ float m_eyeX;

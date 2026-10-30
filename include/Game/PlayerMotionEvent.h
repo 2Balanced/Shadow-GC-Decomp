@@ -36,8 +36,17 @@ typedef boost::function1<void, MotionEventArgs &> MotionEventCallback;
  * what a player's collision passes to its event callback: the contact and the character it
  * belongs to (meanings inferred from Player::Behavior::HomingAttack, which asks whether the contact
  * is an attack target, and Player::Behavior::JumpDash, which hangs on walls). */
+#ifdef PLAYER_COLLISION_EVENT_SOURCE
+/* As the player's collision fills it in (Game/PlayerCharaColliImpl.cpp): the player comes first
+ * (name inferred). */
+class PlayerBase;
+#endif
 struct CollisionEventArgs {
+#ifdef PLAYER_COLLISION_EVENT_SOURCE
+    /* 0x0 */ boost::shared_ptr<PlayerBase> m_player;
+#else
     /* 0x0 */ u8 field_0x0[0x8];
+#endif
     /* 0x8 */ UnkColliContactNode_800587A0 *m_contact;
     /* 0xC */ boost::weak_ptr<CharInfo> m_chara;
 };
@@ -63,6 +72,21 @@ class UnkMotionEventCallback_8007B470 {
         m_function.clear();
         return *this;
     }
+#ifdef PLAYER_MOTION_EVENT_CALL
+    /* Whether a function is set, and calling it if one is (Game/PlayerMotion.cpp, which passes the
+     * motion's events; names inferred). */
+    bool HasFunction() const {
+        return !m_function.empty();
+    }
+    bool IsSet() const {
+        return HasFunction();
+    }
+    void Call(Player::MotionEventArgs &args) {
+        if (!m_function.empty()) {
+            m_function(args);
+        }
+    }
+#endif
 
     /* 0x0 */ Player::MotionEventCallback m_function;
 };
@@ -87,6 +111,22 @@ class UnkCollisionEventCallback_80086228 {
         m_function.clear();
         return *this;
     }
+
+#ifdef PLAYER_COLLISION_EVENT_SOURCE
+    /* Whether a function is set, and calling it if one is (Game/PlayerCharaColliImpl.cpp, which
+     * passes the player's contacts; names inferred, as UnkMotionEventCallback_8007B470's). */
+    bool HasFunction() const {
+        return !m_function.empty();
+    }
+    bool IsSet() const {
+        return HasFunction();
+    }
+    void Call(Player::CollisionEventArgs &args) {
+        if (!m_function.empty()) {
+            m_function(args);
+        }
+    }
+#endif
 
     /* 0x0 */ Player::CollisionEventCallback m_function;
 };

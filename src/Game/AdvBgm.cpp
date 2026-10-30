@@ -85,11 +85,7 @@ UnkHolder_801E5CF8::UnkHolder_801E5CF8() {
 
 /* Builds the story check from the save data and works it out. */
 extern "C" void fn_802C8338(UnkHolder_801E5CF8 *holder) {
-    StoryCheck *object = (StoryCheck *)operator new(sizeof(StoryCheck));
-    if (object != 0) {
-        object = fn_801AC1B4(object, fn_800BB74C());
-    }
-    holder->m_object = object;
+    holder->m_object = new StoryCheck(fn_800BB74C());
     fn_801ABDB8(holder->m_object);
 }
 

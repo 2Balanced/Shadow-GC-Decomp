@@ -38,6 +38,11 @@ struct UnkCharTime {
     /* 0x4 */ u32 field_0x4;
 };
 
+/* The float arc cosine of <cmath> (out of line; the copy linked is Game/VehicleAirSaucer.cpp's). */
+namespace std {
+float acos(float x);
+} // namespace std
+
 extern "C" {
 /* The collider manager, a sphere and a capsule collider for owner, and the attack collision of a
  * collider (see Game/DiablonPartsBarrier.cpp and Game/DevilDoomCtrlUnit.cpp). */
@@ -90,8 +95,6 @@ void fn_8006127C(u32 *flags, int bit);
 /* value clamped to [min, max], and the smaller of a and b (behaviour from their bodies). */
 const float &fn_80070460(const float &value, const float &min, const float &max);
 const float &fn_800704AC(const float &a, const float &b);
-/* The arc cosine (behaviour inferred). */
-float fn_801B1DB0(float value);
 
 /* The ground line test (see Game/BlackDoomCtrlUnit.cpp) and the hit's result (behaviour
  * inferred). */
@@ -262,7 +265,7 @@ Body::~Body() {
 
 void Body::Tick(float dt) {
     if (fn_80014E34(&m_flags, 0)) {
-        float angle = fn_801B1DB0(fn_802D9570(m_owner.get()));
+        float angle = std::acos(fn_802D9570(m_owner.get()));
         float turn = angle / (60.0f * (lbl_805FAD38 / 180.0f));
         float min;
         float max = 0.05f + m_turn;

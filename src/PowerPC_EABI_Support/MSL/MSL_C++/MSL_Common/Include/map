@@ -42,9 +42,14 @@ struct __tree_node_base;
 extern "C" {
 /* Rebalances the tree under root after x was linked in, and steps an iterator to the next node
  * (behaviour inferred from their bodies). */
+#ifdef MSL_TREE_FIXUP_INLINE
+/* Where MSL_TREE_FIXUP_INLINE is defined before this header (Game/CameraFactory.cpp, which holds
+ * the game's first copy), the rebalancing is an inline function the unit defines. */
+inline
+#endif
 void fn_8000CD64(__tree_node_base *x, __tree_node_base *root);
 void fn_80012E90(__tree_node_base **iterator);
-#if defined(MSL_TREE_ERASE) || defined(MSL_MULTIMAP)
+#if defined(MSL_TREE_ERASE) || defined(MSL_MULTIMAP) || defined(MSL_MAP_ERASE_KEY)
 /* Rebalances the tree under root before z is unlinked (behaviour inferred from its body). */
 void fn_80013398(__tree_node_base *z, __tree_node_base *root);
 #endif
@@ -129,7 +134,7 @@ template <class T> class __tree_iterator {
   public:
     __tree_iterator() {}
     __tree_iterator(__tree_node_base *n) : node_(n) {}
-#ifndef MSL_TREE_SELF_INLINE
+#if !defined(MSL_TREE_SELF_INLINE) && !defined(MSL_MAP_ERASE_KEY)
     __tree_iterator(const __tree_iterator &x) : node_(x.node_) {}
 #endif
 #ifdef MSL_TREE_ITERATOR_ASSIGN_CALL
@@ -240,6 +245,17 @@ template <class A, class S> struct __tree_size_pair : public __tree_size_base<A,
     }
 };
 
+#ifdef MSL_TREE_END_NODE_PER_TREE
+/* Where MSL_TREE_END_NODE_PER_TREE is defined before this header (Game/CameraFactory.cpp), each
+ * tree has an end node type of its own, so the unit emits one end node constructor per tree, as
+ * the game does there. The layout is __tree_end_node's. */
+template <class A> struct __tree_end_node_of {
+    __tree_end_node_of() : left_(__tree_id<__tree_node_base *>(0)) {}
+
+    /* 0x0 */ __tree_node_base *left_;
+};
+#endif
+
 /* The node allocator and the end node. */
 template <class A> struct __tree_end_pair : public A {
     __tree_end_pair(const A &a) {}
@@ -247,6 +263,16 @@ template <class A> struct __tree_end_pair : public A {
     A &first() {
         return *this;
     }
+#ifdef MSL_TREE_END_NODE_PER_TREE
+    __tree_end_node &second() {
+        return reinterpret_cast<__tree_end_node &>(second_);
+    }
+    const __tree_end_node &second() const {
+        return reinterpret_cast<const __tree_end_node &>(second_);
+    }
+
+    /* 0x0 */ __tree_end_node_of<A> second_;
+#else
     __tree_end_node &second() {
         return second_;
     }
@@ -255,6 +281,7 @@ template <class A> struct __tree_end_pair : public A {
     }
 
     /* 0x0 */ __tree_end_node second_;
+#endif
 };
 
 /* The comparison and the leftmost node; K is what the comparison is built from. */
@@ -306,12 +333,22 @@ template <class T, class C, class K = C> class __tree {
     size_type max_size() const {
         return __max_size_t();
     }
+#ifdef MSL_MAP_ERASE_KEY
+    /* Erases the value with key k, and the value at position; their <map_impl> definitions are
+     * given only where MSL_MAP_ERASE_KEY is defined (see map::erase). */
+    template <class Key> size_type erase_one(const Key &k);
+    /* Steps position (out of line: the tree's erase calls it). */
+    static iterator &increment(iterator &position);
+#endif
     std::pair<iterator, bool> insert_unique(const T &v);
     template <class Key> iterator find(const Key &k);
     template <class Key> const_iterator find(const Key &k) const {
         return const_cast<__tree *>(this)->find(k);
     }
     void clear();
+#ifdef MSL_MAP_ERASE_KEY
+    void erase(iterator position);
+#endif
 #ifdef MSL_TREE_ERASE
     /* Only where MSL_TREE_ERASE is defined before this header (Game/csdTexList.cpp), so that
      * other units' template declarations are unchanged. */
@@ -415,6 +452,13 @@ template <class Key, class T, class Compare = less<Key> > class map {
 #ifdef MSL_TREE_ERASE
     void erase(iterator position) {
         tree_.erase(position);
+    }
+#endif
+#ifdef MSL_MAP_ERASE_KEY
+    /* Only where MSL_MAP_ERASE_KEY is defined before this header (Game/DeltaMorphAnimManagerTask.cpp),
+     * so that other units' template declarations are unchanged. */
+    size_type erase(const key_type &k) {
+        return tree_.erase_one(k);
     }
 #endif
     iterator find(const key_type &k) {

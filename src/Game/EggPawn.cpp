@@ -108,11 +108,11 @@ boost::shared_ptr<EnemyRender> fn_802CDB08(int slot, const EnemyMotionTable &tab
 /* v turned about y by angle, by value. */
 Vec3f fn_8040D0AC(const Vec3f *v, float angle);
 /* The parts of EnemyStatusCommon's status object (behaviour inferred). */
-void fn_801A9784(UnkEnemyStatus_801AA430 *status, int kind);
-void fn_801A96C4(UnkEnemyStatus_801AA430 *status, u32 value);
-void fn_801A95F8(UnkEnemyStatus_801AA430 *status, bool arg0, bool arg1);
-void fn_801A9540(UnkEnemyStatus_801AA430 *status, int arg);
-void fn_801A9508(UnkEnemyStatus_801AA430 *status, int arg);
+void fn_801A9784(EnemyCharaColliModule *status, int kind);
+void fn_801A96C4(EnemyCharaColliModule *status, u32 value);
+void fn_801A95F8(EnemyCharaColliModule *status, bool arg0, bool arg1);
+void fn_801A9540(EnemyCharaColliModule *status, int arg);
+void fn_801A9508(EnemyCharaColliModule *status, int arg);
 }
 
 /* Small functions the header declares; they are inline (weak copies, first emitted here). */

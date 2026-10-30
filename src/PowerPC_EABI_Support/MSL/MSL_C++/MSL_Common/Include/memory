@@ -23,6 +23,13 @@ inline size_t __max_size_t() {
     return size_t(-1);
 }
 
+#ifdef MSL_MEMORY_DESTROY_OUTLINE
+/* Where MSL_MEMORY_DESTROY_OUTLINE is defined before this header (Game/NpcHand.cpp, whose vector
+ * calls allocator::destroy out of line although the element's destructor is not inline), destroy
+ * calls this, so that it is not inlined itself (deferred inlining is one level deep). */
+inline void __msl_destroy_outline() {}
+#endif
+
 template <class T> class allocator;
 
 template <> class allocator<void> {
@@ -81,6 +88,9 @@ template <class T> class allocator {
     }
 
     void destroy(pointer p) {
+#ifdef MSL_MEMORY_DESTROY_OUTLINE
+        __msl_destroy_outline();
+#endif
         p->~T();
     }
 };

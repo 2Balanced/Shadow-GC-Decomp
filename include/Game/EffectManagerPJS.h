@@ -105,10 +105,19 @@ SIZE_ASSERT(EffectLensFlareRW3, 0x128);
 
 class EffectLocusRW3 : public ::Effect::System::EffectLocus {
   public:
+    EffectLocusRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+                   ::Effect::System::EffectLaunchInfo *info,
+                   ::Effect::System::EffectManager *manager);
     virtual ~EffectLocusRW3();
     virtual void Update(float dt);
     virtual void Draw();
+
+    /* 0x054 */ u8 field_0x54[0x108 - 0x54];
+    /* 0x108 */ u32 field_0x108; /* bit 1: show or hide requested, bit 2: hide (see
+                                  * Game/EffectLocusUSA.cpp; meanings inferred) */
+    /* 0x10C */ u8 field_0x10C[0x17C - 0x10C];
 };
+SIZE_ASSERT(EffectLocusRW3, 0x17C);
 
 class EffectRayRW3 : public ::Effect::System::EffectRay {
   public:
@@ -175,7 +184,7 @@ class EffectLocusUSA : public ::Effect::RW3::EffectLocusRW3 {
     virtual ~EffectLocusUSA() {}
     virtual void Update(float dt);
 
-    /* 0x054 */ u8 field_0x54[0x180 - 0x54];
+    /* 0x17C */ s32 m_shownDrawPass; /* the draw pass to go back to when shown (inferred) */
 };
 SIZE_ASSERT(EffectLocusUSA, 0x180);
 

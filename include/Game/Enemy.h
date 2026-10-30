@@ -45,6 +45,7 @@ class CharInfo;
 class EnemyTarget;
 class EnemyCtrlFunc;
 class EnemyRender;
+struct EnemyColliDetectArgs;
 struct EnemyMotionEventArg;
 namespace Vehicle {
 class TVehicleBase;
@@ -642,15 +643,60 @@ class EnemyParamCommon : public virtual EnemyReferer, public EnemyParaFunc {
     /* 0x8 */ s32 field_0x8;
 };
 
-/* The object at EnemyStatusCommon+0x8 (constructor 0x801AA430, destructor 0x801AA384; class
- * name unknown). Its first word is the enemy. */
-class UnkEnemyStatus_801AA430 {
+#ifdef ENEMY_STATUS_COMMON_UNIT
+namespace SonicteamUSA {
+namespace System {
+namespace CharaColli {
+class CharaColliBase;
+} // namespace CharaColli
+} // namespace System
+} // namespace SonicteamUSA
+
+/* The type of EnemyCharaColliModule's contact callback: a function whose assignment, constructor
+ * and destructor are out-of-line functions of its own (0x801A8DA4, 0x801AA474, 0x801AA3E4; class
+ * name unknown; as UnkAttackCallback_80054E28 in Game/CharaColliAttack.h, with the function as
+ * a member). */
+class UnkContactCallback_801A8DA4 {
   public:
-    UnkEnemyStatus_801AA430();
-    ~UnkEnemyStatus_801AA430();
+    UnkContactCallback_801A8DA4 &operator=(const boost::function1<void, EnemyColliDetectArgs &> &f) {
+        m_function = f;
+        return *this;
+    }
+    /* Calls the function unless it is empty (0x801A9960). */
+    void operator()(EnemyColliDetectArgs &args) const {
+        if (!m_function.empty()) {
+            m_function(args);
+        }
+    }
+
+    /* 0x0 */ boost::function1<void, EnemyColliDetectArgs &> m_function;
+};
+#endif
+
+/* EnemyCharaColliModule (class name from the RTTI of its callback binder): the collider of an
+ * enemy, the object at EnemyStatusCommon+0x8 (constructor 0x801AA430, destructor 0x801AA384).
+ * Its first word is the enemy. */
+class EnemyCharaColliModule {
+  public:
+    EnemyCharaColliModule();
+    ~EnemyCharaColliModule();
+
+#ifdef ENEMY_STATUS_COMMON_UNIT
+    /* The rest as Game/EnemyStatusCommon.cpp, which holds the class's code, sees it (names
+     * inferred; the layout is the same). */
+    void Create();
+    void Release();
+    void Update();
+    void OnAttacked(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
+    void OnHit(SonicteamUSA::System::CharaColli::AttackCallbackParam &param);
 
     /* 0x00 */ Enemy *m_enemy;
+    /* 0x04 */ boost::shared_ptr<SonicteamUSA::System::CharaColli::CharaColliBase> m_collider;
+    /* 0x0C */ UnkContactCallback_801A8DA4 m_onContact;
+#else
+    /* 0x00 */ Enemy *m_enemy;
     /* 0x04 */ u8 field_0x4[0x18 - 0x4];
+#endif
 };
 
 /* EnemyMotionSequenceModule (class name from RTTI; vtable 0x8053ACE4): the motion sequence player
@@ -769,9 +815,10 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual int vfStat_0xC4();                   /* 0x8017B8CC */
     virtual bool vfStat_0xC8();                  /* 0x801A84AC */
     virtual float vfStat_0xCC();                 /* 0x8017B8D4 */
-    virtual void vfStat_0xD0();                  /* 0x801A8258 */
+    /* The collision callback (bound in vfStat_0x0C; argument type from the RTTI of the binder). */
+    virtual void vfStat_0xD0(EnemyColliDetectArgs &args); /* 0x801A8258 */
 
-    /* 0x08 */ UnkEnemyStatus_801AA430 field_0x8;
+    /* 0x08 */ EnemyCharaColliModule field_0x8;
     /* 0x20 */ EnemyMotionSequenceModule m_motion;
     /* 0x64 */ boost::shared_ptr<EnemyTarget> m_target;
     /* 0x6C */ u8 field_0x6C;
@@ -939,6 +986,10 @@ class EnemyMoveWalker : public EnemyMoveCommon, public virtual EnemyReferer {
     }
 };
 
+#ifdef ENEMY_SET_BASE_UNIT
+#include "Game/TBlockManage.h"
+#endif
+
 /* TEnemySetBase (class name from RTTI; vtable 0x8053AB40; constructor 0x801A7400). */
 class TEnemySetBase : public virtual EnemyReferer, public EnemySetFunc {
   public:
@@ -955,7 +1006,16 @@ class TEnemySetBase : public virtual EnemyReferer, public EnemySetFunc {
     virtual bool vfSet_0x28();                                     /* 0x8017B554 */
     virtual ~TEnemySetBase();                                   /* 0x801A73A4 */
 
+#ifdef ENEMY_SET_BASE_UNIT
+    /* The rest as Game/TEnemySetTask.cpp, which holds the class's code, sees it (names inferred;
+     * the layout is the same). */
+    /* 0x08 */ s32 m_state;  /* 1 waiting for the resources, 2 for the block, 3 appearing, 4 live */
+    /* 0x0C */ boost::shared_ptr<TBlockManage::forBlockCheck> m_block; /* the stage block it waits for */
+    /* 0x14 */ u8 field_0x14;
+    /* 0x15 */ u8 field_0x15; /* set by slots 0x14 and 0x18 */
+#else
     /* 0x08 */ u8 field_0x8[0x18 - 0x8];
+#endif
 };
 
 /* TEnemySetTask (class name from RTTI; vtable 0x8053AB1C; constructor 0x801A6D14): the Task that
@@ -970,7 +1030,12 @@ class TEnemySetTask : public virtual EnemyReferer, public Task {
     virtual ~TEnemySetTask();     /* 0x801A6C78 */
     virtual void Tick(float dt);  /* 0x801A6AFC */
 
+#ifdef ENEMY_SET_BASE_UNIT
+    /* As Game/TEnemySetTask.cpp sees it: the placement record (the layout is the same). */
+    /* 0x2C */ UnkPlacement_800C9CD0 *field_0x2C;
+#else
     /* 0x2C */ s32 field_0x2C;
+#endif
 } __attribute__((aligned(8)));
 
 /* ------------------------------------------------------------------------------------------- */

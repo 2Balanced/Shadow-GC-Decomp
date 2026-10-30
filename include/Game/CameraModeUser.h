@@ -4,6 +4,9 @@
 #include <boost/function.hpp>
 
 #include "Game/MathTypes.h"
+#ifdef CAMERAMODE_MEMBERS
+#include "Game/CameraState.h"
+#endif
 #include "boost/shared_ptr.hpp"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -33,6 +36,12 @@ class CameraMode {
      * the second argument is kept at 0xA0.) */
     CameraMode(UnkCameraOwner_8000E9BC *owner, int screen);
 
+#ifdef CAMERAMODE_MEMBERS
+    /* Only Game/CameraMode.cpp, which constructs and destroys them, declares the members with
+     * their types: the placement and the parameters the mode is made with (Game/CameraState.h). */
+    /* 0x00 */ UnkCameraState_8000AA70 m_state;
+    /* 0x34 */ UnkCameraModeArgs_8000EBB0 m_args;
+#else
     /* 0x00 */ Vec3f m_eye;
     /* 0x0C */ Vec3f m_target;
     /* 0x18 */ u8 field_0x18[0x34 - 0x18];
@@ -40,6 +49,7 @@ class CameraMode {
     /* 0x80 */ float field_0x80;
     /* 0x84 */ float field_0x84;
     /* 0x88 */ u8 field_0x88[0xA0 - 0x88];
+#endif
     /* 0xA0 */ int field_0xA0; /* the constructor's second argument */
     /* 0xA4 */ u32 field_0xA4;
 
@@ -61,7 +71,7 @@ class CameraMode {
     virtual void vf_0x14(UnkCameraArg_800098E4 *arg) = 0;
     /* Slot 0x18: empty in CameraMode (0x80008D48). The stage camera passes it two flags
      * (0x801CAEC4); CameraModeGeneral reads them. */
-    virtual void vf_0x18(int flags);
+    virtual void vf_0x18(int flags) {}
     virtual ~CameraMode(); /* the vtable pointer is at 0xA8 */
 };
 

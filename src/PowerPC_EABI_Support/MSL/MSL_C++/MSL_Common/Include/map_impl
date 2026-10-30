@@ -27,6 +27,39 @@ static bool __tree_false = false;
 #define __TREE_FALSE false
 #endif
 
+#ifdef MSL_MAP_ERASE_KEY
+/* The node's deallocation is inlined, as in destroy's outer level. */
+template <class T, class C, class K> void __tree<T, C, K>::erase(iterator position) {
+    node *n = static_cast<node *>(position.node_);
+    if (position == begin()) {
+        begin_node() = increment(position).node_;
+    }
+    fn_80013398(n, root());
+#ifdef MSL_TREE_ERASE_VALUE_INLINE
+    /* Where MSL_TREE_ERASE_VALUE_INLINE is defined before <map> (Game/ResourceManagerTask.cpp), the
+     * value's destruction is inlined too. */
+    value_alloc();
+    n->value_.~T();
+#else
+    value_alloc().destroy(&n->value_);
+#endif
+    node_alloc();
+    ::operator delete(n);
+    --size_ref();
+}
+
+template <class T, class C, class K>
+template <class Key>
+typename __tree<T, C, K>::size_type __tree<T, C, K>::erase_one(const Key &k) {
+    iterator i = find(k);
+    if (i == end()) {
+        return 0;
+    }
+    erase(i);
+    return 1;
+}
+#endif
+
 template <class T, class C, class K>
 __tree<T, C, K>::__tree(const K &comp, const value_allocator &a)
     : size_(a, 0), header_(node_allocator()), begin_(comp) {
@@ -292,6 +325,14 @@ typename __multi_tree<T, C, K>::node *__multi_tree<T, C, K>::insert_node(__tree_
         begin_node() = n;
     }
     return n;
+}
+#endif
+
+#ifdef MSL_MAP_ERASE_KEY
+template <class T, class C, class K>
+typename __tree<T, C, K>::iterator &__tree<T, C, K>::increment(iterator &position) {
+    fn_80012E90(&position.node_);
+    return position;
 }
 #endif
 

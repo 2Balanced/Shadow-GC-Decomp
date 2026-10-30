@@ -45,8 +45,18 @@ static const TGiColorSet s_numberColors = {{
 }};
 #endif
 
+/* A corner of a glyph: RenderWare's RwIm2DVertex (struct name inferred). */
+struct TGiVertex {
+    /* 0x00 */ float x;
+    /* 0x04 */ float y;
+    /* 0x08 */ float z;
+    /* 0x0C */ u8 color[4];
+    /* 0x10 */ float u;
+    /* 0x14 */ float v;
+};
+
 /* TGiNumberDisplay (class name from the RTTI of its shared_ptr control block): draws a string of
- * digits from a font texture. Its code lies around 0x800BC7BC; only the constructor and the
+ * digits from a font texture. Its code is Game/TGiNumberDisplay.cpp; only the constructor and the
  * destructor are named, the members are called through their fn_ names. */
 class TGiNumberDisplay {
   public:
@@ -70,12 +80,16 @@ class TGiNumberDisplay {
         field_0x14 = value;
     }
 
-    /* 0x000 */ u8 field_0x0[0x8];
+    /* 0x000 */ struct RwRaster *m_raster;   /* the font texture's raster (Game/TGiNumberDisplay.cpp) */
+    /* 0x004 */ struct RwTexture *m_texture; /* the font texture */
     /* 0x008 */ float m_scaleX;
     /* 0x00C */ float m_scaleY;
-    /* 0x010 */ u8 field_0x10[0x14 - 0x10];
-    /* 0x014 */ float field_0x14; /* meaning unknown */
-    /* 0x018 */ u8 field_0x18[0x4E0 - 0x18];
+    /* 0x010 */ float m_recipZ;
+    /* 0x014 */ float field_0x14; /* the gap between digits (meaning inferred) */
+    /* 0x018 */ TGiColorSet m_colors;
+    /* 0x058 */ TGiVertex m_glyphs[12][4]; /* '0' to '9', ':' and '/' */
+    /* 0x4D8 */ float m_cellWidth;
+    /* 0x4DC */ float m_cellHeight;
 };
 SIZE_ASSERT(TGiNumberDisplay, 0x4E0);
 
@@ -105,7 +119,14 @@ class UnkCsdHandle_80042DF0 {
     /* fn_80042E5C (ResultTask makes an empty one to compare with). */
     UnkCsdHandle_80042DF0(void *object);
     UnkCsdHandle_80042DF0(const UnkCsdHandle_80042DF0 &other);
+    /* An empty handle (fn_800435FC; folderPause). */
+    UnkCsdHandle_80042DF0();
     ~UnkCsdHandle_80042DF0();
+#ifdef TGI_HANDLE_ASSIGN
+    /* Assignment (fn_80042A60, out of line; only the units that define TGI_HANDLE_ASSIGN declare it,
+     * so that the other units keep the implicit one). */
+    UnkCsdHandle_80042DF0 &operator=(const UnkCsdHandle_80042DF0 &other);
+#endif
 
     /* The object the handle holds (name inferred; ResultTask). */
     void *Get() const {
@@ -127,7 +148,8 @@ struct UnkGameState_8057D6A0 {
     /* 0x098 */ u8 field_0x98[0x9C - 0x98];
     /* 0x09C */ float field_0x9C; /* meaning unknown */
     /* 0x0A0 */ float m_time2; /* meaning inferred */
-    /* 0x0A4 */ u8 field_0xA4[0xAC - 0xA4];
+    /* 0x0A4 */ u8 field_0xA4[0xA8 - 0xA4];
+    /* 0x0A8 */ s32 field_0xA8; /* the pause menu's file number (meaning unknown; TGiPause) */
     /* 0x0AC */ s32 m_stage; /* (name inferred; see Game/CenFile.cpp) */
     /* 0x0B0 */ u8 field_0xB0;
     /* 0x0B1 */ u8 field_0xB1; /* meaning unknown (ResultTask ranks by a lower total when set) */
@@ -135,7 +157,11 @@ struct UnkGameState_8057D6A0 {
     /* 0x0B3 */ u8 field_0xB3[0xB8 - 0xB3];
     /* 0x0B8 */ s32 m_total; /* the result's total (meaning inferred; ResultTask) */
     /* 0x0BC */ s32 m_rank;  /* the result's rank (meaning inferred; ResultTask) */
-    /* 0x0C0 */ u8 field_0xC0[0x134 - 0xC0];
+    /* 0x0C0 */ u8 field_0xC0[0xCC - 0xC0];
+    /* 0x0CC */ s32 field_0xCC; /* meaning unknown (1 in story mode? folderPause shows the story route then) */
+    /* 0x0D0 */ u8 field_0xD0[0x125 - 0xD0];
+    /* 0x125 */ u8 field_0x125; /* meaning unknown (TGiPause loads the boss pause menu when set) */
+    /* 0x126 */ u8 field_0x126[0x134 - 0x126];
     /* 0x134 */ s32 m_stars[2]; /* meaning inferred */
     /* 0x13C */ u8 field_0x13C[0x148 - 0x13C];
     /* 0x148 */ u8 m_hudVisible; /* meaning inferred */
@@ -169,19 +195,20 @@ extern void *lbl_805EE68C;
 
 extern "C" {
 /* Number displays (behaviour inferred): loading the font texture name from archive, the glyph
- * layout, the colours, the spacing between digits, and drawing text at (x, y). */
+ * layout, the colours, the glyphs' depth (fn_800BCB2C ignores its argument; Game/TGiNumberDisplay.cpp)
+ * and drawing text at (x, y). */
 bool fn_800BCEA8(TGiNumberDisplay *display, void *archive, const char *name);
-void fn_800BCC54(TGiNumberDisplay *display, int width, int height, int cellWidth, int cellHeight,
+bool fn_800BCC54(TGiNumberDisplay *display, int width, int height, int cellWidth, int cellHeight,
                  int columns);
 void fn_800BCB7C(TGiNumberDisplay *display, const TGiColorSet *colors);
 void fn_800BCB2C(TGiNumberDisplay *display, float spacing);
-void fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x, int arg3, float y);
+bool fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x, int arg3, float y);
 
 /* The resource manager's language-specific path of a file (behaviour inferred, see Gong.cpp). */
 void *fn_8003F8D4(void);
 const char *fn_800423B8(void *arg0, const char *name, int arg2);
-/* Loads file into resource (behaviour inferred). */
-void fn_8036E114(Chao::CSD::CProject *resource, const char *file);
+/* Loads file into resource; nonzero on success (behaviour inferred). */
+int fn_8036E114(Chao::CSD::CProject *resource, const char *file);
 
 /* Projects (behaviour inferred): advancing, drawing, a scene by name, and fn_8036D598, whose
  * result is dropped. */

@@ -223,7 +223,7 @@ class Manager : public GameSystem {
     Manager();
     virtual ~Manager();
     virtual bool Initialize();
-    virtual bool IsFinished();
+    virtual int IsFinished();
     virtual bool Finalize();
     virtual void Abort();
 

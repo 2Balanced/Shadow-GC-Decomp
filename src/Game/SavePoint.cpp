@@ -103,9 +103,6 @@ void fn_8015AA84(ColliDetectArgs &args, void (*callback)(boost::shared_ptr<CharI
                  void *user);
 /* Gives target rings or an item (behaviour inferred; as in ScatteringRing). */
 void fn_8015F6EC(boost::shared_ptr<CharInfo> target, int id, int arg2, int arg3);
-/* boost::dynamic_pointer_cast<Player::Player>(character), a weak instance (defined at the end of
- * this file). */
-boost::shared_ptr<Player::Player> fn_8009DC10(const boost::shared_ptr<CharInfo> &character);
 /* Returns the character info of the given id from the manager's list (behaviour inferred). */
 boost::weak_ptr<CharInfo> fn_800A8B74(UnkCharaList_80074194 *manager, int id);
 
@@ -456,7 +453,7 @@ void SavePoint::OnSelect(SavePointSelect::Args &args) {
         fn_800091EC(&position, fn_8016F344(fn_80079808(), args.field_0x0, 0));
         boost::weak_ptr<CharInfo> player = fn_800A8B74(fn_80074194(), lbl_805EE588);
         if (boost::shared_ptr<CharInfo> character = player.lock()) {
-            boost::shared_ptr<Player::Player> target = fn_8009DC10(character);
+            boost::shared_ptr<Player::Player> target = boost::dynamic_pointer_cast<Player::Player>(character);
             WarpHole::ManagerTask::Instantiate(position, target);
         }
     }
@@ -562,10 +559,3 @@ UnkObject_801A2AF4 *UnkObject_801A2AF4::s_cached;
 /* After the unit's code: see the header. */
 #include "Game/UnkTreeDestroy.h"
 
-/* The weak copy of boost::dynamic_pointer_cast<Player::Player> this unit emitted. The linker keeps
- * the player code's (0x8009DC10, which game code calls by its fn_ name), so this code is dropped;
- * the template it instantiates is compiled with the unit's last functions, and its RTTI base lists
- * for the Player classes stay at the end of this unit's .data, which is kept whole. */
-extern "C" inline boost::shared_ptr<Player::Player> fn_8009DC10(const boost::shared_ptr<CharInfo> &character) {
-    return boost::dynamic_pointer_cast<Player::Player>(character);
-}

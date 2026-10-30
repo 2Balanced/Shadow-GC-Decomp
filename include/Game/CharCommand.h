@@ -6,7 +6,8 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
-#ifdef CHARCOMMAND_SET_LOOP_PATH
+#if defined(CHARCOMMAND_SET_LOOP_PATH) || defined(CHARCOMMAND_PLAYER_COMMANDS) || defined(CHARCOMMAND_PLAYER_CONTROLLER) || \
+    defined(CHARCOMMAND_PLAYER_USER_INPUT)
 #include "Game/UnkCircuitTarget_800ABCE8.h"
 #endif
 
@@ -18,6 +19,13 @@ class CharCommandUnit;
 namespace Weapon {
 class WeaponVacuumBase;
 } // namespace Weapon
+
+#if defined(CHARCOMMAND_PLAYER_COMMANDS) || defined(CHARCOMMAND_PLAYER_USER_INPUT)
+class PickupCharInfo;
+namespace Vehicle {
+class TVehicleBase;
+} // namespace Vehicle
+#endif
 
 /* CharCommand (class name from RTTI): a command queued on a character through CharInfo's
  * PushCommand. The commands below (class names from RTTI) all allocate through CharCommand's
@@ -34,7 +42,16 @@ class CharCommand {
   public:
     /* Stores the command type at 0x4 and arg at 0x8 (0x8006E454; arg is the priority level, 0..6,
      * whose queue Game/CharCommandManagerTask.cpp files the command in). */
+#if defined(CHARCOMMAND_INLINE_BASE) && defined(CHARCOMMAND_IMPLEMENTATION)
+    /* Inline in the game, where CHARCOMMAND_INLINE_BASE is defined (Game/NpcControlSonicType.cpp,
+     * the unit that has the copy linked). */
+    CharCommand(u16 type, int arg) : m_type(type), m_priority(arg) {
+        m_flags = 0;
+        field_0x6 = 0;
+    }
+#else
     CharCommand(u16 type, int arg);
+#endif
     static void *operator new(size_t size);
     /* 0x801D9C64 (takes the size; behaviour inferred). */
     static void operator delete(void *p, size_t size);
@@ -159,7 +176,19 @@ SIZE_ASSERT(SetPositionCommand, 0x20);
  * in the game, 0x800B81F8). */
 class SetAngleCommand : public CharCommand {
   public:
+#ifdef CHARCOMMAND_SET_ANGLE_INLINE
+    /* The inline constructor, where CHARCOMMAND_SET_ANGLE_INLINE is defined
+     * (Game/PlayerHelpers.cpp, which has the copy the game links). The inline type accessor
+     * keeps it out of line, as with SetPositionCommand. */
+    static int Id() {
+        return 3;
+    }
+
+    SetAngleCommand(const Vec3f &angles, int arg1, int arg2)
+        : CharCommand(Id(), arg2), m_angles(angles), field_0x20(arg1) {}
+#else
     SetAngleCommand(const Vec3f &angles, int arg1, int arg2);
+#endif
     virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
 #ifdef CHARCOMMAND_IMPLEMENTATION
     virtual std::string vf_0x10() const;
@@ -208,7 +237,15 @@ SIZE_ASSERT(SetVelocityCommand, 0x20);
  * the game, 0x8006E354, vtable 0x8053D470). */
 class AccelerateCommand : public CharCommand {
   public:
+#ifdef CHARCOMMAND_INLINE_BASE
+    /* Inline, where CHARCOMMAND_INLINE_BASE is defined (Game/NpcControlSonicType.cpp has the copy
+     * linked). */
+    AccelerateCommand(const Vec3f &velocity, int arg1) : CharCommand(6, arg1) {
+        fn_800091EC(&m_velocity, &velocity);
+    }
+#else
     AccelerateCommand(const Vec3f &velocity, int arg1);
+#endif
     virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
 #ifdef CHARCOMMAND_IMPLEMENTATION
     virtual std::string vf_0x10() const;
@@ -238,7 +275,16 @@ SIZE_ASSERT(DamageCommand, 0x24);
  * Game/BalloonGenerator.cpp; constructor inline in the game, 0x8009EE8C). */
 class DeadCommand : public CharCommand {
   public:
+#ifdef CHARCOMMAND_PLAYER_CONTROLLER
+    /* Inline, as Game/PlayerController.cpp (the first unit to emit it) sees it; the inline type
+     * accessor keeps it out of line. */
+    DeadCommand(int arg0) : CharCommand(CommandType(8), arg0) {}
+    static u16 CommandType(int type) {
+        return type;
+    }
+#else
     DeadCommand(int arg0);
+#endif
     virtual const char *GetName();
 };
 SIZE_ASSERT(DeadCommand, 0x14);
@@ -537,20 +583,42 @@ SIZE_ASSERT(SpringCommand, 0x14);
 
 namespace Player {
 
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+class PlayerBase;
+#endif
+
 /* PlayerCommand (class name from RTTI): the base of the player-only commands. */
 class PlayerCommand : public CharCommand {
   public:
     /* id identifies the command (inferred from the constants its subclasses pass); arg1's meaning
      * is unknown. */
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Inline in the game, as Game/PlayerCommands.cpp sees them (the copies linked are 0x8006EE30
+     * and 0x8006EDD4); the inline type accessor keeps the constructor out of line. The vtable is
+     * then emitted with GetName, in Game/PlayerCommands.cpp. */
+    static u16 CommandType(int id) {
+        return id;
+    }
+    PlayerCommand(int id, int arg1) : CharCommand(CommandType(id), arg1) {}
+    virtual ~PlayerCommand() {}
+#else
     PlayerCommand(int id, int arg1);
     virtual ~PlayerCommand();
+#endif
     /* The command's name, looked up by its id (0x8009CCE4). */
     virtual const char *GetName();
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* The receiver as a player, or null (0x8009CC30; name inferred). */
+    boost::shared_ptr<PlayerBase> GetPlayer(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 };
 
 class LaunchCommand : public PlayerCommand {
   public:
     LaunchCommand(int arg0, int arg1);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 
     /* 0x14 */ u32 field_0x14;
 };
@@ -560,18 +628,26 @@ class IgnoreInputCommand : public PlayerCommand {
     IgnoreInputCommand(int arg0, float time);
     /* 0x800774C4: stores the two integers at 0x18 and 0x1C (meanings unknown). */
     IgnoreInputCommand(int arg0, int arg1);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 
-    /* 0x14 */ u32 field_0x14;
-    /* 0x18 */ float m_time;
-    /* 0x1C */ u32 field_0x1C;
+    /* The layout as both constructors fill it: (arg0, time) stores time, 0 and arg0; (arg0, arg1)
+     * stores arg0 and arg1 at 0x18 and 0x1C (meanings unknown). */
+    /* 0x14 */ float m_time;
+    /* 0x18 */ s32 m_kind;
+    /* 0x1C */ s32 m_mode;
 };
 
 class ActingAccelerateCommand : public PlayerCommand {
   public:
     ActingAccelerateCommand(const Vec3f &velocity, float time);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 
-    /* 0x14 */ Vec3f m_velocity;
-    /* 0x20 */ float m_time;
+    /* 0x14 */ float m_time;
+    /* 0x18 */ Vec3f m_velocity;
 };
 
 /* StartJumpCommand (class name from RTTI; vtable at 0x805214F4): constructor 0x8009C994, which
@@ -580,8 +656,14 @@ class ActingAccelerateCommand : public PlayerCommand {
 class StartJumpCommand : public PlayerCommand {
   public:
     StartJumpCommand(int arg0);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* A jump in direction (normalized; zero when it is too short; 0x8009C900). */
+    StartJumpCommand(const Vec3f &direction, int arg1);
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+    virtual std::string vf_0x10() const;
+#endif
 
-    /* 0x14 */ Vec3f field_0x14;
+    /* 0x14 */ Vec3f field_0x14; /* the jump's direction */
 };
 
 /* SetGravityCommand (class name from RTTI; vtable 0x80520F48): turns a character towards a new
@@ -590,6 +672,11 @@ class StartJumpCommand : public PlayerCommand {
 class SetGravityCommand : public PlayerCommand {
   public:
     SetGravityCommand(const Vec3f &direction, int arg1);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    virtual ~SetGravityCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+    virtual std::string vf_0x10() const;
+#endif
 
     /* 0x14 */ Vec3f m_direction;
 };
@@ -617,14 +704,402 @@ class PickupObjectCommand : public PlayerCommand {
     /* 0x14 */ boost::weak_ptr<Target> m_target;
 };
 
-#ifdef CHARCOMMAND_SET_LOOP_PATH
+#if defined(CHARCOMMAND_SET_LOOP_PATH) || defined(CHARCOMMAND_PLAYER_CONTROLLER)
 /* SetLoopPathCommand (class name from RTTI; vtable 0x805213EC): the command of type 0x10C, which
  * puts a running player on a loop's path (Player::Behavior::Ground takes it). Only the path is
  * known (name inferred). Declared where CHARCOMMAND_SET_LOOP_PATH is defined
  * (Game/PlayerBehaviorGround.cpp), as the path's type needs Game/UnkCircuitTarget_800ABCE8.h. */
 class SetLoopPathCommand : public PlayerCommand {
   public:
+#ifdef CHARCOMMAND_PLAYER_CONTROLLER
+    /* Inline: Game/PlayerController.cpp, which sends it, emits the copy the game keeps. */
+    SetLoopPathCommand(const UnkCircuitTarget_800ABCE8 &path, int arg1)
+        : PlayerCommand(0x10C, arg1), m_path(path) {}
+#endif
+#if defined(CHARCOMMAND_PLAYER_COMMANDS) || defined(CHARCOMMAND_PLAYER_CONTROLLER)
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
+
     /* 0x14 */ UnkCircuitTarget_800ABCE8 m_path;
+};
+#endif
+
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+/* The other player commands (class names from RTTI), declared where CHARCOMMAND_PLAYER_COMMANDS is
+ * defined: Game/PlayerCommands.cpp, which has their Reject functions (each applies the command to
+ * the player, through its behaviors, controls, motion or weapon, and marks it handled), their
+ * vtables and the constructors that are not inline. The commands of Game/GadgetCharCommands.h
+ * take their Reject declarations there. Field meanings are inferred from the Reject functions. */
+
+/* Command 0x137: puts the player back in its starting state and drops every queued command. */
+class ResetCommand : public PlayerCommand {
+  public:
+    ResetCommand();
+    virtual ~ResetCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Resets the stage camera of the player's number. */
+class ResetCameraCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Command 0x135: ends what the player's controller acts out. */
+class CancelActingCommand : public PlayerCommand {
+  public:
+    CancelActingCommand(int arg1);
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Command 0x133: turns the player's aim to m_position for m_time. */
+class SetLookAtPositionCommand : public PlayerCommand {
+  public:
+    SetLookAtPositionCommand(const Vec3f &position, float time);
+    virtual ~SetLookAtPositionCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ Vec3f m_position;
+    /* 0x20 */ float m_time;
+};
+
+/* Command 0x131: sends the player into an electric circuit (Game/ElecCircuitEntrance.cpp sends
+ * it, with its own declaration). */
+class ElectricCircuitCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ UnkCircuitTarget_800ABCE8 m_target;
+    /* 0x1C */ u8 field_0x1C;
+};
+
+/* Command 0x12F: turns the player super, or back (m_on). */
+class ToSuperCommand : public PlayerCommand {
+  public:
+    ToSuperCommand(bool on);
+    virtual ~ToSuperCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ s32 m_on;
+};
+
+/* Plays motions m_motions on the player's external motion for m_time. */
+class SetExternalMotionCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+    virtual std::string vf_0x10() const;
+
+    /* 0x14 */ s32 m_motions[3];
+    /* 0x20 */ float m_time;
+};
+
+/* Makes the player invincible, or not (m_on). */
+class InvincibleCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ bool m_on;
+};
+
+/* Clear and set the player's parallel-move state (bit 0x3C). */
+class EndParallelMoveCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class StartParallelMoveCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Command 0x123: puts the player in m_vehicle (behavior 0x1B). */
+class GetOnVehicleCommand : public PlayerCommand {
+  public:
+    GetOnVehicleCommand(const boost::weak_ptr<Vehicle::TVehicleBase> &vehicle, int arg1);
+    virtual ~GetOnVehicleCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Vehicle::TVehicleBase> m_vehicle;
+};
+
+/* Makes the player throw the object it carries (behavior 0xA). */
+class ThrowCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<PickupCharInfo> m_object;
+};
+
+/* Hands the player to its approach control (control 1) towards m_target. */
+class ApproachControlCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ s32 m_kind;
+    /* 0x18 */ boost::weak_ptr<Target> m_target;
+};
+
+/* Command 0x11B: gives the player item m_item (0 to 9) worth m_value, showing its icon when
+ * m_showIcon is set (Game/GadgetModelInfo.cpp builds it). */
+class GetItemCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ s32 m_item;
+    /* 0x18 */ s32 m_value;
+    /* 0x1C */ u8 m_showIcon;
+};
+
+/* Makes the player drop its weapon. */
+class CastWeaponCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Makes the player pick up m_weapon. */
+class PickupWeaponCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<CharInfo> m_weapon;
+};
+
+/* The chaos control and chaos blast (behaviors 0x1D and 0x1C), the light dash and the spin dash
+ * (0x14 and 0x12) and the slide (7): each switches the player's behavior. */
+class ChaosControlCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class ChaosBlastCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class LightDashCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* The dark spin and the grind along a circuit target (behaviors 0x13 and 0x11). */
+class DarkSpinCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ UnkCircuitTarget_800ABCE8 m_target;
+};
+
+class SpinDashCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class GrindCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ UnkCircuitTarget_800ABCE8 m_rail;
+};
+
+/* Sends the player to attack m_target (Game/BossSonicSubControlJump.cpp sends it, with its own
+ * declaration). */
+class HomingAttackCommand : public PlayerCommand {
+  public:
+#ifdef CHARCOMMAND_INLINE_BASE
+    /* Inline (Game/NpcControlSonicType.cpp has the copy linked). */
+    HomingAttackCommand(const boost::weak_ptr<Target> &target, int arg1)
+        : PlayerCommand(0x10A, arg1), m_target(target) {}
+#endif
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Target> m_target;
+};
+
+class SlidingCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Commands the behaviors take; Reject only marks them handled. */
+class EndActionCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class EndAttackCommand : public PlayerCommand {
+  public:
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Starts the attack of the player's weapon. */
+class StartAttackCommand : public PlayerCommand {
+  public:
+#ifdef CHARCOMMAND_INLINE_BASE
+    /* Inline (Game/NpcControlSonicType.cpp has the copy linked). */
+    StartAttackCommand(int arg1) : PlayerCommand(0x102, arg1) {}
+#endif
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+#ifdef CHARCOMMAND_INLINE_BASE
+/* EndJumpCommand (class name from RTTI; vtable 0x8051FD28, emitted with its inline functions in
+ * Game/NpcControlSonicType.cpp): command 0x105, which ends a jump early (meaning inferred from its
+ * senders). It overrides nothing: its receivers take it by its id. */
+class EndJumpCommand : public PlayerCommand {
+  public:
+    EndJumpCommand(int arg1) : PlayerCommand(0x105, arg1) {}
+};
+#endif
+#endif
+
+#if defined(CHARCOMMAND_PLAYER_CONTROLLER) && !defined(CHARCOMMAND_PLAYER_COMMANDS)
+/* GrindCommand (see above) as Game/PlayerController.cpp sends it: its inline constructor (the copy
+ * the game keeps is that unit's). */
+class GrindCommand : public PlayerCommand {
+  public:
+    GrindCommand(const UnkCircuitTarget_800ABCE8 &rail, int arg1) : PlayerCommand(0x10D, arg1), m_rail(rail) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ UnkCircuitTarget_800ABCE8 m_rail;
+};
+#endif
+
+#if defined(CHARCOMMAND_PLAYER_USER_INPUT) && !defined(CHARCOMMAND_PLAYER_COMMANDS)
+/* The player commands Player::Control::UserInput sends (Game/PlayerControlUserInput.cpp; see
+ * above), as that unit sees them. Most constructors are inline: the inline id accessor keeps them
+ * out of line, so the unit emits the copies the game keeps (as CancelUseWeaponCommand in
+ * Game/PlayerController.cpp). Reject keeps the vtables in Game/PlayerCommands.cpp. */
+inline int UserInputCommandId(int id) {
+    return id;
+}
+
+class EndActionCommand : public PlayerCommand {
+  public:
+    EndActionCommand(int arg1) : PlayerCommand(UserInputCommandId(0x107), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class EndAttackCommand : public PlayerCommand {
+  public:
+    EndAttackCommand(int arg1) : PlayerCommand(UserInputCommandId(0x103), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class EndParallelMoveCommand : public PlayerCommand {
+  public:
+    EndParallelMoveCommand(int arg1) : PlayerCommand(UserInputCommandId(0x125), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class StartParallelMoveCommand : public PlayerCommand {
+  public:
+    StartParallelMoveCommand(int arg1) : PlayerCommand(UserInputCommandId(0x124), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class PickupWeaponCommand : public PlayerCommand {
+  public:
+    PickupWeaponCommand(const boost::weak_ptr<CharInfo> &weapon, int arg1)
+        : PlayerCommand(UserInputCommandId(0x118), arg1), m_weapon(weapon) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<CharInfo> m_weapon;
+};
+
+class ApproachControlCommand : public PlayerCommand {
+  public:
+    ApproachControlCommand(int kind, const boost::weak_ptr<Target> &target, int arg1)
+        : PlayerCommand(UserInputCommandId(0x11C), arg1), m_kind(kind), m_target(target) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ s32 m_kind;
+    /* 0x18 */ boost::weak_ptr<Target> m_target;
+};
+
+class SpinDashCommand : public PlayerCommand {
+  public:
+    SpinDashCommand(int arg1) : PlayerCommand(UserInputCommandId(0x10E), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class SlidingCommand : public PlayerCommand {
+  public:
+    SlidingCommand(int arg1) : PlayerCommand(UserInputCommandId(0x109), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class LightDashCommand : public PlayerCommand {
+  public:
+    LightDashCommand(int arg1) : PlayerCommand(UserInputCommandId(0x110), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class DarkSpinCommand : public PlayerCommand {
+  public:
+    DarkSpinCommand(const UnkCircuitTarget_800ABCE8 &target, int arg1)
+        : PlayerCommand(UserInputCommandId(0x10F), arg1), m_target(target) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ UnkCircuitTarget_800ABCE8 m_target;
+};
+
+class ThrowCommand : public PlayerCommand {
+  public:
+    ThrowCommand(const boost::weak_ptr<PickupCharInfo> &object, int arg1)
+        : PlayerCommand(UserInputCommandId(0x11E), arg1), m_object(object) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<PickupCharInfo> m_object;
+};
+
+class CastWeaponCommand : public PlayerCommand {
+  public:
+    CastWeaponCommand(int arg1) : PlayerCommand(UserInputCommandId(0x119), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class ChaosControlCommand : public PlayerCommand {
+  public:
+    ChaosControlCommand(int arg1) : PlayerCommand(UserInputCommandId(0x114), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+class ChaosBlastCommand : public PlayerCommand {
+  public:
+    ChaosBlastCommand(int arg1) : PlayerCommand(UserInputCommandId(0x113), arg1) {}
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* Command 0x123 (constructor 0x8009AC80, in Game/PlayerCommands.cpp). */
+class GetOnVehicleCommand : public PlayerCommand {
+  public:
+    GetOnVehicleCommand(const boost::weak_ptr<Vehicle::TVehicleBase> &vehicle, int arg1);
+    virtual ~GetOnVehicleCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Vehicle::TVehicleBase> m_vehicle;
+};
+
+/* (Constructor 0x8006FE88, in Game/NpcControlSonicType.cpp.) */
+class HomingAttackCommand : public PlayerCommand {
+  public:
+    HomingAttackCommand(const boost::weak_ptr<Target> &target, int arg1);
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+
+    /* 0x14 */ boost::weak_ptr<Target> m_target;
+};
+
+/* (Constructor 0x8006ED90, in Game/NpcControlSonicType.cpp.) */
+class StartAttackCommand : public PlayerCommand {
+  public:
+    StartAttackCommand(int arg1);
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+};
+
+/* EndJumpCommand (see above; constructor 0x8006FED8, in Game/NpcControlSonicType.cpp). */
+class EndJumpCommand : public PlayerCommand {
+  public:
+    EndJumpCommand(int arg1);
 };
 #endif
 
@@ -637,5 +1112,21 @@ SIZE_ASSERT(Player::IgnoreInputCommand, 0x20);
 SIZE_ASSERT(Player::ActingAccelerateCommand, 0x24);
 SIZE_ASSERT(Player::TurnOverCommand, 0x1C);
 SIZE_ASSERT(Player::PickupObjectCommand, 0x1C);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+SIZE_ASSERT(Player::ResetCommand, 0x14);
+SIZE_ASSERT(Player::SetLookAtPositionCommand, 0x24);
+SIZE_ASSERT(Player::ElectricCircuitCommand, 0x20);
+SIZE_ASSERT(Player::ToSuperCommand, 0x18);
+SIZE_ASSERT(Player::SetExternalMotionCommand, 0x24);
+SIZE_ASSERT(Player::InvincibleCommand, 0x18);
+SIZE_ASSERT(Player::GetOnVehicleCommand, 0x1C);
+SIZE_ASSERT(Player::ThrowCommand, 0x1C);
+SIZE_ASSERT(Player::ApproachControlCommand, 0x20);
+SIZE_ASSERT(Player::GetItemCommand, 0x20);
+SIZE_ASSERT(Player::PickupWeaponCommand, 0x1C);
+SIZE_ASSERT(Player::DarkSpinCommand, 0x1C);
+SIZE_ASSERT(Player::GrindCommand, 0x1C);
+SIZE_ASSERT(Player::HomingAttackCommand, 0x1C);
+#endif
 
 #endif

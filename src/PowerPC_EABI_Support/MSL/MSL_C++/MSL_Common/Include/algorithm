@@ -19,9 +19,19 @@ template <class T> inline const T &max(const T &a, const T &b) {
     return a < b ? b : a;
 }
 
+#ifdef MSL_ALGORITHM_OUTLINE
+/* Where MSL_ALGORITHM_OUTLINE is defined before this header (Game/NpcControlSonicType.cpp, whose
+ * vector of floats has them out of line), fill_n and __copy_backward call this, so that they are not
+ * inlined themselves (deferred inlining is one level deep). */
+inline void __msl_algorithm_outline() {}
+#endif
+
 /* Assigns value to n elements from first. */
 template <class OutputIterator, class Size, class T>
 inline void fill_n(OutputIterator first, Size n, const T &value) {
+#ifdef MSL_ALGORITHM_OUTLINE
+    __msl_algorithm_outline();
+#endif
     for (; n != 0; ++first, --n) {
         *first = value;
     }
@@ -30,6 +40,9 @@ inline void fill_n(OutputIterator first, Size n, const T &value) {
 template <class BidirectionalIterator1, class BidirectionalIterator2>
 inline BidirectionalIterator2 __copy_backward(BidirectionalIterator1 first, BidirectionalIterator1 last,
                                        BidirectionalIterator2 result) {
+#ifdef MSL_ALGORITHM_OUTLINE
+    __msl_algorithm_outline();
+#endif
     while (last > first) {
         *--result = *--last;
     }
@@ -70,6 +83,19 @@ inline InputIterator find(InputIterator first, InputIterator last, const T &valu
         ++first;
     }
     return first;
+}
+#endif
+
+#ifdef MSL_ALGORITHM_FOR_EACH
+/* Only units that define MSL_ALGORITHM_FOR_EACH see it (Game/TargetManageTask.cpp), for the reason
+ * given at MSL_ALGORITHM_COPY. Inline, but its calls keep it out of line: the game emits it after
+ * its first user. */
+template <class InputIterator, class Function>
+inline Function for_each(InputIterator first, InputIterator last, Function f) {
+    for (; first != last; ++first) {
+        f(*first);
+    }
+    return f;
 }
 #endif
 

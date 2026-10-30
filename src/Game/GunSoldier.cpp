@@ -109,8 +109,8 @@ void fn_801989D4(SoldierCommonBase *soldier, SoldierParam *params, Vec3f *positi
 void fn_8017CA2C(Enemy *enemy);
 boost::weak_ptr<EnemyShield> fn_801A752C(Enemy *enemy, const EnemyMotionTable &table, int arg);
 /* The status object's calls (behaviour unknown). */
-void fn_801A9578(UnkEnemyStatus_801AA430 *status, u32 flags);
-void fn_801A9844(UnkEnemyStatus_801AA430 *status, int arg1, int arg2);
+void fn_801A9578(EnemyCharaColliModule *status, u32 flags);
+void fn_801A9844(EnemyCharaColliModule *status, int arg1, int arg2);
 /* The weapon's calls. */
 void fn_801AA830(EnemyWeapon *weapon);
 void fn_801AA868(EnemyWeapon *weapon);

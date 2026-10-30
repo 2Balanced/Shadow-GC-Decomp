@@ -2,6 +2,9 @@
 #define GAME_TARGETSEARCHLIST_H
 
 #include "Game/MathTypes.h"
+#ifdef TARGETSEARCHLIST_LAYOUT
+#include "Game/PtrVector.h"
+#endif
 #include "boost/weak_ptr.hpp"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -14,9 +17,27 @@ class Target;
  * (0x801E8664) is known; the methods are called by their address names below. */
 class TargetSearchList {
   public:
+    /* The copy constructor (0x801E8758; Game/PlayerShadowTarget.cpp narrows a copy). */
+    TargetSearchList(const TargetSearchList &other);
     virtual ~TargetSearchList();
 
+#ifdef TARGETSEARCHLIST_LAYOUT
+    /* Only where TARGETSEARCHLIST_LAYOUT is defined before this header (Game/TargetManageTask.cpp,
+     * which defines the class): the listed targets and the end of the part still selected. */
+    typedef std::vector<const boost::weak_ptr<Target> *> Targets;
+    typedef Targets::iterator iterator;
+
+    TargetSearchList(const class TargetList &list);
+    /* The first listed target (out of line). */
+    const boost::weak_ptr<Target> *const *Begin() const {
+        return m_targets.begin();
+    }
+
+    /* 0x04 */ Targets m_targets;
+    /* 0x10 */ iterator m_end;
+#else
     /* 0x04 */ u8 field_0x4[0x14 - 0x4];
+#endif
 };
 SIZE_ASSERT(TargetSearchList, 0x14);
 

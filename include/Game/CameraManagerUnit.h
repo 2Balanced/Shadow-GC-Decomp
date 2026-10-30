@@ -46,13 +46,41 @@ class CameraFactory {
     typedef CameraAdjust *(*CreateAdjustFn)(const UnkCameraBlend_8000B2C0 &blend);
 
     CameraFactory();
-    virtual CameraTargetInfo *CreateTarget();
+    /* Pure: the slot is empty in CameraFactory's vtable. */
+    virtual CameraTargetInfo *CreateTarget() = 0;
     virtual ~CameraFactory();
     void AddMode(int kind, const char *name, CreateModeFn create, int arg);
     void AddAdjust(int type, const char *name, CreateAdjustFn create);
 
+#ifdef CAMERAFACTORY_MAPS
+    /* A mode's maker, its name and the third word AddMode is given (struct name unknown; only
+     * Game/CameraFactory.cpp, which instantiates the maps, declares the members with their types). */
+    struct UnkModeEntry_8000B904 {
+        UnkModeEntry_8000B904(const char *name, CreateModeFn create, int arg)
+            : m_name(name), m_create(create), m_arg(arg) {}
+        ~UnkModeEntry_8000B904() {}
+
+        /* 0x0 */ const char *m_name;
+        /* 0x4 */ CreateModeFn m_create;
+        /* 0x8 */ int m_arg;
+    };
+    /* An adjust's maker and its name (struct name unknown). */
+    struct UnkAdjustEntry_8000B76C {
+        UnkAdjustEntry_8000B76C(const char *name, CreateAdjustFn create) : m_name(name), m_create(create) {}
+        ~UnkAdjustEntry_8000B76C() {}
+
+        /* 0x0 */ const char *m_name;
+        /* 0x4 */ CreateAdjustFn m_create;
+    };
+    typedef std::map<int, UnkModeEntry_8000B904> ModeMap;
+    typedef std::map<int, UnkAdjustEntry_8000B76C> AdjustMap;
+
+    /* 0x04 */ ModeMap m_modes;
+    /* 0x14 */ AdjustMap m_adjusts;
+#else
     /* 0x04 */ u8 m_modes[0x10];
     /* 0x14 */ u8 m_adjusts[0x10];
+#endif
 };
 SIZE_ASSERT(CameraFactory, 0x24);
 

@@ -40,10 +40,17 @@ class Target {
 
     /* The same position, not virtual (0x801E7410; no caller is known). */
     TargetPosition Position();
+    /* Moves the target to position (0x800CCE38; behaviour inferred). */
+    void fn_800CCE38(const Vec3f *position);
 
     /* Whether the target is active (name inferred). */
     u32 IsActive() const {
         return m_flags & 1;
+    }
+
+    /* Whether a position was set (bit 1; name inferred). */
+    u32 IsPositionSet() const {
+        return m_flags & 2;
     }
 
     /* The flags as the constructors complete them (meanings unknown). */

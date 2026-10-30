@@ -9,6 +9,9 @@
  * reproduces that message: the copy built from it is never linked. */
 #include <cstring>
 #include <memory>
+#ifdef MSL_STRING_IMPL
+#include <algorithm>
+#endif
 
 namespace std {
 
@@ -21,6 +24,12 @@ template <> struct char_traits<char> {
     static size_t length(const char_type *s) {
         return strlen(s);
     }
+#ifdef MSL_STRING_IMPL
+    static char_type *copy(char_type *s1, const char_type *s2, size_t n) {
+        memcpy(s1, s2, n);
+        return s1;
+    }
+#endif
 };
 
 template <class charT, class traits = char_traits<charT>, class Allocator = allocator<charT> >
@@ -36,12 +45,42 @@ class basic_string {
      * renumbers the compiler's @N labels of every unit. The game links one out-of-line copy of
      * each (default constructor 0x80014D58 with its array wrapper 0x80329698, assignment
      * 0x80014CF4, c_str 0x80014E50). */
+#ifdef MSL_STRING_IMPL
+    explicit basic_string(const Allocator &a = Allocator()) : size_(0), capacity_(a) {
+        data_ = 0;
+        capacity_.second_ = 0;
+    }
+    basic_string &operator=(const charT *s) {
+        return assign(s);
+    }
+#else
     explicit basic_string(const Allocator &a = Allocator());
     basic_string &operator=(const charT *s);
+#endif
     const charT *c_str() const;
 #endif
 #ifdef MSL_STRING_COMPARE
     int compare(const charT *s) const;
+#endif
+#ifdef MSL_STRING_LESS
+#ifdef MSL_STRING_COMPARE_INLINE
+    /* Where MSL_STRING_COMPARE_INLINE is also defined (Game/SavedataAnalyzer.cpp, which emits the
+     * game's copy at 0x801AC364), compare is defined here: it calls the out-of-line data
+     * (0x80040224) and compare of a range (0x8004013C), and being inline it keeps operator< out of
+     * line, as the game has it (0x801AC340). The length it passes is the word at 0x0. */
+    const charT *data() const;
+    int compare(size_type pos1, size_type n1, const charT *s, size_type n2) const;
+    size_type size() const {
+        return capacity_;
+    }
+    int compare(const basic_string &str) const {
+        return compare(0, size(), str.data(), str.size());
+    }
+#else
+    /* Declared only where a unit needs it (Game/DeltaMorphAnimManagerTask.cpp), for the reason given
+     * above. The game links one out-of-line copy (0x801AC364). */
+    int compare(const basic_string &str) const;
+#endif
 #endif
 #ifdef MSL_STRING_COPY
     /* Declared only where a unit needs them (Game/AdvCsdCache.cpp), for the reason given above. The
@@ -55,6 +94,51 @@ class basic_string {
     basic_string &assign(const basic_string &str);
 #endif
 
+#ifdef MSL_STRING_IMPL
+    /* Defined only where MSL_STRING_IMPL is defined before this header (Game/ResourceOneFile.cpp,
+     * the unit that emits the game's copies): assignment from a C string, the data, the allocator
+     * and the size limit (assign 0x80014D14 and 0x80014E64, data 0x80014EB8, get_allocator
+     * 0x800150F8, max_size 0x800150BC). The game emits them in the order these definitions give:
+     * data calls an inline helper, so it is emitted out of line right after assign, and assign
+     * reaches __set_size through an inline overload, which puts __set_size after the destructor. */
+    typedef Allocator allocator_type;
+
+    basic_string &assign(const charT *s) {
+        return assign(s, traits::length(s));
+    }
+    basic_string &assign(const charT *s, size_type n);
+    charT *data() {
+        return __data();
+    }
+    charT *__data() const {
+        return data_;
+    }
+    allocator_type get_allocator() const {
+        return capacity_;
+    }
+    size_type max_size() const {
+        return get_allocator().max_size() - 1;
+    }
+
+  private:
+    /* Sets the length to n (0x80014F14), growing the buffer when n exceeds the capacity; keep says
+     * whether the old contents are copied over. */
+    void __set_size(size_type n, bool keep);
+    void __set_size(size_type n) {
+        __set_size(n, false);
+    }
+
+    /* The capacity, behind the (empty) allocator. */
+    struct __cap_pair : public Allocator {
+        __cap_pair(const Allocator &a) : Allocator(a), second_(0) {}
+
+        size_type second_;
+    };
+
+    /* 0x0 */ size_type size_;
+    /* 0x4 */ __cap_pair capacity_;
+    /* 0x8 */ charT *data_;
+#else
     size_type max_size() const {
         return size_type(-1) / sizeof(charT) - 1;
     }
@@ -63,6 +147,7 @@ class basic_string {
     /* 0x0 */ size_type capacity_;
     /* 0x4 */ size_type size_;
     /* 0x8 */ charT *data_;
+#endif
 };
 
 #ifndef MSL_STRING_CTOR_EXTERN
@@ -78,6 +163,74 @@ basic_string<charT, traits, Allocator>::basic_string(const charT *s, const Alloc
     size_ = n;
     data_ = const_cast<charT *>(s);
 }
+#endif
+
+#ifdef MSL_STRING_IMPL
+/* The terminator written after the characters (a byte in .sdata, 0x805E3518; a zero object lands
+ * there only under #pragma explicit_zero_data, which Game/ResourceOneFile.cpp sets at its end). */
+template <class charT> struct __string_nul {
+    static charT value;
+};
+
+template <class charT> charT __string_nul<charT>::value = charT();
+
+/* Copies [first, last) to result (0x80015020). */
+template <class charT> inline charT *__copy_chars(const charT *first, const charT *last, charT *result) {
+    size_t n = last - first;
+    char_traits<charT>::copy(result, first, n);
+    return result + n;
+}
+
+template <class charT, class traits, class Allocator>
+const charT *basic_string<charT, traits, Allocator>::c_str() const {
+    if (data_ == 0) {
+        static const charT empty = charT();
+        return &empty;
+    }
+    return data_;
+}
+
+template <class charT, class traits, class Allocator>
+basic_string<charT, traits, Allocator> &basic_string<charT, traits, Allocator>::assign(const charT *s,
+                                                                                    size_type n) {
+    __set_size(n);
+    memcpy(data(), s, n);
+    return *this;
+}
+
+template <class charT, class traits, class Allocator> basic_string<charT, traits, Allocator>::~basic_string() {
+    if (data_ != 0) {
+        capacity_.deallocate(data_, 0);
+    }
+}
+
+template <class charT, class traits, class Allocator>
+void basic_string<charT, traits, Allocator>::__set_size(size_type n, bool keep) {
+    if (n > max_size()) {
+        __msl_error("basic_string::length error.  Resizing out of range\n");
+    }
+    if (n > capacity_.second_) {
+        size_type minimum = 3;
+        size_type cap = max(capacity_.second_, minimum);
+        while (cap < n) {
+            cap = 2 * cap + 3 - (2 * cap & 2);
+        }
+        charT *p = capacity_.allocate(cap + 1);
+        if (data_ != 0) {
+            if (keep) {
+                __copy_chars<charT>(data_, data_ + size_, p);
+            }
+            capacity_.deallocate(data_, 0);
+        }
+        data_ = p;
+        capacity_.second_ = cap;
+    }
+    if (data_ != 0) {
+        data_[n] = __string_nul<charT>::value;
+    }
+    size_ = n;
+}
+
 #endif
 
 #ifdef MSL_STRING_COPY
@@ -100,6 +253,17 @@ inline bool operator!=(const basic_string<charT, traits, Allocator> &lhs, const 
         return false;
     }
     return true;
+}
+#endif
+
+#ifdef MSL_STRING_LESS
+/* Only where MSL_STRING_LESS is defined before this header (Game/DeltaMorphAnimManagerTask.cpp), for
+ * the reason given above: the ordering a std::map with string keys uses. The game links one
+ * out-of-line copy (0x801AC340), called by less<string> (0x801AC308). */
+template <class charT, class traits, class Allocator>
+inline bool operator<(const basic_string<charT, traits, Allocator> &lhs,
+                      const basic_string<charT, traits, Allocator> &rhs) {
+    return lhs.compare(rhs) < 0;
 }
 #endif
 

@@ -32,6 +32,26 @@ class CharInfo {
     /* Slot 0x10: hands a command to the character. */
     virtual void PushCommand(CharCommand *command);
     virtual void vf_0x14();
+#ifdef CHARINFO_INLINE_SLOTS
+    /* Inline where CHARINFO_INLINE_SLOTS is defined (Game/PlayerBase.cpp, whose PlayerObject and
+     * PlayerBase vtables emit the out-of-line copies the game links, 0x80078B2C..0x80078B4C). All
+     * answer false. */
+    virtual bool vf_0x18() {
+        return false;
+    }
+    virtual bool vf_0x1C() {
+        return false;
+    }
+    virtual bool vf_0x20() {
+        return false;
+    }
+    virtual bool vf_0x24() {
+        return false;
+    }
+    virtual bool vf_0x28() {
+        return false;
+    }
+#else
     /* Slot 0x18: asked by BombServer of each character in contact. */
     virtual bool vf_0x18();
     /* Slot 0x1C: asked before a character may collect a ring. */
@@ -40,8 +60,17 @@ class CharInfo {
     /* Slot 0x24: asked before an item box sends HomingJumpCommand. */
     virtual bool vf_0x24();
     virtual bool vf_0x28();
+#endif
     /* Slot 0x2C: false in CharInfo, true in EnemyCharInfo and ResearcherCharInfo. */
+#ifdef CHARINFO_INLINE_SLOT_2C
+    /* Inline where CHARINFO_INLINE_SLOT_2C is defined (Game/Npc.cpp, whose Npc vtable emits the
+     * out-of-line copy the game links, 0x80073634). */
+    virtual bool vf_0x2C() {
+        return false;
+    }
+#else
     virtual bool vf_0x2C();
+#endif
 
 #ifdef CHARINFO_IMPLEMENTATION
     /* The members from 0x3C as Game/CharInfo.cpp sees them (names inferred; other units keep the

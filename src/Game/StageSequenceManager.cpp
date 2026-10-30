@@ -119,7 +119,7 @@ bool Manager::Initialize() {
     return true;
 }
 
-bool Manager::IsFinished() {
+int Manager::IsFinished() {
     if (m_phase && m_phase->Tick()) {
         return false;
     }

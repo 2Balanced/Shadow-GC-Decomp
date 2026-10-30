@@ -79,15 +79,26 @@ struct UnkPlayerPart_80095BD4 {
 };
 SIZE_ASSERT(UnkPlayerPart_80095BD4, 0x4);
 
+/* Sonic's motion (Game/NpcSonicMotion.cpp; only its maker is declared here). */
+namespace Player {
+namespace Npc {
+namespace Sonic {
+class MotionImpl {
+  public:
+    static Task *Create(Task *parent, const boost::shared_ptr<Npc> &npc);
+};
+} // namespace Sonic
+} // namespace Npc
+} // namespace Player
+
 extern "C" {
 void *fn_8001C4F8(void);
 Task *fn_801EB304(void *root, int layer);
 /* Task makers of a character (behaviour inferred from their sizes; fn_802DB7CC is Sonic's sound,
- * Game/PlayerShadowSound.cpp, and fn_8006C0B0 Sonic's motion). */
+ * Game/PlayerShadowSound.cpp). */
 Task *fn_80075E30(Task *parent, const shared_ptr<Npc> &npc);
 Task *fn_800B8310(Task *parent, const weak_ptr<PlayerBase> &player);
 void fn_80094088(Task *parent, const shared_ptr<PlayerBase> &player);
-void fn_8006C0B0(Task *parent, const shared_ptr<Npc> &npc);
 Task *fn_802DB7CC(Task *parent, const shared_ptr<PlayerBase> &player);
 /* Hands the controller its control factory and the executer its behavior factory. */
 void fn_8009EBC8(Task *controller, const shared_ptr<Player::Control::Factory> &factory);
@@ -188,7 +199,7 @@ void BossSonic::vf_0x30() {
     new Controller(m_layerTask, npc);
     fn_80094088(m_rootTask, npc);
     BossSonicExecuter::Create(m_rootTask, npc, m_work);
-    fn_8006C0B0(m_rootTask, npc);
+    ::Player::Npc::Sonic::MotionImpl::Create(m_rootTask, npc);
     new Attack(m_rootTask, npc);
     new Effect(m_rootTask, npc);
     fn_802DB7CC(m_rootTask, npc);

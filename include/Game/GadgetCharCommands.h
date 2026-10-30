@@ -28,18 +28,31 @@ class CancelBehaviorCommand : public PlayerCommand {
     }
 
     CancelBehaviorCommand(int arg) : PlayerCommand(Id(), arg) {}
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~CancelBehaviorCommand();
+#endif
 };
 
 /* StartActionCommand (command id 0x106; constructor 0x80079484, vtable 0x805214C8; arg unknown). */
 class StartActionCommand : public PlayerCommand {
   public:
     StartActionCommand(int arg);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h). */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 };
 
 class PressGroundCommand : public PlayerCommand {
   public:
     PressGroundCommand(int arg);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    virtual ~PressGroundCommand();
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 };
 
 /* TouchHangCommand (command id 0x112): hangs the character on target. Its constructor (0x80115B70)
@@ -53,7 +66,12 @@ class TouchHangCommand : public PlayerCommand {
                      const Vec3f *rotation, int arg3, int arg4)
         : PlayerCommand(0x112, arg4), m_target(target), m_position(position),
           m_rotation(rotation), field_0x24(arg3) {}
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~TouchHangCommand();
+#endif
 
     /* 0x14 */ boost::weak_ptr<CharInfo> m_target;
     /* 0x1C */ const Vec3f *m_position;
@@ -70,7 +88,12 @@ class TouchLineCommand : public PlayerCommand {
     TouchLineCommand(boost::weak_ptr<CharInfo> target,
                      boost::weak_ptr<Sonicteam::System::Geometry::Line> line, int arg)
         : PlayerCommand(0x111, arg), m_target(target), m_line(line) {}
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~TouchLineCommand();
+#endif
 
     /* 0x14 */ boost::weak_ptr<CharInfo> m_target;
     /* 0x1C */ boost::weak_ptr<Sonicteam::System::Geometry::Line> m_line;
@@ -101,7 +124,12 @@ class StartExternalControlCommand : public PlayerCommand {
                                 const Vec3f *rotation, int arg0, int arg1)
         : PlayerCommand(0x12B, arg1), field_0x14(target), field_0x1C(reinterpret_cast<u32>(position)),
           field_0x20(reinterpret_cast<u32>(rotation)), field_0x24(arg0) {}
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~StartExternalControlCommand();
+#endif
 
     /* 0x14 */ boost::weak_ptr<CharInfo> field_0x14;
     /* 0x1C */ u32 field_0x1C;
@@ -125,6 +153,10 @@ class SetMotionCommand : public PlayerCommand {
     virtual ~SetMotionCommand();
 #else
     SetMotionCommand(int motion, int arg1, float arg2);
+#endif
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h). */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
 #endif
 
     /* 0x14 */ s32 m_motion;
@@ -159,7 +191,12 @@ class AddWeaponCommand : public PlayerCommand {
     }
 
     AddWeaponCommand(s32 type, s32 ammo, int arg) : PlayerCommand(Id(), arg), m_type(type), m_ammo(ammo) {}
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~AddWeaponCommand();
+#endif
 
     /* 0x14 */ s32 m_type;
     /* 0x18 */ s32 m_ammo;
@@ -185,6 +222,10 @@ namespace Player {
 class StreamCommand : public PlayerCommand {
   public:
     StreamCommand(bool on, int arg1);
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h). */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#endif
 
     /* 0x14 */ s32 m_on; /* signed: Player::Behavior::LineHang compares it with cmpwi */
 };
@@ -208,7 +249,12 @@ class HomingJumpCommand : public PlayerCommand {
     HomingJumpCommand(const Vec3f &velocity, int arg) : PlayerCommand(Id(), arg) {
         fn_800091EC(&m_velocity, &velocity);
     }
+#ifdef CHARCOMMAND_PLAYER_COMMANDS
+    /* Game/PlayerCommands.cpp (see Game/CharCommand.h); the destructor is implicit there. */
+    virtual void Reject(const boost::weak_ptr<CharInfo> &receiver);
+#else
     virtual ~HomingJumpCommand();
+#endif
 
     /* 0x14 */ Vec3f m_velocity;
 };

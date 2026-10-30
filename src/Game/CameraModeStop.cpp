@@ -18,9 +18,10 @@ using SonicteamUSA::System::Camera::CameraMode;
 class UnkCameraManager_80009548;
 
 extern "C" {
-/* The camera manager's constructor and destructor (behaviour inferred). */
-void *fn_8000DC68(void *object);
-void fn_8000DB9C(void *object, int flags);
+/* The camera manager's constructor and destructor (Game/CameraManager.cpp), called on its
+ * storage by their linker names. */
+void *__ct__25UnkCameraManager_80009548Fv(void *object);
+void __dt__25UnkCameraManager_80009548Fv(void *object, int flags);
 void *__register_global_object(void *object, void *destructor, void *record);
 /* The camera unit of a screen (see Game/StageCameraManager.cpp). */
 boost::shared_ptr<CameraManagerUnit> fn_8000D0F0(UnkCameraManager_80009548 *manager, int index);
@@ -75,8 +76,8 @@ extern "C" {
 UnkCameraManager_80009548 *fn_80009548(void) {
     if (lbl_805EDF94 == 0) {
         if (!lbl_805EDF98) {
-            __register_global_object(fn_8000DC68(s_cameraManagerObject), fn_8000DB9C,
-                                     s_cameraManagerRecord);
+            __register_global_object(__ct__25UnkCameraManager_80009548Fv(s_cameraManagerObject),
+                                     __dt__25UnkCameraManager_80009548Fv, s_cameraManagerRecord);
             lbl_805EDF98 = 1;
         }
         lbl_805EDF94 = (UnkCameraManager_80009548 *)s_cameraManagerObject;

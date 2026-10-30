@@ -27,8 +27,6 @@ void fn_8019B0B0(Enemy *enemy, int target);
 float fn_8019B298(Enemy *enemy, const Vec3f *point);
 /* Turns enemy to the angles at rotation (behaviour inferred). */
 void fn_8019B0F8(Enemy *enemy, const Vec3f *rotation);
-/* Clears the body's flags but bit 2 (in the body's unit; behaviour read from its code). */
-void fn_802875C8(GunBigfoot::GunBigfoot *body);
 /* Vector routines that return their result (they store it through their first argument): v
  * turned about the y axis, a + b. */
 Vec3f fn_8040D0AC(const Vec3f *v, float angle);
@@ -201,7 +199,7 @@ GunBigfootAI::GunBigfootAI() {
 GunBigfootAI::~GunBigfootAI() {}
 
 void GunBigfootAI::vfAI_0x38() {
-    switch (m_body->m_appearType) {
+    switch (m_body->m_params.AppearType) {
     case 0:
         ChangeState(::GunBigfoot::GetWaitCrouchingState());
         break;
@@ -269,7 +267,7 @@ void EnemyAIState_GunBigfootAI_WaitHovering::Update() {
     case 0: {
         fn_8019B0F8(m_ai->m_enemy, &m_ai->m_enemy->field_0x60);
         m_ai->m_enemy->vf_0x10();
-        float width = m_ai->m_body->m_floatWidth;
+        float width = m_ai->m_body->m_params.OffsetPos_Y;
         if (width > 0.1f) {
             float step = 20.0f * m_ai->GetDeltaTime();
             if (m_ai->m_rising) {
@@ -294,7 +292,7 @@ void EnemyAIState_GunBigfootAI_WaitHovering::Update() {
         }
         void *key = m_ai->vfCtrl_0x10();
         if (m_ai->m_enemy->field_0xA8.Contains(key)) {
-            if (m_ai->m_body->m_appearType == 1) {
+            if (m_ai->m_body->m_params.AppearType == 1) {
                 m_ai->m_enemy->m_status->vfStat_0x20(5, true);
                 m_ai->m_body->m_hovering = 0;
                 m_ai->m_step++;
@@ -315,7 +313,7 @@ void EnemyAIState_GunBigfootAI_WaitHovering::Update() {
 void EnemyAIState_GunBigfootAI_WaitHovering::Exit() {}
 
 void EnemyAIState_GunBigfootAI_WaitActAttack::Enter() {
-    m_ai->m_enemy->m_status->vfStat_0x20(m_ai->m_body->vf_0x278(), true);
+    m_ai->m_enemy->m_status->vfStat_0x20(m_ai->m_body->vfPara_0x58(), true);
     m_ai->m_step = 0;
 }
 
@@ -353,7 +351,7 @@ void EnemyAIState_GunBigfootAI_WaitActAttack::Update() {
 void EnemyAIState_GunBigfootAI_WaitActAttack::Exit() {}
 
 void EnemyAIState_GunBigfootAI_GunAttack::Enter() {
-    fn_802875C8(m_ai->m_body);
+    m_ai->m_body->ResetTube();
     m_ai->m_step = -1;
 }
 
@@ -365,7 +363,7 @@ void EnemyAIState_GunBigfootAI_GunAttack::Update() {
     case -1:
         if (m_ai->m_enemy->m_status->vfStat_0x28()) {
             m_ai->m_body->m_aiming = 1;
-            m_ai->m_enemy->m_status->vfStat_0x20(m_ai->m_body->vf_0x278(), true);
+            m_ai->m_enemy->m_status->vfStat_0x20(m_ai->m_body->vfPara_0x58(), true);
             m_ai->m_step = 0;
         }
         break;
@@ -423,7 +421,7 @@ void EnemyAIState_GunBigfootAI_HoverAttack::Update() {
         if (m_ai->IsTimeUp()) {
             m_ai->SetTimer(2.0f);
             m_ai->m_enemy->m_status->vfStat_0x20(8, true);
-            fn_802875C8(m_ai->m_body);
+            m_ai->m_body->ResetTube();
             m_ai->m_step++;
         }
         break;

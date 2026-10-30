@@ -372,11 +372,7 @@ inline void PlaySound(int id) {
 
 /* Builds the story check from the save data (name inferred). */
 inline StoryCheck *NewStoryCheck() {
-    StoryCheck *check = (StoryCheck *)operator new(sizeof(StoryCheck));
-    if (check != 0) {
-        check = fn_801AC1B4(check, fn_800BB74C());
-    }
-    return check;
+    return new StoryCheck(fn_800BB74C());
 }
 
 /* Puts the cursor on the first stage. */

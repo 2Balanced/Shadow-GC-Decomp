@@ -6,6 +6,11 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+#include "Game/UnkCircuitTarget_800ABCE8.h"
+#include "boost/weak_ptr.hpp"
+#endif
+
 class CharCommand;
 class Target;
 
@@ -37,8 +42,17 @@ SIZE_ASSERT(InitializeArgs, 0x8);
  * Player::Behavior::Damage reads it, Game/PlayerBehaviorDamage.cpp.) */
 class InitializeArgsDamage : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_DAMAGE_INLINE
+    /* Inline in the unit that emits the out-of-line copies and the vtable
+     * (Game/SonicTypeExecuter.cpp). */
+    InitializeArgsDamage(const Vec3f &direction) : InitializeArgs(0x1E) {
+        fn_800091EC(&m_direction, &direction);
+    }
+    virtual ~InitializeArgsDamage() {}
+#else
     InitializeArgsDamage(const Vec3f &direction);
     virtual ~InitializeArgsDamage();
+#endif
 
     /* 0x8 */ Vec3f m_direction;
 };
@@ -49,8 +63,17 @@ SIZE_ASSERT(InitializeArgsDamage, 0x14);
  * inferred from Player::Behavior::DarkSpin, which passes the up vector of its path). */
 class InitializeArgsJump : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_JUMP_INLINE
+    /* Inline in the unit that emits the out-of-line copies and the vtable
+     * (Game/PlayerBehaviorElectricCircuit.cpp). */
+    InitializeArgsJump(const Vec3f &direction) : InitializeArgs(5) {
+        fn_800091EC(&m_direction, &direction);
+    }
+    virtual ~InitializeArgsJump() {}
+#else
     InitializeArgsJump(const Vec3f &direction);
     virtual ~InitializeArgsJump();
+#endif
 
     /* 0x8 */ Vec3f m_direction;
 };
@@ -117,7 +140,13 @@ SIZE_ASSERT(InitializeArgsGround, 0xC);
  * Player::Behavior::HomingAttack, which locks on to it). */
 class InitializeArgsHomingAttack : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsHomingAttack(boost::weak_ptr<Target> target)
+        : InitializeArgs(8), m_target(target) {}
+    virtual ~InitializeArgsHomingAttack() {}
+#else
     virtual ~InitializeArgsHomingAttack();
+#endif
 
     /* 0x08 */ boost::weak_ptr<Target> m_target;
 };
@@ -135,6 +164,10 @@ class InitializeArgsHomingJump : public InitializeArgs {
         : InitializeArgs(9), m_direction(direction), m_hit(hit) {}
     virtual ~InitializeArgsHomingJump() {}
 #else
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    /* 0x800857B0, out of line in Game/PlayerBehaviorHomingAttack.cpp. */
+    InitializeArgsHomingJump(const Vec3f &direction, bool hit);
+#endif
     virtual ~InitializeArgsHomingJump();
 #endif
 
@@ -189,7 +222,12 @@ SIZE_ASSERT(InitializeArgsWallJump, 0x20);
  * bit 0x40 (meanings inferred from Player::Behavior::Launch). */
 class InitializeArgsLaunch : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsLaunch(u32 flags) : InitializeArgs(0x17), m_flags(flags) {}
+    virtual ~InitializeArgsLaunch() {}
+#else
     virtual ~InitializeArgsLaunch();
+#endif
 
     /* 0x8 */ u32 m_flags;
 };
@@ -200,7 +238,14 @@ SIZE_ASSERT(InitializeArgsLaunch, 0xC);
  * (names inferred from Player::Behavior::LineHang). */
 class InitializeArgsLineHang : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsLineHang(const boost::weak_ptr<CharInfo> &owner,
+                           boost::weak_ptr<Sonicteam::System::Geometry::Line> line)
+        : InitializeArgs(0xE), m_owner(owner), m_line(line) {}
+    virtual ~InitializeArgsLineHang() {}
+#else
     virtual ~InitializeArgsLineHang();
+#endif
 
     /* 0x08 */ boost::weak_ptr<CharInfo> m_owner;
     /* 0x10 */ boost::weak_ptr<Sonicteam::System::Geometry::Line> m_line;
@@ -212,7 +257,13 @@ SIZE_ASSERT(InitializeArgsLineHang, 0x18);
  * from Player::Behavior::PickupObject, which picks up the target's owner). */
 class InitializeArgsPickupObject : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsPickupObject(const boost::weak_ptr<Target> &target)
+        : InitializeArgs(0x15), m_target(target) {}
+    virtual ~InitializeArgsPickupObject() {}
+#else
     virtual ~InitializeArgsPickupObject();
+#endif
 
     /* 0x08 */ boost::weak_ptr<Target> m_target;
 };
@@ -223,7 +274,14 @@ SIZE_ASSERT(InitializeArgsPickupObject, 0x10);
  * (names and meanings inferred from Player::Behavior::PickupWeapon). */
 class InitializeArgsPickupWeapon : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsPickupWeapon() : InitializeArgs(0x16) {}
+    InitializeArgsPickupWeapon(boost::weak_ptr<CharInfo> weapon)
+        : InitializeArgs(0x16), m_weapon(weapon) {}
+    virtual ~InitializeArgsPickupWeapon() {}
+#else
     virtual ~InitializeArgsPickupWeapon();
+#endif
 
     /* 0x08 */ boost::weak_ptr<CharInfo> m_weapon;
 };
@@ -236,7 +294,15 @@ SIZE_ASSERT(InitializeArgsPickupWeapon, 0x10);
  * Player::Behavior::SomethingHang, which takes the same from TouchHangCommand). */
 class InitializeArgsSomethingHang : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsSomethingHang(const boost::weak_ptr<CharInfo> &target, const Vec3f *position,
+                                const Vec3f *rotation, u32 flags)
+        : InitializeArgs(0xF), m_target(target), m_position(position), m_rotation(rotation),
+          m_flags(flags) {}
+    virtual ~InitializeArgsSomethingHang() {}
+#else
     virtual ~InitializeArgsSomethingHang();
+#endif
 
     /* 0x08 */ boost::weak_ptr<CharInfo> m_target;
     /* 0x10 */ const Vec3f *m_position;
@@ -250,7 +316,13 @@ SIZE_ASSERT(InitializeArgsSomethingHang, 0x1C);
  * it is set (names inferred from Player::Behavior::Throw). */
 class InitializeArgsThrow : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsThrow(const boost::weak_ptr<PickupCharInfo> &object)
+        : InitializeArgs(0xA), m_object(object) {}
+    virtual ~InitializeArgsThrow() {}
+#else
     virtual ~InitializeArgsThrow();
+#endif
 
     /* 0x08 */ boost::weak_ptr<PickupCharInfo> m_object;
 };
@@ -261,7 +333,13 @@ SIZE_ASSERT(InitializeArgsThrow, 0x10);
  * from Player::Behavior::TurnOver, which works on the target's owner). */
 class InitializeArgsTurnOver : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsTurnOver(const boost::weak_ptr<Target> &target)
+        : InitializeArgs(0xB), m_target(target) {}
+    virtual ~InitializeArgsTurnOver() {}
+#else
     virtual ~InitializeArgsTurnOver();
+#endif
 
     /* 0x08 */ boost::weak_ptr<Target> m_target;
 };
@@ -271,7 +349,13 @@ SIZE_ASSERT(InitializeArgsTurnOver, 0x10);
  * switches to riding a vehicle (behavior 0x1B; name inferred from Player::Behavior::DriveVehicle). */
 class InitializeArgsDriveVehicle : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsDriveVehicle(const boost::weak_ptr<Vehicle::TVehicleBase> &vehicle)
+        : InitializeArgs(0x1B), m_vehicle(vehicle) {}
+    virtual ~InitializeArgsDriveVehicle() {}
+#else
     virtual ~InitializeArgsDriveVehicle();
+#endif
 
     /* 0x08 */ boost::weak_ptr<Vehicle::TVehicleBase> m_vehicle;
 };
@@ -284,7 +368,15 @@ SIZE_ASSERT(InitializeArgsDriveVehicle, 0x10);
  * from Player::Behavior::ExternalControl). */
 class InitializeArgsExternalControl : public InitializeArgs {
   public:
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+    InitializeArgsExternalControl(const boost::weak_ptr<CharInfo> &controller,
+                                  const Vec3f *position, const Vec3f *rotation, u32 flags)
+        : InitializeArgs(0x20), m_controller(controller), m_position(position),
+          m_rotation(rotation), m_flags(flags) {}
+    virtual ~InitializeArgsExternalControl() {}
+#else
     virtual ~InitializeArgsExternalControl();
+#endif
 
     /* 0x08 */ boost::weak_ptr<CharInfo> m_controller;
     /* 0x10 */ const Vec3f *m_position;
@@ -292,6 +384,43 @@ class InitializeArgsExternalControl : public InitializeArgs {
     /* 0x18 */ u32 m_flags;
 };
 SIZE_ASSERT(InitializeArgsExternalControl, 0x1C);
+
+#ifdef PLAYER_BEHAVIOR_ARGS_COMMANDS
+/* InitializeArgsGrind, InitializeArgsDarkSpin and InitializeArgsElectricCircuit (class names from
+ * RTTI): the grind (behavior 0x11), the dark spin (0x13) and the electric circuit (0x21) along a
+ * circuit target, as the player commands' unit (Game/PlayerCommands.cpp) builds them; its inline
+ * constructors and destructors have the game's copies. Game/PlayerBehaviorGrind.cpp and
+ * Game/PlayerBehaviorDarkSpin.cpp declare the first two themselves. */
+class InitializeArgsGrind : public InitializeArgs {
+  public:
+    InitializeArgsGrind(const UnkCircuitTarget_800ABCE8 &rail) : InitializeArgs(0x11), m_rail(rail) {}
+    virtual ~InitializeArgsGrind() {}
+
+    /* 0x8 */ UnkCircuitTarget_800ABCE8 m_rail;
+};
+SIZE_ASSERT(InitializeArgsGrind, 0x10);
+
+class InitializeArgsDarkSpin : public InitializeArgs {
+  public:
+    InitializeArgsDarkSpin(const UnkCircuitTarget_800ABCE8 &target)
+        : InitializeArgs(0x13), m_target(target) {}
+    virtual ~InitializeArgsDarkSpin() {}
+
+    /* 0x8 */ UnkCircuitTarget_800ABCE8 m_target;
+};
+SIZE_ASSERT(InitializeArgsDarkSpin, 0x10);
+
+class InitializeArgsElectricCircuit : public InitializeArgs {
+  public:
+    InitializeArgsElectricCircuit(const UnkCircuitTarget_800ABCE8 &target, u8 arg1)
+        : InitializeArgs(0x21), m_target(target), field_0x10(arg1) {}
+    virtual ~InitializeArgsElectricCircuit() {}
+
+    /* 0x08 */ UnkCircuitTarget_800ABCE8 m_target;
+    /* 0x10 */ u8 field_0x10;
+};
+SIZE_ASSERT(InitializeArgsElectricCircuit, 0x14);
+#endif
 
 /* Behavior (class name from RTTI; vtable 0x80520030): the base of a player character's behaviors
  * (Idle, Jump, Grind, ...). The constructor (0x80076C3C) stores the player, the behavior's name and
@@ -322,7 +451,13 @@ class Behavior {
     /* Offered each command the player receives; a behavior marks the ones it takes as handled
      * (CharCommand::Flags() bit 1; argument from Player::Behavior::Super and the behaviors whose
      * slot reads the command type at 0x4, e.g. 0x80083EC0). */
+#ifdef PLAYER_BEHAVIOR_COMMAND_SLOT_INLINE
+    /* Empty and inline where PLAYER_BEHAVIOR_COMMAND_SLOT_INLINE is defined
+     * (Game/SonicTypeExecuter.cpp, whose call emits the copy the game links, 0x80072420). */
+    virtual void vf_0x18(CharCommand *command) {}
+#else
     virtual void vf_0x18(CharCommand *command);
+#endif
     /* The frame update. */
     virtual void Update(float dt) = 0;
     virtual void vf_0x20();
@@ -330,7 +465,11 @@ class Behavior {
     /* 0x04 */ boost::shared_ptr<PlayerBase> m_player;
     /* 0x0C */ const char *m_name;
     /* 0x10 */ s32 m_id;
-    /* 0x14 */ u8 field_0x14[0x1C - 0x14]; /* a weak_ptr (to a class not known) */
+#ifdef PLAYER_BEHAVIOR_SELF
+    /* 0x14 */ boost::weak_ptr<Behavior> m_self; /* (Game/PlayerBehaviorElectricCircuit.cpp) */
+#else
+    /* 0x14 */ u8 field_0x14[0x1C - 0x14]; /* a weak_ptr<Behavior> (destructor 0x80076BA0) */
+#endif
 };
 SIZE_ASSERT(Behavior, 0x1C);
 

@@ -137,7 +137,7 @@ extern "C" void fn_80273A08(void) {}
 extern "C" void fn_80273A04(void) {}
 
 /* The collision's callback: commands the balloon once (name inferred). */
-static void OnTouch(UnkCommandCollisionEvent_8026003C &event) {
+static void OnTouch(CommandCollision::Args &event) {
     GadgetColliDetectArgs *args = event.m_args;
     UnkCommandCollisionParams_80260668 *params = event.m_params;
     u32 *flags = event.m_flags;

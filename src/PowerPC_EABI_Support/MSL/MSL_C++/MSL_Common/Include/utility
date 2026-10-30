@@ -4,6 +4,10 @@
 /* Minimal stand-in for the MSL <utility>. */
 namespace std {
 
+#ifdef MSL_PAIR_COPY_CALL
+inline void __pair_nothing() {}
+#endif
+
 template <class T1, class T2> struct pair {
     typedef T1 first_type;
     typedef T2 second_type;
@@ -14,6 +18,15 @@ template <class T1, class T2> struct pair {
     /* Compiled only where MSL_PAIR_CONVERTING_CONSTRUCTOR is defined before this header
      * (Game/TrigerCounter.cpp): every template declaration advances CodeWarrior's @N counter. */
     template <class U1, class U2> pair(const pair<U1, U2> &p) : first(p.first), second(p.second) {}
+#endif
+
+#ifdef MSL_PAIR_COPY_CALL
+    /* Where MSL_PAIR_COPY_CALL is defined before this header (Game/DeltaMorphAnimManagerTask.cpp),
+     * the copy constructor calls an inline function, so that it stays out of line as the game has
+     * it there. */
+    pair(const pair &p) : first(p.first), second(p.second) {
+        __pair_nothing();
+    }
 #endif
 
     T1 first;

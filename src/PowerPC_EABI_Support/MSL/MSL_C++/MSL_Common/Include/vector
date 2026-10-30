@@ -160,6 +160,12 @@ template <class T, class A> class __vec_base {
     }
 #endif
     void insert_n(iterator position, size_type n, const T &x);
+#if defined(MSL_VECTOR_ERASE_ONE) && defined(MSL_VECTOR_ERASE_ONE_FIRST)
+    /* Where MSL_VECTOR_ERASE_ONE_FIRST is also defined (Game/NpcManageUnit.cpp), erase(position) is
+     * declared before erase(first, last), so it comes out after it, as in the game. */
+  public:
+    iterator erase(iterator position);
+#endif
 #ifdef MSL_VECTOR_ERASE
     /* Only where MSL_VECTOR_ERASE is defined before this header (Game/BasicMessage.cpp). The
      * members defined out of line come out at the end of the unit in reverse declaration order;
@@ -167,7 +173,7 @@ template <class T, class A> class __vec_base {
   public:
     iterator erase(iterator first, iterator last);
 #endif
-#ifdef MSL_VECTOR_ERASE_ONE
+#if defined(MSL_VECTOR_ERASE_ONE) && !defined(MSL_VECTOR_ERASE_ONE_FIRST)
     /* Only where MSL_VECTOR_ERASE_ONE is defined before this header (Game/AdvCsdCache.cpp, which
      * also defines MSL_ALGORITHM_COPY). Declared last, it comes out first of the members defined
      * out of line, as in the game. */
@@ -185,9 +191,9 @@ template <class T, class A> inline void __vec_swap(__vec_base<T, A> &a, __vec_ba
 }
 
 #ifdef MSL_VECTOR_SWAP_GLOBAL
-/* Where MSL_VECTOR_SWAP_GLOBAL is defined before this header (Game/Advertise.cpp), reserve swaps
- * through a static member instead, whose out-of-line copy is a weak global: the game's unit at
- * 0x8025D6FC calls Advertise's copy. */
+/* Where MSL_VECTOR_SWAP_GLOBAL is defined before this header (Game/Advertise.cpp), reserve and
+ * insert_n swap through a static member instead, whose out-of-line copy is a weak global: the
+ * game's unit at 0x8025D6FC (Game/StageEventList.cpp) calls Advertise's copy. */
 template <class T, class A> struct __vec_swap_global {
     static void swap(__vec_base<T, A> &a, __vec_base<T, A> &b) {
         a.swap(b);
@@ -297,7 +303,7 @@ void __vec_base<T, A>::insert_n(iterator position, size_type n, const T &x) {
                 tmp.cap_.first().construct(dest, *src);
                 ++tmp.size_;
             }
-            __vec_swap(tmp, *this);
+            __MSL_VEC_RESERVE_SWAP(tmp, *this);
         }
     }
 }
@@ -384,8 +390,14 @@ template <class T, class A> typename __vec_base<T, A>::iterator __vec_base<T, A>
     if (e - position - 1 != 0) {
         copy(position + 1, e, position);
     }
+#ifdef MSL_VECTOR_ERASE_ONE_DATA
+    /* Where MSL_VECTOR_ERASE_ONE_DATA is also defined (Game/StageEventList.cpp), the last
+     * element is reached through data(), whose call the game makes before the allocator's. */
+    cap_.first().destroy(data() + --size_);
+#else
     A &a = cap_.first();
     a.destroy(data_ + --size_);
+#endif
     return position;
 }
 #endif

@@ -81,7 +81,7 @@ class Advertise : public GameSystem {
     Advertise();
     virtual ~Advertise();
     virtual bool Initialize();
-    virtual bool IsFinished();
+    virtual int IsFinished();
     virtual bool Finalize();
     virtual void Abort();
 
@@ -124,8 +124,8 @@ bool Advertise::Initialize() {
     return true;
 }
 
-bool Advertise::IsFinished() {
-    return m_aborted != 0;
+int Advertise::IsFinished() {
+    return m_aborted ? 1 : 0;
 }
 
 bool Advertise::Finalize() {

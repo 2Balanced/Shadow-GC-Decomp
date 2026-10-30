@@ -64,9 +64,17 @@ template <class T> class __list_iterator {
     T *operator->() const {
         return &node_->data_;
     }
+#ifdef MSL_LIST_DEREF_DIRECT
+    /* Only where MSL_LIST_DEREF_DIRECT is defined before this header (Game/TargetManageTask.cpp,
+     * whose for_each reads the value directly). */
+    T &operator*() const {
+        return node_->data_;
+    }
+#else
     T &operator*() const {
         return *operator->();
     }
+#endif
     __list_iterator &operator++() {
         node_ = static_cast<__list_node<T> *>(node_->next_);
         return *this;
@@ -86,10 +94,49 @@ template <class T> class __list_iterator {
     /* 0x0 */ __list_node<T> *node_;
 };
 
+#ifdef MSL_LIST_RANGE_INSERT
+/* Only where MSL_LIST_RANGE_INSERT is defined before this header (Game/PlayerCharaColliImpl.cpp):
+ * the const iterator, and the range insertion below. Its operator* reads the value directly. */
+template <class T> class __list_const_iterator {
+  public:
+    explicit __list_const_iterator(const __list_node_base *n)
+        : node_(static_cast<const __list_node<T> *>(n)) {}
+
+    const T &operator*() const {
+        return node_->data_;
+    }
+    __list_const_iterator &operator++() {
+        node_ = static_cast<const __list_node<T> *>(node_->next_);
+        return *this;
+    }
+    __list_const_iterator operator++(int) {
+        __list_const_iterator tmp(*this);
+        ++*this;
+        return tmp;
+    }
+    bool operator==(const __list_const_iterator &x) const {
+        return node_ == x.node_;
+    }
+    bool operator!=(const __list_const_iterator &x) const {
+        return node_ != x.node_;
+    }
+
+    /* 0x0 */ const __list_node<T> *node_;
+};
+
+/* The category tag the range insertion dispatches on. */
+struct __list_input_tag {};
+#endif
+
 /* The allocators of the values and of the nodes (an allocation failure aborts). */
 template <class T> class __list_value_allocator {
   public:
     __list_value_allocator() {}
+#ifdef MSL_LIST_RANGE_INSERT
+    bool operator==(const __list_value_allocator &) const {
+        return true;
+    }
+#endif
 
     void construct(T *p, const T &value) {
         new ((void *)p) T(value);
@@ -199,12 +246,18 @@ template <class N, class A, class D> class __list_holder : public __list_holder_
 /* The value allocator and the size (the allocator is empty and takes no room). */
 template <class A, class S> struct __list_size_base : public A {
     __list_size_base(S n) : second_(__list_id(n)) {}
+#ifdef MSL_LIST_RANGE_INSERT
+    __list_size_base(const A &a, S n) : A(a), second_(__list_id(n)) {}
+#endif
 
     /* 0x0 */ S second_;
 };
 
 template <class A, class S> struct __list_size_pair : public __list_size_base<A, S> {
     __list_size_pair(S n) : __list_size_base<A, S>(n) {}
+#ifdef MSL_LIST_RANGE_INSERT
+    __list_size_pair(const A &a, S n) : __list_size_base<A, S>(a, n) {}
+#endif
 
     A &first() {
         return *this;
@@ -229,9 +282,18 @@ template <class A> struct __list_end_pair : public A {
     __list_node_base &second() {
         return second_;
     }
+#ifdef MSL_LIST_RANGE_INSERT
+    const __list_node_base &second() const {
+        return second_;
+    }
+#endif
 
     /* 0x0 */ __list_node_base second_;
 };
+
+#ifdef MSL_LIST_RANGE_INSERT
+template <class T> class list;
+#endif
 
 template <class T> class __list_imp {
   public:
@@ -255,6 +317,52 @@ template <class T> class __list_imp {
     iterator insert(iterator position, const T &x);
     iterator erase(iterator position);
     iterator erase(iterator first, iterator last);
+#ifdef MSL_LIST_RANGE_INSERT
+    typedef __list_const_iterator<T> const_iterator;
+
+    __list_imp(const value_allocator &a) : size_(a, 0), tail_(node_allocator(alloc())) {
+        __list_node_base *t = tail();
+        t->prev_ = t->next_ = t;
+    }
+
+    const_iterator begin() const {
+        return const_iterator(tail()->next_);
+    }
+    const_iterator end() const {
+        return const_iterator(tail());
+    }
+    const __list_node_base *tail() const {
+        return &tail_.second();
+    }
+    /* Inserts [first, last) before position: the new nodes are built in a list of their own, which
+     * is then spliced in. */
+    template <class InputIterator> void insert(iterator position, InputIterator first, InputIterator last) {
+        insert(position, first, last, __list_input_tag());
+    }
+    template <class InputIterator>
+    void insert(iterator position, InputIterator first, InputIterator last, __list_input_tag);
+    void splice(iterator position, __list_imp &x) {
+        do_splice(position, x);
+    }
+    void do_splice(iterator position, __list_imp &x) {
+        if (x.sz() != 0) {
+            if (alloc() == x.alloc()) {
+            }
+            __list_node_base *p;
+            __list_node_base *t = x.tail();
+            __list_node_base *f = t->next_;
+            __list_node_base *l = t->prev_;
+            t->prev_ = t->next_ = t;
+            p = position.node_;
+            p->prev_->next_ = f;
+            f->prev_ = p->prev_;
+            p->prev_ = l;
+            l->next_ = p;
+            sz() += x.sz();
+            x.sz() = 0;
+        }
+    }
+#endif
 #ifdef MSL_LIST_ACCESSORS
     /* Only where MSL_LIST_ACCESSORS is defined before this header (Game/CameraManagerUnit.cpp), so
      * that the other units' instances and local symbols stay as they are. */
@@ -289,7 +397,26 @@ template <class T> class __list_imp {
     /* 0x4 */ __list_end_pair<node_allocator> tail_;
 };
 
+#ifdef MSL_LIST_RANGE_INSERT
+template <class T> class __list_base : public __list_imp<T> {
+  public:
+    __list_base() {}
+    template <class InputIterator>
+    __list_base(InputIterator first, InputIterator last, const typename __list_imp<T>::value_allocator &a)
+        : __list_imp<T>(a) {
+        InputIterator i = first;
+        init(i, last);
+    }
+
+    template <class InputIterator> void init(InputIterator first, InputIterator last) {
+        for (; first != last; ++first) {
+            static_cast<list<T> *>(this)->push_back(*first);
+        }
+    }
+};
+#else
 template <class T> class __list_base : public __list_imp<T> {};
+#endif
 
 template <class T> class list : public __list_base<T> {
   public:
@@ -337,6 +464,15 @@ template <class T> template <class Predicate> void list<T>::remove_if(Predicate 
             }
         }
     }
+}
+#endif
+
+#ifdef MSL_LIST_RANGE_INSERT
+template <class T>
+template <class InputIterator>
+inline void __list_imp<T>::insert(iterator position, InputIterator first, InputIterator last, __list_input_tag) {
+    __list_base<T> tmp(first, last, alloc());
+    splice(position, tmp);
 }
 #endif
 

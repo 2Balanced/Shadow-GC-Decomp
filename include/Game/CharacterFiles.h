@@ -56,11 +56,17 @@ class CharacterFileManager {
     bool IsLoaded(int index);
 
     /* The loader slot of the file of index. */
+#ifdef CHARACTER_FILES_GET_HANDLE_EXTERN
+    /* Declared only: a unit linked before Game/CharacterFiles.cpp would otherwise emit the weak
+     * copy the linker keeps (the game's is 0x8027AB1C; see Game/PlayerShadow.cpp). */
+    s32 GetHandle(int index);
+#else
     s32 GetHandle(int index) {
         s32 handle;
         m_table->GetHandle(index, &handle);
         return handle;
     }
+#endif
 
     /* 0x0 */ boost::scoped_ptr<CharacterFileTable> m_table;
 };

@@ -58,7 +58,9 @@ class CameraModeMtnViewer : public CameraMode {
 
     static CameraMode *Create(UnkCameraOwner_8000E9BC *owner, int screen);
 
-    virtual int GetModeId();
+    virtual int GetModeId() {
+        return -0x3FF;
+    }
     virtual void Update(float dt, UnkCameraUpdateArg_800099B8 *arg);
     virtual void OnSwitch(UnkCameraSwitchArg_8000996C *arg);
     virtual void vf_0x14(UnkCameraArg_800098E4 *arg);
@@ -206,10 +208,4 @@ void CameraModeMtnViewer::vf_0x14(UnkCameraArg_800098E4 *arg) {}
 
 CameraMode *CameraModeMtnViewer::Create(UnkCameraOwner_8000E9BC *owner, int screen) {
     return new CameraModeMtnViewer(owner, screen);
-}
-
-void CameraMode::vf_0x18(int flags) {}
-
-int CameraModeMtnViewer::GetModeId() {
-    return -0x3FF;
 }

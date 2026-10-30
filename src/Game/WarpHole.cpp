@@ -113,9 +113,6 @@ UnkPlacement_800C9CD0 *fn_800CB560(void *list, int id);
 /* Moves character to position, facing along rotation (behaviour inferred). */
 void fn_800B8000(const boost::weak_ptr<CharInfo> &character, const Vec3f *position,
                  const Vec3f *rotation);
-/* boost::dynamic_pointer_cast<Player::Player>(character), a weak instance of the player code (the
- * trimmed boost header leaves out the casts). */
-boost::shared_ptr<Player::Player> fn_8009DC10(const boost::shared_ptr<CharInfo> &character);
 /* A test on the warped character (behaviour unknown). */
 bool fn_800B7AD0(const boost::shared_ptr<CharInfo> &character);
 /* The fader, and its fade out and fade in (behaviour and argument meanings inferred). */
@@ -332,7 +329,7 @@ void SetWarpHole::OnCommand(CharCommand &command) {
                 search.m_owner = m_owner;
                 FindDestination(user, &search);
                 if (search.m_found) {
-                    boost::shared_ptr<Player::Player> player = fn_8009DC10(user);
+                    boost::shared_ptr<Player::Player> player = boost::dynamic_pointer_cast<Player::Player>(user);
                     if (player.get() != 0) {
                         ManagerTask::Instantiate(search.m_position, player, m_id);
                     }

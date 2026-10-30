@@ -30,7 +30,7 @@ class WaitInitialize : public GameSystem {
     WaitInitialize();
     virtual ~WaitInitialize();
     virtual bool Initialize();
-    virtual bool IsFinished();
+    virtual int IsFinished();
     virtual bool Finalize();
     virtual void Abort();
 
@@ -69,7 +69,7 @@ bool WaitInitialize::Initialize() {
     return true;
 }
 
-bool WaitInitialize::IsFinished() {
+int WaitInitialize::IsFinished() {
     m_frames++;
     if (m_frames > 30) {
         GameSystem *next = fn_801E5850(fn_801E2128(), 0);
