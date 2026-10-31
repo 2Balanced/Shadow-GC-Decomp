@@ -1,19 +1,24 @@
 #!/usr/bin/env python3
 """Rank non-matching units by how close they are to becoming `Matching`.
 
-A unit can only be `Matching` when
+`build/<config>/ldscript.lcf` places no unit at a fixed address: MWLD lays the
+inputs out in `configure.py` order, section by section, so a flipped unit only
+has to keep the relinked `main.dol` byte-identical. Its own section sizes may
+therefore differ from the retail split's - the drift is absorbed by the
+Matching units around it, which is how `Game/CameraShake.cpp` (.text 2640 B
+against a 1728 B split) links. What still decides the flip is the byte-for-byte
+check, so this tool reports two things per unit:
 
-  1. its own sections reproduce retail's sizes exactly (the linker script pins
-     every unit at its retail address, so any size drift makes the objects
-     after it overlap), and
-  2. every function and data symbol is fully matched.
+  1. whether every function and data symbol is matched (`--flip` lists those
+     units, and they are the only ones worth trying), and
+  2. the signed size drift against the unit's `splits.txt` ranges, which says
+     how much the link would move if the unit were flipped.
 
-This tool reports both, per unit, straight from `splits.txt`, the relinked
-objects and `build/<config>/report.json`, and sorts units by how much work is
-left. It reads nothing but build output, so it stays clean-room.
+This reads nothing but build output, so it stays clean-room.
 
 Usage:
     python tools/unitstatus.py [Game/Foo ...]     # only units whose name contains one of these
+    python tools/unitstatus.py --flip             # fully matched units, smallest link drift first
     python tools/unitstatus.py [-n 20] [-c] [-a] [-u UNIT] [--sort work|gap|code]
 """
 
@@ -137,6 +142,11 @@ def main():
     parser.add_argument("units", nargs="*", help="only units whose name contains one of these")
     parser.add_argument("-n", type=int, default=0, help="show at most N units")
     parser.add_argument("-c", "--closest", action="store_true", help="only units with zero size gaps")
+    parser.add_argument(
+        "--flip",
+        action="store_true",
+        help="only units whose every symbol is matched (flip candidates), sorted by link drift",
+    )
     parser.add_argument("-a", "--all-units", action="store_true", help="include Matching units")
     parser.add_argument("-u", metavar="UNIT", help="only this unit")
     parser.add_argument("--sort", choices=("work", "gap", "code"), default="work")
@@ -163,10 +173,15 @@ def main():
         ours = sizes.get(unit, {})
         gaps = []
         gap_bytes = 0
-        for section, (start, end) in sorted(ranges.items()):
-            gap = ours.get(section, 0) - (end - start)
+        drift = {}
+        for section in sorted(set(ranges) | set(ours)):
+            if section.startswith(".comment") or section.startswith(".note"):
+                continue  # compiler version strings, never part of the game
+            retail = ranges[section][1] - ranges[section][0] if section in ranges else 0
+            gap = ours.get(section, 0) - retail
+            drift[section] = gap
             if gap:
-                gaps.append((section, end - start, ours.get(section, 0), gap))
+                gaps.append((section, retail, ours.get(section, 0), gap))
             gap_bytes += abs(gap)
         empty = not ours or all(size == 0 for size in ours.values())
         m = measures.get(unit, {})
@@ -187,6 +202,13 @@ def main():
                 "empty": empty,
                 "gap_bytes": gap_bytes,
                 "gaps": gaps,
+                "drift": drift,
+                "all_matched": (
+                    number("total_functions") > 0
+                    and number("matched_functions") == number("total_functions")
+                    and number("matched_data") == number("total_data")
+                    and percent("matched_code_percent") >= 100.0
+                ),
                 "total_code": total_code,
                 "matched_code": matched_code,
                 "code_percent": percent("matched_code_percent"),
@@ -205,12 +227,17 @@ def main():
     else:
         rows.sort(key=lambda r: (-r["total_code"],))
 
-    linkable = sum(1 for r in rows if r["gap_bytes"] == 0)
+    exact = sum(1 for r in rows if r["gap_bytes"] == 0)
+    matched = sum(1 for r in rows if r["all_matched"])
+    scope = "units" if args.all_units else "non-matching units"
     print(
-        f"{len(rows)} non-matching units, {linkable} with retail section sizes "
-        f"(linkable today)\n"
+        f"{len(rows)} {scope}, {exact} whose section sizes already equal retail's, "
+        f"{matched} with every symbol matched (flip candidates)\n"
     )
     shown = rows
+    if args.flip:
+        shown = [r for r in rows if r["all_matched"]]
+        shown.sort(key=lambda r: (sum(abs(g) for g in r["drift"].values()), -r["total_code"]))
     if args.closest:
         shown = [r for r in shown if r["gap_bytes"] == 0]
     if wanted:

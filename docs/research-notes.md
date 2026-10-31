@@ -139,9 +139,13 @@ paths containing `&`; a wrapper script can pin those and pass the install's 8.3 
 - `tools/rename_symbols.py`: applies `0xADDR=Name` renames to `symbols.txt`.
 - `tools/class_catalog.py`: lists the game's C++ classes from their vtables and RTTI records.
 - `tools/unitstatus.py`, `tools/fndiff.py`: per-unit and per-function match status from objdiff.
-  `unitstatus.py` now also says which units could link today: it compares every unit's own section
-  sizes with its `splits.txt` ranges and reports the units with no size gap (`-c`), since the
-  generated linker script pins those sections at retail addresses.
+  `unitstatus.py --flip` lists the units whose every function and data symbol is matched, which are
+  the only units that can become `Matching` (see "Which units can be flipped today"), and it prints
+  each unit's signed section-size drift against its `splits.txt` ranges.
+- `tools/flipcheck.py`: relinks once per candidate unit and keeps only the ones whose `main.dol` is
+  still retail's, so a flip is decided by the byte check rather than by inference.
+- `tools/flipsym.py`: our object versus the retail split object of a whole unit, symbol by symbol,
+  for the units that fail that check.
 - `tools/fnstatus.py`: one row per symbol below 100% (address, size, match %), units ranked by the
   bytes still unmatched, so the cheapest unit to finish is at the top.
 - `tools/fnside.py`: our object versus the retail split object of one symbol, instruction by
@@ -159,16 +163,33 @@ paths containing `&`; a wrapper script can pin those and pass the install's 8.3 
 
 ## Which units can be flipped today
 
-`Object(...)` status only follows the match percentages, but a unit can also only *link* at retail's
-addresses when our object's sections have retail's sizes: `config/GUPE8P/splits.txt` pins every
-unit's `.text`, `.rodata`, `.data`, `.bss`, `.sdata`, `.sdata2`, `.sbss` and `.ctors` ranges, and the
-linker script generated from it places our object at those addresses. `python tools/unitstatus.py -c`
-reports the units where that condition already holds: **3 of the 190 non-matching units**
-(`Game/MemoryCardCrypt`, `Game/EnemyArea`, `Game/PadButtons`), against 187 whose sections are the
-wrong size. Those 187 need their data and function splits corrected (or their source completed to
-the point where the sizes line up) before any amount of per-function work can flip them, so the
-cheapest-per-symbol ranking from `tools/fnstatus.py` is the work list, filtered through
-`unitstatus.py -c`.
+A unit's `Object(...)` status follows its match percentages, and the link only has to keep
+`main.dol` byte-identical: `build/GUPE8P/ldscript.lcf` has a single `MEMORY` origin and lays the
+inputs out in `configure.py` order, section by section, with no per-unit addresses, so
+`config/GUPE8P/splits.txt` ranges constrain the split objects and the report, not the link. Section
+sizes therefore do not have to equal the retail split's - mwldeppc merges the same-named sections of
+the objects, keeps one copy of duplicated template instantiations and drops code nothing references
+(which is what the `FORCEACTIVE` list in the script exists to prevent). `Game/AdvSynopsis.cpp` is the
+surprising case: its object has 3060 bytes of `.text` the retail split object does not have
+(template instantiations of `Chao::CSD::RCPtr` and `boost` that retail's build put in neighbouring
+units), and the relink is still byte-identical.
+
+So the work list is not "units whose sizes already line up" but **units whose every function and
+data symbol is matched**: `python tools/unitstatus.py --flip` prints them, ten of the 190
+non-matching units when this was written, and `python tools/flipcheck.py <unit>.cpp ...` decides
+each one by relinking. Only `Game/AdvSynopsis.cpp` passed, and it is now `Matching`.
+
+For the rest, `python tools/flipsym.py <unit>` says what the byte difference is made of. Two shapes
+show up:
+
+- extra code our build emits and retail's unit does not contain, usually because a helper only
+  exists to force something into a data section: `Game/ResourceManagerTask` adds the 8-byte
+  `ResourceType__Fv` and `TaskType__Fv` `typeid` helpers (they are what creates the RTTI records
+  retail keeps in `.sdata`), and `Game/csdRW` adds nine weak `Chao::CSD` constructors, destructors
+  and allocator calls;
+- data retail has and our source does not produce, which `flipsym.py` prints as the retail object's
+  unnamed `gap_*` symbols - `Game/ResourceManagerTask` is short three `.rodata`, one `.sdata`, one
+  `.sdata2`, one `.sbss` and one `.bss` record this way.
 
 ## Code-generation floors found by probing
 

@@ -247,11 +247,16 @@ python tools/fnstatus.py                      # every symbol below 100%, cheapes
 python tools/fnside.py Game/<Name> <symbol>   # our object vs the retail split, instruction by instruction
 ```
 
-Section sizes matter as well as instruction streams: the generated linker script pins each unit's
-sections at its `config/GUPE8P/splits.txt` addresses, so a unit can only link at retail's addresses
-when our object's sections have retail's sizes. `python tools/unitstatus.py -c` lists the units
-where that already holds (today 3 of the 190 non-matching units); the byte-identical DOL stays the
-authoritative gate.
+Section sizes are *not* the gate, and it is worth checking a fully matched unit before assuming one:
+`build/GUPE8P/ldscript.lcf` puts every input in one `GROUP` in `configure.py` order with no per-unit
+origin, so mwldeppc lays the sections out by itself and folds weak/linkonce duplicates -
+`Game/AdvSynopsis.cpp` carries 3060 bytes more `.text` than its retail split and still links
+byte-identically. What decides a flip is only the byte-for-byte check, so try it with
+`python tools/flipcheck.py Game/<Name>.cpp`, and read `python tools/flipsym.py Game/<Name>` when it
+fails: the difference is usually extra symbols our object defines that the retail split has in a
+neighbouring unit, or data records retail has and our source does not emit.
+`python tools/unitstatus.py --flip` lists the units with every symbol matched, which are the only
+ones worth testing.
 
 When one or two symbols are left, `python tools/uprobe.py -u Game/<Name>` compiles and scores whole
 tables of source spellings against the retail object (probe tables in `probes/`, `--keep NAME`

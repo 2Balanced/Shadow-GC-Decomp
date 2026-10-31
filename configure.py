@@ -399,7 +399,7 @@ config.libs = [
             Object(NonMatching, "Game/AdvStaffRollMovie.cpp"),
             Object(Matching, "Game/AdvStaffRollText.cpp"),
             Object(Matching, "Game/AdvStageTable.cpp"),
-            Object(NonMatching, "Game/AdvSynopsis.cpp"),
+            Object(Matching, "Game/AdvSynopsis.cpp"),
             Object(Matching, "Game/AdvTitle.cpp"),
             Object(Matching, "Game/Advertise.cpp"),
             Object(NonMatching, "Game/ArkCannon.cpp"),
