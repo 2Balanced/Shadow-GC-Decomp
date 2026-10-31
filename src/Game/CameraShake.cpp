@@ -113,7 +113,8 @@ extern "C" void fn_8000EFC0(CameraShake *shake, UnkCameraState_8000AA70 *state, 
         }
         break;
     case 0: {
-        float t = shake->m_frequency * (shake->m_time - (float)fn_803B1618(shake->m_time));
+        float phase = shake->m_time - (float)fn_803B1618(shake->m_time);
+        float t = phase * shake->m_frequency;
         t = t - (float)fn_803B1618(t);
         AssignVector(offset, fn_8040CDA8(up, shake->m_amplitude));
         if (t < 0.25f) {

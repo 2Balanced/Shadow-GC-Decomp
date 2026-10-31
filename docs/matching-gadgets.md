@@ -177,6 +177,11 @@ The pool base symbol at the start of such a section should be the compiler's `@N
   retail's placement; a function-local `static const` gets folded instead.
 - A local `shared_ptr` whose pointer retail reloads from the stack after each call (about 25 sites)
   matches when each call is its own statement (`u32 a = p->Get(0); p->Set(a);`), not nested.
+- A float product of a member load and an inline call result ignores source operand order under
+  GC/2.7: both `(x - (float)fn_803B1618(x)) * freq` and `freq * (x - (float)fn_803B1618(x))` emit
+  `fmuls fD, f_freq, f_sub`, while retail has the operands the other way. Naming the subtraction
+  (`float phase = x - (float)fn_803B1618(x);`) makes `fmuls` follow the source. See
+  `CameraShake.cpp`, `fn_8000EFC0`, which needed this for one instruction.
 - A static callback (`HitCharacter`) defined *before* the constructor is emitted, with its float
   constants, where retail has it.
 - Stack order follows declaration order: earlier locals get higher addresses. If two locals'

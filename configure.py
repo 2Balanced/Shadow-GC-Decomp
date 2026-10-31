@@ -530,7 +530,7 @@ config.libs = [
             Object(Matching, "Game/CameraProjection.cpp"),
             Object(Matching, "Game/CameraRender.cpp"),
             Object(NonMatching, "Game/CameraScreenSet.cpp"),
-            Object(NonMatching, "Game/CameraShake.cpp"),
+            Object(Matching, "Game/CameraShake.cpp"),
             Object(Matching, "Game/CameraState.cpp"),
             Object(Matching, "Game/CameraTargetInfo.cpp"),
             Object(Matching, "Game/CandleStick.cpp"),
