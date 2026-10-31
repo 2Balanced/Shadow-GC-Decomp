@@ -261,10 +261,16 @@ A unit that fails that check with every symbol matched is usually *placed* diffe
 differently: MWCC puts a unit's functions in one `.text` section in the order it emits them and MWLD
 keeps that order, so a unit flips when our definition order puts every function back where retail had
 it. `python tools/dolwhy.py Game/<Name>.cpp` shows that word by word (differing ranges, then branch
-targets resolved through `symbols.txt`), and `python tools/textorder.py Game/<Name>` prints the
-functions of the unit that would not land where retail had them. `python tools/flipsym.py
-Game/<Name>` compares symbol *names*, so read it with care: much of what it calls extra, and the
-`gap_*` records it calls missing, are retail's own copies that the split leaves unnamed.
+targets resolved through `symbols.txt`), `python tools/textorder.py Game/<Name>` prints the sizes of
+the functions of the unit that would not land where retail had them, and
+`python tools/fnorder.py Game/<Name>` lines the two emission orders up by name, which is how the
+`Game/ResourceManagerTask` misplacement was pinned to two functions. For a data section of one unit
+the same comparison is `python tools/dataorder.py Game/<Name> --section .rodata`: retail's unnamed
+tails and holes show up there as `(tail)` and `(hole)` rows, and naming one in the source (the
+`s_unused` arrays of `Game/BlackBull0210.cpp` and `Game/DebugDispCapsule.cpp`) closes it.
+`python tools/flipsym.py Game/<Name>` compares symbol *names*, so read it with care: much of what it
+calls extra, and the `gap_*` records it calls missing, are retail's own copies that the split leaves
+unnamed.
 `docs/research-notes.md` ("Which units can be flipped today") works the two shapes through
 `Game/EnemyMotion` and `Game/ResourceManagerTask`.
 

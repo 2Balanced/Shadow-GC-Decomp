@@ -37,6 +37,11 @@ are listed under `force_active` in `config/GUPE8P/config.yml`.
 | `tools/reset_symbols.py`, `tools/rename_symbols.py` | repo | Reset names to placeholders / apply `0xADDR=Name` renames |
 | `tools/rename_class.py`, `tools/rename_ident.py` | repo | Rename a class or any other identifier in sources and `symbols.txt` (mangled names included) |
 | `tools/unitstatus.py`, `tools/fndiff.py` | repo | Per-unit and per-function match status; side-by-side function diff |
+| `tools/fnstatus.py` | repo | Every symbol below 100% match, one row each, units ranked by how little is left |
+| `tools/flipcheck.py` | repo | Flip one unit to `Matching` in `configure.py`, relink, and keep it only if `main.dol`'s SHA-1 equals retail's |
+| `tools/flipsym.py` | repo | Our object versus the retail split object of a whole unit: missing, extra and size-mismatched symbols |
+| `tools/textorder.py`, `tools/fnorder.py`, `tools/dataorder.py` | repo | What breaks a flip: which functions of a unit would not land at retail's addresses, in retail's order and in ours (`fnorder.py` reads the function symbol values of our single `.text`), and the same section-by-section for one data section |
+| `tools/dolsections.py` | repo | Retail's DOL section table against the sections of the built DOL (`--built-only` for ours), to tell a `.text` drift from a linkinfo-table difference |
 | `tools/class_catalog.py` | repo | List the game's C++ classes from vtables and RTTI |
 | `tools/similarity.py` | repo | How closely our files follow a reference project's same-named files (see CONTRIBUTING.md, References) |
 | `tools/objcompare.py`, `tools/cc_game.sh` | repo | Compile one game unit directly; compare two objects section by section |

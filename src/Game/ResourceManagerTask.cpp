@@ -4,15 +4,20 @@
  * data of its resources through the extern "C" functions below. The unit also holds the game's
  * first copies of the map's shared tree code: stepping an iterator (fn_80012E90) and the
  * rebalancing before a node is unlinked (fn_80013398). File name from the class; other names are
- * inferred. Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first).
+ * inferred.
  *
- * NonMatching: every function and section matches, but two functions are out of place. Retail
- * emits fn_80012E90 and fn_80013398 among the tree's template instances (after comp and after
- * erase), as instances of a template would be; other units call them by these extern "C" names.
- * Written as plain functions, GC/2.7 emits them first; written inline, the iterator's increment
- * stays out of line in fn_80012A30 and they follow their first caller (the same blocker as
- * fn_8000CD64 in Game/CameraFactory.cpp). */
+ * NonMatching: the unit has retail's 64 functions, with its size for every one of them and for
+ * .text as a whole, and 62 of the 64 stand in retail's order. The two shared helpers do not:
+ * retail emits them inside the tree's instance run (fn_80012E90 after value_compare's operator(),
+ * fn_80013398 right after erase), as if they were instances of a template, while GC/2.7 emits
+ * them here as a pair in front of erase_one. Their place does not follow the place their
+ * definitions have in the unit: with the two blocks later in the unit, one of them is emitted
+ * before everything else; as friends of a class template (the shape that fits fn_8000CD64's group
+ * in Game/CameraFactory.cpp) they come out separately but at 24 and 66 of 68, four functions too
+ * many. Retail's data also needs three tails we do not write: 2 B in .rodata after the last string
+ * pool entry, 4 B in .bss after the manager and 3 B in .sdata2 after its pool constant. Its .sdata is
+ * the right size but not the right order: the three RTTI records come before the two tree flags,
+ * where our trailing #include <map_impl> emits the flags first. */
 #define MSL_MAP_ERASE_KEY
 #define MSL_TREE_ERASE_VALUE_INLINE
 #define MSL_TREE_ITERATOR_ASSIGN_CALL
@@ -24,6 +29,151 @@
 #include "size_assert.h"
 #include <map>
 #include <typeinfo>
+
+namespace std {
+
+inline __tree_node_base *__tree_parent(const __tree_node_base *node) {
+    return (__tree_node_base *)(node->parent_ & ~1);
+}
+
+extern "C" {
+/* A node's colour and its setting, and the two rotations (Game/CameraFactory.cpp). */
+bool fn_8000CF60(__tree_node_base *node);
+void fn_8000CF6C(__tree_node_base *node, bool red);
+void fn_8000CF94(__tree_node_base *node, __tree_node_base *&root);
+void fn_8000D014(__tree_node_base *node, __tree_node_base *&root);
+/* Steps an iterator to the next node; declared here so that <map_impl>'s erase and increment can
+ * call it, and defined below along with the rebalancing it uses. */
+void fn_80012E90(__tree_node_base **iterator);
+}
+
+/* Rebalances the tree under root before z is unlinked. */
+extern "C" void fn_80013398(__tree_node_base *z, __tree_node_base *root) {
+    __tree_node_base *y = z;
+    if (z->left_ != 0 && z->right_ != 0) {
+        fn_80012E90(&y);
+    }
+    __tree_node_base *x = y->left_ != 0 ? y->left_ : y->right_;
+    __tree_node_base *xParent = __tree_parent(y);
+    if (x != 0) {
+        x->set_parent(xParent);
+    }
+    bool xLeft;
+    if (y == __tree_parent(y)->left_) {
+        __tree_parent(y)->left_ = x;
+        xLeft = true;
+    } else {
+        __tree_parent(y)->right_ = x;
+        xLeft = false;
+    }
+    bool rebalance = fn_8000CF60(y) == false;
+    if (y != z) {
+        y->parent_ = (z->parent_ & ~1) | (y->parent_ & 1);
+        if (z == __tree_parent(y)->left_) {
+            __tree_parent(y)->left_ = y;
+        } else {
+            __tree_parent(y)->right_ = y;
+        }
+        y->left_ = z->left_;
+        if (y->left_ != 0) {
+            y->left_->set_parent(y);
+        } else {
+            xParent = y;
+        }
+        y->right_ = z->right_;
+        if (y->right_ != 0) {
+            y->right_->set_parent(y);
+        } else {
+            xParent = y;
+        }
+        fn_8000CF6C(y, fn_8000CF60(z));
+        if (root == z) {
+            root = y;
+        }
+    } else if (x == 0 && z == root) {
+        rebalance = false;
+    }
+    if (rebalance) {
+        while (x != root && (x == 0 || fn_8000CF60(x) == false)) {
+            if (xLeft) {
+                __tree_node_base *w = xParent->right_;
+                if (fn_8000CF60(w) == true) {
+                    fn_8000CF6C(w, false);
+                    fn_8000CF6C(xParent, true);
+                    fn_8000D014(xParent, root);
+                    w = xParent->right_;
+                }
+                if ((w->left_ == 0 || fn_8000CF60(w->left_) == false) &&
+                    (w->right_ == 0 || fn_8000CF60(w->right_) == false)) {
+                    fn_8000CF6C(w, true);
+                    x = xParent;
+                    xParent = __tree_parent(xParent);
+                    xLeft = x == xParent->left_;
+                } else {
+                    if (w->right_ == 0 || fn_8000CF60(w->right_) == false) {
+                        fn_8000CF6C(w->left_, false);
+                        fn_8000CF6C(w, true);
+                        fn_8000CF94(w, root);
+                        w = xParent->right_;
+                    }
+                    fn_8000CF6C(w, fn_8000CF60(xParent));
+                    fn_8000CF6C(xParent, false);
+                    fn_8000CF6C(w->right_, false);
+                    fn_8000D014(xParent, root);
+                    x = root;
+                }
+            } else {
+                __tree_node_base *w = xParent->left_;
+                if (fn_8000CF60(w) == true) {
+                    fn_8000CF6C(w, false);
+                    fn_8000CF6C(xParent, true);
+                    fn_8000CF94(xParent, root);
+                    w = xParent->left_;
+                }
+                if ((w->left_ == 0 || fn_8000CF60(w->left_) == false) &&
+                    (w->right_ == 0 || fn_8000CF60(w->right_) == false)) {
+                    fn_8000CF6C(w, true);
+                    x = xParent;
+                    xParent = __tree_parent(xParent);
+                    xLeft = x == xParent->left_;
+                } else {
+                    if (w->left_ == 0 || fn_8000CF60(w->left_) == false) {
+                        fn_8000CF6C(w->right_, false);
+                        fn_8000CF6C(w, true);
+                        fn_8000D014(w, root);
+                        w = xParent->left_;
+                    }
+                    fn_8000CF6C(w, fn_8000CF60(xParent));
+                    fn_8000CF6C(xParent, false);
+                    fn_8000CF6C(w->left_, false);
+                    fn_8000CF94(xParent, root);
+                    x = root;
+                }
+            }
+        }
+        if (x != 0) {
+            fn_8000CF6C(x, false);
+        }
+    }
+}
+
+/* Steps an iterator to the next node. */
+extern "C" void fn_80012E90(__tree_node_base **iterator) {
+    __tree_node_base *node = (*iterator)->right_;
+    if (node != 0) {
+        while (node->left_ != 0) {
+            node = node->left_;
+        }
+        *iterator = node;
+        return;
+    }
+    while (*iterator != __tree_parent(*iterator)->left_) {
+        *iterator = __tree_parent(*iterator);
+    }
+    *iterator = __tree_parent(*iterator);
+}
+
+} // namespace std
 
 /* The resource manager (class name unknown): the resources by number, how many were loading at
  * the last update, and the first number Add tries. */
@@ -58,7 +208,6 @@ void fn_80012A30(ResourceManager *manager, float dt);
 }
 
 const char *ResourceManagerTask::s_taskName = "ResourceManagerTask";
-
 UnkResourceManager_800122D4::UnkResourceManager_800122D4() {
     m_resources.clear();
     m_loading = 0;
@@ -203,159 +352,7 @@ extern "C" ResourceManager *fn_800122D4(void) {
 void ResourceManagerTask::Tick(float dt) {
     fn_80012A30(fn_800122D4(), dt);
 }
-
-/* Not called anywhere: the linker strips it from the game. Retail's .sdata holds the RTTI records
- * of the task and of Resource before insert_unique's result flags; GC/2.7 creates the records after
- * the source is read, so these typeids create them up front, and the flags are named objects
- * defined where <map_impl> is included (see MSL_TREE_BOOL_OBJECTS there). */
-const std::type_info &TaskType() {
-    return typeid(ResourceManagerTask);
-}
-
-const std::type_info &ResourceType() {
-    return typeid(Resource);
-}
-
-namespace std {
-
-inline __tree_node_base *__tree_parent(const __tree_node_base *node) {
-    return (__tree_node_base *)(node->parent_ & ~1);
-}
-
-extern "C" {
-/* A node's colour and its setting, and the two rotations (Game/CameraFactory.cpp). */
-bool fn_8000CF60(__tree_node_base *node);
-void fn_8000CF6C(__tree_node_base *node, bool red);
-void fn_8000CF94(__tree_node_base *node, __tree_node_base *&root);
-void fn_8000D014(__tree_node_base *node, __tree_node_base *&root);
-}
-
-/* Steps an iterator to the next node. */
-extern "C" void fn_80012E90(__tree_node_base **iterator) {
-    __tree_node_base *node = (*iterator)->right_;
-    if (node != 0) {
-        while (node->left_ != 0) {
-            node = node->left_;
-        }
-        *iterator = node;
-        return;
-    }
-    while (*iterator != __tree_parent(*iterator)->left_) {
-        *iterator = __tree_parent(*iterator);
-    }
-    *iterator = __tree_parent(*iterator);
-}
-
-/* Rebalances the tree under root before z is unlinked. */
-extern "C" void fn_80013398(__tree_node_base *z, __tree_node_base *root) {
-    __tree_node_base *y = z;
-    if (z->left_ != 0 && z->right_ != 0) {
-        fn_80012E90(&y);
-    }
-    __tree_node_base *x = y->left_ != 0 ? y->left_ : y->right_;
-    __tree_node_base *xParent = __tree_parent(y);
-    if (x != 0) {
-        x->set_parent(xParent);
-    }
-    bool xLeft;
-    if (y == __tree_parent(y)->left_) {
-        __tree_parent(y)->left_ = x;
-        xLeft = true;
-    } else {
-        __tree_parent(y)->right_ = x;
-        xLeft = false;
-    }
-    bool rebalance = fn_8000CF60(y) == false;
-    if (y != z) {
-        y->parent_ = (z->parent_ & ~1) | (y->parent_ & 1);
-        if (z == __tree_parent(y)->left_) {
-            __tree_parent(y)->left_ = y;
-        } else {
-            __tree_parent(y)->right_ = y;
-        }
-        y->left_ = z->left_;
-        if (y->left_ != 0) {
-            y->left_->set_parent(y);
-        } else {
-            xParent = y;
-        }
-        y->right_ = z->right_;
-        if (y->right_ != 0) {
-            y->right_->set_parent(y);
-        } else {
-            xParent = y;
-        }
-        fn_8000CF6C(y, fn_8000CF60(z));
-        if (root == z) {
-            root = y;
-        }
-    } else if (x == 0 && z == root) {
-        rebalance = false;
-    }
-    if (rebalance) {
-        while (x != root && (x == 0 || fn_8000CF60(x) == false)) {
-            if (xLeft) {
-                __tree_node_base *w = xParent->right_;
-                if (fn_8000CF60(w) == true) {
-                    fn_8000CF6C(w, false);
-                    fn_8000CF6C(xParent, true);
-                    fn_8000D014(xParent, root);
-                    w = xParent->right_;
-                }
-                if ((w->left_ == 0 || fn_8000CF60(w->left_) == false) &&
-                    (w->right_ == 0 || fn_8000CF60(w->right_) == false)) {
-                    fn_8000CF6C(w, true);
-                    x = xParent;
-                    xParent = __tree_parent(xParent);
-                    xLeft = x == xParent->left_;
-                } else {
-                    if (w->right_ == 0 || fn_8000CF60(w->right_) == false) {
-                        fn_8000CF6C(w->left_, false);
-                        fn_8000CF6C(w, true);
-                        fn_8000CF94(w, root);
-                        w = xParent->right_;
-                    }
-                    fn_8000CF6C(w, fn_8000CF60(xParent));
-                    fn_8000CF6C(xParent, false);
-                    fn_8000CF6C(w->right_, false);
-                    fn_8000D014(xParent, root);
-                    x = root;
-                }
-            } else {
-                __tree_node_base *w = xParent->left_;
-                if (fn_8000CF60(w) == true) {
-                    fn_8000CF6C(w, false);
-                    fn_8000CF6C(xParent, true);
-                    fn_8000CF94(xParent, root);
-                    w = xParent->left_;
-                }
-                if ((w->left_ == 0 || fn_8000CF60(w->left_) == false) &&
-                    (w->right_ == 0 || fn_8000CF60(w->right_) == false)) {
-                    fn_8000CF6C(w, true);
-                    x = xParent;
-                    xParent = __tree_parent(xParent);
-                    xLeft = x == xParent->left_;
-                } else {
-                    if (w->left_ == 0 || fn_8000CF60(w->left_) == false) {
-                        fn_8000CF6C(w->right_, false);
-                        fn_8000CF6C(w, true);
-                        fn_8000D014(w, root);
-                        w = xParent->left_;
-                    }
-                    fn_8000CF6C(w, fn_8000CF60(xParent));
-                    fn_8000CF6C(xParent, false);
-                    fn_8000CF6C(w->left_, false);
-                    fn_8000CF94(xParent, root);
-                    x = root;
-                }
-            }
-        }
-        if (x != 0) {
-            fn_8000CF6C(x, false);
-        }
-    }
-}
-
-} // namespace std
-
+/* Retail's .sdata holds the RTTI records of the task and of Resource before insert_unique's result
+ * flags; GC/2.7 emits those records with the two vtables, and the flags are named objects defined
+ * where <map_impl> is included (see MSL_TREE_BOOL_OBJECTS there). */
 #include <map_impl>
