@@ -8,7 +8,9 @@
  * File name inferred from the class (as Game/DevilDoomModeCtrlUnit.cpp). Field and helper names
  * are inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first); the mode units' constructors are inline and are emitted after CreateMode,
- * their first user. */
+ * their first user. BlackBull0210ModeCtrlUnit_WAIT's constructor keeps the quotient of its two
+ * (int) casts in one float variable, which is what makes both fctiwz conversions reuse the same
+ * scratch frame slot; writing the casts inline puts the second one 8 bytes higher. */
 #include "Effect/System/EffectElement.h"
 #include "Game/BlackBull0210CtrlUnit.h"
 #include "Game/BlackBullCtrlUnit.h"
@@ -194,11 +196,16 @@ class BlackBull0210ModeCtrlUnit_WAIT : public BlackBull0210CtrlUnit {
             m_time = m_owner->m_waitTime;
         }
         m_owner->m_arrived = 0;
+        /* Both (int) casts share one float temporary: the fctiwz scratch then lands on the same
+         * frame slot in both arms, as in retail. */
         int point;
+        float ratio;
         if (HealthRatio(m_owner) <= 0.5f) {
-            point = (int)((m_owner->m_angle + lbl_805FAD38) / (lbl_805FAD38 / 2.0f)) * 2 + 1;
+            ratio = (m_owner->m_angle + lbl_805FAD38) / (lbl_805FAD38 / 2.0f);
+            point = (int)ratio * 2 + 1;
         } else {
-            point = (int)((1.125f * lbl_805FAD38 + m_owner->m_angle) / (lbl_805FAD38 / 4.0f));
+            ratio = (1.125f * lbl_805FAD38 + m_owner->m_angle) / (lbl_805FAD38 / 4.0f);
+            point = (int)ratio;
         }
         if (point < 0) {
             point += 8;

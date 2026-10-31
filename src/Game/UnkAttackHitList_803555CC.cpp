@@ -43,7 +43,11 @@ bool UnkAttackHit_803556FC::Is(const boost::weak_ptr<CharaColliAttack> &attack) 
 
 /* Constructs and destroys a list. NonMatching: the game constructs the list without a null check
  * (as a constructor of a class holding it would), which a placement new always has under GC/2.7;
- * other units call this by its extern "C" name, so it cannot be that constructor. */
+ * other units call this by its extern "C" name, so it cannot be that constructor. Twelve retail
+ * objects reference that name (twelve `to_03_*' units, Game/PlayerBarrierHeatEffect.cpp,
+ * Game/TVehicleCarMove.cpp and Game/VehicleWalker.cpp), so the wrapper has to keep it, and the
+ * constructor it calls (0x803555FC) cannot be declared by name either: its symbol is
+ * `__ct__Q23std29list<21UnkAttackHit_803556FC>Fv', which is not an identifier. */
 extern "C" UnkAttackHitList_803555CC *fn_803555CC(UnkAttackHitList_803555CC *hits) {
     new (hits) UnkAttackHitList_803555CC;
     return hits;

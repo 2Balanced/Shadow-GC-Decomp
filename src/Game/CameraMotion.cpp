@@ -37,7 +37,13 @@ int fn_8001188C(float *value, UnkCameraTrack_8000F9E8 *track, float frame);
 float fn_8000F3D4(float x);
 }
 
-/* Evaluates motion at frame into state. */
+/* Evaluates motion at frame into state.
+ * NonMatching (30 instructions in two runs): register allocation floor. Retail keeps the loop's
+ * registers count in r27, state in r28, i in r29 and the tracks in r30; GC/2.7 gives state r27,
+ * i r28, count r29 and the tracks r30 no matter how the loop is written. Fourteen shapes tried
+ * (count in the condition, the index form, m_set = 0 before the loop, count after m_set, s32 and
+ * u32 loop variables, i declared outside the for, i != count, ++i, the tracks indexed), every one
+ * leaves the same two runs or makes the diff larger. */
 extern "C" void fn_8000F9E8(UnkCameraMotionState_8000F9E8 *state, UnkCameraMotion_8000F9E8 *motion, float frame) {
     UnkCameraTrack_8000F9E8 *track = motion->m_tracks;
     int count = motion->m_trackCount;

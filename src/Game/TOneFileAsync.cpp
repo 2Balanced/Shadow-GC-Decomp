@@ -7,11 +7,10 @@
  * units declare it as UnkOneFile_8004CFB0 and call its functions by these fn_ names). Names other
  * than the classes' are inferred. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first). The manager is written as a class template: its members
- * then come out with the template instances at the end of the unit, as in retail.
- *
- * NonMatching (102/103; every section's data matches): fn_8004CA98 (99.6%) computes data + 0xC into
- * a volatile register where retail reuses the parameter's (two instructions); about 15 source
- * shapes were tried. */
+ * then come out with the template instances at the end of the unit, as in retail. fn_8004CA98
+ * advances its `data` parameter with an integer addition ((u8 *)((u32)data + 12)), which is what
+ * keeps the sum in the parameter's register; every pointer-arithmetic form tried used a scratch
+ * register for it. */
 #define MSL_ALGORITHM_COPY
 #define MSL_ALGORITHM_OUTLINE
 #define MSL_VECTOR_MIDDLE
@@ -625,10 +624,12 @@ bool fn_8004CAF8(const UnkOneFile_8004CFB0 *file) {
 bool fn_8004CA98(UnkOneFile_8004CFB0 *file, u8 *data, u32 size) {
     fn_8004CB20(file);
     file->m_data = data;
-    data += 0xC;
     file->m_size = size;
+    /* The +12 is written as an integer addition: that is what makes GC/2.7 advance the parameter's
+     * own register (addi r30,r30,12) instead of keeping the sum in a scratch one. */
+    data = (u8 *)((u32)data + 12);
     file->m_ownData = data;
-    file->m_ownSize = size - 0xC;
+    file->m_ownSize = size - 12;
     file->m_toc = (UnkOneFileToc_8004CFB0 *)file->m_ownData;
     fn_8004CD10(file);
     return true;

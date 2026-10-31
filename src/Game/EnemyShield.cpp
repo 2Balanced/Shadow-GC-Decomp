@@ -142,7 +142,12 @@ UnkEnemyShield_801A7E1C::UnkEnemyShield_801A7E1C(Enemy *enemy)
     fn_8040E970(&m_rotation);
 }
 
-/* Loads the model and hangs it from bone of the enemy. */
+/* Loads the model and hangs it from bone of the enemy.
+ * NonMatching (6 instructions): register allocation floor. Retail keeps bone in r4, copies it to
+ * r5 at the call (mr r5,r4) and loads the model's slot into r0 (lwz r0,36(r3)); GC/2.7 moves bone
+ * to r0 in the prologue (mr r0,r4) and reads the slot into r4 (lwz r4,36(r3)). Five shapes tried
+ * (a named slot local, the fn_801A3CE4 call written directly, a named EnemyMotionTable pointer, a
+ * named model pointer, re-reading the member), all compile byte-identical. */
 void UnkEnemyShield_801A7E1C::Setup(const EnemyMotionTable &table, int bone) {
     if (m_enemy != 0) {
         LoadModel(&m_model, m_enemy->m_motionBase, table);
