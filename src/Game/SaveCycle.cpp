@@ -6,10 +6,9 @@
  * are not original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 54 of 55 functions match. fn_802E3E44 differs by two swapped instructions: retail
- * loads card->m_phase above the store of the link register (lwz r3, 0(r3) before stw r0,
- * 0x14(r1)); GC/2.7 does not for any source form tried (see Game/VehiclePathMove.cpp and
- * Game/CameraScreenSet.cpp). The data sections match. */
+ * Matching: all 55 functions and all data sections match; fn_802E3E44 needed a const parameter
+ * (see its definition) so that GC/2.7 loads card->m_phase above the store of the link register, as
+ * retail does. */
 #include <boost/scoped_ptr.hpp>
 
 #include "Game/MemoryCardCtrl.h"
@@ -137,7 +136,9 @@ extern "C" void fn_802E3E7C(UnkMemoryCard_802E472C *card) {
     }
 }
 
-extern "C" void fn_802E3E44(UnkMemoryCard_802E472C *card) {
+/* The parameter is const (as in the wrappers of Game/VehicleBirdPath.cpp): only then does GC/2.7
+ * read card->m_phase above the store of the link register, the way retail does. */
+extern "C" void fn_802E3E44(const UnkMemoryCard_802E472C *card) {
     if (card->m_phase) {
         card->m_phase->Draw();
     }

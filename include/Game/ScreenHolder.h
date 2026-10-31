@@ -73,7 +73,6 @@ class UnkScreenHolder_8000DCC0 {
     void PlaceCameraFor(int player);
     void SetViewport(int viewport);
     void SetLayout(int layout);
-    int GetViewport(int player);
     void CreateScreens();
 
     /* 0x00 */ UnkScreen_8000DCC0 *m_camera;
@@ -89,5 +88,11 @@ class UnkScreenHolder_8000DCC0 {
     /* 0x38 */ Mtx34f m_placement;
 };
 SIZE_ASSERT(UnkScreenHolder_8000DCC0, 0x68);
+
+/* The viewport index for a player under the current layout (0x80271D8C). The holder is const here:
+ * GC/2.7 only loads m_layout above the store of the link register, as retail does, for a const
+ * object parameter (see Game/CameraScreenSet.cpp). */
+extern "C" int GetViewport__24UnkScreenHolder_8000DCC0Fi(const UnkScreenHolder_8000DCC0 *holder,
+                                                         int player);
 
 #endif

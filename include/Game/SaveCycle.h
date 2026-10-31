@@ -146,7 +146,7 @@ extern "C" {
  * whether the card can be used. */
 void fn_802E3E7C(UnkMemoryCard_802E472C *card);
 bool fn_802E3E34(UnkMemoryCard_802E472C *card);
-void fn_802E3E44(UnkMemoryCard_802E472C *card);
+void fn_802E3E44(const UnkMemoryCard_802E472C *card);
 u8 fn_802E4784(void);
 }
 

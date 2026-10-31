@@ -3,8 +3,10 @@
  * the screen's sizes. The file name and the names of the members are inferred. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * Not matching yet: GetViewport (0x80271D8C) loads m_layout before saving the link register in
- * retail; GC/2.7 saves it first under every form tried (3.0a3 loads first but tail-calls). */
+ * Matching: all 59 functions and all data match. GetViewport (0x80271D8C) reads m_layout above the
+ * store of the link register, which GC/2.7 only does for a const object parameter; since a const
+ * member function would mangle to GetViewport__24UnkScreenHolder_8000DCC0CFi, it is written as an
+ * extern "C" function over the (const) holder, which its callers use the same way. */
 #define MSL_VECTOR_MIDDLE
 #define MSL_VECTOR_AT
 #define MSL_VECTOR_DESTROY_ALL_LATE
@@ -113,8 +115,9 @@ void UnkScreenHolder_8000DCC0::CreateScreens() {
     }
 }
 
-int UnkScreenHolder_8000DCC0::GetViewport(int player) {
-    return fn_80272EC0(m_layout, player);
+extern "C" int GetViewport__24UnkScreenHolder_8000DCC0Fi(const UnkScreenHolder_8000DCC0 *holder,
+                                                         int player) {
+    return fn_80272EC0(holder->m_layout, player);
 }
 
 void UnkScreenHolder_8000DCC0::SetLayout(int layout) {

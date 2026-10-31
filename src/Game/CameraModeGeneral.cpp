@@ -76,10 +76,11 @@ struct UnkScreen_8000DCC0 {
 /* The game's screen (see Game/ScreenHolder.h; a reduced view as in Game/ScreenViewport.cpp). */
 class UnkScreenHolder_8000DCC0 {
   public:
-    int GetViewport(int player);
-
     /* 0x00 */ UnkScreen_8000DCC0 *m_camera;
 };
+
+extern "C" int GetViewport__24UnkScreenHolder_8000DCC0Fi(const UnkScreenHolder_8000DCC0 *holder,
+                                                         int player);
 
 /* A sphere and a line for the collision queries (see Game/EggMecaCtrlUnit.cpp). */
 struct UnkSphere_80021C04 {
@@ -567,7 +568,8 @@ void UnkGeneralCamera_801C4594::OnSwitch(UnkCameraSwitchArg_8000996C *arg) {
                 fn_801C455C(m_state.m_fov, camera->m_fov) &&
                 fn_8000AD08(&m_state.m_up, &camera->m_up)) {
                 if (IsOnScreen(&m_state, &LookAt(), &m_offset,
-                               fn_8000DCC0()->GetViewport(m_number))) {
+                               GetViewport__24UnkScreenHolder_8000DCC0Fi(fn_8000DCC0(),
+                                                                        m_number))) {
                     fn_8000EC44(arg, 0, 0);
                 }
             }
@@ -1066,7 +1068,8 @@ void UnkGeneralCamera_801C4594::ScreenOffset(float dt) {
     if (fn_80014E34(&m_flags.m_bits, 1) && m_stickY < 0.0f) {
         Vec3f screen;
         fn_800091EC(&screen, &(const Vec3f &)fn_8000F57C(&m_state, &LookAt(),
-                                                          fn_8000DCC0()->GetViewport(m_number)));
+                                                         GetViewport__24UnkScreenHolder_8000DCC0Fi(
+                                                             fn_8000DCC0(), m_number)));
         float scale = 0.0f;
         if (m_stickRate.x < scale && m_stickRate.y < scale) {
             scale = fn_80070494(m_stickRate.x, m_stickRate.y);
@@ -1095,7 +1098,7 @@ extern "C" const Vec2f *fn_801C2508(const UnkCameraState_8000AA70 *state) {
 }
 
 void UnkGeneralCamera_801C4594::Frame(float dt) {
-    int viewport = fn_8000DCC0()->GetViewport(m_number);
+    int viewport = GetViewport__24UnkScreenHolder_8000DCC0Fi(fn_8000DCC0(), m_number);
     Vec3f screen;
     fn_800091EC(&screen, &(const Vec3f &)fn_8000F57C(&m_state, &LookAt(), viewport));
     Vec2f position(screen.x, screen.y);

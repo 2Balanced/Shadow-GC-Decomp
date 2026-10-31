@@ -5,12 +5,12 @@
  * emits functions last-defined first). The unit starts after Game/PlayerBehaviorWallJump.cpp and
  * ends with its __sinit (0x80094074, the .ctors entry at 0x804A9CDC).
  *
- * NonMatching: 19 of 24 functions match. fn_8009325C, fn_800936F4, fn_80093C60 and fn_80093FC0
- * differ by two swapped instructions: retail loads the player pointer (lwz rN, 0(r3)) above the
- * store of the link register or the copy of r3, which GC/2.7 does not do for any form tried (as
- * fn_80334480 of Game/VehiclePathMove.cpp). fn_8009339C (89%) keeps the player pointer in r31
- * and reaches the tilt quaternion through a copy of it in r4; GC/2.7 allocates the registers
- * differently. */
+ * NonMatching: 23 of 24 functions match. fn_8009325C, fn_800936F4, fn_80093C60 and fn_80093FC0 read
+ * the player pointer (lwz rN, 0(r3)) above the store of the link register or the copy of r3, as in
+ * fn_80334480 of Game/VehiclePathMove.cpp; GC/2.7 does that with a const object parameter, so the
+ * four are declared that way here (callers in other units may declare them either way). fn_8009339C
+ * (89%) keeps the player pointer in r31 and reaches the tilt quaternion through a copy of it in
+ * r4; GC/2.7 allocates the registers differently. */
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
 #include "Game/Player.h"
@@ -183,7 +183,7 @@ extern "C" void fn_80094070(void) {
  * the player has no pad). */
 extern "C" Vec3f fn_80093F74(UnkCameraManager_80009548 *manager, int index);
 
-extern "C" Vec3f fn_80093FC0(boost::shared_ptr<PlayerBase> *player) {
+extern "C" Vec3f fn_80093FC0(const boost::shared_ptr<PlayerBase> *player) {
     if (Fields(player->px)->m_pad != -1) {
         UnkCameraManager_80009548 *manager = fn_80009548();
         Vec3f input;
@@ -241,7 +241,7 @@ extern "C" Vec3f fn_80093D34(boost::shared_ptr<PlayerBase> *player, const Vec3f 
 }
 
 /* Where direction points relative to the player: 0 ahead, 3 behind, 1 and 2 to the sides. */
-extern "C" int fn_80093C60(boost::shared_ptr<PlayerBase> *player, const Vec3f *direction) {
+extern "C" int fn_80093C60(const boost::shared_ptr<PlayerBase> *player, const Vec3f *direction) {
     Vec3f front;
     fn_800091EC(&front, &(const Vec3f &)fn_800796DC((*player).px));
     if (fn_8040CF90(&front, direction) > 0.70710677f) {
@@ -363,7 +363,7 @@ extern "C" void fn_80093728(Vec3f *position, Vec3f *velocity, const Vec3f *accel
 }
 
 /* Moves the player. */
-extern "C" void fn_800936F4(boost::shared_ptr<PlayerBase> *player, float dt) {
+extern "C" void fn_800936F4(const boost::shared_ptr<PlayerBase> *player, float dt) {
     UnkPlayerFields_800930AC *fields = Fields(player->px);
     fn_80093728(&fields->m_position, &fields->m_velocity, &fields->m_acceleration, &fields->m_up,
                 fields->m_stateBits, dt);
@@ -463,7 +463,7 @@ extern "C" void fn_800932B4(boost::shared_ptr<PlayerBase> *player) {
 }
 
 /* How strongly the shadow shows. */
-extern "C" float fn_8009325C(boost::shared_ptr<PlayerBase> *player) {
+extern "C" float fn_8009325C(const boost::shared_ptr<PlayerBase> *player) {
     UnkShadow_8009368C *shadow = Fields(player->px)->m_shadow;
     float strength;
     if (shadow->m_visible) {

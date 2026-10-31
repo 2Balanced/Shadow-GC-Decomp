@@ -96,10 +96,10 @@ struct ScreenRect {
     ScreenPoint size;
 };
 
-/* The game's screen (see Game/ScreenHolder.h; only the member used here). */
+/* The game's screen (see Game/ScreenHolder.h; only the members used here). */
 class UnkScreenHolder_8000DCC0 {
   public:
-    int GetViewport(int player);
+    /* 0x20 */ int m_layout;
 };
 
 /* Set while the game is paused (as in Game/CameraManagerUnit.cpp; meaning inferred). */
@@ -121,6 +121,8 @@ Task *fn_801EB304(void *root, int layer);
 boost::shared_ptr<Render> fn_8004E24C(void *arg0);
 UnkObject_80074470 *fn_80074470(void);
 UnkScreenHolder_8000DCC0 *fn_8000DCC0(void);
+/* The viewport index for a player under the current layout (0x80271D8C; see Game/ScreenHolder.h). */
+s32 GetViewport__24UnkScreenHolder_8000DCC0Fi(const UnkScreenHolder_8000DCC0 *holder, int player);
 /* A viewport's rectangle, and a rectangle's left and top edges (behaviour inferred). */
 const ScreenRect *fn_80272E7C(int viewport);
 s32 fn_8000F850(const ScreenRect *rect);
@@ -242,7 +244,7 @@ void Icon::Draw(RednerDrawArgs &args) {
     if (fn_80074470()->m_mode == 5) {
         return;
     }
-    int viewport = fn_8000DCC0()->GetViewport(m_unit->m_player);
+    int viewport = GetViewport__24UnkScreenHolder_8000DCC0Fi(fn_8000DCC0(), m_unit->m_player);
     if (viewport == -1) {
         return;
     }

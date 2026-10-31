@@ -5,10 +5,9 @@
  * addresses, so they keep C names. Member and function names are inferred. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 55 of 57 functions and all data match. fn_802CD5CC and fn_802CD5F0 differ by two
- * swapped instructions: retail loads render->m_impl above the store of the link register (lwz r3,
- * 0(r3) before stw r0, 0x14(r1)); GC/2.7 does not, for every source form tried (the same
- * difference as fn_80334480 in Game/VehiclePathMove.cpp). */
+ * Matching: all 57 functions and all data match; the last two forwarders needed a const parameter
+ * (see their definitions) so that GC/2.7 loads render->m_impl above the store of the link register,
+ * as retail does. */
 #include "Game/EnemyRender.h"
 #include "boost/shared_ptr.hpp"
 
@@ -299,11 +298,13 @@ float fn_802CD614(EnemyRender *render) {
     return render->m_impl->GetScale();
 }
 
-void fn_802CD5F0(EnemyRender *render) {
+/* Both are const (as in the wrappers of Game/VehicleBirdPath.cpp): only then does GC/2.7 read
+ * render->m_impl above the store of the link register, the way retail does. */
+void fn_802CD5F0(const EnemyRender *render) {
     fn_801A3AFC(&render->m_impl->m_model);
 }
 
-void fn_802CD5CC(EnemyRender *render) {
+void fn_802CD5CC(const EnemyRender *render) {
     fn_801A3AA0(&render->m_impl->m_model);
 }
 

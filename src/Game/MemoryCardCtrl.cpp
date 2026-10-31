@@ -1846,8 +1846,10 @@ extern "C" s32 fn_80298EB4(TMemoryCardCtrl *ctrl) {
     return ctrl->m_result;
 }
 
-/* Whether the card has room for the file. */
-extern "C" bool fn_80298E88(TMemoryCardCtrl *ctrl) {
+/* Whether the card has room for the file. The parameter is const (as in the wrappers of
+ * Game/VehicleBirdPath.cpp): only then does GC/2.7 read ctrl->m_card above the store of the link
+ * register, the way retail does. */
+extern "C" bool fn_80298E88(const TMemoryCardCtrl *ctrl) {
     return ctrl->m_card->HasRoom(ctrl->m_imageSize);
 }
 
@@ -1855,7 +1857,7 @@ extern "C" void fn_80298E80(TMemoryCardCtrl *ctrl, u8 checkStamp) {
     ctrl->m_checkStamp = checkStamp;
 }
 
-extern "C" s32 fn_80298E5C(TMemoryCardCtrl *ctrl) {
+extern "C" s32 fn_80298E5C(const TMemoryCardCtrl *ctrl) {
     return ctrl->m_card->GetStatus();
 }
 

@@ -4,10 +4,9 @@
  * its up and forward vectors. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 12 of 13 functions match. fn_80334480 differs by two swapped instructions: retail
- * loads mover->m_impl above the store of the link register (lwz r3, 0(r3) before stw r0, 0x14(r1));
- * GC/2.7 does not, for every source form tried, while it matches the two-argument forwarders
- * beside it. */
+ * Matching: all 13 functions and all data match; fn_80334480 needed a const parameter (see its
+ * definition) so that GC/2.7 loads mover->m_impl above the store of the link register, as retail
+ * does. */
 #include <boost/scoped_ptr.hpp>
 
 #include "Game/PathCtrl.h"
@@ -135,8 +134,10 @@ extern "C" bool fn_803344A4(UnkPathMover_803345C4 *mover, float distance) {
     return mover->m_impl->Propagate(distance);
 }
 
-/* Reads the position and the forward and up vectors; any may be null (name inferred). */
-extern "C" void fn_80334480(UnkPathMover_803345C4 *mover, Vec3f *position, Vec3f *forward,
+/* Reads the position and the forward and up vectors; any may be null (name inferred). The
+ * parameter is const (as in the wrappers of Game/VehicleBirdPath.cpp): only then does GC/2.7 read
+ * mover->m_impl above the store of the link register, the way retail does. */
+extern "C" void fn_80334480(const UnkPathMover_803345C4 *mover, Vec3f *position, Vec3f *forward,
                             Vec3f *up) {
     mover->m_impl->GetPlacement(position, forward, up);
 }

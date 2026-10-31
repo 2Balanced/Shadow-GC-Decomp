@@ -102,7 +102,7 @@ extern "C" void fn_8000F654(Vec3f *out, const Vec3f *point, int index) {
     UnkScreenHolder_8000DCC0 *screen = fn_8000DCC0();
     const Mtx34f *view = ViewMatrix(manager, index);
     const Vec2f *window = ViewWindow(manager, index);
-    s32 viewport = screen->GetViewport(index);
+    s32 viewport = GetViewport__24UnkScreenHolder_8000DCC0Fi(screen, index);
     Vec2f scale;
     fn_80272DB0(&scale, viewport);
     Vec3f local;

@@ -41,7 +41,7 @@ extern "C" {
  * inferred). */
 void fn_802E3E7C(UnkMemoryCard_802E472C *card);
 bool fn_802E3E34(UnkMemoryCard_802E472C *card);
-void fn_802E3E44(UnkMemoryCard_802E472C *card);
+void fn_802E3E44(const UnkMemoryCard_802E472C *card);
 /* Whether the checked card can be used (behaviour inferred). */
 bool fn_802E4784(void);
 

@@ -344,7 +344,7 @@ template <> inline void checked_delete<AdvReal::Option::Impl>(AdvReal::Option::I
 } // namespace boost
 
 /* Whether a cycle task has finished (name unknown; other units call it). */
-extern "C" bool fn_802B8DF0(SaveCycle::CycleTask *task);
+extern "C" bool fn_802B8DF0(const SaveCycle::CycleTask *task);
 
 /* Whether two texture lists are the same (name inferred). */
 static inline int SameTexList(const RCPtr<CTexList> &a, const RCPtr<CTexList> &b) {
@@ -671,7 +671,9 @@ void Impl::ChangeLanguage() {
 } // namespace Option
 } // namespace AdvReal
 
-extern "C" bool fn_802B8DF0(SaveCycle::CycleTask *task) {
+/* The parameter is const (as in the wrappers of Game/VehicleBirdPath.cpp): only then does GC/2.7
+ * read task->m_cycle above the store of the link register, the way retail does. */
+extern "C" bool fn_802B8DF0(const SaveCycle::CycleTask *task) {
     return fn_802E3E34(task->m_cycle.get());
 }
 
