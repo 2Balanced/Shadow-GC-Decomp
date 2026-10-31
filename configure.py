@@ -1103,7 +1103,7 @@ config.libs = [
             Object(NonMatching, "Game/TGiHdGage.cpp"),
             Object(NonMatching, "Game/TGiHissatu.cpp"),
             Object(Matching, "Game/TGiHPGaugeBoss.cpp"),
-            Object(NonMatching, "Game/TGiNumberDisplay.cpp"),
+            Object(Matching, "Game/TGiNumberDisplay.cpp"),
             Object(Matching, "Game/TGiPause.cpp"),
             Object(Matching, "Game/TGiRingChallenge.cpp"),
             Object(Matching, "Game/TGiScoreDisplay.cpp"),

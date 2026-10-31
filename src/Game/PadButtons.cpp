@@ -68,10 +68,18 @@ extern "C" void fn_803563C0(void) {
     s_buttons = s_defaultButtons;
 }
 
-/* Whether logical button button was pressed on pad pad; remembers the pad that pressed button 1. */
+/* Whether logical button button was pressed on pad pad; remembers the pad that pressed button 1.
+ *
+ * NonMatching (99%): the 88 instructions are retail's instruction for instruction, only the saved
+ * registers are a permutation of retail's set: retail keeps the counters in r27, the button row
+ * offset in r28, the pad offset in r29 and the mask in r30, while GC/2.7 puts the mask in the
+ * first saved slot r27 and shifts everything else up. Declaring the mask at function scope moves
+ * 3 rows of the 18 (28 shapes probed in probes/Game_PadButtons.py and probes/Game_PadButtons2.py,
+ * floor 15). */
 extern "C" bool fn_80356260(int button, int pad) {
+    u32 mask;
     for (int i = 0; i < 3; i++) {
-        u32 mask = s_buttons[button][i];
+        mask = s_buttons[button][i];
         if (mask != 0 && Matches(mask, fn_80051734()->m_pads[pad].m_pressed)) {
             if (button == 1) {
                 for (u32 j = 0; j < 2; j++) {
@@ -92,11 +100,17 @@ extern "C" bool fn_80356214(UnkPadInput_80051734 *input, int pad, u32 mask, int 
     return fn_80349800(fn_80051734(), pad, mask, arg3, arg4);
 }
 
-/* Whether logical button button is held on pad pad (through fn_80349800). */
+/* Whether logical button button is held on pad pad (through fn_80349800).
+ *
+ * NonMatching (93%): same as fn_80356260, 33 instructions on both sides and one register swap
+ * left. fn_803560C8 below shows the allocation retail wants (counter r27, mask r28, pad r29,
+ * row offset r30, byte offset r31); there the pad parameter never needs a register of its own
+ * because the prologue folds it into `mulli r29,r4,40`. Declaring the mask with its initialiser
+ * inside the loop gets the mask to r28 and leaves 5 rows (16 shapes probed, floor 5): the counter
+ * and the pad parameter still trade places. */
 extern "C" bool fn_80356190(int button, int pad) {
-    u32 mask;
     for (int i = 0; i < 3; i++) {
-        mask = s_buttons[button][i];
+        u32 mask = s_buttons[button][i];
         if (mask != 0 && fn_80356214(fn_80051734(), pad, mask, 12, 1)) {
             return true;
         }

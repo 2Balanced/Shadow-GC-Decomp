@@ -164,10 +164,14 @@ extern "C" void fn_800BCB2C(TGiNumberDisplay *display, float depth) {
 
 /* Draws text at x, y, aligned left (0), centred (1) or right (2) (behaviour inferred).
  *
- * NonMatching (99%): retail gives the glyph width f31, y f30, x f29 and the height f28; GC/2.7
- * keeps x and y in f30/f31 and moves width and height down. Declaration order and the shape of the
- * height did not change it. The height's multiplication by 1.0f survives in retail; passing the
- * factor through an inline (Scale) keeps GC/2.7 from folding it. */
+ * Two shapes decide the float register chain, which is what retail's code is identified by (x
+ * f29, y f30, glyph width f31, height f28): the quad's bottom edge is written as y + height at
+ * the store instead of folded into `height` beforehand, and the centred offset is spelled
+ * -total / 2.0f. GC/2.7 folds that divide by a power of two into the same multiply by the 0.5f
+ * pool constant, but keeps the fneg on `total` itself; -total * 0.5f negates into a scratch
+ * register and loads the constant over `total`, two rows off. The height's multiplication by
+ * 1.0f survives in retail; passing the factor through an inline (Scale) keeps GC/2.7 from
+ * folding it. */
 extern "C" bool fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x, int align,
                             float y) {
     if (!lbl_805E3780) {
@@ -186,7 +190,7 @@ extern "C" bool fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x
     float offset;
     switch (align) {
     case 1:
-        offset = -total * 0.5f;
+        offset = -total / 2.0f;
         break;
     case 2:
         offset = -total;
@@ -208,7 +212,6 @@ extern "C" bool fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x
     lbl_805F15B4->fpRenderStateSet(6, (void *)0);
     lbl_805F15B4->fpRenderStateSet(8, (void *)0);
     lbl_805F15B4->fpRenderStateSet(1, display->m_raster);
-    height = y + height;
     for (int i = 0; i < length; i++, text++) {
         int glyph;
         switch ((u8)*text) {
@@ -235,8 +238,8 @@ extern "C" bool fn_800BC7BC(TGiNumberDisplay *display, const char *text, float x
             quad[3].x = right;
             quad[0].y = y;
             quad[1].y = y;
-            quad[2].y = height;
-            quad[3].y = height;
+            quad[2].y = y + height;
+            quad[3].y = y + height;
             lbl_805F15B4->fpIm2DRenderPrimitive(4, quad, 4);
         }
         offset += width + display->field_0x14;

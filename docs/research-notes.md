@@ -139,5 +139,52 @@ paths containing `&`; a wrapper script can pin those and pass the install's 8.3 
 - `tools/rename_symbols.py`: applies `0xADDR=Name` renames to `symbols.txt`.
 - `tools/class_catalog.py`: lists the game's C++ classes from their vtables and RTTI records.
 - `tools/unitstatus.py`, `tools/fndiff.py`: per-unit and per-function match status from objdiff.
+  `unitstatus.py` now also says which units could link today: it compares every unit's own section
+  sizes with its `splits.txt` ranges and reports the units with no size gap (`-c`), since the
+  generated linker script pins those sections at retail addresses.
+- `tools/fnstatus.py`: one row per symbol below 100% (address, size, match %), units ranked by the
+  bytes still unmatched, so the cheapest unit to finish is at the top.
+- `tools/fnside.py`: our object versus the retail split object of one symbol, instruction by
+  instruction (`-c N` context, `-a` whole function). Both objects are relocatable and use the same
+  symbol names, so the diff is symbol-relative and needs no addresses.
+- `tools/uprobe.py` + `probes/<unit>.py`: replaces one function body with a spelling from a probe
+  table, rebuilds only that unit's object and scores the instruction rows left against retail. The
+  source is restored unless `--keep NAME` names the winner; `-p TABLE` runs a later round against
+  the same unit. Tables also serve as the record of what was tried.
+- `tools/symfill.py`: annotates the data symbols our object defines inside a unit's split that
+  retail left unnamed in `config/GUPE8P/symbols.txt` (small-data accesses carry no relocation, so
+  `pair_symbols.py` cannot pair them).
 - `tools/ghidra/ImportDtkSymbols.java`: applies the non-placeholder names in `symbols.txt` to a
   Ghidra program, in headless or GUI mode.
+
+## Which units can be flipped today
+
+`Object(...)` status only follows the match percentages, but a unit can also only *link* at retail's
+addresses when our object's sections have retail's sizes: `config/GUPE8P/splits.txt` pins every
+unit's `.text`, `.rodata`, `.data`, `.bss`, `.sdata`, `.sdata2`, `.sbss` and `.ctors` ranges, and the
+linker script generated from it places our object at those addresses. `python tools/unitstatus.py -c`
+reports the units where that condition already holds: **3 of the 190 non-matching units**
+(`Game/MemoryCardCrypt`, `Game/EnemyArea`, `Game/PadButtons`), against 187 whose sections are the
+wrong size. Those 187 need their data and function splits corrected (or their source completed to
+the point where the sizes line up) before any amount of per-function work can flip them, so the
+cheapest-per-symbol ranking from `tools/fnstatus.py` is the work list, filtered through
+`unitstatus.py -c`.
+
+## Code-generation floors found by probing
+
+Spelled-out in `probes/`; each floor was confirmed by compiling many source spellings, not by
+reading the disassembly once. In all of them our object has retail's instruction count, immediate
+values and call targets, and only the scheduler order or the saved-register choice differs, which
+GC/2.7 does not expose to the source.
+
+| Unit | Symbol | Rows left (of) | Shapes tried | Residual |
+| ---- | ------ | -------------- | ------------ | -------- |
+| `Game/MemoryCardCrypt` | `Crypt__7CardDesFPCcPci` | 18 (218) | ~170 | MWCC list-scheduler order in the S-box gather |
+| `Game/EnemyArea` | `Contains__21UnkEnemyArea_8018A374FPv` | 1 (33) | 26 | prologue scheduling |
+| `Game/EnemyArea` | `fn_801A69A0` | 4 (23) | 26 | prologue scheduling |
+| `Game/PadButtons` | `fn_80356190` | 5 (33) | 16 | counter and pad parameter trade saved slots |
+| `Game/PadButtons` | `fn_80356260` | 15 (88) | 28 | saved-register permutation of the loop locals |
+
+`Game/TGiNumberDisplay` is the counter-example worth remembering: two spelling changes (the
+bottom edge added at the store, and `-total / 2.0f` instead of `-total * 0.5f`) took `fn_800BC7BC`
+from 17 mismatched rows to 0 of its 220 instructions, so always probe before writing a floor.

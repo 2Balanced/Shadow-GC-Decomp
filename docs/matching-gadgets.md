@@ -182,6 +182,21 @@ The pool base symbol at the start of such a section should be the compiler's `@N
   `fmuls fD, f_freq, f_sub`, while retail has the operands the other way. Naming the subtraction
   (`float phase = x - (float)fn_803B1618(x);`) makes `fmuls` follow the source. See
   `CameraShake.cpp`, `fn_8000EFC0`, which needed this for one instruction.
+- A negated half-width computed from a variable: write `-total / 2.0f`, not `-total * 0.5f`. GC/2.7
+  folds a divide by a power of two into the same reciprocal multiply retail uses but keeps `fneg`
+  on `total` itself, which is what retail has; the multiply form negates the pool constant instead
+  and loads it separately. In `TGiNumberDisplay.cpp`, `fn_800BC7BC` this was the last two rows.
+- Where a quad's bottom edge is computed decides the register chain. Spelling the store's fourth
+  operand as `y + height` (added at the store) instead of folding the height into `y` first is what
+  retail does; the folded form re-uses one register for both and costs 15 rows in `fn_800BC7BC`.
+  Both spellings are the same value, so the choice is invisible in the C but not in the schedule.
+- Saved-register slots follow live-range order, so a parameter that the prologue can consume
+  immediately never occupies one. `PadButtons.cpp`'s `fn_803560C8` matches exactly because its pad
+  argument is folded into `mulli r29,r4,40` in the prologue, which leaves the counter in r27, the
+  mask in r28, the pad offset in r29 and the row offset in r30; `fn_80356190` has to keep the
+  argument live to become `r4` at a call, and GC/2.7 then hands it r27 and pushes the counter to
+  r29 - the reverse of retail. 16 spellings of the mask, counter and pad declarations all stay at
+  that 5-row floor (see `probes/Game_PadButtons.py`).
 - A static callback (`HitCharacter`) defined *before* the constructor is emitted, with its float
   constants, where retail has it.
 - Stack order follows declaration order: earlier locals get higher addresses. If two locals'
@@ -228,7 +243,22 @@ Manual route:
 ```sh
 python configure.py && ninja                  # must end with: build/GUPE8P/main.dol: OK
 python tools/unitstatus.py Game/<Name>        # per-function and per-section match %
+python tools/fnstatus.py                      # every symbol below 100%, cheapest unit first
+python tools/fnside.py Game/<Name> <symbol>   # our object vs the retail split, instruction by instruction
 ```
+
+Section sizes matter as well as instruction streams: the generated linker script pins each unit's
+sections at its `config/GUPE8P/splits.txt` addresses, so a unit can only link at retail's addresses
+when our object's sections have retail's sizes. `python tools/unitstatus.py -c` lists the units
+where that already holds (today 3 of the 190 non-matching units); the byte-identical DOL stays the
+authoritative gate.
+
+When one or two symbols are left, `python tools/uprobe.py -u Game/<Name>` compiles and scores whole
+tables of source spellings against the retail object (probe tables in `probes/`, `--keep NAME`
+leaves the winner in the source). Some residuals are GC/2.7's list scheduler or register chooser
+rather than the C, and no spelling fixes them; the floors found so far are documented in the source
+comments and in `docs/research-notes.md` (`MemoryCardCrypt` 18 rows, `EnemyArea` 1 and 4 rows,
+`PadButtons` 5 and 15 rows). Leave such units `NonMatching` with a comment naming the floor.
 
 When every function and section is 100%, change the unit to `Object(Matching, ...)`. Run `ninja`
 again. `main.dol: OK` with the unit linked is the finish line. If the hash fails, run
