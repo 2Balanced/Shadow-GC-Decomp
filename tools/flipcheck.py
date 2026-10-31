@@ -4,10 +4,11 @@
 A unit whose every symbol is matched still only becomes `Matching` when the relinked
 `main.dol` is byte-identical, and that is decided by one relink, not by reading the
 object. This tool does that relink for a list of units: for each one it edits
-`configure.py`, reconfigures, relinks, and asks `tools/doldiff.py` whether the DOL is
-still retail's. `configure.py` is restored between attempts, so the units are tested
-independently, and it is restored and rebuilt at the end unless `--keep` names winners,
-which are then left flipped and rebuilt once.
+`configure.py`, reconfigures, relinks, and compares the DOL's SHA-1 with
+`orig/GUPE8P/sys/main.dol`; when they differ it also prints what `tools/doldiff.py`
+found, which names the first differing addresses. `configure.py` is restored between
+attempts, so the units are tested independently, and it is restored and rebuilt at the
+end unless `--keep` names winners, which are then left flipped and rebuilt once.
 
 Usage:
     python tools/flipcheck.py Game/Foo.cpp Game/Bar.cpp
@@ -15,15 +16,22 @@ Usage:
 """
 
 import argparse
+import hashlib
 import subprocess
 import sys
 
 CONFIGURE = "configure.py"
 DOL = "build/GUPE8P/main.dol"
+RETAIL = "orig/GUPE8P/sys/main.dol"
 
 
 def run(*cmd):
     return subprocess.run(cmd, capture_output=True, text=True, shell=False)
+
+
+def sha1(path):
+    with open(path, "rb") as handle:
+        return hashlib.sha1(handle.read()).hexdigest()
 
 
 def set_flag(unit, flag):
@@ -44,11 +52,14 @@ def links():
     if run("python", "configure.py").returncode != 0:
         return False, "configure failed"
     link = run("ninja", "-j", "8", DOL)
-    diff = run("python", "tools/doldiff.py")
-    if diff.returncode == 0:
+    if link.returncode != 0:
+        return False, (link.stdout.strip().splitlines() or ["link failed"])[-1]
+    # tools/doldiff.py only reports, so the hashes are what decide the attempt.
+    want, got = sha1(RETAIL), sha1(DOL)
+    if want == got:
         return True, ""
-    first = [line for line in diff.stdout.splitlines() if ":" in line][:3]
-    return False, "; ".join(first) or link.stdout.strip().splitlines()[-1:]
+    first = [line for line in run("python", "tools/doldiff.py").stdout.splitlines()][:3]
+    return False, f"{got[:12]} != {want[:12]}; " + "; ".join(first)
 
 
 def main():
@@ -75,7 +86,8 @@ def main():
     run("python", "configure.py")
     run("ninja", "-j", "8", DOL)
     state = ", ".join(winners) if args.keep and winners else "none"
-    print(f"configure.py left with {state} flipped; DOL: {run('python', 'tools/doldiff.py').stdout.strip()}")
+    same = sha1(RETAIL) == sha1(DOL)
+    print(f"configure.py left with {state} flipped; DOL {'matches retail' if same else 'DIFFERS from retail'}")
     return 0 if winners else 1
 
 

@@ -249,14 +249,24 @@ python tools/fnside.py Game/<Name> <symbol>   # our object vs the retail split, 
 
 Section sizes are *not* the gate, and it is worth checking a fully matched unit before assuming one:
 `build/GUPE8P/ldscript.lcf` puts every input in one `GROUP` in `configure.py` order with no per-unit
-origin, so mwldeppc lays the sections out by itself and folds weak/linkonce duplicates -
+origin, so mwldeppc lays the sections out by itself and folds duplicate weak instantiations -
 `Game/AdvSynopsis.cpp` carries 3060 bytes more `.text` than its retail split and still links
-byte-identically. What decides a flip is only the byte-for-byte check, so try it with
-`python tools/flipcheck.py Game/<Name>.cpp`, and read `python tools/flipsym.py Game/<Name>` when it
-fails: the difference is usually extra symbols our object defines that the retail split has in a
-neighbouring unit, or data records retail has and our source does not emit.
+byte-identically. What decides a flip is only the byte-for-byte check, and
+`python tools/flipcheck.py Game/<Name>.cpp` runs it: it compares the DOL's SHA-1 with retail's,
+because `tools/doldiff.py` only prints its findings and always exits 0.
 `python tools/unitstatus.py --flip` lists the units with every symbol matched, which are the only
 ones worth testing.
+
+A unit that fails that check with every symbol matched is usually *placed* differently, not written
+differently: MWCC puts a unit's functions in one `.text` section in the order it emits them and MWLD
+keeps that order, so a unit flips when our definition order puts every function back where retail had
+it. `python tools/dolwhy.py Game/<Name>.cpp` shows that word by word (differing ranges, then branch
+targets resolved through `symbols.txt`), and `python tools/textorder.py Game/<Name>` prints the
+functions of the unit that would not land where retail had them. `python tools/flipsym.py
+Game/<Name>` compares symbol *names*, so read it with care: much of what it calls extra, and the
+`gap_*` records it calls missing, are retail's own copies that the split leaves unnamed.
+`docs/research-notes.md` ("Which units can be flipped today") works the two shapes through
+`Game/EnemyMotion` and `Game/ResourceManagerTask`.
 
 When one or two symbols are left, `python tools/uprobe.py -u Game/<Name>` compiles and scores whole
 tables of source spellings against the retail object (probe tables in `probes/`, `--keep NAME`

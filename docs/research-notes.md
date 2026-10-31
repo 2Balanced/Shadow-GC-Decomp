@@ -142,10 +142,16 @@ paths containing `&`; a wrapper script can pin those and pass the install's 8.3 
   `unitstatus.py --flip` lists the units whose every function and data symbol is matched, which are
   the only units that can become `Matching` (see "Which units can be flipped today"), and it prints
   each unit's signed section-size drift against its `splits.txt` ranges.
-- `tools/flipcheck.py`: relinks once per candidate unit and keeps only the ones whose `main.dol` is
-  still retail's, so a flip is decided by the byte check rather than by inference.
+- `tools/flipcheck.py`: relinks once per candidate unit and keeps only the ones whose `main.dol`
+  hashes to retail's, so a flip is decided by the byte check rather than by inference (it compares
+  SHA-1 itself, because `tools/doldiff.py` only prints and always exits 0).
 - `tools/flipsym.py`: our object versus the retail split object of a whole unit, symbol by symbol,
   for the units that fail that check.
+- `tools/dolwhy.py`: flips one unit, relinks, and explains the difference in `main.dol` word by
+  word - differing ranges first, then branch targets resolved through `symbols.txt`, which is how a
+  moved function is told apart from shifted code.
+- `tools/textorder.py`: walks a unit's own `.text` in MWCC's emission order against retail's
+  addresses and prints the functions that would not land where retail had them.
 - `tools/fnstatus.py`: one row per symbol below 100% (address, size, match %), units ranked by the
   bytes still unmatched, so the cheapest unit to finish is at the top.
 - `tools/fnside.py`: our object versus the retail split object of one symbol, instruction by
@@ -179,17 +185,55 @@ data symbol is matched**: `python tools/unitstatus.py --flip` prints them, ten o
 non-matching units when this was written, and `python tools/flipcheck.py <unit>.cpp ...` decides
 each one by relinking. Only `Game/AdvSynopsis.cpp` passed, and it is now `Matching`.
 
-For the rest, `python tools/flipsym.py <unit>` says what the byte difference is made of. Two shapes
-show up:
+For the failing units the difference is **placement inside the unit**, not how much code we have.
+Our objects carry one `.text.<symbol>` section per function, so MWLD lays a unit out in the order
+MWCC emitted the definitions, and a flip only works when that order puts every function back at
+retail's address. Two shapes show up once `tools/flipcheck.py` names the differing addresses:
 
-- extra code our build emits and retail's unit does not contain, usually because a helper only
-  exists to force something into a data section: `Game/ResourceManagerTask` adds the 8-byte
-  `ResourceType__Fv` and `TaskType__Fv` `typeid` helpers (they are what creates the RTTI records
-  retail keeps in `.sdata`), and `Game/csdRW` adds nine weak `Chao::CSD` constructors, destructors
-  and allocator calls;
-- data retail has and our source does not produce, which `flipsym.py` prints as the retail object's
-  unnamed `gap_*` symbols - `Game/ResourceManagerTask` is short three `.rodata`, one `.sdata`, one
-  `.sdata2`, one `.sbss` and one `.bss` record this way.
+- **The unit's own functions come out in another order.** Flipping `Game/EnemyMotion.cpp` changes 172
+  words, all of them inside its own `.text` range `0x801A4430..0x801A54E8`, and each one is a branch
+  whose target moved: retail keeps `__cl__Q25boost78function1<v,R19EnemyMotionEventArg,...>` at
+  `0x801A5020`, between `UnkTree::find` and the tree's allocators, while GC/2.7 emits it after the
+  tree's constructor instances. The instruction streams are identical, so objdiff never sees it, and
+  `tools/textorder.py` is what shows it: it walks our object's `.text` in MWCC's emission order
+  against retail's addresses and reports 31 of the unit's 70 functions in place.
+  Much of what `tools/flipsym.py` calls "extra" belongs to this shape: the names exist in retail too,
+  just in other units (`clear__Q25boost78function1<v,R19EnemyMotionEventArg,...>` is at
+  `0x801A1A30`, `__ct__Q25boost17bad_function_callFv` at `0x80009FF4`), so our copies fold against
+  them and their size costs nothing in itself - but MWCC emits them at the *end* of our unit, and
+  those 0x22c bytes push the unit's own last functions (`insert_node`, `construct`, `allocate`,
+  `size`) past retail's `0x801A54E8`, which is what actually breaks the link. The same holds in
+  reverse for the `gap_*` records `flipsym.py` lists as missing: they are retail's unnamed records,
+  not evidence of source we dropped.
+- **The unit really does have code retail's unit did not have.** `Game/ResourceManagerTask.cpp` adds
+  the 8-byte `ResourceType__Fv` and `TaskType__Fv` `typeid` helpers (they exist to create the RTTI
+  records retail keeps in `.sdata`); nothing else in retail has those names, so they cannot fold, and
+  the 16 bytes shift everything behind them: the whole range `0x800122a8..0x80012b0c` differs.
+
+So the nine remaining candidates are an emission-order puzzle and, where a helper was only added to
+force out a data record, a data-forcing trick that does not cost a function. `tools/flipsym.py` is
+still the way to see the shape of a failure, and `build/dolwhy.py`-style experiments (flip, relink,
+decode every differing word as a branch and resolve it through `symbols.txt`) show it word by word;
+the drift table:
+
+| Unit | `.text` drift | other section drift |
+| ---- | ------------- | ------------------- |
+| `Game/EnemyMotion` | +532 | `.data` +80, `.rodata` +106, `.sdata` +24, `.sbss` +9, `.sdata2` -4 |
+| `Game/CameraManagerUnit` | +1780 | `.data` +68, `.rodata` +46, `.sdata` +16, `.sbss` -3, `.sdata2` -4 |
+| `Game/ResourceManagerTask` | +16 | `.bss` -4, `.rodata` -2, `.sdata` -2, `.sdata2` -3 |
+| `Game/TextureUVAnimManagerTask` | +164 | `.data` -4, `.rodata` -5, `.sdata` -2, `.sdata2` -4 |
+| `Game/CameraManager` | +944 | `.data` +36, `.rodata` +10, `.sbss` -3 |
+| `Game/WeaponLockonBase` | +2668 | `.data` +128, `.rodata` +125, `.sdata` +32, `.sbss` +1 |
+| `Game/ItemIconManagerTask` | +1164 | `.sbss` +25, `.data` +24, `.sdata` -4, `.rodata` -2 |
+| `Game/AdvFolder` | +732 | `.data` +24, `.rodata` -10, `.sbss` -7, `.sdata2` -4 |
+| `Game/csdRW` | +568 | `.data` +152, `.rodata` -6, `.bss` -7 |
+
+`Game/EnemyMotion` and `Game/ResourceManagerTask` are the ones to attack first: the first is pure
+placement in a unit whose functions all match, so the question there is how to make GC/2.7 emit the
+same set of inline definitions in that translation unit as retail's did (retail emits only
+`__cl__Q25boost78function1...` inside the range and keeps `__dt__`, `clear__`, the `std::exception`
+and `boost::bad_function_call` members in the units that name them at `0x801A19E8` and `0x80009FF4`);
+the second needs the two `typeid` helpers gone while the `.sdata` RTTI records stay.
 
 ## Code-generation floors found by probing
 
