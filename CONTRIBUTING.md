@@ -140,6 +140,8 @@ builds, from the build's own report. To keep them correct when people push at ne
 - Subject line in the imperative, under about 72 characters; the body says what changed and why,
   lists units that became Matching or NonMatching (with N/M), and any renames outside a unit's own
   range.
-- Work produced with an AI assistant carries a `Co-Authored-By:` trailer naming it.
+- Work produced with an AI assistant carries exactly one `Co-Authored-By:` trailer, and it always reads
+  `Co-Authored-By: OpenCode <agent@opencode.ai>`. Do not name a model, a fork or a tool vendor: the history
+  keeps one assistant identity next to the human author, whatever tool produced the change.
 - Code written with a reference open names it in a `Reference:` line (see [References](#references)).
   The pull request description alone is not enough: the commit history is the lasting record.
