@@ -601,12 +601,22 @@ void Ground::ReleasePath() {
 
 /* The speeds of the run: a top speed from the character's parameters, lower while carrying
  * something (state bit 0x1E).
- * NonMatching (95%): retail computes the table's address into r3 (lis and addi in one register)
- * and loads the player into r4; GC/2.7 puts the address in r4 and the player in r3. Retail has the
- * same allocation at about 25 such table reads. Not reproduced by: a local for the player, the
- * kind or the address; pointer arithmetic or `+=` on a pointer; a reference; inline accessors for
- * the table, the entry, the kind or the flag; m_player.px or operator->; a swapped subscript; an
- * enum or unsigned kind; a bounded array or a struct of arrays; other GC compiler versions. */
+ * NonMatching (95%): four words, all in this body. Retail materialises the table's address with
+ * `lis r3,0` and `addi r3,r3,HA/LO(lbl_804F1834)` in one register, loads the player into r4 and the
+ * kind into r0, and scales with `add r3,r3,r0`; GC/2.7 writes the address as `lis r3` plus
+ * `addi r4,r3` (r3 only as scratch), keeps it in r4, loads the player into r3 and scales with
+ * `add r3,r4,r0`.  Nothing else differs anywhere in the unit: the same instructions, order, stack
+ * slots, branch targets and pool entries on both sides of the four words, so the register has no
+ * live range to justify it. Not reproduced by: a local for the player, the kind, the address or the
+ * speed; pointer arithmetic or `+=` on a pointer; a reference; inline accessors for the table, the
+ * entry, the kind or the flag; m_player.px or operator->; a swapped subscript; an enum or unsigned
+ * kind; a bounded array or a struct of arrays; other GC compiler versions. Also not reproduced by
+ * taking the entry's address (`(&lbl_804F1834[kind])->m_runSpeed`), `*` and `&` on the field, a
+ * cast of the table to a pointer of its own element type, a byte-offset cast to the field, casting
+ * the kind to unsigned, signed char or masking it, swapping the operands of the multiply, storing
+ * both speeds through locals, or the two-step `*=` form (build/pbgprobe.py).  build/pbgpat.py shows
+ * this is the only place in the unit that builds the table's address, so the difference cannot come
+ * from a shared allocation. */
 void Ground::SetSpeedRange() {
     if (fn_8006CD78(m_player.get()->m_stateBits, 0x1E)) {
         m_minSpeed = 1000.0f;

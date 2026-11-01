@@ -5,9 +5,17 @@
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
  *
- * Not yet matching: in the constructor retail loads the owner pointer for the null test into r5,
- * GC/2.7 into r0 (two instructions); about fifteen source shapes of the test did not change it.
- * Everything else, including the data, matches. */
+ * Not yet matching: two words, both in the constructor's null test.  Retail reads the owner pointer
+ * as `lwz r5,56(r1); cmplwi r5,0` and GC/2.7 keeps the same load in r0; every other instruction of
+ * the unit, on both sides of those two words, is already byte identical (same stack slots, same
+ * branch targets and displacements), so the register choice has no live-range cause to fix.  The
+ * test was written twenty-nine ways without moving r0: plain, negated and reversed comparisons,
+ * swapping the two operands of ||, splitting the test into two ifs, a bare-pointer local, a bool
+ * local, hoisting the raw pointers above and below the test, changing the order the two shared
+ * pointers are declared, casts to void *, u32, long and the pointed types, and extra register and
+ * plain locals for interference (build/bslprobe.py, bslprobe2.py, bslprobe3.py, bslprobe4.py).  The
+ * spellings that do move the register also move other instructions, so they are further away, not
+ * closer.  Everything else, including the data, matches. */
 #include "Effect/System/EffectElement.h"
 #include "Game/CharInfo.h"
 #include "Game/GadgetUtil.h"
