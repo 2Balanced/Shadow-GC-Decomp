@@ -614,9 +614,8 @@ void Ground::ReleasePath() {
  * taking the entry's address (`(&lbl_804F1834[kind])->m_runSpeed`), `*` and `&` on the field, a
  * cast of the table to a pointer of its own element type, a byte-offset cast to the field, casting
  * the kind to unsigned, signed char or masking it, swapping the operands of the multiply, storing
- * both speeds through locals, or the two-step `*=` form (build/pbgprobe.py).  build/pbgpat.py shows
- * this is the only place in the unit that builds the table's address, so the difference cannot come
- * from a shared allocation. */
+ * both speeds through locals, or the two-step `*=` form.  Only this function builds the table's
+ * address in the unit, so the difference cannot come from a shared allocation. */
 void Ground::SetSpeedRange() {
     if (fn_8006CD78(m_player.get()->m_stateBits, 0x1E)) {
         m_minSpeed = 1000.0f;

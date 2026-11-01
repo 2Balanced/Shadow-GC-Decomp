@@ -1,11 +1,14 @@
 /* NonMatching: every function body matches, including the boost shared_ptr wrappers this unit
- * instantiates (byte-identical to retail's), but GC/2.7 also materializes here the boost vtable
- * and type_info records that retail's object takes from other units: .sdata holds nine words and
- * seven pointers too many, in another order, and .data holds the control block of the
- * PickupCharInfo shared_ptr, which retail folds in from Game/Bomb.o. Three vtable pointers to
- * those records follow in the link, at DOL 0x80544214, 0x80544234 and 0x80544258. Six source
- * shapes (moving the class declarations and the boost includes) and the
- * BOOST_SP_EXTERN_BASE_DESTRUCTOR lever left the order unchanged.
+ * instantiates (byte-identical to retail's), and the relink is very close: 24 bytes in six ranges
+ * (tools/dolwhy.py). GC/2.7 also materializes here the boost vtable and type_info records that
+ * retail's object takes from other units, but mwldeppc folds those extra copies against the ones
+ * already in main.elf - tools/flipsym.py Game/ThrowBomb labels them "in main.elf", so the size
+ * drift in .text/.rodata/.data/.sdata is not the gate. What is left is one pair: the word stored
+ * in __RTTI__Q35boost6detail15sp_counted_base (.sdata 0x805E9370) and in __RTTI__9ThrowBomb
+ * (0x805E9378) is each other's - retail holds 0x804EDEA0 and 0x804EDE58 there, we hold the two
+ * exchanged - and the four .data words naming those records follow at 0x80544214, 0x80544234,
+ * 0x80544258 and 0x805442A0. Six source shapes (moving the class declarations and the boost
+ * includes) and the BOOST_SP_EXTERN_BASE_DESTRUCTOR lever left that pair alone.
  *
  * ThrowBomb (class name from RTTI): the bomb that bosses and enemies throw (Heavy Dog, ...). Its
  * implementation, ThrowBombImpl (class name from RTTI), keeps a PickupCharInfo, so characters can

@@ -32,6 +32,9 @@ Requires Python 3.10+ and [ninja](https://ninja-build.org/).
    compilers and binutils into `build/`.
 3. Run `ninja`. The build is good when it ends with
    `build/GUPE8P/main.dol: OK`.
+4. Run `git config core.hooksPath tools/hooks` once, in this clone. Its pre-push
+   hook refuses to push a commit whose `docs/progress/` was not generated from the
+   sources in that commit; `ninja` regenerates it.
 
 Contributing
 ------------

@@ -13,7 +13,7 @@
  * swapping the two operands of ||, splitting the test into two ifs, a bare-pointer local, a bool
  * local, hoisting the raw pointers above and below the test, changing the order the two shared
  * pointers are declared, casts to void *, u32, long and the pointed types, and extra register and
- * plain locals for interference (build/bslprobe.py, bslprobe2.py, bslprobe3.py, bslprobe4.py).  The
+ * plain locals for interference.  The
  * spellings that do move the register also move other instructions, so they are further away, not
  * closer.  Everything else, including the data, matches. */
 #include "Effect/System/EffectElement.h"
