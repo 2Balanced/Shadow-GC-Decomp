@@ -7,11 +7,21 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: every function and all data match, but GC/2.7 lays out three things differently:
- * retail emits the RequestHandle shared_ptr instances (0x8034AD40..0x8034AF24) ahead of
- * fn_8034AF24 instead of after it, emits dispose/get_deleter of the Request control block ahead of
- * the RequestHandle one (0x8034BCB0, 0x8034BD24), and orders the checked_deleter RTTI records in
- * .sdata the same way (Request before RequestHandle). No source order tried changed either. */
+ * NonMatching: the 106 functions retail's object has all match, but the unit does not link in
+ * place, and the difference is layout, in three places at once. GC/2.7 emits the RequestHandle
+ * shared_ptr instances (0x8034AD40..0x8034AF24) ahead of fn_8034AF24 instead of after it, emits
+ * dispose/get_deleter of the Request control block ahead of the RequestHandle one (0x8034BCB0,
+ * 0x8034BD24), and orders the records that follow in the same inverted way: .sbss holds retail's
+ * guard bytes at 0x805F0DB0 (@127, @301, @270, @335, each byte with a three-byte gap) while ours
+ * puts @270 where retail has @301, and .sdata orders the checked_deleter type_info records with
+ * RequestHandle before Request (retail has Request, RequestHandle, ManagerUnit after the four
+ * control blocks'). The control blocks' vtables in .data are in retail's order; what differs there
+ * is that ours materializes what retail's object imports: release(), destroy() and the destructor
+ * of sp_counted_base and the destructor of shared_count (five of the 18 functions retail's object
+ * does not have), with sp_counted_base's, std::exception's and bad_weak_ptr's vtables and two more
+ * type_info records, so .data is 240 bytes where retail's is 176 and .sdata 104 where it is 88.
+ * The first word of the relinked DOL that differs, 0x8034abfc, is a byte load through r13 whose
+ * displacement is four bytes off retail's. No source order tried changed any of it. */
 #define MSL_VECTOR_MIDDLE
 #define MSL_VECTOR_AT
 #define MSL_VECTOR_DESTROY_ALL_LATE

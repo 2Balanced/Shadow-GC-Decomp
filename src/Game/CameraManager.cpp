@@ -9,13 +9,23 @@
  * from the class's role; other names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: every function and section matches, but the unit does not link: retail emits the
- * dispose and get_deleter of sp_counted_base_impl<CameraManagerUnit *, ...> before those of
- * sp_counted_base_impl<CameraShake *, ...> (with their deleters' type names and .sbss temporaries
- * in that order), while their vtables and destructors come in the other order; GC/2.7 emits
- * all of them in vtable order. This is the compiler difference Game/CameraManagerUnit.cpp
- * describes. Retail also has an unused function first (stripped), whose instances the vector's
- * begin and end and fn_8000D0F0 are. */
+ * NonMatching: every function body matches, but the unit does not link in place, and what is wrong
+ * is the order of its .sbss records. Retail's .sbss is 12 bytes at 0x805EDFB0: the byte static
+ * s_screenGuard (0x805EDFB0), then the guard bytes of the two shared_ptr control blocks, @505 at
+ * 0x805EDFB4 and @482 at 0x805EDFB8, each byte followed by a three-byte gap; ours is nine bytes
+ * with the same three records but the last two the other way round, our @482 first. The guards are
+ * read through r13, so the inverted pair alone costs two addi immediates: 0x8000d33c, in
+ * __ct<CameraManagerUnit>__shared_ptr<CameraManagerUnit>FPQ..., holds 880d2b74 where retail has
+ * 880d2b78, and 0x8000d7bc, in the CameraShake one, holds the same two displacements the other way
+ * round. Retail therefore lays the guards out in the opposite order to the functions that use them
+ * (its CameraManagerUnit constructor is the first of the two, at 0x8000D338), which is why moving
+ * the three statics to the end of the unit, tried and reverted, only puts the screen guard last,
+ * which retail does not want, and makes the diff larger. Retail's .bss (s_screenRecord at
+ * 0x8056EE50 then s_screen) is already laid out as we write it, and so are the control blocks'
+ * vtables in .data; the rest of the 120 bytes in ten ranges are the bl displacement at 0x8000defc,
+ * inside dispose__ of the CameraManagerUnit control block, and the 84 bytes of type names at
+ * 0x804AA4C0..0x804AA514, which retail orders the other way round. Retail also has an unused
+ * function first (stripped), whose instances the vector's begin and end and fn_8000D0F0 are. */
 #define MSL_NEW_INLINE_BAD_ALLOC
 #define MSL_VECTOR_AT
 #define MSL_VECTOR_DESTROY_ALL_LATE

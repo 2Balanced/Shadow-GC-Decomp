@@ -8,11 +8,19 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: all 62 functions and all data match, but the unit does not link in place. GC/2.7
- * emits boost::function1's operator() (retail 0x801A5020, between UnkTree::find and
- * UnkTree::destroy) after the tree's constructor instances (0x801A5094..0x801A52D8) instead.
- * Moving Call's definition, including the tree's members first and an extra reference did not
- * change that order. */
+ * NonMatching: the functions retail's object has all match, but GC/2.7 both places one of them
+ * elsewhere and materializes what retail's object does not have, so the unit does not link in
+ * place. Retail's object is 62 functions and 4280 bytes of .text; ours is 70 and 4812: the eight
+ * extras are boost::function1's destructor and clear() and the exception path of its operator(),
+ * which puts a bad_function_call (a std::runtime_error) on the stack. Retail's object has neither
+ * the exception records nor any data at all: its .data, .sdata and .sbss are empty and its .rodata
+ * is 56 bytes, where ours holds function1's, bad_function_call's and runtime_error's vtables and
+ * type_info records (80, 24 and 9 bytes, and 162 bytes of names). Where the exception path is left
+ * out, retail's operator() (0x801A5020, between UnkTree::find and UnkTree::destroy) is still there,
+ * but GC/2.7 emits it after the tree's constructor instances (0x801A5094..0x801A52D8) instead;
+ * moving Call's definition, including the tree's members first and an extra reference did not
+ * change that order. The first word of the relinked DOL that differs, 0x801a4a60, is one bl
+ * displacement in the callback: ours reaches 0x805 bytes ahead, retail's 0x5c1. */
 #define UNK_TREE_MAP
 #define UNK_TREE_ITERATE
 /* boost::function's operator() puts a bad_function_call on the stack (see <stdexcept>). */

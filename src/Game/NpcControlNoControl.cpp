@@ -1,4 +1,12 @@
-/* @unnamed@NpcControlNoControl_cpp@::NpcNoControl (class name from RTTI; base
+/* NonMatching: every function body matches, but GC/2.7 materializes the boost bodies here that
+ * retail's object imports: the shared_ptr<PlayerBase> and shared_count destructors and the three
+ * sp_counted_base virtuals, which retail only calls out of line from ControlBase's destructor.
+ * With them come sp_counted_base's vtable (36 more bytes of .data) and its type_info record (8
+ * more of .sdata); retail's object has neither record, and lays ControlBase's vtable after the
+ * NpcNoControl ones rather than first. The records land at other offsets, which costs three addi
+ * immediates, at DOL 0x8006d188, 0x8006d1cc and 0x8006d234.
+ *
+ * @unnamed@NpcControlNoControl_cpp@::NpcNoControl (class name from RTTI; base
  * Player::Control::ControlBase): the control of an NPC that does nothing (control 3 of the NPC
  * control factories). The unit also holds ControlBase's own virtual functions and its vtable.
  * fn_8006D150 makes one; other units call it by its address, so it keeps that name. File name from

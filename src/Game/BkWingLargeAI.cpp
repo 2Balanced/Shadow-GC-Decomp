@@ -3,7 +3,16 @@
  * cautions and attacks, resists the vacuum gun (ResistVacuum) and, when shot down with an air
  * wing on board, turns level and spawns it (DeadToAirWing). File name inferred from the class.
  * Names marked "(name inferred)" are not original. Definitions are in reverse address order
- * (deferred inlining emits functions last-defined first). */
+ * (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: the unit does not even link: retail's unit holds one virtual function of its own
+ * that this source never defines, vfAI_0x28__13BkWingLargeAIFv (0x801815BC, 0x84), and both of the
+ * vtables that name it, Game/BkWingLarge.o's and EnemyTemplate<BkWingLargeBase, BkWingLargeAI>'s,
+ * reference it, so the relink stops at "undefined: 'BkWingLargeAI::vfAI_0x28()'". Its .bss matches
+ * retail's at 72 bytes; .sbss is 80 where retail's is 72, the extra pair being the guard of
+ * EnemyStatFunc's inline vfStat_0xA8, which retail materialises in Game/EggPawn.o. The three
+ * helpers retail imports are also emitted here (EnemyStatFunc's vfStat_0x20 and vfStat_0x2C, which
+ * retail defines in Game/EggPawnAI.o, and the shared_ptr<EnemyRender> destructor). */
 /* See FlyerCommonAI (Game/EnemyFlyer.h) and EnemyBaseAI (Game/EnemyAI.h). */
 #define FLYER_COMMON_AI_STATES
 #define ENEMY_AI_MESSAGE_ARG

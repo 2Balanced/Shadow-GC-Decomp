@@ -4,7 +4,20 @@
  * and attacks with the weapon it carries: from afar (Attack), from close by (NearAttack) or, with
  * the vacuum gun, aiming at the target until it gives up (AttackVacuum). File name inferred from
  * the class. Names marked "(name inferred)" are not original. Definitions are in reverse address
- * order (deferred inlining emits functions last-defined first). */
+ * order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: the unit does not link in place, and the difference is its statics, not its code.
+ * GC/2.7 materialises EnemyBaseAI's twelve state getters here (EnemyAI.h; this unit sees them
+ * through the SoldierCommonAI states it defines), so their function-local statics and guard pairs
+ * land in this unit's .sbss: 260 bytes where retail's object has 112, and .bss is 252 where
+ * retail's is 264. Retail's object has no reference to any of the twelve pairs; the one set lives
+ * in Game/EggPawn.o (init$localstatic4$GetNoneState__11EnemyBaseAIFv at .sbss 0x805EF348) and the
+ * getter bodies are out-of-line GLOBAL functions in Game/EnemyBaseAI.o (GetNoneState at 0x8019F228,
+ * 0x50). Those two section sizes are recorded in _rom_copy_info and _bss_init_info, so the first
+ * differing words of the relinked DOL are in those tables at 0x80003144 and 0x80003328, not in the
+ * unit's own code (72 words). The unit also emits as its own the three EnemyStatFunc stubs retail
+ * imports (fn_8017DE10, vfStat_0x20 and vfStat_0x2C, which retail defines in Game/EggPawnAI.o) and
+ * the two unused-parameter helpers (BkSoldierAI_UnusedPara0x4C and BkSoldierAI_UnusedStatus0x34). */
 /* See EnemyBaseAI (Game/EnemyAI.h). */
 #define ENEMY_BASE_AI_STATES
 #define SOLDIER_COMMON_AI_STATES

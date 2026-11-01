@@ -5,7 +5,19 @@
  * thanks the player (Thanks) and keeps doing so until the target leaves; when it goes down
  * (ToHinshi, "hinshi" is near death) it lies there calling for help (Hinshi). File name inferred
  * from the class. Names marked "(name inferred)" are not original. Definitions are in reverse
- * address order (deferred inlining emits functions last-defined first). */
+ * address order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: the unit does not link in place, and as in Game/BkSoldierAI.cpp the difference is
+ * its statics, not its code. GC/2.7 materialises the function-local statics of inline base-class
+ * members here (the guard pair of EnemyStatFunc's vfStat_0xA8 and the state pairs of the
+ * SoldierCommonAI states it defines), which leaves .sbss at 140 bytes where retail's object has
+ * 112, and .bss at 132 where retail's has 280: retail's unit holds most of those state objects as
+ * plain .bss records (its s_state$489-style records), where we build them behind a guard. The two
+ * sizes are recorded in _rom_copy_info and _bss_init_info, so the differing words start in those
+ * tables at 0x80003144 and 0x80003328 rather than in the unit's code (72 words). Its own extras
+ * are SoldierCommonAI's destructor (retail's is out of line at 0x8017EE3C) and the three
+ * EnemyStatFunc stubs retail imports from Game/EggPawnAI.o (fn_8017DE10, vfStat_0x20 and
+ * vfStat_0x2C). */
 /* See SoldierCommonAI and EnemyBaseAI (Game/EnemyAI.h). */
 #define SOLDIER_COMMON_AI_STATES
 #define ENEMY_BASE_AI_HELPERS

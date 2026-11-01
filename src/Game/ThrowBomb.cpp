@@ -1,7 +1,11 @@
-/* NonMatching: every function and section matches in objdiff, but GC/2.7 emits ThrowBomb's weak
- * vtable and RTTI record before the control blocks' (retail has __RTTI__9ThrowBomb after
- * __RTTI__Q35boost6detail15sp_counted_base in .sdata), which swaps two .sdata records and the four
- * pointers to them; no source shape tried changed that order.
+/* NonMatching: every function body matches, including the boost shared_ptr wrappers this unit
+ * instantiates (byte-identical to retail's), but GC/2.7 also materializes here the boost vtable
+ * and type_info records that retail's object takes from other units: .sdata holds nine words and
+ * seven pointers too many, in another order, and .data holds the control block of the
+ * PickupCharInfo shared_ptr, which retail folds in from Game/Bomb.o. Three vtable pointers to
+ * those records follow in the link, at DOL 0x80544214, 0x80544234 and 0x80544258. Six source
+ * shapes (moving the class declarations and the boost includes) and the
+ * BOOST_SP_EXTERN_BASE_DESTRUCTOR lever left the order unchanged.
  *
  * ThrowBomb (class name from RTTI): the bomb that bosses and enemies throw (Heavy Dog, ...). Its
  * implementation, ThrowBombImpl (class name from RTTI), keeps a PickupCharInfo, so characters can
@@ -977,8 +981,9 @@ void ThrowBombImpl::Finish() {
     }
 }
 
-/* The task's name. Unused (the task uses the literal), but it puts the string in .rodata ahead of
- * the RTTI names, where retail has it; the linker drops the pointer. */
+/* The task's name. Unused (the task assigns the literal below), but it leaves the string in
+ * .rodata at the offset retail's copy is at; the pointer itself is one of the .sdata words
+ * retail's object does not have. */
 static const char *s_taskName = "ThrowBomb";
 
 ThrowBombTask::ThrowBombTask(Task *parent, const boost::shared_ptr<ThrowBombImpl> &bomb)
