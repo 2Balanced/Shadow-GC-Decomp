@@ -8,11 +8,15 @@
  * inferred; the functions other units call keep their fn_ names. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 90 of 93 functions match, and every data section. fn_80298E5C and fn_80298E88
- * differ by two swapped instructions each: retail loads ctrl->m_card above the store of the link
- * register, GC/2.7 does not (as in Game/VehiclePathMove.cpp and Game/CameraScreenSet.cpp). PollOpen
- * (0x8029AD94) has its case 2 as a separate switch range that retail sends to the shared failure
- * block; GC/2.7 keeps the duplicated block (16 instructions; see the comment there). */
+ * NonMatching: 92 of 93 functions match, and every data section.  Only PollOpen (0x8029AD94) is
+ * open, and it is a switch-lowering floor rather than a source-shape problem: retail lowers the
+ * request switch as a binary search rooted at case 3 (test 3, then 2 below it, then 6 above it,
+ * nine instructions) with all five failure arms reaching one shared five-instruction block, while
+ * GC/2.7 range-folds the {2,3,6,default} arm into three tests (test 6, then >=7, then >=4).  Every
+ * label grouping that keeps retail's tree (case 2 as its own group, case 3/6/default merged, tried
+ * with the switch expression as s32, u32, an enum and a local copy, and with every order of the
+ * groups) clones the failure block instead of sharing it, and every grouping that shares the block
+ * folds the ranges; 50+ shapes land on 52-73 instructions against retail's 58. */
 #include "Game/MemoryCardCtrl.h"
 #include "Game/MemoryCardCrypt.h"
 #include "Game/Task.h"
@@ -901,16 +905,15 @@ void MemoryCard::PollOpen() {
     if (result == CARD_RESULT_READY) {
         m_flags |= 2;
         m_work->m_fileNo = m_work->m_fileInfo.fileNo;
-        /* Retail compares the request as in PollGetStatus, with case 2 sent to the failure block
-         * above it; GC/2.7 keeps a copy of the block for case 2 instead of merging the two. */
+        /* Retail lowers this switch as a binary search rooted at case 3 (test 3, then 2 below it,
+         * then 6 above it) with all five failure arms reaching one shared block; GC/2.7 range-folds
+         * the {2,3,6,default} arm into three tests, and every grouping that keeps retail's tree
+         * clones the block instead (see the note at the top of this file). */
         switch (m_request) {
+        case 2:
         case 3:
         case 6:
         default:
-            m_result = 2;
-            Fail();
-            break;
-        case 2:
             m_result = 2;
             Fail();
             break;

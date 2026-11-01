@@ -10,11 +10,19 @@
  * .text as a whole, and 62 of the 64 stand in retail's order. The two shared helpers do not:
  * retail emits them inside the tree's instance run (fn_80012E90 after value_compare's operator(),
  * fn_80013398 right after erase), as if they were instances of a template, while GC/2.7 emits
- * them here as a pair in front of erase_one. Their place does not follow the place their
- * definitions have in the unit: with the two blocks later in the unit, one of them is emitted
- * before everything else; as friends of a class template (the shape that fits fn_8000CD64's group
- * in Game/CameraFactory.cpp) they come out separately but at 24 and 66 of 68, four functions too
- * many. Retail's data also needs three tails we do not write: 2 B in .rodata after the last string
+ * them here as a pair in front of erase_one, and no shape tried moves them apart:
+ *  - writing either definition anywhere in the unit (nine places, from in front of the manager's
+ *    destructor down to in front of Tick) keeps the two adjacent and moves them as a pair;
+ *  - writing them as friends of a class template, the shape that fits fn_8000CD64's group in
+ *    Game/CameraFactory.cpp, emits them separately but at 24 and 66 of 68, four too many;
+ *  - writing them in <map_impl> between its own members (behind a macro only this unit defines)
+ *    emits them where that text sits, at 0 and 1 of 64, never among the instances.
+ * Retail's own call graph rules out a place for them too: fn_80012E90's first caller,
+ * fn_80012A30, stands four places before value_compare's operator() while the helper itself is
+ * after it, so GC/2.7 does not put a non-template function where it is first needed here. What
+ * the link needs from them is only the distance: with the pair at 32 and 33, three bl words in
+ * other units' callers change (0x800124f8, 0x80012878 and 0x8001294c), which is all that keeps
+ * this unit's flip from holding main.dol. Retail's data also needs three tails we do not write: 2 B in .rodata after the last string
  * pool entry, 4 B in .bss after the manager and 3 B in .sdata2 after its pool constant. Its .sdata is
  * the right size but not the right order: the three RTTI records come before the two tree flags,
  * where our trailing #include <map_impl> emits the flags first. */
