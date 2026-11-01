@@ -385,7 +385,7 @@ config.libs = [
             Object(Matching, "Game/AdvBattleMode.cpp"),
             Object(Matching, "Game/AdvBgm.cpp"),
             Object(Matching, "Game/AdvLogo.cpp"),
-            Object(NonMatching, "Game/AdvMemoryCheck.cpp"),
+            Object(Matching, "Game/AdvMemoryCheck.cpp"),
             Object(Matching, "Game/AdvMessage.cpp"),
             Object(Matching, "Game/AdvMovie.cpp"),
             Object(Matching, "Game/AirBoltModel.cpp"),

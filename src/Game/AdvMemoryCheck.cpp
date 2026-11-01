@@ -112,11 +112,14 @@ bool Checker::Tick() {
                 }
                 m_state = 1;
                 fn_80173878(1, 1, 1.0f);
-            } else if (m_language != lbl_8057D6A0.m_language) {
-                /* Retail holds m_language in r4 and the game state's language in r0 here;
-                 * GC/2.7 swaps them to r0 and r3 for every shape tried (a local, a pointer or
-                 * reference to the state, an inline getter or helper, early-out control flow),
-                 * so this function stays at 99.65%. */
+            } else if (m_language != ((UnkGameState_8057D6A0 *)&lbl_8057D6A0)->m_language) {
+                /* The cast to a pointer of the state's own type is what makes GC/2.7 hold the
+                 * checker's field in r4 (loaded before the state's address is finished) and reuse
+                 * r0 for the store, as retail does; the plain `lbl_8057D6A0.m_language` and other
+                 * spellings (&(...)->, (...)[0]., a reference or getter, a local, a helper taking
+                 * the value, a reference or a pointer, or the state's address) all put the state's
+                 * load first and its value in r3, and the reversed or unsigned comparison changes
+                 * the compare, not the loads. */
                 m_language = lbl_8057D6A0.m_language;
                 fn_802BEF78(fn_801E5D48());
                 fn_802BEFB4(fn_801E5D48());
