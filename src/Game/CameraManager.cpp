@@ -9,23 +9,34 @@
  * from the class's role; other names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: every function body matches, but the unit does not link in place, and what is wrong
- * is the order of its .sbss records. Retail's .sbss is 12 bytes at 0x805EDFB0: the byte static
- * s_screenGuard (0x805EDFB0), then the guard bytes of the two shared_ptr control blocks, @505 at
- * 0x805EDFB4 and @482 at 0x805EDFB8, each byte followed by a three-byte gap; ours is nine bytes
- * with the same three records but the last two the other way round, our @482 first. The guards are
- * read through r13, so the inverted pair alone costs two addi immediates: 0x8000d33c, in
+ * NonMatching: every function body matches, but the unit does not link in place, and what is left is
+ * one crossed pair of shared_ptr control blocks. Retail's .sbss is 12 bytes at 0x805EDFB0: the byte
+ * static s_screenGuard (0x805EDFB0), then the guard bytes of the two control blocks, @505 at
+ * 0x805EDFB4 and @482 at 0x805EDFB8, each byte followed by a three-byte gap; ours is nine bytes with
+ * the same three records but our CameraManagerUnit guard first. The guards are read through r13, so
+ * the inverted pair alone costs two addi immediates: 0x8000d33c, in
  * __ct<CameraManagerUnit>__shared_ptr<CameraManagerUnit>FPQ..., holds 880d2b74 where retail has
  * 880d2b78, and 0x8000d7bc, in the CameraShake one, holds the same two displacements the other way
- * round. Retail therefore lays the guards out in the opposite order to the functions that use them
- * (its CameraManagerUnit constructor is the first of the two, at 0x8000D338), which is why moving
- * the three statics to the end of the unit, tried and reverted, only puts the screen guard last,
- * which retail does not want, and makes the diff larger. Retail's .bss (s_screenRecord at
- * 0x8056EE50 then s_screen) is already laid out as we write it, and so are the control blocks'
- * vtables in .data; the rest of the 120 bytes in ten ranges are the bl displacement at 0x8000defc,
- * inside dispose__ of the CameraManagerUnit control block, and the 84 bytes of type names at
- * 0x804AA4C0..0x804AA514, which retail orders the other way round. Retail also has an unused
- * function first (stripped), whose instances the vector's begin and end and fn_8000D0F0 are. */
+ * round. The same crossing runs through the checked_deleter half of both control blocks: retail's
+ * dispose__ of the CameraManagerUnit block (.text+0xe54), its type name (@749, the 72 bytes at
+ * 0x804AA480) and its __RTTI__Q25boostN12checked_deleter...E record (.sdata+0x28) all come first,
+ * while ours put CameraShake's three first (dispose__ at .text+0x1150) and cost 0x8000defc, the
+ * 84 bytes of type names at 0x804AA4C0..0x804AA514 and two .sdata words. The two shared_ptr and
+ * control-block constructors, the two control-block vtables in .data (CameraShake's at +0xc,
+ * CameraManagerUnit's at +0x30) and the impl __RTTI__ records at .sdata+0x8 and +0x10 already follow
+ * retail, so only the deleter half is crossed; and the order does not answer to the shape of the
+ * source: including CameraManagerUnit.h before CameraShake.h, and keeping the CameraShake new behind
+ * the CameraManagerUnit one behind a file-scope inline helper, were both tried and changed nothing
+ * (the helper also cost an out-of-line MakeShake). The first two macros below are what puts our
+ * .data records exactly where retail's are, the 4-byte gap retail has at its end
+ * (gap_07_8051C594_data) aside: the shared_ptr base destructor goes to the library, which retires
+ * our local copy of the base's vtable, its __RTTI__ record and its .sdata word, and std::exception's
+ * what() goes out of line, which retires our local copy of that vtable, its RTTI and the
+ * "exception" string; retail's object references all three by name.
+ * Retail also has an unused function first (stripped), whose instances the vector's begin and end and
+ * fn_8000D0F0 are. */
+#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
+#define MSL_EXCEPTION_WHAT_OUT_OF_LINE
 #define MSL_NEW_INLINE_BAD_ALLOC
 #define MSL_VECTOR_AT
 #define MSL_VECTOR_DESTROY_ALL_LATE
@@ -35,9 +46,9 @@
 #include <new>
 #include <vector>
 
-#include "Game/CameraManagerUnit.h"
-#include "Game/CameraModeUser.h"
 #include "Game/CameraShake.h"
+#include "Game/CameraModeUser.h"
+#include "Game/CameraManagerUnit.h"
 #include "Game/CameraState.h"
 #include "Game/MathTypes.h"
 #include "Game/ScreenHolder.h"
@@ -188,14 +199,10 @@ extern "C" void fn_8000D8EC(CameraManager *manager, int kind, int index, float s
 }
 
 /* A shake from its values. */
-inline boost::shared_ptr<CameraShake> MakeShake(float duration, float amplitude, float frequency) {
-    return boost::shared_ptr<CameraShake>(new CameraShake(duration, amplitude, frequency));
-}
-
-/* Starts a shake on a screen's camera. */
 extern "C" void fn_8000D664(CameraManager *manager, int index, float duration, float amplitude,
                             float frequency) {
-    fn_8000D0F0(manager, index)->m_shake = MakeShake(duration, amplitude, frequency);
+    fn_8000D0F0(manager, index)->m_shake =
+        boost::shared_ptr<CameraShake>(new CameraShake(duration, amplitude, frequency));
 }
 
 /* Stops a screen's shake. */

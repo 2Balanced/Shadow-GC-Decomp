@@ -2,16 +2,27 @@
 #define MSL_EXCEPTION_H_
 
 /* Declarations only: the game is built with C++ exceptions off, so nothing here is called. Boost's
- * headers need the names. */
+ * headers need the names. The destructor is inline and empty, as the game's is: a unit that defines
+ * bad_alloc inline (MSL_NEW_INLINE_BAD_ALLOC) stores this class's vtable while destroying a
+ * bad_alloc, and calls nothing. In the library what() is out of line, which makes it the key
+ * function, so a unit that only needs the class's vtable references it; a unit that defines
+ * MSL_EXCEPTION_WHAT_OUT_OF_LINE before including this header gets that shape, and with it no local
+ * copy of the vtable and no copy of the name what() returns (Game/CameraManager.cpp's retail object
+ * references both). The rest of the game's units hold their own local copy, which the inline body
+ * gives. */
 namespace std {
 
 class exception {
   public:
     exception() {}
     virtual ~exception() {}
+#ifdef MSL_EXCEPTION_WHAT_OUT_OF_LINE
+    virtual const char *what() const;
+#else
     virtual const char *what() const {
         return "exception";
     }
+#endif
 };
 
 class bad_exception : public exception {};
