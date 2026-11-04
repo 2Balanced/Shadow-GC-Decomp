@@ -91,6 +91,8 @@ When two people need the same file, sync first and keep each change small.
 | `LICENSE`, `include/boost/LICENSE_1_0.txt` | Never change. |
 | `config/GUPE8P/splits.txt` | Insert blocks in address order; never reorder existing blocks. |
 | `config/GUPE8P/symbols.txt` | Rename only placeholder names (`fn_`, `lbl_`, `@N`) unless the evidence shows a real name is wrong; record the evidence in the commit message. |
+| `tools/project.py` and the other small template tools (`tools/download_tool.py`, `tools/ninja_syntax.py`, `.flake8`, `.vscode/`) | These are `dtk-template`'s files: no local edits. Pull upstream changes in with `python tools/upstreamdrift.py --apply`. |
+| `configure.py` | Mostly the template's, plus this project's own build steps (the progress tracker). Template changes here have to be merged by hand. |
 
 ## Keeping the progress tracker right
 
@@ -119,6 +121,28 @@ builds, from the build's own report. To keep them correct when people push at ne
 - **No game copy?** If you cannot build, do not touch `docs/progress*`; say so in the pull request
   and the owner adds a tracker commit before merging. Changes to `tools/`, `.github/` and `docs/`
   (other than the tracker) do not affect the fingerprint and need no tracker commit.
+
+## Keeping current with dtk-template
+
+The project's history was squashed, so it shares no ancestor with `encounter/dtk-template` and a
+normal merge is refused. Template updates are a vendor checkout instead:
+
+```sh
+git remote add template https://github.com/encounter/dtk-template   # once per clone
+git fetch template --tags
+python tools/upstreamdrift.py --vendor-ref vendor/template --apply  # what to take, and how
+```
+
+Then rebuild (`python configure.py; ninja -j 8`), confirm the DOL is still identical
+(`python tools/doldiff.py` prints nothing), commit the result on its own as
+`Sync dtk-template to <sha>`, and move the marker so the next run starts there:
+
+```sh
+git tag -f vendor/template <sha>   # and push the tag, so everyone shares the marker
+```
+
+Files the tool marks `diverged` (`configure.py`, `.gitignore`, `README.md`) are ours to maintain;
+read the upstream diff and decide, do not check them out.
 
 ## Code conventions
 

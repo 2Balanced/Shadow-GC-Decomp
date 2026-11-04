@@ -42,6 +42,7 @@ are listed under `force_active` in `config/GUPE8P/config.yml`.
 | `tools/flipsym.py` | repo | Our object versus the retail split object of a whole unit: missing, extra and size-mismatched symbols. `--words .data,.sdata` dumps a data section word by word with the relocation that fills it resolved; `--refs` compares the order in which the two objects first reference each `__vt__`/`__RTTI__` record |
 | `tools/uprobe.py` | repo | Compile one function with several source spellings from a table in `probes/<unit>.py`, and report which spellings change the code |
 | `tools/notesaudit.py` | repo | Which `NonMatching` units have no rationale note yet (`--notes`), and which notes cite a script that is not in git (`--cites`) |
+| `tools/upstreamdrift.py` | repo | What `dtk-template` has changed since the last vendor sync, split into files that can be checked out as-is and files we have edited (`--apply` prints the checkout) |
 | `tools/textorder.py`, `tools/fnorder.py`, `tools/dataorder.py` | repo | What breaks a flip: which functions of a unit would not land at retail's addresses, in retail's order and in ours (`fnorder.py` reads the function symbol values of our single `.text`), and the same section-by-section for one data section |
 | `tools/dolsections.py` | repo | Retail's DOL section table against the sections of the built DOL (`--built-only` for ours), to tell a `.text` drift from a linkinfo-table difference |
 | `tools/class_catalog.py` | repo | List the game's C++ classes from vtables and RTTI |
