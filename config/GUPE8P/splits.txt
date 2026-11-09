@@ -6702,6 +6702,46 @@ Game/SonicteamColor.cpp:
 	.ctors      start:0x804AA058 end:0x804AA05C
 	.sbss       start:0x805F1360 end:0x805F1388
 
+Game/SonicteamKeyboardManager.cpp:
+	extab       start:0x800058C0 end:0x80005928
+	extabindex  start:0x80007838 end:0x80007874
+	.text       start:0x8040D3F0 end:0x8040D640
+
+Game/SonicteamMouseManager.cpp:
+	extab       start:0x80005928 end:0x8000599C
+	extabindex  start:0x80007874 end:0x800078C8
+	.text       start:0x8040D640 end:0x8040D8DC
+	.sdata2     start:0x805FAD88 end:0x805FAD90
+
+Game/SonicteamPadManager.cpp:
+	extab       start:0x8000599C end:0x80005A24
+	extabindex  start:0x800078C8 end:0x80007934
+	.text       start:0x8040D8DC end:0x8040DF10
+	.sdata      start:0x805EDD38 end:0x805EDD40
+	.sdata2     start:0x805FAD90 end:0x805FADA0
+
+Game/SonicteamPad2MouseImplementor.cpp:
+	extab       start:0x80005A24 end:0x80005A34
+	extabindex  start:0x80007934 end:0x8000794C
+	.text       start:0x8040DF10 end:0x8040E048
+	.rodata     start:0x8051A410 end:0x8051A478
+	.data       start:0x80569EC8 end:0x80569EE8
+	.sdata      start:0x805EDD40 end:0x805EDD50
+	.sdata2     start:0x805FADA0 end:0x805FADA8
+
+Game/SonicteamPad2KeyboardImplementor.cpp:
+	extab       start:0x80005A34 end:0x80005A9C
+	extabindex  start:0x8000794C end:0x800079A0
+	.text       start:0x8040E048 end:0x8040E4BC
+	.rodata     start:0x8051A478 end:0x8051A4E8
+	.data       start:0x80569EE8 end:0x80569F08
+	.sdata      start:0x805EDD50 end:0x805EDD60
+
+Game/SonicteamRelocatableFile.cpp:
+	extab       start:0x80005A9C end:0x80005ABC
+	extabindex  start:0x800079A0 end:0x800079D0
+	.text       start:0x8040E4BC end:0x8040E970
+
 Game/SonicUSAAngle.cpp:
 	extab       start:0x80005ABC end:0x80005AD4
 	extabindex  start:0x800079D0 end:0x800079F4
@@ -6718,6 +6758,44 @@ Game/SonicUSARandom.cpp:
 	.rodata     start:0x8051A4F0 end:0x8051A528
 	.data       start:0x80569F08 end:0x80569F28
 	.bss        start:0x805E07C8 end:0x805E11A0
+
+Game/SonicUSAInterpolate.cpp:
+	extab       start:0x80005B24 end:0x80005B44
+	extabindex  start:0x80007A6C end:0x80007A9C
+	.text       start:0x8040EFA4 end:0x8040F364
+	.rodata     start:0x8051A528 end:0x8051A530
+
+Game/SonicUSAEuler.cpp:
+	extab       start:0x80005B44 end:0x80005BE4
+	extabindex  start:0x80007A9C end:0x80007B8C
+	.text       start:0x8040F364 end:0x804103E8
+	.rodata     start:0x8051A530 end:0x8051A540
+
+Game/SonicUSADamping.cpp:
+	extab       start:0x80005BE4 end:0x80005BEC
+	extabindex  start:0x80007B8C end:0x80007B98
+	.text       start:0x804103E8 end:0x80410630
+	.rodata     start:0x8051A540 end:0x8051A558
+
+Game/SonicteamMotionRegistry.cpp:
+	extab       start:0x80005BEC end:0x80005C4C
+	extabindex  start:0x80007B98 end:0x80007C28
+	.text       start:0x80410630 end:0x804110EC
+	.sbss       start:0x805F1388 end:0x805F1398
+	.sdata2     start:0x805FADA8 end:0x805FADB8
+
+Game/SonicteamMotionMemory.cpp:
+	extab       start:0x80005C4C end:0x80005C5C
+	extabindex  start:0x80007C28 end:0x80007C40
+	.text       start:0x804110EC end:0x8041116C
+	.sbss       start:0x805F1398 end:0x805F13A8
+
+Game/SonicteamMotionMatrix.cpp:
+	extab       start:0x80005C5C end:0x80005C8C
+	extabindex  start:0x80007C40 end:0x80007C88
+	.text       start:0x8041116C end:0x80411714
+	.sbss       start:0x805F13A8 end:0x805F13B0
+	.sdata2     start:0x805FADB8 end:0x805FADC0
 
 Game/MotionHalfKeyTrack.cpp:
 	extab       start:0x80005D0C end:0x80005D74

@@ -163,9 +163,13 @@ template <class T> void return_temporary_buffer(T *p) {
     ::operator delete(p);
 }
 
-/* auto_ptr, with the auto_ptr_ref helper that lets it pass through temporaries. */
+/* auto_ptr, with the auto_ptr_ref helper that lets it pass through temporaries. Its members are
+ * declared throw(), as the standard has them: in units built with -Cpp_exceptions on
+ * (Game/SonicteamKeyboardManager.cpp and its neighbours) each out-of-line copy then carries an
+ * exception specification (a frame pointer and a call to __unexpected); with exceptions off the
+ * code is unchanged. */
 template <class Y> struct auto_ptr_ref {
-    explicit auto_ptr_ref(Y *p) : ptr_(p) {}
+    explicit auto_ptr_ref(Y *p) throw() : ptr_(p) {}
 
     Y *ptr_;
 };
@@ -174,48 +178,48 @@ template <class X> class auto_ptr {
   public:
     typedef X element_type;
 
-    explicit auto_ptr(X *p = 0) : ptr_(p) {}
-    auto_ptr(auto_ptr &a) : ptr_(a.release()) {}
-    template <class Y> auto_ptr(auto_ptr<Y> &a) : ptr_(a.release()) {}
-    auto_ptr(auto_ptr_ref<X> r) : ptr_(r.ptr_) {}
-    ~auto_ptr() {
+    explicit auto_ptr(X *p = 0) throw() : ptr_(p) {}
+    auto_ptr(auto_ptr &a) throw() : ptr_(a.release()) {}
+    template <class Y> auto_ptr(auto_ptr<Y> &a) throw() : ptr_(a.release()) {}
+    auto_ptr(auto_ptr_ref<X> r) throw() : ptr_(r.ptr_) {}
+    ~auto_ptr() throw() {
         delete ptr_;
     }
 
-    auto_ptr &operator=(auto_ptr &a) {
+    auto_ptr &operator=(auto_ptr &a) throw() {
         reset(a.release());
         return *this;
     }
-    template <class Y> auto_ptr &operator=(auto_ptr<Y> &a) {
+    template <class Y> auto_ptr &operator=(auto_ptr<Y> &a) throw() {
         reset(a.release());
         return *this;
     }
 
-    X &operator*() const {
+    X &operator*() const throw() {
         return *ptr_;
     }
-    X *operator->() const {
+    X *operator->() const throw() {
         return ptr_;
     }
-    X *get() const {
+    X *get() const throw() {
         return ptr_;
     }
-    X *release() {
+    X *release() throw() {
         X *tmp = ptr_;
         ptr_ = 0;
         return tmp;
     }
-    void reset(X *p = 0) {
-        if (p != ptr_) {
+    void reset(X *p = 0) throw() {
+        if (ptr_ != p) {
             delete ptr_;
             ptr_ = p;
         }
     }
 
-    template <class Y> operator auto_ptr_ref<Y>() {
+    template <class Y> operator auto_ptr_ref<Y>() throw() {
         return auto_ptr_ref<Y>(release());
     }
-    template <class Y> operator auto_ptr<Y>() {
+    template <class Y> operator auto_ptr<Y>() throw() {
         return auto_ptr<Y>(release());
     }
 

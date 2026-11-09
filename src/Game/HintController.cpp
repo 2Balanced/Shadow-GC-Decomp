@@ -41,7 +41,7 @@ class UnkPlayerManager_8006D6A8 {
 class UnkFileSystem_800371D8;
 
 /* The reader of a loaded hint script (struct name unknown; a 0x28-byte object built by
- * fn_8040E61C, see StageManager.cpp). */
+ * __ct__16UnkPath_8040E61CFPv, see StageManager.cpp). */
 struct UnkPath_8040E61C {
     /* 0x00 */ u8 field_0x0[0x14];
     /* 0x14 */ void *m_nodes;
@@ -59,8 +59,8 @@ UnkFileSystem_800371D8 *fn_800371D8(void);
 void *fn_8004509C(UnkFileSystem_800371D8 *fileSystem, const char *path, u32 *size);
 void fn_80049B34(void *data);
 /* Builds and destroys the script's reader (see StageManager.cpp). */
-UnkPath_8040E61C *fn_8040E61C(UnkPath_8040E61C *path, void *data);
-void fn_8040E57C(UnkPath_8040E61C *path, int free);
+UnkPath_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkPath_8040E61C *path, void *data);
+void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 int sprintf(char *buffer, const char *format, ...);
 }
 
@@ -181,7 +181,7 @@ extern "C" void fn_802F2E44(void) {
     if ((s_file = fn_8004509C(fn_800371D8(), path, &size)) != 0) {
         UnkPath_8040E61C *reader = (UnkPath_8040E61C *)operator new(0x28);
         if (reader != 0) {
-            reader = fn_8040E61C(reader, s_file);
+            reader = __ct__16UnkPath_8040E61CFPv(reader, s_file);
         }
         s_reader = reader;
         s_script = (const HintScriptEntry *)reader->m_nodes;
@@ -190,7 +190,7 @@ extern "C" void fn_802F2E44(void) {
 
 extern "C" void fn_802F2DEC(void) {
     if (s_reader != 0) {
-        fn_8040E57C(s_reader, 1);
+        __dt__16UnkPath_8040E61CFv(s_reader, 1);
         s_reader = 0;
     }
     if (s_file != 0) {

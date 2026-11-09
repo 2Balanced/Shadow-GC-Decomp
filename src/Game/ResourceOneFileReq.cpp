@@ -91,7 +91,7 @@ struct UnkBinData_8040E61C {
     /* 0x1C */ int m_refCount;
 };
 
-/* The 0x28-byte object built over a .BIN or .PTB/.CCL file (fn_8040E61C; name as in
+/* The 0x28-byte object built over a .BIN or .PTB/.CCL file (__ct__16UnkPath_8040E61CFPv; name as in
  * Game/AudioDataBank.cpp); its data at 0x14. */
 struct UnkPath_8040E61C {
     /* 0x00 */ u8 field_0x0[0x14];
@@ -167,8 +167,8 @@ void *fn_8004B70C(UnkOneFile_8004CFB0 *file, int index, void *arg2, void *arg3);
 void *fn_8004ADB0(UnkOneFile_8004CFB0 *file, int index, void *arg2, void *arg3);
 /* The object built over a .BIN or .PTB/.CCL file: construction, destruction, and a named part
  * (behaviour inferred). */
-UnkPath_8040E61C *fn_8040E61C(UnkPath_8040E61C *path, void *data);
-void fn_8040E57C(UnkPath_8040E61C *path, int free);
+UnkPath_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkPath_8040E61C *path, void *data);
+void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 void *fn_8040E4BC(UnkPath_8040E61C *path, const char *name);
 /* RenderWare: texture dictionaries and textures, clumps, the world, hierarchies, motions, UV
  * animations and materials (behaviour inferred). */
@@ -581,7 +581,7 @@ bool ResourceOneFileReq::LoadFiles(UnkOneFile_8004CFB0 *file) {
             m_entries[slot].m_type = 7;
             UnkPath_8040E61C *path = new UnkPath_8040E61C;
             if (path != 0) {
-                path = fn_8040E61C(path, m_entries[slot].m_data);
+                path = __ct__16UnkPath_8040E61CFPv(path, m_entries[slot].m_data);
             }
             m_entries[slot].m_file = path;
             m_entries[slot].m_size = info->m_size;
@@ -635,7 +635,7 @@ bool ResourceOneFileReq::LoadBinFiles(UnkOneFile_8004CFB0 *file) {
             m_entries[slot].m_type = 6;
             UnkPath_8040E61C *path = new UnkPath_8040E61C;
             if (path != 0) {
-                path = fn_8040E61C(path, data);
+                path = __ct__16UnkPath_8040E61CFPv(path, data);
             }
             m_entries[slot].m_file = path;
             RequestReferences(path->m_data, file);
@@ -676,13 +676,13 @@ bool ResourceOneFileReq::Unload() {
             break;
         case 6:
             if (entry.m_file != 0) {
-                fn_8040E57C(entry.m_file, 1);
+                __dt__16UnkPath_8040E61CFv(entry.m_file, 1);
             }
             fn_80049B34(m_entries[i].m_data);
             break;
         case 7:
             if (entry.m_file != 0) {
-                fn_8040E57C(entry.m_file, 1);
+                __dt__16UnkPath_8040E61CFv(entry.m_file, 1);
             }
             fn_80049B34(m_entries[i].m_data);
             break;

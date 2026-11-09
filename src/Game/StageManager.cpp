@@ -225,8 +225,8 @@ extern "C" {
 /* The constructors and destructors of the two (they keep their fn_ names). */
 void *fn_8034B63C(void *object);
 void fn_8034B548(void *object, int free);
-void *fn_8040D594(void *object);
-void fn_8040D4B8(void *object, int free);
+void *__ct__27UnkKeyboardManager_8040D594Fv(void *object);
+void __dt__27UnkKeyboardManager_8040D594Fv(void *object, int free);
 void *__register_global_object(void *object, void *destructor, void *record);
 }
 
@@ -262,8 +262,8 @@ void fn_8001E20C(void *paths, void *nodes);
 void fn_8001D9C0(void *paths, void *nodes, const Vec3f *origin, Vec3f scale, int arg4, int arg5,
                  UnkVecPair_8001C4B8 *axes, bool (*filter)(const u32 *flags), int arg8);
 UnkVecPair_8001C4B8 *fn_8001C4B8(UnkVecPair_8001C4B8 *pair, const Vec3f *a, const Vec3f *b);
-UnkPath_8040E61C *fn_8040E61C(UnkPath_8040E61C *path, void *data);
-void fn_8040E57C(UnkPath_8040E61C *path, int free);
+UnkPath_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkPath_8040E61C *path, void *data);
+void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 void fn_80049B34(void *p);
 void *fn_80049B90(u32 size, int heap);
 UnkArchive_8004CFB0 *fn_8004CFB0(UnkArchive_8004CFB0 *archive, int arg1, int arg2);
@@ -695,7 +695,7 @@ bool StageManager::Run() {
 extern "C" UnkObject_80177D1C *fn_80177D1C(void) {
     if (lbl_805EDF84 == 0) {
         if (!s_objectInitialized) {
-            __register_global_object(fn_8040D594(s_objectObject), fn_8040D4B8, s_objectRecord);
+            __register_global_object(__ct__27UnkKeyboardManager_8040D594Fv(s_objectObject), __dt__27UnkKeyboardManager_8040D594Fv, s_objectRecord);
             s_objectInitialized = 1;
         }
         lbl_805EDF84 = (UnkObject_80177D1C *)s_objectObject;
@@ -782,7 +782,7 @@ static bool IsPathNodeHidden(const u32 *flags) {
 static void OnPathLoaded(void *) {
     UnkPath_8040E61C *path = (UnkPath_8040E61C *)operator new(0x28);
     if (path != 0) {
-        path = fn_8040E61C(path, s_pathData);
+        path = __ct__16UnkPath_8040E61CFPv(path, s_pathData);
     }
     s_path = path;
     void *nodes = path->m_nodes;
@@ -873,7 +873,7 @@ void StageManager::ReleasePath() {
 extern "C" void fn_8017743C(void) {
     fn_8001E358(fn_8001B494());
     if (s_path != 0) {
-        fn_8040E57C(s_path, 1);
+        __dt__16UnkPath_8040E61CFv(s_path, 1);
         s_path = 0;
     }
     if (s_pathData != 0) {

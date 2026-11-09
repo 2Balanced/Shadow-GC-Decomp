@@ -37,7 +37,7 @@ struct UnkOneFileEntry_8004CA28 {
     /* 0x2C */ u32 m_size;
 };
 
-/* The 0x28-byte object built over a .PTB/.CCL file (fn_8040E61C); its data at 0x14. */
+/* The 0x28-byte object built over a .PTB/.CCL file (__ct__16UnkPath_8040E61CFPv); its data at 0x14. */
 struct UnkPath_8040E61C {
     /* 0x00 */ u8 field_0x0[0x14];
     /* 0x14 */ void *m_data;
@@ -87,8 +87,8 @@ RwTexDictionary *fn_8004BF40(UnkOneFile_8004CFB0 *file, int index, void *arg2, v
 RpClump *fn_8004BB24(UnkOneFile_8004CFB0 *file, int index, void *arg2, void *arg3);
 void *fn_8004B70C(UnkOneFile_8004CFB0 *file, int index, void *arg2, void *arg3);
 /* The object built over a .PTB/.CCL file: construction and destruction (behaviour inferred). */
-UnkPath_8040E61C *fn_8040E61C(UnkPath_8040E61C *path, void *data);
-void fn_8040E57C(UnkPath_8040E61C *path, int free);
+UnkPath_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkPath_8040E61C *path, void *data);
+void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 /* RenderWare and the managers above: texture dictionaries, clumps, hierarchies, motions and UV
  * animations (behaviour inferred). */
 RwTexDictionary *fn_8048D0C4(RwTexDictionary *dict);
@@ -499,7 +499,7 @@ bool ResourceOneFile::LoadFiles(UnkOneFile_8004CFB0 *file) {
             m_entries[j].m_type = 6;
             UnkPath_8040E61C *path = new UnkPath_8040E61C;
             if (path != 0) {
-                path = fn_8040E61C(path, m_entries[j].m_data);
+                path = __ct__16UnkPath_8040E61CFPv(path, m_entries[j].m_data);
             }
             m_entries[j].m_file = path;
             m_entries[j].m_size = info->m_size;
@@ -572,7 +572,7 @@ bool ResourceOneFile::Unload() {
             break;
         case 6:
             if (entry.m_file != 0) {
-                fn_8040E57C(entry.m_file, 1);
+                __dt__16UnkPath_8040E61CFv(entry.m_file, 1);
             }
             fn_80049B34(m_entries[i].m_data);
             break;

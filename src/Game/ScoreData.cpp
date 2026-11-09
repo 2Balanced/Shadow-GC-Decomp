@@ -41,8 +41,8 @@ struct UnkTableFile_8040E61C {
     /* 0x18 */ u8 field_0x18[0x28 - 0x18];
 };
 
-extern "C" UnkTableFile_8040E61C *fn_8040E61C(UnkTableFile_8040E61C *table, void *data);
-extern "C" void fn_8040E57C(UnkTableFile_8040E61C *table, int free);
+extern "C" UnkTableFile_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkTableFile_8040E61C *table, void *data);
+extern "C" void __dt__16UnkPath_8040E61CFv(UnkTableFile_8040E61C *table, int free);
 
 /* The record the two initializers below set up (struct name unknown). */
 struct UnkRecord_802062FC {
@@ -87,7 +87,7 @@ extern "C" void fn_802064E4(void) {
     if (s_file != 0) {
         UnkTableFile_8040E61C *table = (UnkTableFile_8040E61C *)operator new(0x28);
         if (table != 0) {
-            table = fn_8040E61C(table, s_file);
+            table = __ct__16UnkPath_8040E61CFPv(table, s_file);
         }
         s_table = table;
         s_rows = s_table->m_columns[0];
@@ -97,7 +97,7 @@ extern "C" void fn_802064E4(void) {
 /* Frees the table (name inferred). */
 extern "C" void fn_80206494(void) {
     if (s_table != 0) {
-        fn_8040E57C(s_table, 1);
+        __dt__16UnkPath_8040E61CFv(s_table, 1);
         s_table = 0;
     }
     if (s_file != 0) {

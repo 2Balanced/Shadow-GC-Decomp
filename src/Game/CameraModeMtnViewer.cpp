@@ -32,8 +32,8 @@ struct UnkPad_8040DB6C {
 
 extern "C" {
 /* The pad manager's constructor and destructor, and one of its pads (behaviour inferred). */
-void *fn_8040DC5C(void *object);
-void fn_8040DB80(void *object, int flags);
+void *__ct__22UnkPadManager_8040DC5CFv(void *object);
+void __dt__22UnkPadManager_8040DC5CFv(void *object, int flags);
 UnkPad_8040DB6C *fn_8040DB6C(void *manager, u32 index);
 void *__register_global_object(void *object, void *destructor, void *record);
 
@@ -94,7 +94,7 @@ extern "C" {
 void *fn_80009208(void) {
     if (lbl_805EDF8C == 0) {
         if (!s_padManagerInitialized) {
-            __register_global_object(fn_8040DC5C(s_padManagerObject), fn_8040DB80,
+            __register_global_object(__ct__22UnkPadManager_8040DC5CFv(s_padManagerObject), __dt__22UnkPadManager_8040DC5CFv,
                                      s_padManagerRecord);
             s_padManagerInitialized = 1;
         }

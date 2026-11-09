@@ -151,15 +151,15 @@ void fn_8040D8DC(void *manager, std::auto_ptr<IManagerImp> imp);
 UnkPad_8040DB6C *fn_8040DB6C(void *manager, u32 index);
 /* The mouse manager: its constructor and destructor, installing an implementation, a mouse and its
  * speed (behaviour inferred). */
-UnkMouse_8040D7C4 *fn_8040D7C4(void *object);
-void fn_8040D714(void *object, int flags);
+UnkMouse_8040D7C4 *__ct__17UnkMouse_8040D7C4Fv(void *object);
+void __dt__17UnkMouse_8040D7C4Fv(void *object, int flags);
 void fn_8040D640(UnkMouse_8040D7C4 *manager, std::auto_ptr<IMouseManagerImp> imp, int index);
 void *fn_8040D708(UnkMouse_8040D7C4 *manager, int index);
 void fn_8040D850(void *mouse, float speed);
 /* The keyboard manager, installing its implementation, and binding a key (behaviour inferred). */
 void *fn_80177D1C(void);
 void fn_8040D3F0(void *manager, std::auto_ptr<IKeyboardManagerImp> imp);
-void fn_8040E330(Pad2Keyboard::UnkKey_8040E330 *key, int code);
+void SetKey__Q59Sonicteam6System10Peripheral12Pad2Keyboard3KeyFUs(Pad2Keyboard::UnkKey_8040E330 *key, int code);
 }
 
 /* The game's pad state (struct name unknown; names inferred). Index 2 of the player pads means
@@ -228,7 +228,7 @@ inline UnkMouse_8040D7C4 *&MouseRef(UnkMouse_8040D7C4 *&x) {
 inline UnkMouse_8040D7C4 *GetMouse() {
     if (lbl_805EDF88 == 0) {
         if (!s_mouseInitialized) {
-            __register_global_object(fn_8040D7C4(s_mouseObject), fn_8040D714, s_mouseRecord);
+            __register_global_object(__ct__17UnkMouse_8040D7C4Fv(s_mouseObject), __dt__17UnkMouse_8040D7C4Fv, s_mouseRecord);
             s_mouseInitialized = 1;
         }
         lbl_805EDF88 = (UnkMouse_8040D7C4 *)s_mouseObject;
@@ -267,9 +267,9 @@ void UnkPads_80051734::Init() {
             fn_8040D850(fn_8040D708(GetMouse(), 0), 1.5f);
         }
         Pad2Keyboard::Implementor *keyboard = new Pad2Keyboard::Implementor(3);
-        fn_8040E330(&keyboard->m_keys[4], 0x47);
-        fn_8040E330(&keyboard->m_keys[5], 0x48);
-        fn_8040E330(&keyboard->m_keys[13], 0x3B);
+        SetKey__Q59Sonicteam6System10Peripheral12Pad2Keyboard3KeyFUs(&keyboard->m_keys[4], 0x47);
+        SetKey__Q59Sonicteam6System10Peripheral12Pad2Keyboard3KeyFUs(&keyboard->m_keys[5], 0x48);
+        SetKey__Q59Sonicteam6System10Peripheral12Pad2Keyboard3KeyFUs(&keyboard->m_keys[13], 0x3B);
         std::auto_ptr<IKeyboardManagerImp> keys(keyboard);
         fn_8040D3F0(fn_80177D1C(), keys);
     }

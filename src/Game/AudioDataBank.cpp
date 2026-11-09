@@ -20,8 +20,8 @@ UnkFileSystem_800371D8 *fn_800371D8(void);
 void *fn_8004509C(UnkFileSystem_800371D8 *fileSystem, const char *path, u32 *size);
 void fn_80049B34(void *data);
 /* Builds and destroys a file's reader (see Game/HintController.cpp). */
-UnkPath_8040E61C *fn_8040E61C(UnkPath_8040E61C *path, void *data);
-void fn_8040E57C(UnkPath_8040E61C *path, int free);
+UnkPath_8040E61C *__ct__16UnkPath_8040E61CFPv(UnkPath_8040E61C *path, void *data);
+void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 }
 
 /* The reader's view of a bank file (struct name unknown). */
@@ -70,7 +70,7 @@ inline bool UnloadGroup(UnkSoundBank_801D8890 *bank, int group) {
     }
     UnkSoundBankGroup *g = &bank->m_groups[group];
     if (g->m_file != 0) {
-        fn_8040E57C(g->m_reader, 1);
+        __dt__16UnkPath_8040E61CFv(g->m_reader, 1);
         g->m_reader = 0;
         fn_80049B34(g->m_file);
         g->m_file = 0;
@@ -100,7 +100,7 @@ bool UnkSoundBank_801D8890::LoadFile(const char *file, int group) {
     g->m_file = data;
     UnkPath_8040E61C *reader = (UnkPath_8040E61C *)operator new(0x28);
     if (reader != 0) {
-        reader = fn_8040E61C(reader, data);
+        reader = __ct__16UnkPath_8040E61CFPv(reader, data);
     }
     g->m_reader = reader;
     s32 *header = g->m_reader->m_header;
