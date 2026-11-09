@@ -24,6 +24,24 @@
 
 struct RwFrame;
 
+#ifdef EFFECT_ELEMENT_FULL
+struct RwV3d;
+struct UnkLocusVertex_80439B18;
+
+/* An immediate-mode 2D vertex (RwIm2DVertex on GameCube; Game/EffectShimmerRW3.cpp). */
+struct UnkIm2DVertex_804342CC {
+    /* 0x00 */ float x;
+    /* 0x04 */ float y;
+    /* 0x08 */ float z;
+    /* 0x0C */ u8 r;
+    /* 0x0D */ u8 g;
+    /* 0x0E */ u8 b;
+    /* 0x0F */ u8 a;
+    /* 0x10 */ float u;
+    /* 0x14 */ float v;
+};
+#endif
+
 namespace Effect {
 namespace System {
 
@@ -88,7 +106,16 @@ class EffectShimmerRW3 : public ::Effect::System::EffectShimmer {
     virtual void Draw();
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x158 */ u8 field_0x158[0x1D8 - 0x158];
+    /* The members below are Game/EffectShimmerRW3.cpp's (names inferred). */
+    /* 0x158 */ UnkIm2DVertex_804342CC m_quad[4]; /* the screen area the effect covers */
+    /* 0x1B8 */ UnkIm2DVertex_804342CC *m_vertices; /* the grid as a triangle strip */
+    /* 0x1BC */ RwV3d *m_points;   /* the grid's points */
+    /* 0x1C0 */ float *m_waveX;    /* the wave's offsets along each column and row */
+    /* 0x1C4 */ float *m_waveY;
+    /* 0x1C8 */ s32 m_vertexCount;
+    /* 0x1CC */ s32 m_pointCount;
+    /* 0x1D0 */ float m_phaseX;
+    /* 0x1D4 */ float m_phaseY;
 #endif
 };
 
@@ -120,7 +147,11 @@ class EffectLocusRW3 : public ::Effect::System::EffectLocus {
     virtual void Draw();
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x170 */ u8 field_0x170[0x17C - 0x170];
+    /* Fills m_vertices from the trail's points (0x80439B18, Game/EffectLocusRW3.cpp). */
+    void BuildVertices();
+
+    /* 0x170 */ ::UnkLocusVertex_80439B18 *m_vertices; /* two per point and section */
+    /* 0x174 */ u8 field_0x174[0x17C - 0x174];
 #else
     /* 0x054 */ u8 field_0x54[0x108 - 0x54];
     /* 0x108 */ u32 field_0x108; /* bit 1: show or hide requested, bit 2: hide (see

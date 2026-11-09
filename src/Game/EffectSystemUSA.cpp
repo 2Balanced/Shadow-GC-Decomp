@@ -88,7 +88,7 @@ namespace SonicteamUSA {
 namespace System {
 namespace Effect {
 
-void EffectManagerUSA::vf18(RpClump *clump, void *arg2, int count, void *arg4) {
+void EffectManagerUSA::vf18(RpClump *clump, bool arg2, int count, void *arg4) {
     if (count > 1) {
         RwRGBA color = {0, 0, 0, 0x80};
         color.blue = color.green = color.red = 0x100 / count;

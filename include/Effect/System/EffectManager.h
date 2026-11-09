@@ -73,7 +73,7 @@ class EffectManagerRW3 : public ::Effect::System::EffectManager {
     /* A virtual function the RenderWare manager adds (purpose unknown; 0x80437C14, and
      * 0x80028BA4 in EffectManagerUSA): it draws clump with the manager's effects of the given
      * number of passes (arguments inferred from the calls). */
-    virtual void vf18(RpClump *clump, void *arg2, int count, void *arg4);
+    virtual void vf18(RpClump *clump, bool arg2, int count, void *arg4);
 };
 
 } // namespace RW3
@@ -92,7 +92,7 @@ class EffectManagerUSA : public ::Effect::RW3::EffectManagerRW3 {
     /* Declared before CreateElement: the vtable is emitted with the first non-inline virtual
      * function, and retail has it with vf18 (0x80028BA4, in the unit after Game/EffectRayUSA.cpp),
      * not with CreateElement (Game/EffectManagerUSA.cpp). */
-    virtual void vf18(RpClump *clump, void *arg2, int count, void *arg4);
+    virtual void vf18(RpClump *clump, bool arg2, int count, void *arg4);
     virtual ::Effect::System::EffectElement *CreateElement(
         const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
         ::Effect::System::EffectLaunchInfo *info);

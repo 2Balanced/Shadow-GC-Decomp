@@ -15,6 +15,9 @@
 
 #include "Effect/System/EffectElement.h"
 #include "Effect/System/EffectManager.h"
+#ifdef EFFECT_GLOBAL_PARAM_RW3_FULL
+#include "Game/EffectFilterParams.h"
+#endif
 #include "size_assert.h"
 
 /* The data an EffectGlobalParam was launched with (layout from its uses). */
@@ -62,7 +65,20 @@ class EffectGlobalParamRW3 : public ::Effect::System::EffectGlobalParam {
     virtual ~EffectGlobalParamRW3();
     virtual void Update(float dt);
 
+#ifdef EFFECT_GLOBAL_PARAM_RW3_FULL
+    /* The settings of the manager's screen filters (Game/EffectFilterParams.h) the effect blends
+     * from and to (Game/EffectGlobalParamRW3.cpp; names inferred). */
+    /* 0x10C */ UnkScreenColor_80430844 m_fromColor;
+    /* 0x12C */ UnkScreenColor_80430844 m_toColor;
+    /* 0x14C */ UnkScreenBlurParam_8042D974 m_fromBlur;
+    /* 0x15C */ UnkScreenBlurParam_8042D974 m_toBlur;
+    /* 0x16C */ UnkFog_804388A4 m_fromFog;
+    /* 0x177 */ UnkFog_804388A4 m_toFog;
+    /* 0x184 */ UnkScreenShimmerParams_804370D4 m_fromShimmer;
+    /* 0x1BC */ UnkScreenShimmerParams_804370D4 m_toShimmer;
+#else
     /* 0x10C */ u8 field_0x10C[0x1F4 - 0x10C];
+#endif
 };
 SIZE_ASSERT(EffectGlobalParamRW3, 0x1F4);
 

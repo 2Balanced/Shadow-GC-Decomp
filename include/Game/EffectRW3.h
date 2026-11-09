@@ -19,10 +19,6 @@ struct RwRaster {
     /* 0x10 */ s32 height;
 };
 
-struct RwCamera {
-    /* 0x00 */ u8 field_0x0[0x60];
-    /* 0x60 */ RwRaster *frameBuffer;
-};
 
 struct RwV3d {
     float x;
@@ -39,6 +35,15 @@ struct RwMatrix {
     /* 0x2C */ u32 pad2;
     /* 0x30 */ RwV3d pos;
     /* 0x3C */ u32 pad3;
+};
+
+struct RwCamera {
+    /* 0x00 */ u8 field_0x0[0x20];
+    /* 0x20 */ RwMatrix viewMatrix;
+    /* 0x60 */ RwRaster *frameBuffer;
+    /* 0x64 */ u8 field_0x64[0x80 - 0x64];
+    /* 0x80 */ float nearPlane;
+    /* 0x84 */ float farPlane;
 };
 
 struct RwFrame {
@@ -72,6 +77,9 @@ struct RwDevice {
     /* 0x0C */ float zBufferFar;
     /* 0x10 */ s32 (*fpRenderStateSet)(s32 state, void *value);
     /* 0x14 */ s32 (*fpRenderStateGet)(s32 state, void *value);
+    /* 0x18 */ void *fpIm2DRenderLine;
+    /* 0x1C */ void *fpIm2DRenderTriangle;
+    /* 0x20 */ s32 (*fpIm2DRenderPrimitive)(s32 primType, void *vertices, s32 count);
 };
 
 struct RwGlobals {
@@ -114,6 +122,10 @@ inline void RwRenderStateSet(s32 state, void *value) {
 
 inline void RwRenderStateGet(s32 state, void *value) {
     lbl_805F15B4->dOpenDevice.fpRenderStateGet(state, value);
+}
+
+inline void RwIm2DRenderPrimitive(s32 primType, void *vertices, s32 count) {
+    lbl_805F15B4->dOpenDevice.fpIm2DRenderPrimitive(primType, vertices, count);
 }
 
 inline UnkPTankData_80448074 *PTankData(void *atomic) {
