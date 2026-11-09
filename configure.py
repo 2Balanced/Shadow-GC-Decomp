@@ -632,6 +632,7 @@ config.libs = [
             Object(Matching, "Game/SonicteamKeyboardManager.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(NonMatching, "Game/SonicteamMatrix.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(NonMatching, "Game/SonicteamMatrixStack.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
+            Object(NonMatching, "Game/SonicteamMotionBank.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(Matching, "Game/SonicteamMotionMatrix.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(Matching, "Game/SonicteamMotionMemory.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(NonMatching, "Game/SonicteamMotionRegistry.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
