@@ -9,12 +9,6 @@
 #include "Effect/System/EffectSystem.h"
 #include <dolphin/types.h>
 
-extern "C" {
-/* Hands memory back to the effect system (the shared operator delete of the library's pooled
- * classes; behaviour inferred). */
-void dtor_80421F1C(void *p);
-}
-
 namespace Effect {
 namespace System {
 
@@ -33,8 +27,14 @@ class UnkEffectPool_8042A344 {
     static void *operator new(unsigned long size) {
         return fn_8042A5D0()->Allocate(size);
     }
+    /* Calls the inline FreeMemory, so it is never inlined: its one copy (0x80421F1C) is emitted
+     * with the exception tables of Game/EffectObject.cpp, and the deleting destructor calls it. */
     static void operator delete(void *p) {
-        dtor_80421F1C(p);
+        FreeMemory(p);
+    }
+    /* Hands memory back to the effect system. */
+    static void FreeMemory(void *p) {
+        fn_8042A5D0()->Free(p);
     }
 
     /* The memory the blocks take. */

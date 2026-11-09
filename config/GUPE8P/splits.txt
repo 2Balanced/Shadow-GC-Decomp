@@ -6738,6 +6738,38 @@ Game/MotionPlayWork.cpp:
 	.sbss       start:0x805F13D0 end:0x805F13E8
 	.sdata2     start:0x805FAE00 end:0x805FAE30
 
+Game/MotionQuat.cpp:
+	extab       start:0x80005FF4 end:0x8000600C
+	extabindex  start:0x800081A4 end:0x800081C8
+	.text       start:0x80420724 end:0x80420C30
+	.sdata2     start:0x805FAE30 end:0x805FAE48
+
+Game/MotionLib.cpp:
+	extab       start:0x8000600C end:0x80006054
+	extabindex  start:0x800081C8 end:0x80008234
+	.text       start:0x80420C30 end:0x804211E4
+	.sbss       start:0x805F13E8 end:0x805F13F0
+
+Game/MotionAram.cpp:
+	extab       start:0x80006054 end:0x8000608C
+	extabindex  start:0x80008234 end:0x80008288
+	.text       start:0x804211E4 end:0x8042166C
+	.sbss       start:0x805F13F0 end:0x805F1400
+
+Game/EffectObject.cpp:
+	extab       start:0x8000608C end:0x800061D8
+	extabindex  start:0x80008288 end:0x8000830C
+	.text       start:0x8042166C end:0x80422070
+	.rodata     start:0x8051A5A0 end:0x8051A6B0
+	.data       start:0x80569F58 end:0x8056A0A0
+
+Game/EffectCommandExec.cpp:
+	extab       start:0x800061D8 end:0x80006464
+	extabindex  start:0x8000830C end:0x80008498
+	.text       start:0x80422070 end:0x80425170
+	.rodata     start:0x8051A6B0 end:0x8051A908
+	.data       start:0x8056A0A0 end:0x8056A350
+
 Game/EffectManager.cpp:
 	extab       start:0x80006464 end:0x800066D0
 	extabindex  start:0x80008498 end:0x80008594

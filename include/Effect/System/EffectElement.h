@@ -70,6 +70,18 @@ class EffectElement {
         return m_flags & 1;
     }
 
+    /* Flag bits 2 and 4: paused and stopping, and pausing (names inferred; the launch command
+     * makes a launched effect follow its parent's, Game/EffectCommandExec.cpp). */
+    bool IsPaused() const {
+        return m_flags & 4;
+    }
+    bool IsStopped() const {
+        return m_flags & 0x10;
+    }
+    void Pause() {
+        m_flags |= 4;
+    }
+
     /* Clears flag bit 2, and sets the values at 0x14, 0x4C and 0x50 (names and meanings inferred;
      * see Game/EffectPJS.cpp). */
     void ClearFlag4() {
@@ -116,6 +128,14 @@ class EffectElement {
     /* Builds m_worldMatrix from the followed matrix, position and rotation, the offsets, angles
      * and scale, and the velocity from the last two positions (0x80425C34). */
     void UpdateTransform(float dt);
+    /* m_speed (the launch command gives a launched effect its parent's; its copy of GetSpeed is
+     * at 0x80424D18, Game/EffectCommandExec.cpp). */
+    float GetSpeed() const {
+        return m_speed;
+    }
+    void SetSpeed(float speed) {
+        m_speed = speed;
+    }
 
     /* 0x04 */ u8 m_loopDepth;  /* how many command loops are open */
     /* 0x05 */ s8 m_skipLoops;  /* how many of them are skipped */

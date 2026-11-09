@@ -279,6 +279,13 @@ cflags_csd_rw = [
     "-inline deferred",
 ]
 
+# Sonic Team's engine libraries between the MSL/CRI libraries and RenderWare (0x8040ABC8-0x8043AA7C):
+# the game flags with C++ exceptions on (their functions have exception tables).
+cflags_sonicteam_eh = [
+    *cflags_game_cpp,
+    "-Cpp_exceptions on",
+]
+
 # Sonic Team's effect library (Effect::System, between the MSL/CRI libraries and RenderWare; see
 # Game/EffectManager.cpp): the game flags without small data and with C++ exceptions (its units
 # have exception tables, and boost's shared_count catches allocation failures).
@@ -294,6 +301,14 @@ cflags_effect = [
     "-Cpp_exceptions on",
     "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
     "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
+]
+
+# The same without pooled data (Game/EffectObject.cpp, Game/EffectCommandExec.cpp): retail
+# addresses every float constant of .rodata on its own (lis/lfs per use); with -pool on, GC/2.7
+# keeps a base register for the unit's constants instead.
+cflags_effect_nopool = [
+    *cflags_effect,
+    "-pool off",
 ]
 
 # REL flags
@@ -688,6 +703,7 @@ config.libs = [
             Object(NonMatching, "Game/EffectArranger.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectArrangerRW3.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectArrangerUSA.cpp"),
+            Object(NonMatching, "Game/EffectCommandExec.cpp", cflags=cflags_effect_nopool),
             Object(NonMatching, "Game/EffectGlobalParam.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectGlobalParamUSA.cpp"),
             Object(Matching, "Game/EffectKage.cpp"),
@@ -697,6 +713,7 @@ config.libs = [
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
             Object(Matching, "Game/EffectManagerUSA.cpp"),
+            Object(NonMatching, "Game/EffectObject.cpp", cflags=cflags_effect_nopool),
             Object(Matching, "Game/EffectObjectPJS.cpp"),
             Object(Matching, "Game/EffectObjectRW3.cpp", cflags=cflags_effect),
             Object(NonMatching, "Game/EffectObjectUSA.cpp"),
@@ -889,10 +906,13 @@ config.libs = [
             Object(Matching, "Game/MissionMessage.cpp"),
             Object(Matching, "Game/Monster.cpp"),
             Object(Matching, "Game/MonsterControl.cpp"),
+            Object(Matching, "Game/MotionAram.cpp", cflags=cflags_sonicteam_eh),
             Object(Matching, "Game/MotionFile.cpp"),
             Object(NonMatching, "Game/MotionHalfKeyTrack.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
             Object(Matching, "Game/MotionHeap.cpp"),
+            Object(NonMatching, "Game/MotionLib.cpp", cflags=cflags_sonicteam_eh),
             Object(NonMatching, "Game/MotionPlayWork.cpp", cflags=[*cflags_game_cpp, "-Cpp_exceptions on"]),
+            Object(Matching, "Game/MotionQuat.cpp", cflags=cflags_sonicteam_eh),
             Object(Matching, "Game/MotionTrack.cpp"),
             Object(NonMatching, "Game/NowLoading.cpp"),
             Object(Matching, "Game/Npc.cpp"),

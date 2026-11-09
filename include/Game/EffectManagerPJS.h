@@ -11,6 +11,7 @@
 #include "Effect/System/EffectDesc.h"
 #include "Effect/System/EffectGlobalParam.h"
 #include "Effect/System/EffectArranger.h"
+#include "Effect/System/EffectObject.h"
 #include "Effect/System/EffectLensFlare.h"
 #include "Effect/System/EffectShimmer.h"
 #include "Game/ClumpFade.h"
@@ -84,24 +85,6 @@ class EffectParticle : public EffectElement {
     /* 0x114 */ u8 field_0x114[0x13C - 0x114];
 };
 SIZE_ASSERT(EffectParticle, 0x13C);
-
-class EffectObject : public EffectElement {
-  public:
-#ifdef EFFECT_ELEMENT_FULL
-    /* 0x80421D38 (Game/EffectObjectRW3.cpp calls it). */
-    EffectObject(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
-                 EffectManager *manager);
-#endif
-    virtual ~EffectObject();
-    virtual void Update(float dt);
-
-#ifdef EFFECT_ELEMENT_FULL
-    /* 0x0FC */ u8 field_0xFC[0x104 - 0xFC];
-    /* 0x104 */ u32 m_color[4]; /* red, green, blue, alpha: 8 bits each, from bit 22 (inferred;
-                              * see Game/EffectObjectUSA.cpp) */
-    /* 0x114 */ u8 field_0x114[0x124 - 0x114];
-#endif
-};
 
 } // namespace System
 
@@ -216,12 +199,6 @@ class EffectObjectRW3 : public ::Effect::System::EffectObject {
     virtual void Update(float dt);
     virtual void Draw();
 
-#ifndef EFFECT_ELEMENT_FULL
-    /* 0x054 */ u8 field_0x54[0x104 - 0x54];
-    /* 0x104 */ u32 m_color[4]; /* red, green, blue, alpha: 8 bits each, from bit 22 (inferred;
-                              * see Game/EffectObjectUSA.cpp) */
-    /* 0x114 */ u8 field_0x114[0x124 - 0x114];
-#endif
     /* 0x124 */ void *m_clump;   /* the model (a RenderWare clump) */
     /* 0x128 */ void *m_uvAnim;  /* its UV animation, if any */
     /* 0x12C */ void *m_world;   /* the world of the stage area the model is in */
