@@ -119,6 +119,31 @@ class EffectShimmerRW3 : public ::Effect::System::EffectShimmer {
 #endif
 };
 
+#ifdef EFFECT_ELEMENT_FULL
+/* The lens flare's settings (Game/EffectLensFlareRW3.cpp; layout from their copies, names
+ * inferred): whether it is shown, how strong the flare and the screen whiteout are, and the light's
+ * position. */
+struct UnkLensFlarePosition_8043232C {
+    float x;
+    float y;
+    float z;
+};
+
+struct UnkLensFlareParam_8043232C {
+    UnkLensFlareParam_8043232C(u8 enabled_ = 0, u8 alpha_ = 0, u8 whiteout_ = 0);
+    void SetPosition(const UnkLensFlarePosition_8043232C &p) {
+        position.x = p.x;
+        position.y = p.y;
+        position.z = p.z;
+    }
+
+    /* 0x0 */ u8 enabled;
+    /* 0x1 */ u8 alpha;
+    /* 0x2 */ u8 whiteout;
+    /* 0x4 */ UnkLensFlarePosition_8043232C position;
+};
+#endif
+
 class EffectLensFlareRW3 : public ::Effect::System::EffectLensFlare {
   public:
     EffectLensFlareRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
@@ -130,7 +155,8 @@ class EffectLensFlareRW3 : public ::Effect::System::EffectLensFlare {
     virtual void Draw() {}
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x108 */ u8 field_0x108[0x128 - 0x108];
+    /* 0x108 */ UnkLensFlareParam_8043232C m_startParam; /* the manager's, when it was launched */
+    /* 0x118 */ UnkLensFlareParam_8043232C m_param;      /* the description's */
 #else
     /* 0x054 */ u8 field_0x54[0x128 - 0x54];
 #endif
