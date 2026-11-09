@@ -6629,6 +6629,25 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
 
+Game/MotionHalfKeyTrack.cpp:
+	extab       start:0x80005D0C end:0x80005D74
+	extabindex  start:0x80007D48 end:0x80007DE4
+	.text       start:0x80413B30 end:0x804157E8
+	.bss        start:0x805E12C0 end:0x805E12E0
+	.sdata2     start:0x805FADD8 end:0x805FAE00
+
+Game/MotionPlayWork.cpp:
+	extab       start:0x80005D74 end:0x80005FF4
+	extabindex  start:0x80007DE4 end:0x800081A4
+	.text       start:0x804157E8 end:0x80420724
+	.ctors      start:0x804AA064 end:0x804AA068
+	.rodata     start:0x8051A558 end:0x8051A5A0
+	.data       start:0x80569F28 end:0x80569F58
+	.bss        start:0x805E12E0 end:0x805E1500
+	.sdata      start:0x805EDD60 end:0x805EDD68
+	.sbss       start:0x805F13D0 end:0x805F13E8
+	.sdata2     start:0x805FAE00 end:0x805FAE30
+
 Game/EffectManager.cpp:
 	extab       start:0x80006464 end:0x800066D0
 	extabindex  start:0x80008498 end:0x80008594
