@@ -4,10 +4,11 @@
  * and member names are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * Not linked: the constructor's exception table entry (the DELETEPOINTERCOND action that frees the
- * array if a constructor throws) has two bytes of alignment padding that mwcceppc leaves
- * uninitialized - they differ from one compile of the same source to the next - and retail's
- * happen to be 0xAC02. Every function matches. */
+ * The matrix default constructor is referenced from its owning unit, as retail's object does.
+ * The constructor's exception table entry (the DELETEPOINTERCOND action that frees the array if a
+ * constructor throws) has two bytes of alignment padding that mwcceppc leaves uninitialized;
+ * configure.py's extab_padding sets them to retail's 0xAC02. Every function matches. */
+#define UNK_MATRIX_DEFAULT_CTOR_EXTERN
 #include "Game/MathTypes.h"
 #include "Game/UnkMatrix_800B1304.h"
 #include <dolphin/types.h>

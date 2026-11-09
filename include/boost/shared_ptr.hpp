@@ -97,10 +97,14 @@ public:
 #endif
     }
 
+#ifdef BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+    ~shared_count(); // nothrow
+#else
     ~shared_count() // nothrow
     {
         if(pi_ != 0) pi_->release();
     }
+#endif
 
     shared_count(shared_count const & r): pi_(r.pi_) // nothrow
     {
@@ -293,6 +297,9 @@ public:
 #endif
 
 //  generated copy constructor, assignment, destructor are fine...
+#ifdef BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+    ~shared_ptr();
+#endif
 
     template<class Y>
     explicit shared_ptr(weak_ptr<Y> const & r): pn(r.pn) // may throw

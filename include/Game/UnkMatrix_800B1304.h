@@ -7,7 +7,11 @@
  * unknown; matrix arrays use it as their element type: Game/DevilDoomCtrlUnit.h,
  * Game/VehicleAirBolt.cpp). */
 struct UnkMatrix_800B1304 : public Mtx34f {
+#ifdef UNK_MATRIX_DEFAULT_CTOR_EXTERN
+    UnkMatrix_800B1304();
+#else
     UnkMatrix_800B1304() {}
+#endif
 };
 
 #endif

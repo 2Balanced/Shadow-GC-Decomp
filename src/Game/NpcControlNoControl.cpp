@@ -1,10 +1,10 @@
-/* NonMatching: every function body matches, but GC/2.7 materializes the boost bodies here that
- * retail's object imports: the shared_ptr<PlayerBase> and shared_count destructors and the three
- * sp_counted_base virtuals, which retail only calls out of line from ControlBase's destructor.
- * With them come sp_counted_base's vtable (36 more bytes of .data) and its type_info record (8
- * more of .sdata); retail's object has neither record, and lays ControlBase's vtable after the
- * NpcNoControl ones rather than first. The records land at other offsets, which costs three addi
- * immediates, at DOL 0x8006d188, 0x8006d1cc and 0x8006d234.
+/* NonMatching: every function body and the text order match. The two macros below move the
+ * shared_ptr<PlayerBase>, shared_count and sp_counted_base bodies and sp_counted_base's vtable out
+ * of this unit, as retail's object has them. What remains is the order of the two classes' own
+ * records: ours puts ControlBase's vtable before NpcNoControl's, retail puts it after them. That
+ * costs three addi immediates, at DOL 0x8006d188, 0x8006d1cc and 0x8006d234. Moving ControlBase's
+ * destructor before NpcNoControl fixes the data order but reverses the text order; moving vf_0x18
+ * or adding a stripped construction helper does not fix the data order.
  *
  * @unnamed@NpcControlNoControl_cpp@::NpcNoControl (class name from RTTI; base
  * Player::Control::ControlBase): the control of an NPC that does nothing (control 3 of the NPC
@@ -12,6 +12,8 @@
  * fn_8006D150 makes one; other units call it by its address, so it keeps that name. File name from
  * the RTTI name; function names are inferred. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first). */
+#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
+#define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
 #include "Game/Player.h"
 #include "Game/PlayerControl.h"
 #include "boost/shared_ptr.hpp"
