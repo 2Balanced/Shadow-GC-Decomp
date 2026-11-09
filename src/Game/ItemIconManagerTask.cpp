@@ -6,15 +6,19 @@
  * come from STG_GDT.TXD. File name and member names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * Not linking yet: every function and every data section matches, but GC/2.7 emits the vector
- * members instantiated at the end of the unit class by class (insert_n, destroy_all, reserve and
- * the destructor of the units' vector, then the same for the icons' vector), while retail emits
- * insert_n and reserve of both vectors first and destroy_all and the destructors of both after
- * them (0x80347560..0x80347770). */
+ * Not linking yet: every function and every data section matches. Declaring destroy_all before the
+ * other vector members with MSL_VECTOR_DESTROY_ALL_FIRST puts it after reserve as retail has it,
+ * and reduces the flipped DOL's differences from 2596 bytes in 20 ranges to 2200 in 16. What is
+ * left is the interleaving of the two vector types: retail emits insert_n and reserve of both
+ * vectors first and destroy_all and the destructors of both after them (0x80347560..0x80347770),
+ * while GC/2.7 still finishes the units' vector's destroy_all and destructor before the icons'
+ * insert_n and reserve. Moving the class definitions, unused reserve helpers and explicit member
+ * instantiations do not reproduce that interleaving (the last is rejected by the compiler). */
 #define MSL_VECTOR_MIDDLE
 #define MSL_VECTOR_AT
 #define MSL_VECTOR_BACK
 #define MSL_VECTOR_DESTROY_ALL_LATE
+#define MSL_VECTOR_DESTROY_ALL_FIRST
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <vector>
