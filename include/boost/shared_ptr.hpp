@@ -71,6 +71,21 @@ public:
 
     template<class P, class D> shared_count(P p, D d): pi_(0)
     {
+#ifndef BOOST_NO_EXCEPTIONS
+
+        // This project: the effect library (Game/EffectManager.cpp) is built with exceptions.
+        try
+        {
+            pi_ = new sp_counted_base_impl<P, D>(p, d);
+        }
+        catch(...)
+        {
+            d(p); // delete p
+            throw;
+        }
+
+#else
+
         pi_ = new sp_counted_base_impl<P, D>(p, d);
 
         if(pi_ == 0)
@@ -78,6 +93,8 @@ public:
             d(p); // delete p
             boost::throw_exception(std::bad_alloc());
         }
+
+#endif
     }
 
     ~shared_count() // nothrow

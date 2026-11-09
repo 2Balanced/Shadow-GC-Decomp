@@ -6629,5 +6629,47 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
 
+Game/EffectManager.cpp:
+	extab       start:0x80006464 end:0x800066D0
+	extabindex  start:0x80008498 end:0x80008594
+	.text       start:0x80425170 end:0x8042631C
+	.rodata     start:0x8051A908 end:0x8051AA30
+	.data       start:0x8056A350 end:0x8056A3F8
+	.bss        start:0x805E1500 end:0x805E1508
+
+Game/EffectArranger.cpp:
+	extab       start:0x800066D0 end:0x800067F8
+	extabindex  start:0x80008594 end:0x800085C4
+	.text       start:0x8042631C end:0x80426DDC
+	.rodata     start:0x8051AA30 end:0x8051AAB8
+	.data       start:0x8056A3F8 end:0x8056A488
+
+Game/EffectSystem.cpp:
+	extab       start:0x80006CF8 end:0x80006D08
+	extabindex  start:0x80008714 end:0x8000872C
+	.text       start:0x8042A2D8 end:0x8042A5EC
+	.bss        start:0x805E1508 end:0x805E1510
+
+Game/EffectGlobalParam.cpp:
+	extab       start:0x80006D08 end:0x80006D18
+	extabindex  start:0x8000872C end:0x80008744
+	.text       start:0x8042A5EC end:0x8042A770
+	.rodata     start:0x8051AE48 end:0x8051AE98
+	.data       start:0x8056A8A8 end:0x8056A8D8
+
+Game/EffectLensFlare.cpp:
+	extab       start:0x80006D18 end:0x80006D28
+	extabindex  start:0x80008744 end:0x8000875C
+	.text       start:0x8042A770 end:0x8042A8EC
+	.rodata     start:0x8051AE98 end:0x8051AEE0
+	.data       start:0x8056A8D8 end:0x8056A908
+
+Game/EffectShimmer.cpp:
+	extab       start:0x80006D28 end:0x80006E5C
+	extabindex  start:0x8000875C end:0x800087D4
+	.text       start:0x8042A8EC end:0x8042B3AC
+	.rodata     start:0x8051AEE0 end:0x8051B090
+	.data       start:0x8056A908 end:0x8056AAE0
+
 Runtime.PPCEABI.H/__mem.c:
 	.init       start:0x8000540C end:0x80005544

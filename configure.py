@@ -279,6 +279,23 @@ cflags_csd_rw = [
     "-inline deferred",
 ]
 
+# Sonic Team's effect library (Effect::System, between the MSL/CRI libraries and RenderWare; see
+# Game/EffectManager.cpp): the game flags without small data and with C++ exceptions (its units
+# have exception tables, and boost's shared_count catches allocation failures).
+cflags_effect = [
+    *cflags_base,
+    "-O4,s",
+    "-use_lmw_stmw on",
+    "-str reuse,readonly",
+    "-RTTI on",
+    "-inline noauto,level=1,deferred",
+    "-sdata 0",
+    "-sdata2 0",
+    "-Cpp_exceptions on",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
+]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -656,11 +673,15 @@ config.libs = [
             Object(Matching, "Game/DiscErrorHandler.cpp"),
             Object(Matching, "Game/Door.cpp"),
             Object(NonMatching, "Game/EffBelt.cpp"),
+            Object(NonMatching, "Game/EffectArranger.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectArrangerUSA.cpp"),
+            Object(NonMatching, "Game/EffectGlobalParam.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectGlobalParamUSA.cpp"),
             Object(Matching, "Game/EffectKage.cpp"),
             Object(Matching, "Game/EffectLauncherTable.cpp"),
+            Object(NonMatching, "Game/EffectLensFlare.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectLocusUSA.cpp"),
+            Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
             Object(Matching, "Game/EffectManagerUSA.cpp"),
             Object(Matching, "Game/EffectObjectPJS.cpp"),
@@ -669,6 +690,8 @@ config.libs = [
             Object(NonMatching, "Game/EffectParticleUSA.cpp"),
             Object(Matching, "Game/EffectRayUSA.cpp"),
             Object(Matching, "Game/EffectPJS.cpp"),
+            Object(NonMatching, "Game/EffectShimmer.cpp", cflags=cflags_effect),
+            Object(Matching, "Game/EffectSystem.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectSystemUSA.cpp"),
             Object(Matching, "Game/EffectTask.cpp"),
             Object(NonMatching, "Game/EffLocusMultiVtx.cpp"),

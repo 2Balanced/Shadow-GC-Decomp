@@ -6,6 +6,9 @@
 /* The effect system fn_8042A5D0 returns gives elements their memory. */
 #include "Effect/System/EffectSystem.h"
 #endif
+#ifdef EFFECT_ELEMENT_FULL
+#include "boost/shared_ptr.hpp"
+#endif
 #include <dolphin/types.h>
 
 namespace Effect {
@@ -13,6 +16,10 @@ namespace System {
 
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
 class EffectManager;
+#endif
+#ifdef EFFECT_ELEMENT_FULL
+class EffectLaunchInfo;
+struct UnkEffectDesc_801D0AFC;
 #endif
 
 /* EffectElement (class name from the RTTI of its shared_ptr control block,
@@ -35,8 +42,13 @@ class EffectElement {
     void Stop() {
         m_flags |= 0x10;
         m_matrix = 0;
+#ifdef EFFECT_ELEMENT_FULL
+        m_position = 0;
+        m_rotation = 0;
+#else
         field_0x4C = 0;
         field_0x50 = 0;
+#endif
     }
 
     /* Sets flag bit 4, as Stop does, but keeps the matrix (name inferred; see
@@ -63,6 +75,7 @@ class EffectElement {
     void ClearFlag4() {
         m_flags &= ~4;
     }
+#ifndef EFFECT_ELEMENT_FULL
     void SetField14(u32 value) {
         field_0x14 = value;
     }
@@ -72,6 +85,7 @@ class EffectElement {
     void SetField50(u32 value) {
         field_0x50 = value;
     }
+#endif
 
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
     /* The class's own view of itself, for the units that define classes derived from it (see
@@ -90,14 +104,55 @@ class EffectElement {
         fn_8042A5D0()->Free(p);
     }
 
+#ifdef EFFECT_ELEMENT_FULL
+    /* The effect library's own units (Game/EffectManager.cpp and the element units after it)
+     * define EFFECT_ELEMENT_FULL and see the whole class; its members' names are inferred. */
+    EffectElement(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+                  EffectManager *manager);
+    /* Whether flag bit 3 is set (see Hide). */
+    bool IsHidden() const {
+        return m_flags & 8;
+    }
+    /* Builds m_worldMatrix from the followed matrix, position and rotation, the offsets, angles
+     * and scale, and the velocity from the last two positions (0x80425C34). */
+    void UpdateTransform(float dt);
+
+    /* 0x04 */ u8 m_loopDepth;  /* how many command loops are open */
+    /* 0x05 */ s8 m_skipLoops;  /* how many of them are skipped */
+    /* 0x08 */ u32 m_size; /* the size of the most derived class */
+    /* 0x0C */ float m_time;
+    /* 0x10 */ float m_speed; /* scales the dt the manager updates the element with */
+    /* 0x14 */ const float *m_speedSource; /* where m_speed is read from, if anywhere */
+    /* 0x18 */ u32 m_flags; /* bit 0: running, bit 1: updated once */
+    /* 0x1C */ EffectManager *m_manager;
+    /* 0x20 */ boost::shared_ptr<EffectElement> m_prev; /* the manager's element list */
+    /* 0x28 */ boost::shared_ptr<EffectElement> m_next;
+    /* 0x30 */ s32 m_drawPass;
+    /* 0x34 */ boost::shared_ptr<EffectElement> m_drawPrev; /* the manager's draw list */
+    /* 0x3C */ boost::shared_ptr<EffectElement> m_drawNext;
+    /* 0x44 */ const UnkEffectDesc_801D0AFC *m_desc;
+    /* 0x48 */ const Mtx34f *m_matrix;   /* followed, if set */
+    /* 0x4C */ const Vec3f *m_position;  /* followed when no matrix is */
+    /* 0x50 */ const Vec3f *m_rotation;  /* followed when no matrix is */
+    /* 0x54 */ Mtx34f m_worldMatrix;
+    /* 0x84 */ Mtx34f m_localMatrix;
+    /* 0xB4 */ Vec3f m_lastPosition;
+    /* 0xC0 */ Vec3f m_velocity;
+    /* 0xCC */ Vec3f m_offset;
+    /* 0xD8 */ Vec3f m_angles;
+    /* 0xE4 */ Vec3f m_scale;
+    /* 0xF0 */ Vec3f m_offsetSpeed; /* added to m_offset per unit of dt */
+#else
     /* 0x04 */ u32 field_0x4;
     /* 0x08 */ u32 m_size; /* the size of the most derived class (inferred) */
     /* 0x0C */ float m_time; /* frames since launch (inferred; Game/EffectObjectUSA.cpp divides it
                               * by 60) */
     /* 0x10 */ u8 field_0x10[0x14 - 0x10];
+#endif
 #else
     /* 0x00 */ u8 field_0x0[0x14];
 #endif
+#ifndef EFFECT_ELEMENT_FULL
     /* 0x14 */ u32 field_0x14;
     /* 0x18 */ u32 m_flags; /* bit 0 is cleared to let the effect finish (inferred) */
 #ifdef EFFECT_ELEMENT_POLYMORPHIC
@@ -111,6 +166,7 @@ class EffectElement {
     /* 0x48 */ const Mtx34f *m_matrix; /* the owner's matrix the effect follows (inferred) */
     /* 0x4C */ u32 field_0x4C;
     /* 0x50 */ u32 field_0x50;
+#endif
 };
 
 } // namespace System

@@ -32,16 +32,21 @@ namespace System {
 
 class EffectGlobalParam : public EffectElement {
   public:
+    /* 0x8042A6E4 (Game/EffectGlobalParam.cpp). */
+    EffectGlobalParam(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+                      EffectManager *manager);
     virtual ~EffectGlobalParam();
     /* Advances the blend factor by dt (0x8042A5EC). */
     virtual void Update(float dt);
     /* Draws nothing (0x801D0FC0). */
     virtual void Draw() {}
 
+#ifndef EFFECT_ELEMENT_FULL
     /* 0x054 */ u8 field_0x54[0xFC - 0x54];
+#endif
     /* 0x0FC */ u32 field_0xFC; /* bit 16: turn the fog on (inferred) */
     /* 0x100 */ float m_blend;  /* 0 to 1 */
-    /* 0x104 */ float field_0x104;
+    /* 0x104 */ float field_0x104; /* how long the blend takes (inferred) */
     /* 0x108 */ const UnkGlobalParamData_80438A3C *m_data;
 };
 

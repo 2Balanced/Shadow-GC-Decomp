@@ -8,7 +8,11 @@
  * PJS units use is declared. All elements are built from the same three arguments; the classes'
  * own members are unknown and stand as padding up to their sizes. Member names other than the
  * classes' are inferred. */
+#include "Effect/System/EffectDesc.h"
 #include "Effect/System/EffectGlobalParam.h"
+#include "Effect/System/EffectArranger.h"
+#include "Effect/System/EffectLensFlare.h"
+#include "Effect/System/EffectShimmer.h"
 #include "Game/ClumpFade.h"
 #include "Game/EffectPJSLauncher.h"
 #include "size_assert.h"
@@ -17,44 +21,6 @@
 
 namespace Effect {
 namespace System {
-
-/* The model an EffectObject shows (layout from Game/EffectObjectPJS.cpp). */
-struct UnkEffectModel_801D1238 {
-    /* 0x00 */ char m_name[0x40];
-    /* 0x40 */ bool m_hasUvAnim; /* whether the effect file holds a UV animation for it */
-};
-
-/* A particle effect's textures (layout from Game/EffectParticleUSA.cpp). */
-struct UnkParticleTexture_80028034 {
-    /* 0x00 */ u8 field_0x0[0x20];
-    /* 0x20 */ char m_name[0x20]; /* the texture dictionary's name */
-};
-
-/* The description an element is created from (layout from its uses). */
-struct UnkEffectDesc_801D0AFC {
-    /* 0x00 */ u8 field_0x0[0x20];
-    /* 0x20 */ s16 m_type; /* which element class to create */
-    /* 0x22 */ u8 field_0x22[0x3C - 0x22];
-    /* 0x3C */ const UnkEffectModel_801D1238 *m_model; /* EffectObject's model */
-    /* 0x40 */ u8 field_0x40[0x4C - 0x40];
-    /* 0x4C */ s32 m_rayKind;      /* a ray effect's kind, which picks its draw pass */
-    /* 0x50 */ s32 m_particleKind; /* a particle effect's kind, which picks its draw pass */
-    /* 0x54 */ u8 field_0x54[0x58 - 0x54];
-    /* 0x58 */ const UnkParticleTexture_80028034 *m_texture; /* a particle effect's textures */
-    /* 0x5C */ const char *m_modelName; /* a 3D particle effect's model */
-};
-
-class EffectShimmer : public EffectElement {
-  public:
-    virtual ~EffectShimmer();
-    virtual void Update(float dt);
-};
-
-class EffectLensFlare : public EffectElement {
-  public:
-    virtual ~EffectLensFlare();
-    virtual void Update(float dt);
-};
 
 class EffectLocus : public EffectElement {
   public:
@@ -70,14 +36,6 @@ class EffectRay : public EffectElement {
     /* 0x054 */ u8 field_0x54[0x104 - 0x54];
     /* 0x104 */ u32 m_request; /* as EffectParticle's */
     /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass (as EffectParticle's) */
-};
-
-class EffectArranger : public EffectElement {
-  public:
-    virtual ~EffectArranger();
-    virtual void Update(float dt);
-    /* Draws nothing (0x800273E4). */
-    virtual void Draw() {}
 };
 
 /* One particle of a particle effect (layout from Game/EffectParticleUSA.cpp). */

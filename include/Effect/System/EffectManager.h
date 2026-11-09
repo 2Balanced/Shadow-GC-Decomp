@@ -2,6 +2,7 @@
 #define EFFECT_SYSTEM_EFFECTMANAGER_H
 
 #include <dolphin/types.h>
+#include "boost/weak_ptr.hpp"
 #include "size_assert.h"
 
 struct RpClump;
@@ -16,20 +17,45 @@ namespace System {
 class EffectElement;
 class EffectLaunchInfo;
 struct UnkEffectDesc_801D0AFC;
+struct UnkEffectData_80425860;
 
+/* The manager's own members and functions are in Game/EffectManager.cpp, which defines
+ * EFFECT_MANAGER_FULL; elsewhere they stand as padding (names inferred). */
 class EffectManager {
   public:
+    EffectManager();
     virtual ~EffectManager();
-    /* Two virtual functions whose purpose is unknown (0x80425630 launches an effect; see
-     * Game/EffectPJS.cpp). */
-    virtual void fn_80425630();
-    virtual void fn_804255F4();
+    /* Launches effect id of the effect file info was loaded with (0x80425630; names inferred),
+     * and the same through a shared pointer to the launch description (0x804255F4; the
+     * parameter's type is inferred from its use, which only reads the pointer). */
+    virtual boost::weak_ptr<EffectElement> Launch(EffectLaunchInfo *info, int id);
+    virtual boost::weak_ptr<EffectElement> Launch(const boost::shared_ptr<EffectLaunchInfo> &info,
+                                                  int id);
     /* Creates the element desc describes, launched by info (name inferred; the PJS manager's
      * version is in Game/EffectManagerPJS.cpp). */
     virtual EffectElement *CreateElement(const UnkEffectDesc_801D0AFC *desc,
                                          EffectLaunchInfo *info);
 
+#ifdef EFFECT_MANAGER_FULL
+    /* Unlinks an element from both lists (name inferred). Drawing, updating and clearing the
+     * lists are the extern "C" fn_80425170, fn_80425294 and fn_8042554C, the names the game's
+     * units call them by. */
+    void Remove(boost::shared_ptr<EffectElement> element);
+    /* Checks an effect file ("EFFD") and turns its offsets into pointers once (name
+     * inferred). */
+    bool Relocate(UnkEffectData_80425860 *data);
+
+    /* 0x04 */ boost::shared_ptr<EffectElement> m_head; /* all elements, linked through m_next */
+    /* 0x0C */ boost::shared_ptr<EffectElement> m_tail;
+    /* 0x14 */ boost::shared_ptr<EffectElement> m_drawHead; /* linked through m_drawNext */
+    /* 0x1C */ boost::shared_ptr<EffectElement> m_drawTail;
+    /* 0x24 */ bool m_drawHidden; /* Draw marks the elements it draws hidden while drawing */
+    /* 0x25 */ bool m_paused;     /* Update only drops finished elements */
+    /* 0x28 */ int m_error;       /* why the last Launch failed */
+    /* 0x2C */ u8 field_0x2C[0x58 - 0x2C]; /* split between the three manager classes unknown */
+#else
     /* 0x04 */ u8 field_0x4[0x58 - 0x4]; /* split between the three manager classes unknown */
+#endif
 };
 
 } // namespace System

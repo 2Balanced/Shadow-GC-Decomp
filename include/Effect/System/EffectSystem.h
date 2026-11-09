@@ -12,6 +12,10 @@
 namespace Effect {
 namespace System {
 
+#ifdef EFFECT_SYSTEM_FULL
+class UnkEffectPool_8042A344;
+#endif
+
 class EffectSystem {
   public:
     EffectSystem() {}
@@ -25,7 +29,17 @@ class EffectSystem {
     virtual void Copy(void *to, const void *from, u32 size) = 0;
     virtual void Flush(void *memory) = 0;
 
+#ifdef EFFECT_SYSTEM_FULL
+    /* Hands a block of the current pool back, takes one (0 if the pool is empty), and makes pool
+     * the current pool, returning the previous one (Game/EffectSystem.cpp; names inferred). */
+    void PoolFree(void *p);
+    void *PoolAlloc();
+    UnkEffectPool_8042A344 *SetPool(UnkEffectPool_8042A344 *pool);
+
+    /* 0x4 */ UnkEffectPool_8042A344 *m_pool; /* the pool PoolAlloc takes from */
+#else
     /* 0x4 */ u32 field_0x4;
+#endif
 };
 
 extern "C" EffectSystem *fn_8042A5D0(void);
