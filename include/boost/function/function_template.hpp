@@ -312,8 +312,10 @@ namespace boost {
     // these definitions can become very costly.
     result_type operator()(BOOST_FUNCTION_PARMS) const
     {
+#ifndef BOOST_FUNCTION_NO_EMPTY_CHECK
       if (this->empty())
         boost::throw_exception(bad_function_call());
+#endif
 
       internal_result_type result = invoker(this->functor
                                             BOOST_FUNCTION_COMMA
@@ -573,8 +575,10 @@ namespace boost {
                            Allocator>
   ::operator()(BOOST_FUNCTION_PARMS) const
   {
+#ifndef BOOST_FUNCTION_NO_EMPTY_CHECK
       if (this->empty())
         boost::throw_exception(bad_function_call());
+#endif
 
       internal_result_type result = invoker(this->functor
                                             BOOST_FUNCTION_COMMA
