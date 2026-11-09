@@ -2,7 +2,18 @@
  * It creates the RenderWare element classes, keeps a cache of particle textures and two copies of
  * the camera's frame buffer for the screen effects. Member and method names other than the
  * class's are inferred. Definitions are in reverse address order (deferred inlining emits
- * functions last-defined first). */
+ * functions last-defined first). Retail owns the one global EffectElement::operator delete here;
+ * the out-of-line definition also places it after this unit's constructor and destructor.
+ *
+ * NonMatching: all ten function bodies and their text order match. The only DOL differences left
+ * are 20 bytes in the exception records for the last three functions: retail lays their extab
+ * records out as operator delete, destructor, constructor (08080000, 10080000, 08080000), while
+ * this definition order gives destructor, constructor, operator delete. Moving the delete
+ * definition after the destructor gives retail's extab order and anonymous labels, but then emits
+ * the text as operator delete, destructor, constructor instead; making it inline also makes it
+ * weak and leaves its text first. #pragma auto_inline and #pragma dont_inline change neither
+ * order. The trailing four-byte .data and two-byte .rodata alignment gaps do not affect the DOL. */
+#define EFFECT_ELEMENT_DELETE_OUT_OF_LINE
 #include "Game/EffectRW3.h"
 #include <dolphin/types.h>
 
@@ -62,6 +73,13 @@ struct UnkManagerRW3View_804329C4 {
 #define View(manager) ((UnkManagerRW3View_804329C4 *)(manager))
 
 namespace Effect {
+namespace System {
+
+void EffectElement::operator delete(void *p) {
+    fn_8042A5D0()->Free(p);
+}
+
+} // namespace System
 namespace RW3 {
 
 EffectManagerRW3::EffectManagerRW3() {

@@ -112,9 +112,13 @@ class EffectElement {
     static void *operator new(unsigned long size) {
         return fn_8042A5D0()->Allocate(size);
     }
+#ifdef EFFECT_ELEMENT_DELETE_OUT_OF_LINE
+    static void operator delete(void *p);
+#else
     static void operator delete(void *p) {
         fn_8042A5D0()->Free(p);
     }
+#endif
 
 #ifdef EFFECT_ELEMENT_FULL
     /* The effect library's own units (Game/EffectManager.cpp and the element units after it)
