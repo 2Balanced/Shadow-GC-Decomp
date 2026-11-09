@@ -5,21 +5,23 @@
 
 /* Sonicteam::System::IHeap (name from RTTI): the interface of the game's heaps. Its vtable
  * (0x8051D1E0) has eight slots; all but the fourth are pure. Sonicteam::System::Heap (constructor
- * 0x8040AFF0, vtable 0x80569E6C) implements it. The functions' names and signatures are unknown,
- * so they keep placeholder names; Game/IHeap.cpp defines the one with a body. */
+ * 0x8040AFF0, vtable 0x80569E6C) implements it. The fourth slot's name is unknown, so it keeps
+ * its placeholder name; Game/IHeap.cpp defines it. */
 namespace Sonicteam {
 namespace System {
 
 class IHeap {
   public:
-    virtual void Virtual08() = 0;
-    virtual void Virtual0C() = 0;
-    virtual void Virtual10() = 0;
+    /* Slot names and signatures follow Sonicteam::System::Heap's implementations
+     * (Game/SonicteamHeap.cpp; names inferred). */
+    virtual void *Allocate(u32 size) = 0;
+    virtual void *Allocate(u32 alignment, u32 size) = 0;
+    virtual void *AllocateZeroed(u32 size) = 0;
     virtual void Virtual14();
-    virtual void Virtual18() = 0;
-    virtual void Virtual1C() = 0;
-    virtual void Virtual20() = 0;
-    virtual void Virtual24() = 0;
+    virtual void Free(void *memory) = 0;
+    virtual u32 GetLargestFreeSize() = 0;
+    virtual void *Reallocate(void *memory, u32 size) = 0;
+    virtual u32 GetFreeSize() = 0;
 };
 
 } // namespace System

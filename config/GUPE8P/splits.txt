@@ -6629,6 +6629,96 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
 
+Game/SonicteamHeap.cpp:
+	extab       start:0x8000574C end:0x8000577C
+	extabindex  start:0x80007628 end:0x80007670
+	.text       start:0x8040ABC8 end:0x8040B034
+	.rodata     start:0x8051A2B0 end:0x8051A2E8
+	.data       start:0x80569E60 end:0x80569E98
+	.sdata      start:0x805EDD10 end:0x805EDD20
+	.sdata2     start:0x805FAD38 end:0x805FAD40
+
+Game/SonicteamMatrix.cpp:
+	extab       start:0x8000577C end:0x800057EC
+	extabindex  start:0x80007670 end:0x80007718
+	.text       start:0x8040B034 end:0x8040C204
+	.ctors      start:0x804AA048 end:0x804AA04C
+	.bss        start:0x805E0720 end:0x805E0780
+	.sdata2     start:0x805FAD40 end:0x805FAD50
+
+Game/SonicteamMatrixStack.cpp:
+	extab       start:0x800057EC end:0x80005818
+	extabindex  start:0x80007718 end:0x8000773C
+	.text       start:0x8040C204 end:0x8040C340
+
+Game/SonicteamQuaternion.cpp:
+	extab       start:0x80005818 end:0x80005848
+	extabindex  start:0x8000773C end:0x80007784
+	.text       start:0x8040C340 end:0x8040CB2C
+	.ctors      start:0x804AA04C end:0x804AA050
+	.rodata     start:0x8051A2E8 end:0x8051A2F8
+	.bss        start:0x805E0780 end:0x805E07A0
+	.sdata2     start:0x805FAD50 end:0x805FAD68
+
+Game/SonicteamRandomShift.cpp:
+	extab       start:0x80005848 end:0x80005850
+	extabindex  start:0x80007784 end:0x80007790
+	.text       start:0x8040CB2C end:0x8040CBF8
+	.sdata2     start:0x805FAD68 end:0x805FAD78
+
+Game/SonicteamVector2.cpp:
+	extab       start:0x80005850 end:0x80005860
+	extabindex  start:0x80007790 end:0x800077A8
+	.text       start:0x8040CBF8 end:0x8040CD74
+	.ctors      start:0x804AA050 end:0x804AA054
+	.sbss       start:0x805F1358 end:0x805F1360
+	.sdata2     start:0x805FAD78 end:0x805FAD80
+
+Game/SonicteamVector3.cpp:
+	extab       start:0x80005860 end:0x80005878
+	extabindex  start:0x800077A8 end:0x800077CC
+	.text       start:0x8040CD74 end:0x8040D044
+	.ctors      start:0x804AA054 end:0x804AA058
+	.bss        start:0x805E07A0 end:0x805E07B0
+	.sdata2     start:0x805FAD80 end:0x805FAD88
+
+Game/SonicteamVectorRotate.cpp:
+	extab       start:0x80005878 end:0x800058A0
+	extabindex  start:0x800077CC end:0x80007808
+	.text       start:0x8040D044 end:0x8040D1E8
+
+Game/DefaultDebugListener.cpp:
+	extab       start:0x800058A0 end:0x800058B8
+	extabindex  start:0x80007808 end:0x8000782C
+	.text       start:0x8040D1E8 end:0x8040D254
+	.rodata     start:0x8051A2F8 end:0x8051A410
+	.data       start:0x80569E98 end:0x80569EC8
+	.sdata      start:0x805EDD20 end:0x805EDD38
+
+Game/SonicteamColor.cpp:
+	extab       start:0x800058B8 end:0x800058C0
+	extabindex  start:0x8000782C end:0x80007838
+	.text       start:0x8040D254 end:0x8040D3F0
+	.ctors      start:0x804AA058 end:0x804AA05C
+	.sbss       start:0x805F1360 end:0x805F1388
+
+Game/SonicUSAAngle.cpp:
+	extab       start:0x80005ABC end:0x80005AD4
+	extabindex  start:0x800079D0 end:0x800079F4
+	.text       start:0x8040E970 end:0x8040EA90
+	.ctors      start:0x804AA05C end:0x804AA060
+	.rodata     start:0x8051A4E8 end:0x8051A4F0
+	.bss        start:0x805E07B0 end:0x805E07C8
+
+Game/SonicUSARandom.cpp:
+	extab       start:0x80005AD4 end:0x80005B24
+	extabindex  start:0x800079F4 end:0x80007A6C
+	.text       start:0x8040EA90 end:0x8040EFA4
+	.ctors      start:0x804AA060 end:0x804AA064
+	.rodata     start:0x8051A4F0 end:0x8051A528
+	.data       start:0x80569F08 end:0x80569F28
+	.bss        start:0x805E07C8 end:0x805E11A0
+
 Game/MotionHalfKeyTrack.cpp:
 	extab       start:0x80005D0C end:0x80005D74
 	extabindex  start:0x80007D48 end:0x80007DE4
