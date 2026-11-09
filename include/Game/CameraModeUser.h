@@ -71,7 +71,11 @@ class CameraMode {
     virtual void vf_0x14(UnkCameraArg_800098E4 *arg) = 0;
     /* Slot 0x18: empty in CameraMode (0x80008D48). The stage camera passes it two flags
      * (0x801CAEC4); CameraModeGeneral reads them. */
+#ifdef CAMERA_MODE_VF_0X18_EXTERN
+    virtual void vf_0x18(int flags);
+#else
     virtual void vf_0x18(int flags) {}
+#endif
     virtual ~CameraMode(); /* the vtable pointer is at 0xA8 */
 };
 

@@ -4,7 +4,14 @@
  * keeps its eye. The second way of moving checks which controls are enabled (the words from
  * 0xC0). File name from the class; member names and the meanings of the pad fields are inferred.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
- * first). */
+ * first).
+ *
+ * NonMatching: every function and the text size match. Referencing CameraMode::vf_0x18(int) from
+ * its owning unit removes a four-byte weak copy that shifted the whole unit. MoveFree still
+ * computes DegToRad(180.0f) in f30 where retail uses f28 for its multiplication and subtraction;
+ * locals, an inline helper, direct arithmetic, a register-qualified local and scoped auto_inline
+ * do not change that register choice. */
+#define CAMERA_MODE_VF_0X18_EXTERN
 #include "Game/CameraModeSetCamEdit.h"
 #include "Game/CameraState.h"
 #include "Game/MathTypes.h"
