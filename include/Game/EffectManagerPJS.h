@@ -25,11 +25,71 @@ struct RwFrame;
 namespace Effect {
 namespace System {
 
+#ifdef EFFECT_ELEMENT_FULL
+class EffectLocusExecUnit;
+class EffectCommandExec;
+class UnkEffectPool_8042A344;
+#endif
+
 class EffectLocus : public EffectElement {
   public:
     virtual ~EffectLocus();
     virtual void Update(float dt);
+
+#ifdef EFFECT_ELEMENT_FULL
+    /* A trail effect (Game/EffectLocus.cpp): it samples its matrix at a fixed rate into a list of
+     * points that age out, and runs its description's command stream; names inferred. */
+    /* 0x8042C3A0 */
+    EffectLocus(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+                EffectManager *manager);
+    /* Adds the points since the last sample (0x8042B938), and starts the commands that are due
+     * (0x8042BD8C). */
+    void AddPoints(float dt);
+    void StartCommands();
+
+    /* 0x0FC */ EffectLocusExecUnit *m_head; /* the oldest point */
+    /* 0x100 */ EffectLocusExecUnit *m_tail; /* the newest point */
+    /* 0x104 */ EffectLocusExecUnit *m_last; /* the matrix at the last sample */
+    /* 0x108 */ u32 field_0x108;             /* status: bit 0 stops the effect, bits 1 and 2
+                                              * see Game/EffectLocusUSA.cpp */
+    /* 0x10C */ u32 m_config;
+    /* 0x110 */ s32 m_maxPoints;
+    /* 0x114 */ s32 m_pointCount;
+    /* 0x118 */ s32 m_addedCount;   /* points added this frame */
+    /* 0x11C */ s32 m_removedCount; /* points removed this frame */
+    /* 0x120 */ s32 m_sectionCount;
+    /* 0x124 */ float m_interval;   /* frames between points */
+    /* 0x128 */ float m_elapsed;    /* frames since the last point */
+    /* 0x12C */ u32 m_color[4];     /* red, green, blue, alpha: 8 bits each, from bit 22 */
+    /* 0x13C */ u32 m_topColor[4];
+    /* 0x14C */ u32 m_lastColor[4];
+    /* 0x15C */ const u8 *m_command; /* the next command to start */
+    /* 0x160 */ EffectCommandExec *m_commandHead;
+    /* 0x164 */ EffectCommandExec *m_commandTail;
+    /* 0x168 */ UnkEffectPool_8042A344 *m_commandPool;
+    /* 0x16C */ UnkEffectPool_8042A344 *m_pointPool;
+#endif
 };
+
+#ifdef EFFECT_ELEMENT_FULL
+/* One ray of a ray effect (Effect::System::EffectRayExecUnit, name from RTTI; the fields
+ * Effect::RW3::EffectRayRW3::Draw reads, meanings inferred). Colours are four words (red, green,
+ * blue, alpha), 8 bits each from bit 22. */
+class EffectRayExecUnit {
+  public:
+    /* 0x00 */ void *m_vtable;
+    /* 0x04 */ Vec3f m_start;
+    /* 0x10 */ Vec3f m_end;
+    /* 0x1C */ u8 field_0x1C[0x30 - 0x1C];
+    /* 0x30 */ float m_length; /* the longest the ray is drawn */
+    /* 0x34 */ float m_width;
+    /* 0x38 */ s32 m_color[4];
+    /* 0x48 */ s32 m_topColor[4];  /* the start's colour, times m_color */
+    /* 0x58 */ s32 m_lastColor[4]; /* the end's colour, times m_color */
+    /* 0x68 */ EffectRayExecUnit *m_prev;
+    /* 0x6C */ EffectRayExecUnit *m_next;
+};
+#endif
 
 class EffectRay : public EffectElement {
   public:
@@ -37,12 +97,22 @@ class EffectRay : public EffectElement {
     virtual void Update(float dt);
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x0FC */ u8 field_0xFC[0x104 - 0xFC];
+    /* 0x804298D4 */
+    EffectRay(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info, EffectManager *manager);
+
+    /* 0x0FC */ EffectRayExecUnit *m_head;
+    /* 0x100 */ u8 field_0x100[0x104 - 0x100];
 #else
     /* 0x054 */ u8 field_0x54[0x104 - 0x54];
 #endif
     /* 0x104 */ u32 m_request; /* as EffectParticle's */
-    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass (as EffectParticle's) */
+    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass (as EffectParticle's); bit 1: no
+                                * depth writes, bit 11: the rays are in the element's space */
+#ifdef EFFECT_ELEMENT_FULL
+    /* 0x10C */ s32 m_unitCount;   /* the most rays */
+    /* 0x110 */ s32 m_activeCount; /* the rays in use (inferred) */
+    /* 0x114 */ u8 field_0x114[0x134 - 0x114];
+#endif
 };
 
 /* One particle of a particle effect (layout from Game/EffectParticleUSA.cpp). */
@@ -132,13 +202,13 @@ class EffectLocusRW3 : public ::Effect::System::EffectLocus {
     virtual void Draw();
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x0FC */ u8 field_0xFC[0x108 - 0xFC];
+    /* 0x170 */ u8 field_0x170[0x17C - 0x170];
 #else
     /* 0x054 */ u8 field_0x54[0x108 - 0x54];
-#endif
     /* 0x108 */ u32 field_0x108; /* bit 1: show or hide requested, bit 2: hide (see
                                   * Game/EffectLocusUSA.cpp; meanings inferred) */
     /* 0x10C */ u8 field_0x10C[0x17C - 0x10C];
+#endif
 };
 SIZE_ASSERT(EffectLocusRW3, 0x17C);
 
@@ -152,7 +222,11 @@ class EffectRayRW3 : public ::Effect::System::EffectRay {
     virtual void Update(float dt);
     virtual void Draw();
 
+#ifdef EFFECT_ELEMENT_FULL
+    /* 0x134 */ struct UnkRayVertex_8042C820 *m_vertices; /* four RenderWare vertices per ray */
+#else
     /* 0x10C */ u8 field_0x10C[0x138 - 0x10C];
+#endif
 };
 SIZE_ASSERT(EffectRayRW3, 0x138);
 

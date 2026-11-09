@@ -311,6 +311,17 @@ cflags_effect_nopool = [
     "-pool off",
 ]
 
+# Sonic Team's effect library (Effect::System and Effect::RW3, between MSL/CRI and RenderWare; see
+# Game/EffectLocus.cpp): the game flags with C++ exceptions (the units have exception tables) and
+# without small data (their constants are in .rodata and their RTTI records in .data).
+cflags_effect_lib = [
+    *cflags_game_cpp,
+    "-Cpp_exceptions on",
+    "-sdata 0",
+    "-sdata2 0",
+    "-pool off",
+]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -709,9 +720,11 @@ config.libs = [
             Object(Matching, "Game/EffectKage.cpp"),
             Object(Matching, "Game/EffectLauncherTable.cpp"),
             Object(NonMatching, "Game/EffectLensFlare.cpp", cflags=cflags_effect),
+            Object(NonMatching, "Game/EffectLocus.cpp", cflags=cflags_effect_lib),
             Object(Matching, "Game/EffectLocusUSA.cpp"),
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
+            Object(NonMatching, "Game/EffectManagerRW3.cpp", cflags=cflags_effect_lib),
             Object(Matching, "Game/EffectManagerUSA.cpp"),
             Object(NonMatching, "Game/EffectObject.cpp", cflags=cflags_effect_nopool),
             Object(Matching, "Game/EffectObjectPJS.cpp"),
@@ -720,8 +733,10 @@ config.libs = [
             Object(Matching, "Game/EffectParticle3DPJS.cpp"),
             Object(NonMatching, "Game/EffectParticleRW3.cpp", cflags=cflags_effect),
             Object(NonMatching, "Game/EffectParticleUSA.cpp"),
+            Object(Matching, "Game/EffectRayRW3.cpp", cflags=cflags_effect_lib),
             Object(Matching, "Game/EffectRayUSA.cpp"),
             Object(Matching, "Game/EffectPJS.cpp"),
+            Object(NonMatching, "Game/EffectScreenBlurRW3.cpp", cflags=cflags_effect_lib),
             Object(NonMatching, "Game/EffectShimmer.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectSystem.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectSystemUSA.cpp"),

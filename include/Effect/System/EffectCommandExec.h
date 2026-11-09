@@ -381,6 +381,36 @@ class EffCmdPtnAnimExec : public EffectCommandExec {
     /* 0x28 */ float m_frames;
 };
 
+/* The colour and alpha executors Game/EffectLocus.cpp also starts (constructors and vtables in
+ * the units before; colours are four words, 8 bits each from bit 22). */
+class EffCmdTopColorExec : public EffCmdMatColorExec {
+  public:
+    EffCmdTopColorExec(const u8 *data, u32 *state, u32 *target)
+        : EffCmdMatColorExec(data, state, target) {}
+    virtual ~EffCmdTopColorExec();
+};
+
+class EffCmdLastColorExec : public EffCmdMatColorExec {
+  public:
+    EffCmdLastColorExec(const u8 *data, u32 *state, u32 *target)
+        : EffCmdMatColorExec(data, state, target) {}
+    virtual ~EffCmdLastColorExec();
+};
+
+class EffCmdTopAlphaExec : public EffCmdMatAlphaExec {
+  public:
+    EffCmdTopAlphaExec(const u8 *data, u32 *state, u32 *target)
+        : EffCmdMatAlphaExec(data, state, target) {}
+    virtual ~EffCmdTopAlphaExec();
+};
+
+class EffCmdLastAlphaExec : public EffCmdMatAlphaExec {
+  public:
+    EffCmdLastAlphaExec(const u8 *data, u32 *state, u32 *target)
+        : EffCmdMatAlphaExec(data, state, target) {}
+    virtual ~EffCmdLastAlphaExec();
+};
+
 } // namespace System
 } // namespace Effect
 
