@@ -6671,5 +6671,26 @@ Game/EffectShimmer.cpp:
 	.rodata     start:0x8051AEE0 end:0x8051B090
 	.data       start:0x8056A908 end:0x8056AAE0
 
+Game/EffectObjectRW3.cpp:
+	extab       start:0x8000729C end:0x800072D0
+	extabindex  start:0x80008A8C end:0x80008ABC
+	.text       start:0x80432A50 end:0x80432D58
+	.rodata     start:0x8051B520 end:0x8051B5C8
+	.data       start:0x8056AD78 end:0x8056ADE0
+
+Game/EffectParticleRW3.cpp:
+	extab       start:0x800072D0 end:0x80007338
+	extabindex  start:0x80008ABC end:0x80008B1C
+	.text       start:0x80432D58 end:0x804340CC
+	.rodata     start:0x8051B5C8 end:0x8051B6A8
+	.data       start:0x8056ADE0 end:0x8056AE78
+
+Game/EffectArrangerRW3.cpp:
+	extab       start:0x80007338 end:0x80007374
+	extabindex  start:0x80008B1C end:0x80008B40
+	.text       start:0x804340CC end:0x804342CC
+	.rodata     start:0x8051B6A8 end:0x8051B750
+	.data       start:0x8056AE78 end:0x8056AEF8
+
 Runtime.PPCEABI.H/__mem.c:
 	.init       start:0x8000540C end:0x80005544
