@@ -381,6 +381,20 @@ class EffCmdPtnAnimExec : public EffectCommandExec {
     /* 0x28 */ float m_frames;
 };
 
+/* Single-float commands the particle and ray elements share (Game/EffectParticle.cpp and
+ * Game/EffectRay.cpp; retail keeps their vtables and destructors in the first). */
+class EffCmdGenQuantityExec : public EffCmdSingleExec {
+  public:
+    EffCmdGenQuantityExec(const u8 *data, u32 *state, float *target)
+        : EffCmdSingleExec(data, state, target) {}
+};
+
+class EffCmdFrictionExec : public EffCmdSingleExec {
+  public:
+    EffCmdFrictionExec(const u8 *data, u32 *state, float *target)
+        : EffCmdSingleExec(data, state, target) {}
+};
+
 /* The colour and alpha executors Game/EffectLocus.cpp also starts (constructors and vtables in
  * the units before; colours are four words, 8 bits each from bit 22). */
 class EffCmdTopColorExec : public EffCmdMatColorExec {

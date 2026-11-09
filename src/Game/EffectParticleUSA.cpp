@@ -21,7 +21,7 @@
 using ::Effect::System::EffectLaunchInfo;
 using ::Effect::System::EffectManager;
 using ::Effect::System::UnkEffectDesc_801D0AFC;
-using ::Effect::System::UnkParticle_80027DC4;
+using ::Effect::System::EffectParticleExecUnit;
 using SonicteamUSA::System::Effect::EffectLaunchInfoUSA;
 
 extern "C" {
@@ -213,7 +213,7 @@ void EffectParticle3DUSA::Update(float dt) {
     EffectParticle3DRW3::Update(dt);
     if (!(m_flags & 1) || (m_flags & 4)) {
     } else if (m_clump != 0) {
-        UnkParticle_80027DC4 *particle = m_particles;
+        EffectParticleExecUnit *particle = m_particles;
         for (int i = 0; i < m_count; i++, particle = particle->m_next) {
             if (particle == 0) {
                 return;

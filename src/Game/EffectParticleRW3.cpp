@@ -19,7 +19,7 @@
 using ::Effect::System::EffectLaunchInfo;
 using ::Effect::System::EffectManager;
 using ::Effect::System::UnkEffectDesc_801D0AFC;
-using ::Effect::System::UnkParticle_80027DC4;
+using ::Effect::System::EffectParticleExecUnit;
 
 /* A 3D particle's model data: the four vertices of its quad (an RwIm3DVertex each), or a copy of
  * the effect's clump (layout from its use; see also Game/EffectParticleUSA.cpp). */
@@ -224,7 +224,7 @@ void EffectParticleRW3::Draw() {
         fn_80448408(m_model, &size, 4, 0x40000000);
         fn_80448408(m_model, &rotation, 0x20, 0x40000000);
         fn_80448408(m_model, &uv, 0x80, 0x40000000);
-        UnkParticle_80027DC4 *particle = m_particles;
+        EffectParticleExecUnit *particle = m_particles;
         if (m_config & 0x800) {
             for (; particle != 0; particle = particle->m_next) {
                 Vec3f world;
@@ -346,7 +346,7 @@ void EffectParticle3DRW3::Update(float dt) {
     EffectParticle::Update(dt);
     if ((m_flags & 1) && !(m_flags & 4)) {
         if (m_clump != 0) {
-            UnkParticle_80027DC4 *particle = m_particles;
+            EffectParticleExecUnit *particle = m_particles;
             for (int i = 0; i < m_count; i++) {
                 if (particle == 0) {
                     return;
@@ -388,7 +388,7 @@ void EffectParticle3DRW3::Update(float dt) {
                 particle = particle->m_next;
             }
         } else {
-            UnkParticle_80027DC4 *particle = m_particles;
+            EffectParticleExecUnit *particle = m_particles;
             for (int i = 0; i < m_count; i++) {
                 if (particle == 0) {
                     return;
@@ -450,7 +450,7 @@ void EffectParticle3DRW3::Draw() {
         return;
     }
     if (m_clump != 0) {
-        UnkParticle_80027DC4 *particle = m_particles;
+        EffectParticleExecUnit *particle = m_particles;
         for (int i = 0; i < m_count; i++) {
             if (particle != 0) {
                 if (m_world != 0) {
@@ -502,7 +502,7 @@ void EffectParticle3DRW3::Draw() {
     } else {
         RwRenderStateSet(1, reinterpret_cast<void *>(0));
     }
-    UnkParticle_80027DC4 *particle = m_particles;
+    EffectParticleExecUnit *particle = m_particles;
     for (int i = 0; i < m_count; i++) {
         if (particle == 0) {
             break;

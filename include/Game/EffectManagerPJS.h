@@ -13,6 +13,8 @@
 #include "Effect/System/EffectArranger.h"
 #include "Effect/System/EffectObject.h"
 #include "Effect/System/EffectLensFlare.h"
+#include "Effect/System/EffectParticle.h"
+#include "Effect/System/EffectRay.h"
 #include "Effect/System/EffectShimmer.h"
 #include "Game/ClumpFade.h"
 #include "Game/EffectPJSLauncher.h"
@@ -71,90 +73,6 @@ class EffectLocus : public EffectElement {
 #endif
 };
 
-#ifdef EFFECT_ELEMENT_FULL
-/* One ray of a ray effect (Effect::System::EffectRayExecUnit, name from RTTI; the fields
- * Effect::RW3::EffectRayRW3::Draw reads, meanings inferred). Colours are four words (red, green,
- * blue, alpha), 8 bits each from bit 22. */
-class EffectRayExecUnit {
-  public:
-    /* 0x00 */ void *m_vtable;
-    /* 0x04 */ Vec3f m_start;
-    /* 0x10 */ Vec3f m_end;
-    /* 0x1C */ u8 field_0x1C[0x30 - 0x1C];
-    /* 0x30 */ float m_length; /* the longest the ray is drawn */
-    /* 0x34 */ float m_width;
-    /* 0x38 */ s32 m_color[4];
-    /* 0x48 */ s32 m_topColor[4];  /* the start's colour, times m_color */
-    /* 0x58 */ s32 m_lastColor[4]; /* the end's colour, times m_color */
-    /* 0x68 */ EffectRayExecUnit *m_prev;
-    /* 0x6C */ EffectRayExecUnit *m_next;
-};
-#endif
-
-class EffectRay : public EffectElement {
-  public:
-    virtual ~EffectRay();
-    virtual void Update(float dt);
-
-#ifdef EFFECT_ELEMENT_FULL
-    /* 0x804298D4 */
-    EffectRay(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info, EffectManager *manager);
-
-    /* 0x0FC */ EffectRayExecUnit *m_head;
-    /* 0x100 */ u8 field_0x100[0x104 - 0x100];
-#else
-    /* 0x054 */ u8 field_0x54[0x104 - 0x54];
-#endif
-    /* 0x104 */ u32 m_request; /* as EffectParticle's */
-    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass (as EffectParticle's); bit 1: no
-                                * depth writes, bit 11: the rays are in the element's space */
-#ifdef EFFECT_ELEMENT_FULL
-    /* 0x10C */ s32 m_unitCount;   /* the most rays */
-    /* 0x110 */ s32 m_activeCount; /* the rays in use (inferred) */
-    /* 0x114 */ u8 field_0x114[0x134 - 0x114];
-#endif
-};
-
-/* One particle of a particle effect (layout from Game/EffectParticleUSA.cpp). */
-struct UnkParticle_80027DC4 {
-    /* 0x00 */ u8 field_0x0[0x4];
-    /* 0x04 */ Vec3f m_position; /* the RW3 elements draw them here (Game/EffectParticleRW3.cpp) */
-    /* 0x10 */ Vec3f m_rotation; /* about X, Y and Z (the 2D particles use Z only) */
-    /* 0x1C */ u8 field_0x1C[0x28 - 0x1C];
-    /* 0x28 */ Vec3f m_scale;    /* the 2D particles use X and Y as their size */
-    /* 0x34 */ float m_uv0[2];   /* texture coordinates of two corners */
-    /* 0x3C */ u8 field_0x3C[0x40 - 0x3C];
-    /* 0x40 */ float m_uv1[2];
-    /* 0x48 */ u8 field_0x48[0x54 - 0x48];
-    /* 0x54 */ u32 m_color[4]; /* red, green, blue, alpha: 8 bits each, from bit 22 */
-    /* 0x64 */ u8 field_0x64[0x68 - 0x64];
-    /* 0x68 */ UnkParticle_80027DC4 *m_next;
-};
-
-class EffectParticle : public EffectElement {
-  public:
-#ifdef EFFECT_ELEMENT_FULL
-    /* 0x80427EC8 (Game/EffectParticleRW3.cpp calls it). */
-    EffectParticle(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
-                   EffectManager *manager);
-#endif
-    virtual ~EffectParticle();
-    virtual void Update(float dt);
-
-#ifndef EFFECT_ELEMENT_FULL
-    /* 0x054 */ u8 field_0x54[0xFC - 0x54];
-#endif
-    /* 0x0FC */ UnkParticle_80027DC4 *m_particles; /* the first particle */
-    /* 0x100 */ u8 field_0x100[0x104 - 0x100];
-    /* 0x104 */ u32 m_request; /* bit 1: show or hide requested, bit 2: hide (as EffectLocusRW3's
-                                * field_0x108) */
-    /* 0x108 */ u32 m_config;  /* bits 2 and 3 pick the draw pass, bit 4: has textures, bit 15:
-                                * has a model */
-    /* 0x10C */ s32 m_count;   /* the number of particles */
-    /* 0x110 */ s32 m_liveCount; /* how many of them are alive */
-    /* 0x114 */ u8 field_0x114[0x13C - 0x114];
-};
-SIZE_ASSERT(EffectParticle, 0x13C);
 
 } // namespace System
 

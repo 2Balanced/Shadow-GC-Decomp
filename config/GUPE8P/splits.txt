@@ -6785,6 +6785,20 @@ Game/EffectArranger.cpp:
 	.rodata     start:0x8051AA30 end:0x8051AAB8
 	.data       start:0x8056A3F8 end:0x8056A488
 
+Game/EffectParticle.cpp:
+	extab       start:0x800067F8 end:0x80006A78
+	extabindex  start:0x800085C4 end:0x80008660
+	.text       start:0x80426DDC end:0x80428908
+	.rodata     start:0x8051AAB8 end:0x8051AC40
+	.data       start:0x8056A488 end:0x8056A648
+
+Game/EffectRay.cpp:
+	extab       start:0x80006A78 end:0x80006CF8
+	extabindex  start:0x80008660 end:0x80008714
+	.text       start:0x80428908 end:0x8042A2D8
+	.rodata     start:0x8051AC40 end:0x8051AE48
+	.data       start:0x8056A648 end:0x8056A8A8
+
 Game/EffectSystem.cpp:
 	extab       start:0x80006CF8 end:0x80006D08
 	extabindex  start:0x80008714 end:0x8000872C
