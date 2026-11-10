@@ -422,8 +422,7 @@ u32 *fn_8043E0E8(void) {
     u32 *entry;
     int i;
     for (i = 0; i < 8; i++) {
-        entry = (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478);
-        if ((*entry & 0x80000000) == 0) {
+        if ((*(u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478) & 0x80000000) == 0) {
             goto found;
         }
     }
@@ -431,12 +430,13 @@ u32 *fn_8043E0E8(void) {
     return NULL;
 
 found:
+    entry = (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478);
     memset(entry, 0, 0x1530);
-    *entry |= 0x80000000;
     float f28 = lbl_805FAF28;
     float f30 = lbl_805FAF30;
     float f2c = lbl_805FAF2C;
     float initial = lbl_805FAF38;
+    *entry |= 0x80000000;
     *(float *)(entry + 2) = f28;
     *(float *)(entry + 3) = f28;
     *(float *)(entry + 9) = f30;
