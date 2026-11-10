@@ -10,6 +10,9 @@ extern u32 lbl_805FB0A8;
 extern u8 lbl_805FB0AC;
 extern u32 lbl_805FB0B0;
 extern u8 lbl_805FB0B4;
+extern u32 lbl_805F1578;
+extern u32 lbl_805F1520;
+extern u32 lbl_8051BD10[];
 
 extern "C" {
 u32 fn_8047D868(void *, void *, u32);
@@ -76,14 +79,14 @@ void *fn_8044C174(u32 *object) {
 
 void *fn_8044BDF0(u32 count, u32 records, u32 deduplicate, u32 first, u32 *groups, u32 *values,
                   u32 *recordsOut) {
-    u32 *object = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x4C, 0x30116);
-    if (object == NULL) return NULL;
+    u32 *object = (u32 *)((void *(*)(void *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        (void *)lbl_8056D708[6], 0x4C, 0x30116);
     memset(object, 0, 0x4C);
     if (first == 0) {
         object[4] = 1;
         u32 *group = groups;
-        while (object[4] < 4 && group[0] != 0) {
-            if (group[object[4]] != 0) object[4]++;
+        for (u32 groupIndex = 0; groupIndex < count && object[4] < 4; groupIndex++) {
+            while (object[4] < 4 && group[object[4]] != 0) object[4]++;
             group += 4;
         }
     }
@@ -111,8 +114,9 @@ void *fn_8044BDF0(u32 count, u32 records, u32 deduplicate, u32 first, u32 *group
 
     u32 bytes = records * 0x40 + uniqueCount + 0xF + count * 0x14;
     void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x30116);
+    object[18] = (u32)memory;
     if (memory == NULL) {
-        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x11C))(object);
+        ((void (*)(void *, void *))*(u32 *)(lbl_805F15B4 + 0x11C))((void *)lbl_8056D708[6], object);
         return NULL;
     }
     memset(memory, 0, bytes);
@@ -408,6 +412,101 @@ void fn_8044CDC4(u32 *object) {
 
 void fn_8044CEE0(u32 *object) {
     RwCpp12AdvanceSeed(object);
+}
+
+void *fn_80480878(void *, void *, u32, void *);
+
+u32 fn_8044CF68(u32 *other, u32 *object, u32 *data, u32 **nodePtr) {
+    u32 *node = *nodePtr;
+    u32 *owner = (u32 *)object[6];
+    if (node[0] != 0) {
+        *(u32 *)node[1] = node[0];
+        *(u32 *)(node[0] + 4) = node[1];
+        u32 *freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+        node[0] = freeList[0];
+        node[1] = (u32)freeList;
+        freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+        ((u32 *)freeList[0])[1] = (u32)node;
+        freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+        freeList[0] = (u32)node;
+    }
+
+    (*nodePtr)[5] = (u32)fn_8044CDC4;
+    u32 *payload = (u32 *)(*nodePtr)[3];
+    if (((u8 *)payload)[0] == 1) {
+        u32 *entry = (u32 *)((u8 *)payload + lbl_8056D708[1]);
+        if (entry[1] == 0) {
+            entry[1] = data[3];
+            data[3] = 0;
+            if ((owner[2] & 0x10) != 0) {
+                entry[2] = data[5];
+                data[5] = 0;
+            }
+        }
+    } else if (other[7] == 0) {
+        other[7] = data[3];
+        data[3] = 0;
+        if ((owner[2] & 0x10) != 0) {
+            other[8] = data[5];
+            data[5] = 0;
+        }
+    }
+
+    if (data[3] != 0) {
+        u32 *header = *(u32 **)(data[3] - 4);
+        if (fn_8049A78C(*(u16 *)((u8 *)header + 0x18)) == 0) {
+            header[4] = 0;
+            data[3] = 0;
+            if ((owner[2] & 0x10) != 0) data[5] = 0;
+        }
+    }
+
+    if (data[3] == 0) {
+        u32 size;
+        u8 *format = *(u8 **)((u8 *)owner + lbl_805F1520);
+        if (format != NULL) {
+            u32 base = ((owner[5] * lbl_8051BD10[format[0]] + 0x1F) & ~0x1F) + 6;
+            size = base;
+            if ((owner[2] & 0x10) != 0) {
+                u32 multiplier = format[0xD] != 0 ? 3 : 1;
+                size += (owner[5] * lbl_8051BD10[format[1]] * multiplier + 0x1F) & ~0x1F;
+            }
+        } else {
+            u32 base = (owner[5] * 0xC + 0x1F) & ~0x1F;
+            size = base + 6;
+            if ((owner[2] & 0x10) != 0) size += base;
+        }
+
+        void *allocation = fn_80480878(object, data + 3, size, (void *)fn_8044CEE0);
+        u32 needed = owner[6] == 1 ? owner[0x16] : object[5];
+        if (allocation == NULL || needed == 0) {
+            if (allocation != NULL) fn_8048071C(allocation);
+            return 0;
+        }
+        data[3] = (data[3] + 0x3D) & ~0x1F;
+        if ((owner[2] & 0x10) != 0) {
+            u32 extra = (owner[5] * *((u8 *)data + 0x11) + 0x1F) & ~0x1F;
+            data[5] = data[3] + extra;
+        }
+        *(u32 *)(data[3] - 4) = (u32)allocation;
+    } else {
+        u32 *header = *(u32 **)(data[3] - 4);
+        if (header[0] != 0) {
+            *(u32 *)header[1] = header[0];
+            *(u32 *)(header[0] + 4) = header[1];
+            u32 *freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+            header[0] = freeList[0];
+            header[1] = (u32)freeList;
+            freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+            ((u32 *)freeList[0])[1] = (u32)header;
+            freeList = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+            freeList[0] = (u32)header;
+        }
+    }
+
+    u32 *header = *(u32 **)(data[3] - 4);
+    *(u16 *)((u8 *)header + 0x18) = lbl_805EDF40;
+    return 1;
 }
 
 void *RwFrameGetLTM(void *);
