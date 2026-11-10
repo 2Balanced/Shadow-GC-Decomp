@@ -121,9 +121,7 @@ void fn_8043DAB0(u32 *object) {
 }
 
 void fn_8043E430(int value) {
-    u32 result = (value == 0);
-    result = 1 - result;
-    ((u32 *)lbl_805F1404)[0xFDFB] = result;
+    lbl_805F1404[0xFDFB] = (value == 0) ? -1 : 0;
     if (value != 0) {
         fn_80384978(0);
     } else {
