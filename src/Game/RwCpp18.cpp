@@ -36,4 +36,15 @@ void fn_80456210(u8 *base) {
     target[1] = 0;
     target[0] = 0;
 }
+
+void fn_80457468(void);
+void fn_80456FD8(void);
+
+void fn_80455D0C(void) {
+    fn_80457468();
+}
+
+void fn_80455D2C(void) {
+    fn_80456FD8();
+}
 }

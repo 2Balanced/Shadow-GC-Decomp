@@ -32,4 +32,15 @@ u32 fn_804626EC(u8 *object) {
 u32 fn_804621B0(u8 *object) {
     return *(u32 *)(object + lbl_805F1508 + 0x0C);
 }
+
+void fn_8046510C(void);
+void fn_804651AC(void);
+
+void fn_80461C80(void) {
+    fn_8046510C();
+}
+
+void fn_80461D08(void) {
+    fn_804651AC();
+}
 }

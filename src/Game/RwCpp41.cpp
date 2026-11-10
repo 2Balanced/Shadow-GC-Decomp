@@ -34,4 +34,10 @@ u32 fn_8047B050(u32 *object) {
     object[9] = 2;
     return 0;
 }
+
+void fn_804797F0(void);
+
+void fn_8047B3EC(void) {
+    fn_804797F0();
+}
 }

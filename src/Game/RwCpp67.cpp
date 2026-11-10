@@ -16,4 +16,10 @@ void fn_804A558C(u32 *object) {
 void fn_804A5598(u32 *object) {
     object[0x1F] = lbl_805F16C0;
 }
+
+void fn_804A1A08(void);
+
+void fn_804A55AC(void) {
+    fn_804A1A08();
+}
 }

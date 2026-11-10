@@ -30,4 +30,10 @@ void fn_8044C3FC(u8 *base, u8 *other) {
     u32 offset = lbl_8056D708[1];
     *(u32 *)(base + offset) = *(u32 *)(other + offset);
 }
+
+void fn_8044EE3C(void);
+
+void fn_8044CB70(void) {
+    fn_8044EE3C();
+}
 }

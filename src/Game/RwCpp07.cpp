@@ -10,4 +10,12 @@ void fn_80443FE0(u8 *base) {
     target[1] = 0;
     target[2] = 0;
 }
+
+void fn_80443A74(void);
+
+void fn_80444284(u32 *object) {
+    u32 previous = object[0x12];
+    *(u32 *)((u8 *)object + lbl_805F1430 + 8) = previous;
+    object[0x12] = (u32)fn_80443A74;
+}
 }

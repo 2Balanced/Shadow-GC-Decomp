@@ -17,4 +17,10 @@ void fn_804799B8(u32 *object, u32 value) {
 u32 fn_804799C0(u32 *object) {
     return object[4];
 }
+
+void fn_80478700(void);
+
+void fn_80478AC8(void) {
+    fn_80478700();
+}
 }

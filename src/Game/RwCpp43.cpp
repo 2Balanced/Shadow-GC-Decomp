@@ -53,4 +53,10 @@ u32 fn_8047DFAC(s32 *object) {
     }
     return 0;
 }
+
+void fn_8047E298(void);
+
+void fn_8047ECB4(void) {
+    fn_8047E298();
+}
 }

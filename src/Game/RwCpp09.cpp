@@ -22,4 +22,10 @@ void fn_80446BE0(u32 *object) {
     target[1] = 0;
     target[0] = 0xFFFFFFFF;
 }
+
+void fn_80456FD8(void);
+
+void fn_804483E8(void) {
+    fn_80456FD8();
+}
 }

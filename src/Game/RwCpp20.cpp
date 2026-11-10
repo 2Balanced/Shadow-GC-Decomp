@@ -16,4 +16,10 @@ void fn_80458CF8(u32 unused, u32 value) {
     lbl_805F14D0 = value;
     (&lbl_805F14D0)[1]++;
 }
+
+void fn_8045ACD4(void);
+
+void fn_8045A760(void) {
+    fn_8045ACD4();
+}
 }
