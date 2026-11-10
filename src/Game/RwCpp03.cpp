@@ -330,7 +330,7 @@ void fn_8043DD14(u32 *object) {
                 if ((low & 0xFF) == 0) {
                     if ((object[index * 0x12 + 0x29] & 1) == 0) {
                         int outer = 0;
-                        while ((outer = (int)fn_8043B8F0((u8 *)object + 0x28, (void *)outer)) != 0) {
+                        while ((outer = (int)fn_8043B8F0((u8 *)(object + 0xA), (void *)outer)) != 0) {
                             void *entry = *(void **)(outer + 4);
                             if (entry != NULL && *(u8 *)((u8 *)entry + 2) == index &&
                                 *(u8 *)((u8 *)entry + 3) == sub) {
@@ -343,17 +343,17 @@ void fn_8043DD14(u32 *object) {
                                         }
                                     }
                                 } else {
-                                    fn_8043B868((u8 *)object + 0x28, (void *)outer);
+                                    fn_8043B868((u8 *)(object + 0xA), (void *)outer);
                                 }
                             }
                         }
                     }
                 } else {
-                    void *created = fn_8043B910((u8 *)object + 0x28, NULL);
+                    void *created = fn_8043B910((u8 *)(object + 0xA), NULL);
                     if (created != NULL) {
                         void *entry = fn_8043B954(object, index, sub, low & 0xFF, (s8)command);
                         if (entry == NULL) {
-                            fn_8043B868((u8 *)object + 0x28, created);
+                            fn_8043B868((u8 *)(object + 0xA), created);
                         } else {
                             *(u32 **)((u8 *)entry + 0xC) = object;
                             *(u8 *)((u8 *)entry + 3) = (u8)sub;
@@ -364,7 +364,7 @@ void fn_8043DD14(u32 *object) {
                 }
             } else if (high == 0x80 && (object[index * 0x12 + 0x29] & 1) == 0) {
                 int outer = 0;
-                while ((outer = (int)fn_8043B8F0((u8 *)object + 0x28, (void *)outer)) != 0) {
+                while ((outer = (int)fn_8043B8F0((u8 *)(object + 0xA), (void *)outer)) != 0) {
                     void *entry = *(void **)(outer + 4);
                     if (entry != NULL && *(u8 *)((u8 *)entry + 2) == index &&
                         *(u8 *)((u8 *)entry + 3) == sub) {
@@ -377,7 +377,7 @@ void fn_8043DD14(u32 *object) {
                                 }
                             }
                         } else {
-                            fn_8043B868((u8 *)object + 0x28, (void *)outer);
+                            fn_8043B868((u8 *)(object + 0xA), (void *)outer);
                         }
                     }
                 }
@@ -869,7 +869,7 @@ void fn_8043DA0C(u32 *object) {
         return;
     }
     int outer = 0;
-    while ((outer = (int)fn_8043B8F0((u8 *)object + 0x28, (void *)outer)) != 0) {
+    while ((outer = (int)fn_8043B8F0((u8 *)(object + 0xA), (void *)outer)) != 0) {
         int inner = 0;
         u8 index = *(u8 *)(*(u32 *)(outer + 4) + 2);
         while ((inner = (int)fn_8043C10C(*(u8 **)(outer + 4) + 0x10, (void *)inner)) != 0) {
