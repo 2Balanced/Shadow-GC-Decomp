@@ -816,7 +816,7 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp67.cpp"),
             Object(NonMatching, "Game/RwCpp68.cpp"),
             Object(NonMatching, "Game/RwCpp69.cpp"),
-            Object(NonMatching, "Game/RwCpp70.cpp", cflags=cflags_rw_no_lmw),
+            Object(NonMatching, "Game/RwCpp70.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
             Object(NonMatching, "Game/EffectManagerRW3.cpp", cflags=cflags_effect_lib),

@@ -1,5 +1,7 @@
 /* RenderWare container and resource helpers. Function and member names are inferred from behavior.
- * Definitions are in reverse address order because deferred inlining emits the last one first. */
+ * Definitions are in reverse address order because deferred inlining emits the last one first.
+ * Remaining: register allocation in fn_804A8B08, fn_804A9274, fn_804A9674, and fn_804A9914.
+ * Compiler profile: GC 2.7 -O4,p with use_lmw_stmw off. */
 #include <string.h>
 #include <dolphin/types.h>
 
@@ -114,15 +116,17 @@ void *fn_804A9914(void *param) {
     void *found = NULL;
     void *head = *(void **)(base + 8);
     if (head != NULL) {
-        found = *(void **)head;
-        while (found != head) {
-            void *node = (u8 *)found - 0x28;
+        void *search = *(void **)head;
+        while (search != head) {
+            void *node = (u8 *)search - 0x28;
             if (lbl_805F15B4->m_e8((u8 *)node + 8, param) == 0) {
                 found = node;
                 goto have;
             }
-            found = *(void **)found;
+            search = *(void **)search;
         }
+        search = NULL;
+        found = search;
     } else {
         void *outer = *(void **)base;
         while (outer != base) {
@@ -136,6 +140,7 @@ void *fn_804A9914(void *param) {
                 }
                 found = *(void **)found;
             }
+            if (found != NULL) break;
             found = NULL;
             outer = *(void **)outer;
         }
@@ -178,11 +183,11 @@ have:
     }
     param = ((void *(*)(void *, u32, u32, u32))entry->m_field_0x8)(
         base, index, localC, local10);
-    if (param != NULL) {
-        fn_804A9BA4(param, &local14);
-    } else {
+    if (param == NULL) {
         param = NULL;
+        goto close;
     }
+    fn_804A9BA4(param, &local14);
 close:
     fn_8048124C(base, 0);
     return param;
@@ -279,11 +284,10 @@ void *fn_804A9500(void *list, RwCpp70Node *node) {
         fn_804A9674(node);
     }
     RwCpp70Node *head = (RwCpp70Node *)list;
-    void *link = (u8 *)node + 0x28;
     node->m_next = (RwCpp70Node *)head->m_field_0x0;
     node->m_previous = head;
-    ((RwCpp70Node *)head->m_field_0x0)->m_field_0x4 = (int)link;
-    head->m_field_0x0 = link;
+    ((RwCpp70Node *)head->m_field_0x0)->m_field_0x4 = (int)(u8 *)node + 0x28;
+    head->m_field_0x0 = (u8 *)node + 0x28;
     fn_804A9BE8(node);
     return list;
 }
@@ -355,8 +359,8 @@ int fn_804A9274(void) {
     }
     void *list = (u8 *)lbl_805F15B4 + lbl_805EDF68;
     void *current = *(void **)list;
-    void *target = lbl_805F16D0;
     while (current != list) {
+        void *target = lbl_805F16D0;
         if ((u8 *)current - 8 == target) {
             fn_804A9468(current);
             lbl_805F16D0 = NULL;
@@ -480,14 +484,14 @@ int fn_804A8E90(void) {
     }
     memset(lbl_805E32D8, 0, 0xA0);
     int result = fn_80485D78(0x18, 0x12C, fn_804A869C, fn_804A86DC);
+    int success = (result < 0) ? 0 : 1;
     lbl_805EDF68 = result;
-    return ((u32)result >> 31) ^ 1;
+    return success;
 }
 
 #define RWCPP70_CONSTRUCT_FAIL(result)                                                          \
     do {                                                                                       \
-        u32 *slot = (result);                                                                   \
-        for (u32 i = 0; i < (result)[1]; i++, slot++) {                                        \
+        for (u32 i = 0, *slot = result; i < (result)[1]; slot++, i++) {                       \
             if (slot[2] != 0) {                                                                \
                 fn_8048CD8C((void *)slot[2]);                                                  \
                 slot[2] = 0;                                                                   \
@@ -514,8 +518,9 @@ void *fn_804A8B08(void *stream, void *source, void *destination, void *context) 
         return NULL;
     }
     u8 count = local8[1];
+    size_t size;
     u32 *entry = (u32 *)lbl_805E32D8 + local8[0] * 4;
-    size_t size = entry[3] + 0x38;
+    size = entry[3] + 0x38;
     u32 *result = (u32 *)lbl_805F15B4->m_allocate(size, 0x103012C, lbl_805F15B4);
     if (result == NULL) {
         struct {
@@ -538,12 +543,11 @@ allocated:
     if (result == NULL) {
         return NULL;
     }
-    if (count != 0) {
+    if (*(volatile u8 *)(local8 + 1) != 0) {
         if (fn_80480D4C(stream, result + 0xA, result[1]) == 0) {
             RWCPP70_CONSTRUCT_FAIL(result);
         }
-        u32 *slot = result;
-        for (u32 i = 0; i < result[1]; i++, slot++) {
+        for (u32 i = 0, *slot = result; i < result[1]; slot++, i++) {
             if (fn_804A0CDC(stream, slot + 2) == 0) {
                 RWCPP70_CONSTRUCT_FAIL(result);
             }
