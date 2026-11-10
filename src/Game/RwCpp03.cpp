@@ -599,7 +599,7 @@ void fn_8043E624(void) {
 }
 
 u32 fn_8043E6F4(u32 arg1, u32 arg2, u32 arg3, u32 arg4) {
-    fn_8043E9C4(arg1, arg2);
+    fn_8043E9C4(arg1, arg3);
     ((u32 *)lbl_805F1404)[1] = 0x14470;
     *(float *)(lbl_805F1404 + 0x2C) = lbl_805FAF40;
     ((u32 *)lbl_805F1404)[0x1427] = 0xF;
