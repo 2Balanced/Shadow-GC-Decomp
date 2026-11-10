@@ -146,3 +146,52 @@ extern "C" void fn_80450448(u32 *object) {
     }
     fn_8047046C(lbl_805E1560, index & 0xFF);
 }
+
+extern "C" void fn_8045066C(u32 *object, u32 *descriptor, u32 index) {
+    u32 count = descriptor[1];
+    u16 *output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
+    u16 *entries = (u16 *)descriptor[0];
+    u32 *table = (u32 *)object[5];
+    if (object[13] != 0) {
+        u8 local[0x28];
+        u32 written = 0;
+        u8 *source = (u8 *)object[16];
+        u32 pair = index * 2;
+        u32 first = source[pair];
+        u32 outerCount = source[pair + 1];
+        u32 tableOffset = (first & 0x7F) * 2;
+        for (u32 outer = 0; outer < outerCount; outer++) {
+            u8 *entry = (u8 *)object[17] + outer * 2 + tableOffset;
+            u32 base = entry[0];
+            u32 innerCount = entry[1];
+            for (u32 i = 0; i < innerCount; i++) local[written++] = (u8)(base + i);
+        }
+
+        for (u32 i = 0; i < count; i++) {
+            u32 expected = table[entries[i]] & 0xFF;
+            u32 candidate = 0;
+            bool found = false;
+            for (u32 round = 0; round < 2 && !found; round++) {
+                for (u32 j = 0; j < 5; j++) {
+                    if (local[round * 5 + j] == expected) {
+                        output[i] = (u16)(candidate * 3);
+                        found = true;
+                        break;
+                    }
+                    candidate++;
+                }
+            }
+        }
+    } else {
+        u8 *candidates = (u8 *)object[2];
+        for (u32 i = 0; i < count; i++) {
+            u32 expected = table[entries[i]] & 0xFF;
+            for (u32 j = 0; j < object[1]; j++) {
+                if (candidates[j] == expected) {
+                    output[i] = (u16)(j * 3);
+                    break;
+                }
+            }
+        }
+    }
+}
