@@ -100,7 +100,11 @@ u32 fn_8043EF48(void) {
 }
 
 void fn_8043E47C(int value) {
-    lbl_805F1404[0xFDFA] = (value == 0) ? -1 : 0;
+    s32 result = -1;
+    if (value != 0) {
+        result = 0;
+    }
+    lbl_805F1404[0xFDFA] = result;
 }
 
 void fn_8043DAE4(u8 *object, u32 index, u32 value) {
@@ -121,7 +125,11 @@ void fn_8043DAB0(u32 *object) {
 }
 
 void fn_8043E430(int value) {
-    lbl_805F1404[0xFDFB] = (value == 0) ? -1 : 0;
+    s32 result = -1;
+    if (value != 0) {
+        result = 0;
+    }
+    lbl_805F1404[0xFDFB] = result;
     if (value != 0) {
         fn_80384978(0);
     } else {
