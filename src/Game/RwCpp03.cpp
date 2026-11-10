@@ -100,9 +100,7 @@ u32 fn_8043EF48(void) {
 }
 
 void fn_8043E47C(int value) {
-    u32 result = (value == 0);
-    result = 1 - result;
-    ((u32 *)lbl_805F1404)[0xFDFA] = result;
+    lbl_805F1404[0xFDFA] = (value == 0) ? -1 : 0;
 }
 
 void fn_8043DAE4(u8 *object, u32 index, u32 value) {
