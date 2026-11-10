@@ -153,19 +153,21 @@ int fn_8043F35C(u32 *object, u8 *command, u32 flags) {
         result = 0x07000102;
         do {
             if (object == (u32 *)(lbl_805F1404 + offset + 0x5478)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+                if (*(s32 *)object != 0) {
+                    result = 0;
+                } else {
+                    result = 0x07000102;
+                }
                 break;
             }
             offset += 0x1530;
         } while (--count != 0);
     }
-    if (result == 0) {
-        u32 value = ((u32)command[0] << 24) | ((u32)command[1] << 16) |
-                    ((u32)command[2] << 8) | (flags & 0xFF);
-        fn_8043E004(object, value);
-        result = 0;
-    }
-    return result;
+    if (result != 0) return result;
+    u32 value = ((u32)command[0] << 24) | ((u32)command[1] << 16) |
+                ((u32)command[2] << 8) | (flags & 0xFF);
+    fn_8043E004(object, value);
+    return 0;
 }
 
 int fn_8043F41C(u32 *object, s8 *out, u32 type, ...) {
