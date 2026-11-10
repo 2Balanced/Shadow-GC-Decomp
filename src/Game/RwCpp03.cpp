@@ -657,13 +657,12 @@ void fn_8043E9C4(u32 arg1, u32 arg2) {
     u32 interrupt = OSDisableInterrupts();
     if (arg1 != 0) {
         lbl_805F1408 = 1;
-        goto allocated;
-    }
-    arg1 = (u32)OSAllocFromHeap(__OSCurrHeap, arg2);
-allocated:
-    if (arg1 == 0) {
-        OSReport("AX SDLIB: Panic: cannot allocate memory (%d)\n", arg2);
-        while (1) {
+    } else {
+        arg1 = (u32)OSAllocFromHeap(__OSCurrHeap, arg2);
+        if (arg1 == 0) {
+            OSReport("AX SDLIB: Panic: cannot allocate memory (%d)\n", arg2);
+            while (1) {
+            }
         }
     }
     OSReport("AX SDLIB: allocated (%d)\n", arg2);
