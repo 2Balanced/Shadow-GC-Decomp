@@ -27,7 +27,7 @@ u32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(u32);
 void *fn_8043B8F0(void *, void *);
 void fn_8043C2A4(u32 *, u32 *);
-void fn_8043C170(u32 *, int);
+void fn_8043C170(u32 *, int, float);
 void *fn_8043C10C(void *, void *);
 void fn_8043BE6C(u32 *);
 void fn_80387794(void);
@@ -855,7 +855,8 @@ void fn_8043DA0C(u32 *object) {
             }
             fn_8043BE6C(*(u32 **)(inner + 4));
             fn_8043C2A4(*(u32 **)(inner + 4), object);
-            fn_8043C170(*(u32 **)(inner + 4), object[index * 0x12 + 0x34]);
+            fn_8043C170(*(u32 **)(inner + 4), object[index * 0x12 + 0x34],
+                        *(float *)((u8 *)object + 0x24));
         }
     }
 }
