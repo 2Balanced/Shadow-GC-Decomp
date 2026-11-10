@@ -114,6 +114,41 @@ u32 fn_80445C9C(void) {
     return 1;
 }
 
+extern float lbl_805FAFEC;
+extern float lbl_805FAFE8;
+
+void fn_80445CF4(float *out, const float *q) {
+    float x = q[2];
+    float y = q[3];
+    float z = q[4];
+    float w = q[5];
+    float two = lbl_805FAFEC;
+    float one = lbl_805FAFE8;
+    float xx = x * x;
+    float yy = y * y;
+    float zz = z * z;
+    float xy = x * y;
+    float wz = w * z;
+    float yz = y * z;
+    float wx = w * x;
+    float zx = z * x;
+    float wy = w * y;
+
+    out[0] = one - two * (yy + zz);
+    out[1] = two * (xy + wz);
+    out[2] = two * (zx - wy);
+    *(u32 *)(out + 3) = 3;
+    out[4] = two * (xy - wz);
+    out[5] = one - two * (xx + zz);
+    out[6] = two * (yz + wx);
+    out[8] = two * (zx + wy);
+    out[9] = two * (yz - wx);
+    out[10] = one - two * (xx + yy);
+    out[12] = q[6];
+    out[13] = q[7];
+    out[14] = q[8];
+}
+
 u32 fn_80446780(u32 *object) {
     return object[1] * 0x24;
 }
