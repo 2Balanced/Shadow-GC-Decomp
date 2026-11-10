@@ -4,6 +4,7 @@
 extern u32 lbl_805F150C;
 extern u32 lbl_805F1510;
 extern u32 lbl_805F1514;
+extern u32 lbl_805F1508;
 
 extern "C" {
 void fn_80461164(void) {
@@ -26,5 +27,9 @@ u32 fn_8046256C(u8 *object) {
 
 u32 fn_804626EC(u8 *object) {
     return *(u32 *)(object + lbl_805F1514);
+}
+
+u32 fn_804621B0(u8 *object) {
+    return *(u32 *)(object + lbl_805F1508 + 0x0C);
 }
 }

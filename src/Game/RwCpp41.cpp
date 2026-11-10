@@ -29,4 +29,9 @@ void fn_8047A970(u32 value, u32 *object) {
 u8 *fn_80479FC4(void) {
     return lbl_805E2A40;
 }
+
+u32 fn_8047B050(u32 *object) {
+    object[9] = 2;
+    return 0;
+}
 }

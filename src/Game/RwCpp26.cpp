@@ -22,6 +22,12 @@ void fn_80462FA4(u8 *object, u8 value) {
     object[0x0A] = value;
 }
 
+void fn_80462F94(u8 *base, u32 offset, u8 first, u8 second) {
+    base += offset;
+    base[1] = first;
+    base[0x0D] = second;
+}
+
 u32 fn_804631CC(void) {
     return 1;
 }
