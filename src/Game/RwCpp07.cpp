@@ -6,6 +6,7 @@ extern u32 lbl_805F1430;
 extern u8 *lbl_805F15B4;
 extern float lbl_805FAFA8;
 extern s32 lbl_805F1428;
+extern u32 lbl_805F1578;
 
 extern "C" {
 void *fn_80443A74(u32 *);
@@ -419,5 +420,106 @@ u32 fn_804449A4(u8 *object) {
         result = fn_8049A78C(*(u16 *)(object + 0x18));
     } while (result == 0);
     return result;
+}
+
+void *fn_80480878(void *, void *, u32, void *);
+
+static inline void RwCpp07MoveToFront(u32 *node) {
+    if (node[0] == 0) return;
+    u32 *next = (u32 *)node[0];
+    u32 *previous = (u32 *)node[1];
+    previous[0] = (u32)next;
+    next[1] = (u32)previous;
+    u32 *sentinel = *(u32 **)(lbl_805F15B4 + lbl_805F1578 + 0x24);
+    node[0] = sentinel[0];
+    node[1] = (u32)sentinel;
+    *(u32 *)(sentinel[0] + 4) = (u32)node;
+    sentinel[0] = (u32)node;
+}
+
+u32 fn_80444A2C(u32 *object, u32 *params, u32 *nodeOut, u32 *links, u32 flagsA, u32 flagsB) {
+    u32 *owner = (u32 *)object[6];
+    u32 stride = owner[5];
+    u32 *node = (u32 *)*nodeOut;
+    RwCpp07MoveToFront(node);
+    node[5] = (u32)fn_804448B8;
+
+    if (links[0] == 0) {
+        links[0] = params[3];
+        params[3] = 0;
+        u32 index = 1;
+        if ((flagsA & 0x10) != 0) {
+            if ((flagsB & 0x10) != 0) links[index] = params[index * 2 + 3];
+            index++;
+        }
+        if ((flagsA & 0x20) != 0) {
+            if ((flagsB & 0x20) != 0) links[index] = params[index * 2 + 3];
+            index++;
+        }
+        if ((flagsA & 0x84) != 0 && (flagsB & 0x84) != 0) {
+            links[index] = params[index * 2 + 3];
+        }
+    }
+
+    if (params[3] != 0) {
+        u32 *existing = (u32 *)(params[3] - 4);
+        if (fn_8049A78C(*(u16 *)((u8 *)existing + 0x18)) == 0) {
+            existing[4] = 0;
+            params[3] = 0;
+        }
+    }
+
+    if (params[3] == 0) {
+        u32 sizes[4] = {0, 0, 0, 0};
+        sizes[0] = (((u8 *)params)[0x11] * stride + 0x1F) & ~0x1F;
+        u32 total = sizes[0] + 6;
+        u32 index = 1;
+        if ((flagsA & 0x10) != 0) {
+            if ((flagsB & 0x10) != 0) {
+                sizes[index] = (((u8 *)params)[index * 8 + 0x11] * stride + 0x1F) & ~0x1F;
+                total += sizes[index];
+            }
+            index++;
+        }
+        if ((flagsA & 0x20) != 0) {
+            if ((flagsB & 0x20) != 0) {
+                sizes[index] = (((u8 *)params)[index * 8 + 0x11] * stride + 0x1F) & ~0x1F;
+                total += sizes[index];
+            }
+            index++;
+        }
+        if ((flagsA & 0x84) != 0 && (flagsB & 0x84) != 0) {
+            sizes[index] = (((u8 *)params)[index * 8 + 0x11] * stride + 0x1F) & ~0x1F;
+            total += sizes[index];
+        }
+
+        void *memory = fn_80480878(object, params + 3, total, fn_804449A4);
+        u32 ownerValue = owner[6] == 1 ? owner[0x16] : object[5];
+        if (memory == NULL || ownerValue == 0) {
+            if (memory != NULL) fn_8048071C(memory);
+            return 0;
+        }
+        params[3] = (params[3] + 0x3D) & ~0x1F;
+
+        index = 1;
+        if ((flagsA & 0x10) != 0) {
+            if ((flagsB & 0x10) != 0) params[index * 2 + 3] = params[index * 2 + 1] + sizes[index];
+            index++;
+        }
+        if ((flagsA & 0x20) != 0) {
+            if ((flagsB & 0x20) != 0) params[index * 2 + 3] = params[index * 2 + 1] + sizes[index];
+            index++;
+        }
+        if ((flagsA & 0x84) != 0 && (flagsB & 0x84) != 0) {
+            params[index * 2 + 3] = params[index * 2 + 1] + sizes[index];
+        }
+        *(u32 *)(params[3] - 4) = (u32)memory;
+    } else {
+        RwCpp07MoveToFront((u32 *)(params[3] - 4));
+    }
+
+    u32 *result = (u32 *)(params[3] - 4);
+    *(u16 *)((u8 *)result + 0x18) = lbl_805EDF40;
+    return 1;
 }
 }
