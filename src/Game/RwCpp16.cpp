@@ -55,4 +55,13 @@ void fn_80453594(float *dest, const float *source) {
     dest[4] = source[0x0C];
     dest[5] = source[0x0D];
 }
+
+void fn_80452434(u8 *, u8 *);
+
+void *fn_80452860(u8 *object, u32 offset, u8 *other) {
+    u8 *second = other + offset;
+    u8 *first = object + offset;
+    fn_80452434(first, second);
+    return object;
+}
 }

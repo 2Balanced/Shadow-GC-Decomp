@@ -63,4 +63,11 @@ extern u8 *lbl_805F15B4;
 void fn_8047A7F4(u32 *object) {
     ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(object[0x16]);
 }
+
+void fn_80379D20(u8 *);
+
+void fn_8047A938(u8 *object) {
+    fn_80379D20(object + 0x40);
+    ((u32 *)object)[8] = 1;
+}
 }

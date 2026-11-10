@@ -2,7 +2,7 @@
 #include <dolphin/types.h>
 
 extern u32 lbl_805F1550;
-extern u32 lbl_805F1558;
+extern volatile u32 lbl_805F1558;
 
 extern "C" {
 u32 fn_8047E03C(u32 *object) {
@@ -69,5 +69,13 @@ u32 fn_8047E960(u32 *object) {
     target[1] = object[1];
     target[2] = object[2];
     return 1;
+}
+
+void fn_8047DB38(u32 value) {
+    lbl_805F1558 = value;
+    (&lbl_805F1558)[1]++;
+    *(u32 *)(lbl_805F15B4 + value) = 0;
+    value = lbl_805F1558;
+    *(u32 *)(lbl_805F15B4 + value + 4) = 0x80000000;
 }
 }

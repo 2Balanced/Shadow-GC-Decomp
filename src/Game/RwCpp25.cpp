@@ -58,7 +58,7 @@ void fn_80461CA0(u32 first, u32 second, u32 third) {
 }
 
 void fn_804612A8(void);
-void fn_8045C9C8(u32, u32 *);
+u32 fn_8045C9C8(u32, u32);
 void fn_80463244(void);
 void fn_80463308(void);
 void fn_804631D4(void);
@@ -77,7 +77,7 @@ void fn_80461548(u8 *object) {
 }
 
 void fn_80461BF0(const u32 *object) {
-    fn_8045C9C8(object[0x15], (u32 *)object);
+    fn_8045C9C8(object[0x15], (u32)object);
 }
 
 void fn_80462770(void) {
@@ -99,5 +99,38 @@ void fn_8045C56C(u32, u32, u32);
 
 void fn_80461B60(u32 first, u32 second, u32 *third) {
     fn_8045C56C(third[0x15], first, second + 0x20);
+}
+
+void fn_80461030(void);
+void fn_804621C0(u32, u32);
+void fn_80462578(u32, u32);
+void fn_80462130(u32, u32);
+u32 fn_8045FEA0(void);
+
+void fn_8046112C(u8 *object) {
+    u32 *target = (u32 *)(object + lbl_805F150C);
+    target[0] = 0;
+    ((u16 *)object)[0x30] = ((u16 *)lbl_805F15B4)[4] - 1;
+    target[1] = ((u32 *)object)[4];
+    ((u32 *)object)[4] = (u32)fn_80461030;
+}
+
+u32 fn_804619C8(u32 first, u32 second) {
+    fn_804621C0(second, first);
+    return first;
+}
+
+u32 fn_80461A50(u32 first, u32 second) {
+    fn_80462578(second, first);
+    return first;
+}
+
+u32 fn_80461AD8(u32 first, u32 second) {
+    fn_80462130(second, first);
+    return first;
+}
+
+u32 fn_80461DE8(u32 *object) {
+    return fn_8045C9C8(object[0x1E], fn_8045FEA0());
 }
 }

@@ -27,4 +27,16 @@ extern u8 *lbl_805F15B4;
 void fn_8045BF30(u32 first) {
     ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(first, 0x30502);
 }
+
+void fn_8045B8EC(u32 *object, u32 value) {
+    u32 count = object[1];
+    u32 *entries = (u32 *)object[0] + count;
+    while (count != 0) {
+        if (entries[0] == value) {
+            return;
+        }
+        count--;
+        entries--;
+    }
+}
 }

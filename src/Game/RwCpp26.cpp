@@ -78,4 +78,17 @@ u8 *fn_804641C0(void) {
 void fn_80462EC0(void) {
     (&lbl_805F1528)[1]--;
 }
+
+void fn_80463F10(void);
+void fn_80463DF4(void);
+void fn_80462914(void);
+
+u32 fn_80464188(u32 *object) {
+    u32 *table = (u32 *)object[5];
+    table[0] = (u32)fn_80463F10;
+    table[1] = 0;
+    table[2] = (u32)fn_80463DF4;
+    table[3] = (u32)fn_80462914;
+    return 1;
+}
 }
