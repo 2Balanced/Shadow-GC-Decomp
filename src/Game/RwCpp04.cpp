@@ -704,8 +704,8 @@ void *fn_80440468(u32 *header, void *context) {
 void *fn_80440670(void *context) {
     u32 local[19];
     if (fn_8047CF50(context, 1, 0, local) == 0) return NULL;
-    if (fn_80480D4C(context, local + 3, 0x24) != 0x24) return NULL;
-    fn_8047D254(local + 3, 0x24);
+    if (fn_80480D4C(context, local + 9, 0x24) != 0x24) return NULL;
+    fn_8047D254(local + 9, 0x24);
     u32 flags = local[9];
     u32 nameCount = local[17] & 0xFFFF;
     u32 extraCount = local[16] & 0xFFFF;
@@ -720,12 +720,12 @@ void *fn_80440670(void *context) {
         header[0] = flags;
         *(u16 *)(header + 7) = (u16)extraCount;
         *(u16 *)((u8 *)header + 0x1E) = (u16)nameCount;
-        header[1] = local[8];
-        header[2] = local[7];
-        header[3] = local[6];
-        header[4] = local[5];
-        header[5] = local[4];
-        header[6] = local[18];
+        header[1] = local[13];
+        header[2] = local[14];
+        header[3] = local[15];
+        header[4] = local[10];
+        header[5] = local[11];
+        header[6] = local[12];
         u8 *next = (u8 *)(header + 10);
         if (nameCount == 0) {
             header[8] = 0;
