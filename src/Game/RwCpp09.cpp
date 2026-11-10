@@ -343,6 +343,60 @@ void *fn_80448074(u32 *object, u32 value, void *argument) {
     return fn_804480C8(object, fn_80447EB4(value), argument, &lbl_8056D6F8);
 }
 
+u32 fn_80448408(u32 *object, u32 *out, u32 flags, u32 arg4) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1448);
+    if ((target[0x28] & flags) != 0) {
+        out[0] = 0;
+        out[1] = 0;
+        return 0;
+    }
+    switch (flags) {
+    case 1:
+        out[0] = target[0x13];
+        out[1] = target[0x14];
+        break;
+    case 2:
+        out[0] = target[0x1B];
+        out[1] = target[0x1C];
+        break;
+    case 4:
+        out[0] = target[0x19];
+        out[1] = target[0x1A];
+        break;
+    case 8:
+        out[0] = target[0x15];
+        out[1] = target[0x16];
+        break;
+    case 0x10:
+        out[0] = target[0x17];
+        out[1] = target[0x18];
+        break;
+    case 0x20:
+        out[0] = target[0x1F];
+        out[1] = target[0x20];
+        break;
+    case 0x40:
+        out[0] = target[0x1D];
+        out[1] = target[0x1E];
+        break;
+    case 0x80:
+        out[0] = target[0x21];
+        out[1] = target[0x22];
+        break;
+    case 0x100:
+        out[0] = target[0x23];
+        out[1] = target[0x24];
+        break;
+    default:
+        break;
+    }
+    if (target[0x27] != 0) out[1] = target[0x27];
+    if (out[0] != 0 && (arg4 & 0x40000000) != 0) {
+        target[0xF] |= arg4 | flags;
+    }
+    return 1;
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
