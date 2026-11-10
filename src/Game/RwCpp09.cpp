@@ -305,6 +305,20 @@ u32 fn_80447640(void) {
     return ((u32)result >> 31) ^ 1;
 }
 
+u32 fn_80447EB4(u32 value) {
+    if ((value & 0x8) != 0 && (value & 0x8000) != 0) value &= 0x8000;
+    if ((value & 0x20) != 0 && (value & 0x20000) != 0) value &= 0x20000;
+    if ((value & 0x40) != 0 && (value & 0x40000) != 0) value &= 0x40000;
+    if ((value & 0x80) != 0 && (value & 0x80000) != 0) value &= 0x80000;
+    if ((value & 0x100) != 0 && (value & 0x100000) != 0) value &= 0x100000;
+    if ((value & 0x8) != 0 && (value & 1) != 0) value &= ~1;
+    if ((value & 0x8) != 0 && (value & 0x4) != 0) value &= 0xF;
+    if ((value & 0x8) != 0 && (value & 0x20) != 0) value &= 0x3F;
+    if ((value & 0x8) == 0 && (value & 1) == 0) value |= 1;
+    if ((value & 0xC) == 0) value |= 0x20000000;
+    return value;
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
