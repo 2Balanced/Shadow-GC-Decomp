@@ -4,7 +4,7 @@
 Run automatically by `ninja` (the progress step in configure.py), or by hand:
   python tools/progress_page.py [--report build/GUPE8P/report.json]
 
-Each run also appends a snapshot to docs/progress/history.jsonl when the numbers changed, so the
+Each run also appends a snapshot to docs/progress/history.jsonl when the commit or the numbers changed, so the
 page can chart progress over time. Open docs/progress.html in any browser; it needs no server.
 
 Merge safety (see CONTRIBUTING.md): history.jsonl holds one snapshot per line and is merged with
@@ -148,7 +148,7 @@ def update_history(path, summary, commit):
     migrate_history(path)
     history = load_history(path)
     snap = {k: summary[k] for k in SNAPSHOT_KEYS}
-    if not history or {k: history[-1].get(k) for k in SNAPSHOT_KEYS} != snap:
+    if not history or {k: history[-1].get(k) for k in SNAPSHOT_KEYS} != snap or history[-1].get("commit") != commit:
         history.append({"date": datetime.datetime.now().isoformat(timespec="minutes"),
                         "commit": commit, **snap})
     # Always rewrite in order: it also drops the duplicate lines a union merge may leave.

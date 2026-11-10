@@ -562,7 +562,7 @@ config.libs = [
             Object(Matching, "Game/CameraModeGeneral.cpp"),
             Object(Matching, "Game/CameraModeLookFront.cpp"),
             Object(Matching, "Game/CameraModeMtnViewer.cpp"),
-            Object(NonMatching, "Game/CameraModeSetCamEdit.cpp"),
+            Object(Matching, "Game/CameraModeSetCamEdit.cpp"),
             Object(Matching, "Game/CameraModeSetEditor.cpp"),
             Object(Matching, "Game/CameraModeStop.cpp"),
             Object(Matching, "Game/CameraModeTestPlayer.cpp"),

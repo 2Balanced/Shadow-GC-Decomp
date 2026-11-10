@@ -6,11 +6,10 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: every function and the text size match. Referencing CameraMode::vf_0x18(int) from
- * its owning unit removes a four-byte weak copy that shifted the whole unit. MoveFree still
- * computes DegToRad(180.0f) in f30 where retail uses f28 for its multiplication and subtraction;
- * locals, an inline helper, direct arithmetic, a register-qualified local and scoped auto_inline
- * do not change that register choice. */
+ * Every function and the text size matches. Referencing CameraMode::vf_0x18(int) from its owning
+ * unit removes a four-byte weak copy that shifted the whole unit. MoveFree keeps the 180-degree
+ * input in f3 and its product in f28 by declaring degrees, scale and turn separately before the
+ * subtraction. */
 #define CAMERA_MODE_VF_0X18_EXTERN
 #include "Game/CameraModeSetCamEdit.h"
 #include "Game/CameraState.h"
@@ -166,8 +165,10 @@ void CameraModeSetCamEdit::MoveFree() {
             Vec3f move(leftX, 0.0f, leftY);
             Vec3f look;
             fn_800091EC(&look, &(const Vec3f &)fn_8000A3BC(ModeState(this)));
-            fn_800091D0(&move, &(const Vec3f &)fn_8040D0AC(
-                                   &move, fn_80016260(look.x, look.z) - DegToRad(180.0f)));
+            float degrees = 180.0f;
+            float scale = lbl_805FAD38 / 180.0f;
+            float turn = degrees * scale;
+            fn_800091D0(&move, &(const Vec3f &)fn_8040D0AC(&move, fn_80016260(look.x, look.z) - turn));
             target.z += move.z * m_speed;
             target.x += move.x * m_speed;
         }
