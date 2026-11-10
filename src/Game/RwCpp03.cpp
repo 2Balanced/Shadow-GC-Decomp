@@ -418,41 +418,52 @@ void fn_8043E088(u32 *object) {
     OSRestoreInterrupts(interrupt);
 }
 
-void fn_8043E0E8(u32 *object) {
-    OSDisableInterrupts();
-    for (int i = 0; i < 8; i++) {
-        if ((*(u32 *)((u8 *)object + i * 0x1530 + 0x5478) & 0x80000000) == 0) {
-            OSRestoreInterrupts(0);
-            return;
+u32 *fn_8043E0E8(void) {
+    u32 interrupt = OSDisableInterrupts();
+    u32 *entry;
+    int i;
+    for (i = 0; i < 8; i++) {
+        entry = (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478);
+        if ((*entry & 0x80000000) == 0) {
+            goto found;
         }
     }
-    memset(object, 0, 0x1530);
-    object[0] |= 0x80000000;
-    *(float *)(object + 8) = lbl_805FAF28;
-    *(float *)(object + 0xC) = lbl_805FAF28;
-    *(float *)(object + 0x24) = lbl_805FAF30;
-    *(float *)(object + 0x28) = lbl_805FAF28;
-    *(float *)(object + 0x10) = lbl_805FAF30;
-    *(float *)(object + 0x20) = lbl_805FAF2C;
-    *(float *)(object + 0x38) = lbl_805FAF2C;
-    for (int i = 0; i < 0x10; i++) {
-        u8 *entry = (u8 *)object + i * 0x48;
-        *(u32 *)(entry + 0xA8) = 0;
+    OSRestoreInterrupts(interrupt);
+    return NULL;
+
+found:
+    memset(entry, 0, 0x1530);
+    *entry |= 0x80000000;
+    float f28 = lbl_805FAF28;
+    float f30 = lbl_805FAF30;
+    float f2c = lbl_805FAF2C;
+    float initial = lbl_805FAF38;
+    *(float *)(entry + 2) = f28;
+    *(float *)(entry + 3) = f28;
+    *(float *)(entry + 9) = f30;
+    *(float *)(entry + 10) = f28;
+    *(float *)(entry + 4) = f30;
+    *(float *)(entry + 8) = f2c;
+    *(float *)(entry + 0xE) = f2c;
+    for (i = 0; i < 0x10; i++) {
+        u8 *slot = (u8 *)entry + i * 0x48;
+        *(u32 *)(slot + 0xA8) = 0;
         OSDisableInterrupts();
-        *(u32 *)(entry + 0xA4) = 0;
-        *(u32 *)(entry + 0xB4) = 100;
-        *(u32 *)(entry + 0xBC) = 0x40;
-        *(u32 *)(entry + 0xC0) = 0x2000;
-        *(u32 *)(entry + 0xB8) = 0x7F;
-        *(u32 *)(entry + 0xC4) = 0;
-        *(u32 *)(entry + 0xCC) = 0;
-        *(u32 *)(entry + 0xC8) = 0xFFFFFFFF;
-        *(u32 *)(entry + 0xDC) = 0x88888888;
-        *(float *)(entry + 0xE0) = lbl_805FAF38;
-        *(float *)(entry + 0xE4) = lbl_805FAF38;
+        *(u32 *)(slot + 0xA4) = 0;
+        *(u32 *)(slot + 0xB4) = 100;
+        *(u32 *)(slot + 0xBC) = 0x40;
+        *(u32 *)(slot + 0xC0) = 0x2000;
+        *(u32 *)(slot + 0xB8) = 0x7F;
+        *(u32 *)(slot + 0xC4) = 0;
+        *(u32 *)(slot + 0xCC) = 0;
+        *(u32 *)(slot + 0xC8) = 0xFFFFFFFF;
+        *(u32 *)(slot + 0xDC) = 0x88888888;
+        *(float *)(slot + 0xE0) = initial;
+        *(float *)(slot + 0xE4) = initial;
         OSRestoreInterrupts(0);
     }
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(interrupt);
+    return entry;
 }
 
 void fn_8043E228(u8 *object, int index) {
