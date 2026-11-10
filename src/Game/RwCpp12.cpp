@@ -8,6 +8,7 @@ extern u8 *lbl_805F15B4;
 extern "C" {
 u32 fn_8047D868(void *, void *, u32);
 u32 fn_80480D4C(void *, void *, u32);
+void fn_8047FCDC(void *);
 s32 fn_80485DB8(u32);
 void fn_80451D60(u32);
 extern u32 lbl_805EDD80;
@@ -65,6 +66,142 @@ void *fn_8044C174(u32 *object) {
     }
     lbl_8056D708[8]++;
     return object;
+}
+
+void *fn_8044BDF0(u32 count, u32 records, u32 deduplicate, u32 *groups, u32 *values, u32 *recordsOut,
+                  u32 first, u32 second) {
+    u32 *object = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x4C, 0x30116);
+    if (object == NULL) return NULL;
+    memset(object, 0, 0x4C);
+    if (first == 0) {
+        object[4] = 1;
+        u32 *group = groups;
+        while (object[4] < 4 && group[0] != 0) {
+            if (group[object[4]] != 0) object[4]++;
+            group += 4;
+        }
+    }
+
+    u8 unique[256];
+    u32 uniqueCount = 0;
+    if (deduplicate == 0) {
+        for (u32 groupIndex = 0; groupIndex < count; groupIndex++) {
+            u32 *group = groups + groupIndex * 4;
+            for (u32 channel = 0; channel < object[4]; channel++) {
+                if (group[channel] == 0) continue;
+                u32 value = values[groupIndex] >> (channel * 8);
+                u8 byte = (u8)value;
+                bool present = false;
+                for (u32 i = 0; i < uniqueCount; i++) {
+                    if (unique[i] == byte) {
+                        present = true;
+                        break;
+                    }
+                }
+                if (!present) unique[uniqueCount++] = byte;
+            }
+        }
+    }
+
+    u32 bytes = records * 0x40 + uniqueCount + 0xF + count * 0x14;
+    void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x30116);
+    if (memory == NULL) {
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x11C))(object);
+        return NULL;
+    }
+    memset(memory, 0, bytes);
+    object[0] = records;
+    object[1] = uniqueCount;
+    object[2] = (u32)memory;
+    object[3] = ((u32)memory + uniqueCount + 0xF) & ~0xF;
+    object[5] = object[3] + records * 0x40;
+    object[6] = object[5] + count * 4;
+    if (count != 0 && uniqueCount != 0) memcpy((void *)object[2], unique, uniqueCount);
+    if (recordsOut != NULL && records != 0) {
+        u8 *source = (u8 *)recordsOut + records * 0x40;
+        u8 *dest = (u8 *)object[3] + records * 0x40;
+        for (u32 i = 0; i < records; i++) {
+            memcpy(dest, source, 0x40);
+            source -= 0x40;
+            dest -= 0x40;
+        }
+    }
+    if (values != NULL) memcpy((void *)object[5], values, count * 4);
+    if (groups != NULL) memcpy((void *)object[6], groups, count * 0x10);
+    return object;
+}
+
+void fn_80451E0C(void);
+
+void *fn_8044C280(u32 *object) {
+    if (--lbl_8056D708[8] == 0) {
+        fn_80451E0C();
+        fn_8047FCDC((void *)lbl_8056D708[6]);
+        lbl_8056D708[6] = 0;
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)lbl_8056D708[4]);
+        lbl_8056D708[4] = 0;
+    }
+    return object;
+}
+
+void fn_8044E758(void);
+void *fn_8044CD4C(void *);
+
+void *fn_8044C324(u32 *object) {
+    u32 value = *(u32 *)((u8 *)object + lbl_8056D708[2]);
+    if (value != 0) {
+        fn_8044E758();
+        void *result = fn_8044CD4C((void *)value);
+        *(u32 *)((u8 *)object + lbl_8056D708[2]) = (u32)result;
+    }
+    return object;
+}
+
+void *fn_8044C390(u32 *object) {
+    memset((u8 *)object + lbl_8056D708[1], 0, 0xC);
+    return object;
+}
+
+s32 fn_80458C90(u32);
+u32 fn_8044CCAC(u8 *);
+void fn_80451E6C(void *, u32);
+u32 fn_8044BDBC(u32 *);
+u32 fn_8044E7D0(void *);
+
+u32 fn_8044C414(u32 *object) {
+    u32 mode = 1;
+    if (fn_80485DB8(0x120) != -1 && *((u8 *)object + fn_80458C90(0x120)) != 0) mode = 2;
+    if (object[6] != 0 && fn_8044CCAC((u8 *)object[6]) != 0) {
+        if (fn_80485DB8(0x120) == -1 && mode == 2) mode = 1;
+        else if (fn_80485DB8(0x12E) == -1 && mode == 3) mode = 1;
+        fn_80451E6C(object, mode);
+    }
+    return 1;
+}
+
+u32 fn_8044C4D4(u32 *object, u32 unused0, u32 unused1, u32 mode) {
+    if (object[6] != 0 && fn_8044CCAC((u8 *)object[6]) != 0) {
+        if (fn_80485DB8(0x120) == -1 && mode == 2) mode = 1;
+        else if (fn_80485DB8(0x12E) == -1 && mode == 3) mode = 1;
+        fn_80451E6C(object, mode);
+    }
+    return 1;
+}
+
+u32 fn_8044C56C(u32 *object) {
+    u32 result = 0;
+    u32 value = *(u32 *)((u8 *)object + lbl_8056D708[2]);
+    if (value != 0) {
+        if ((object[2] & 0x01000000) != 0) {
+            result = fn_8044E7D0((void *)value);
+        } else {
+            u32 *record = (u32 *)value;
+            u32 count = object[5];
+            result = record[1] + 4 + count * 4 + count * 0x10 + record[0] * 0x40;
+            result += fn_8044BDBC(record);
+        }
+    }
+    return result;
 }
 
 void fn_8044C38C(void) {
