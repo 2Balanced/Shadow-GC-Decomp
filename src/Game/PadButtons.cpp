@@ -22,10 +22,12 @@ struct UnkPadInput_80051734 {
     /* 0x28 */ UnkPadState_80051734 m_pads[4];
 };
 
+struct UnkPads_80051734 {
+    bool IsRepeated(u32 pad, u32 mask, int delay, int interval);
+};
+
 extern "C" {
 UnkPadInput_80051734 *fn_80051734(void);
-/* Whether mask was held on pad (behaviour inferred). */
-bool fn_80349800(UnkPadInput_80051734 *input, int pad, u32 mask, int arg3, int arg4);
 }
 
 /* The pad that last pressed logical button 1 (name inferred). */
@@ -97,7 +99,7 @@ extern "C" bool fn_80356260(int button, int pad) {
 
 /* Whether mask is held on pad, through the pad manager (the object is not used). */
 extern "C" bool fn_80356214(UnkPadInput_80051734 *input, int pad, u32 mask, int arg3, int arg4) {
-    return fn_80349800(fn_80051734(), pad, mask, arg3, arg4);
+    return ((UnkPads_80051734 *)fn_80051734())->IsRepeated(pad, mask, arg3, arg4);
 }
 
 /* Whether logical button button is held on pad pad (through fn_80349800).
