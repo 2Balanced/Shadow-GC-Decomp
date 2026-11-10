@@ -339,8 +339,107 @@ void *fn_80447FC0(u32 *object) {
 extern u32 lbl_8056D6F8;
 void *fn_804480C8(void *, u32, void *, void *);
 
+extern u32 lbl_8051BCCC;
+extern float lbl_805FB050;
+extern float lbl_805FB054;
+extern float lbl_805FB058;
+extern float lbl_805FB05C;
+extern float lbl_805FB060;
+extern u32 lbl_805FB550;
+extern u32 lbl_805FB554;
+s32 fn_80456DD8(void);
+void fn_80456FD8(void);
+void fn_80455EB4(void);
+u32 fn_804476B8(u32 *, u32, void *);
+u32 fn_80447AF8(u32 *, u32, void *);
+void fn_8045B270(u32, u32);
+
 void *fn_80448074(u32 *object, u32 value, void *argument) {
     return fn_804480C8(object, fn_80447EB4(value), argument, &lbl_8056D6F8);
+}
+
+void *fn_804480C8(void *parent, u32 flags, void *argument, void *config) {
+    if (fn_80456DD8() == 0) {
+        fn_80456FD8();
+        return NULL;
+    }
+    u32 *object = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(0x138, 0x3012F);
+    if (object == NULL) {
+        fn_80456FD8();
+        return NULL;
+    }
+
+    u32 *owner = (u32 *)parent;
+    object[4] = owner[0x12];
+    owner[0x12] = (u32)fn_80447FC0;
+    if (owner[0x12] == 0) owner[0x12] = (u32)fn_80455EB4;
+    object[0] = (u32)parent;
+    object[1] = 0;
+    object[0x28] = flags;
+    object[0x11] = (u32)argument;
+    object[0x10] = 0xFFFFFFFF;
+    object[0xF] = 0;
+    object[3] = 0;
+    *(u32 **)((u8 *)owner + lbl_805F1448) = object;
+    memcpy(object + 5, config, 0x10);
+
+    u32 result = 0;
+    if (object[5] != 0) {
+        object[3] = ((u32 (*)(void *, u32, u32, void *))object[5])(object + 0x12, object[0], flags, argument);
+    } else if ((flags & 0x20000000) != 0) {
+        result = fn_80447AF8(object, flags, argument);
+    } else {
+        result = fn_804476B8(object, flags, argument);
+    }
+    if (result != 1 && object[3] == 0) {
+        fn_80456FD8();
+        return NULL;
+    }
+    if (object[6] != 0 &&
+        ((u32 (*)(void *, void *, u32, u32, void *))object[6])(owner, object + 0x12, object[0], flags,
+                                                               argument) != 1) {
+        fn_80456FD8();
+        return NULL;
+    }
+
+    u32 *table = (u32 *)lbl_8051BCCC;
+    u32 *ownerData = (u32 *)owner[6];
+    fn_8045B270(*(u32 *)(ownerData[8] + 0), 0);
+    object[0x2E] = (u32)config;
+    object[0x2F] = (u32)argument;
+    object[0x2C] = (u32)parent;
+    object[0x2D] = result;
+    *(float *)(object + 0x30) = lbl_805FB05C;
+    *(float *)(object + 0x48) = lbl_805FB060;
+    *(float *)(object + 0x43) = lbl_805FB060;
+    *(float *)(object + 0x3E) = lbl_805FB060;
+    *(float *)(object + 0x42) = lbl_805FB05C;
+    *(float *)(object + 0x40) = lbl_805FB05C;
+    *(float *)(object + 0x3F) = lbl_805FB05C;
+    *(float *)(object + 0x47) = lbl_805FB05C;
+    *(float *)(object + 0x46) = lbl_805FB05C;
+    *(float *)(object + 0x44) = lbl_805FB05C;
+    *(float *)(object + 0x4C) = lbl_805FB05C;
+    *(float *)(object + 0x4B) = lbl_805FB05C;
+    *(float *)(object + 0x4A) = lbl_805FB05C;
+    object[0x41] = flags | 0x20003;
+    object[0x31] = flags;
+    object[0x32] = flags;
+    object[0x33] = flags;
+    object[0x34] = flags;
+    object[0x35] = flags;
+    object[0x36] = table[0];
+    object[0x37] = table[1];
+    object[0x38] = table[2];
+    object[0x39] = table[3];
+    object[0x3A] = table[4];
+    object[0x3B] = table[5];
+    object[0x3C] = table[6];
+    object[0x3D] = table[7];
+    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(0xA, object + 0x29);
+    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(0xB, object + 0x2A);
+    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(0xC, object + 0x2B);
+    return owner;
 }
 
 u32 fn_80448408(u32 *object, u32 *out, u32 flags, u32 arg4) {
