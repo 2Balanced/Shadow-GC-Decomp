@@ -702,7 +702,7 @@ void *fn_80440468(u32 *header, void *context) {
 }
 
 void *fn_80440670(void *context) {
-    u32 local[19];
+    u32 local[18];
     if (fn_8047CF50(context, 1, 0, local) == 0) return NULL;
     if (fn_80480D4C(context, local + 9, 0x24) != 0x24) return NULL;
     fn_8047D254(local + 9, 0x24);
