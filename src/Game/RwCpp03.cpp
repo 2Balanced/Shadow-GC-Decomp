@@ -217,8 +217,9 @@ u32 *fn_8043D4D8(u32 arg1, u32 arg2, u32 arg3) {
             goto initialized;
         }
     }
-    return NULL;
+    object = NULL;
 initialized:
+    if (object == NULL) goto done;
     *(float *)(object + 4) = lbl_805FAE74;
     object[0x42] = arg1;
     object[2] = arg2;
@@ -227,6 +228,7 @@ initialized:
     *object &= 0xFFFFFFFE;
     *object &= 0xFFFFFFFD;
     object[0x41] = 0;
+done:
     return object;
 }
 
