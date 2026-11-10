@@ -1,8 +1,10 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+#include <string.h>
 #include <dolphin/types.h>
 
 extern u32 lbl_805F1440;
 extern u32 lbl_805F1448;
+extern u8 *lbl_805F15B4;
 
 extern "C" {
 void fn_80445CF4(float *, const float *);
@@ -132,6 +134,80 @@ void *fn_80446D84(void *stream, u32 *object, u32 *plugin) {
         if (fn_8047D458(stream, &value, 4) == 0) return NULL;
     }
     return stream;
+}
+
+u32 fn_8047D868(void *, void *, u32);
+u32 fn_804779DC(u32, u32);
+
+void *fn_80446F40(void *stream, u32 *plugin) {
+    u32 marker;
+    if (fn_8047D868(stream, &marker, 4) == 0 || marker != 0x100) return NULL;
+    u32 *target = (u32 *)((u8 *)plugin + lbl_805F1440);
+    if (fn_8047D868(stream, target, 4) == 0) return NULL;
+    u32 count;
+    if (fn_8047D868(stream, &count, 4) == 0) return NULL;
+    if ((s32)count <= 0) return stream;
+    u32 first;
+    u32 second;
+    if (fn_8047D868(stream, &first, 4) == 0 || fn_8047D868(stream, &second, 4) == 0) return NULL;
+
+    u32 *list = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x24, 0x3011E);
+    if (list != NULL) {
+        memset(list, 0, 0x24);
+        list[8] = fn_804779DC(count, second);
+        list[0] = first;
+        list[5] = (u32)plugin;
+        list[1] = count;
+        list[6] = (u32)list;
+        if ((list[0] & 2) == 0) {
+            list[2] = 0;
+            list[3] = 0;
+        } else {
+            u32 bytes = (count << 6) + 0xF;
+            void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x3011E);
+            list[2] = ((u32)memory + 0xF) & ~0xF;
+            list[3] = (u32)memory;
+        }
+        list[4] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count << 4, 0x3011E);
+        u32 *entry = (u32 *)list[4];
+        for (u32 i = 0; i < count; i++) {
+            if (fn_8047D868(stream, entry, 4) == 0) return NULL;
+            if (fn_8047D868(stream, entry + 1, 4) == 0) return NULL;
+            if (fn_8047D868(stream, entry + 2, 4) == 0) return NULL;
+            entry[3] = 0;
+            entry += 4;
+        }
+    }
+    target[1] = (u32)list;
+    return stream;
+}
+
+u32 fn_8044719C(u32 *object) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
+    if (target[0] == 0xFFFFFFFF && target[1] == 0) return 0;
+    u32 *list = (u32 *)target[1];
+    if (list == NULL || (list[0] & 1) != 0) return 0xC;
+    return list[1] * 0xC + 0x14;
+}
+
+typedef void (*RwCpp09Callback)(void);
+void fn_80446BE0(u32 *);
+s32 fn_80485D78(u32, u32, RwCpp09Callback, RwCpp09Callback);
+s32 fn_804878D4(u32, u32, RwCpp09Callback, RwCpp09Callback, RwCpp09Callback);
+s32 fn_804836EC(u32, RwCpp09Callback, RwCpp09Callback, RwCpp09Callback);
+
+u32 fn_80447200(void) {
+    s32 result = fn_80485D78(0, 0x11E, (RwCpp09Callback)fn_80446AA8,
+                             (RwCpp09Callback)fn_80446B90);
+    if (result < 0) return 0;
+    result = fn_804878D4(8, 0x11E, (RwCpp09Callback)fn_80446BE0,
+                         (RwCpp09Callback)fn_80446BFC, (RwCpp09Callback)fn_80446C94);
+    lbl_805F1440 = result;
+    if (fn_804836EC(0x11E, (RwCpp09Callback)fn_80446F40,
+                    (RwCpp09Callback)fn_80446D84, (RwCpp09Callback)fn_8044719C) < 0) {
+        return 0;
+    }
+    return lbl_805F1440 >= 0;
 }
 
 u32 fn_8044758C(u8 *object) {
