@@ -315,8 +315,9 @@ void fn_8043DD14(u32 *object) {
         object[0x54B]--;
         u32 command = object[object[0x549] + 0x149];
         object[0x549]++;
-        int sign = (int)object[0x549] >> 31;
-        object[0x549] = (sign * 0x400 | (u32)(object[0x549] * 0x400000 + sign) >> 0x16) - sign;
+        u32 sign = object[0x549] >> 31;
+        u32 wrapped = (object[0x549] << 22) - sign;
+        object[0x549] = (wrapped << 10 | wrapped >> 22) + sign;
         OSRestoreInterrupts(0);
         s32 high = (command >> 0x18) & 0xF0;
         u32 index = (command >> 0x18) & 0xF;
