@@ -65,7 +65,7 @@ void *fn_8043B8F0(void *, void *);
 void *fn_8043B3DC(void *, void *);
 int fn_8043BB18(void);
 int fn_8043D49C(void);
-u32 fn_80383C48(u32, void (*)(u32 *));
+u32 fn_80383C48(u32, void (*)(u32 *), u32 *);
 void fn_8043D6FC(u32 *);
 void fn_8043D870(float *);
 void fn_8043D99C(float *);
@@ -202,12 +202,12 @@ u32 *fn_8043D4D8(u32 arg1, u32 arg2, u32 arg3) {
     u32 *object;
     for (int i = 0; i < 64; i++) {
         *(int *)(lbl_805F1404 + 0x50) += 1;
-        int value = *(int *)(lbl_805F1404 + 0x50) >> 31;
-        *(u32 *)(lbl_805F1404 + 0x50) =
-            ((value * 0x40) | ((u32)(*(int *)(lbl_805F1404 + 0x50) * 0x4000000 + value) >> 0x1A)) - value;
+        u32 value = *(u32 *)(lbl_805F1404 + 0x50) >> 31;
+        u32 wrapped = (*(u32 *)(lbl_805F1404 + 0x50) << 26) - value;
+        *(u32 *)(lbl_805F1404 + 0x50) = (wrapped << 6 | wrapped >> 26) + value;
         object = (u32 *)(lbl_805F1404 + *(int *)(lbl_805F1404 + 0x50) * 0x10C + 0x54);
         if ((*object & 0x80000000) != 0 && (*object & 0x40000000) != 0) {
-            u32 result = fn_80383C48(0x1B, fn_8043D6FC);
+            u32 result = fn_80383C48(0x1B, fn_8043D6FC, object);
             if (result != 0) {
                 *(int *)(lbl_805F1404 + 0x3C) += 1;
                 object[0xD] = result;
@@ -221,7 +221,7 @@ u32 *fn_8043D4D8(u32 arg1, u32 arg2, u32 arg3) {
     }
     return NULL;
 initialized:
-    object[4] = (u32)lbl_805FAE74;
+    *(float *)(object + 4) = lbl_805FAE74;
     object[0x42] = arg1;
     object[2] = arg2;
     object[3] = arg3;
@@ -822,7 +822,8 @@ void fn_8043D61C(void) {
         count = 64;
     }
     for (int i = 0; i < count; i++) {
-        u32 result = fn_80383C48(0x1B, fn_8043D6FC);
+        u32 result = fn_80383C48(0x1B, fn_8043D6FC,
+                                 (u32 *)(lbl_805F1404 + i * 0x10C + 0x54));
         *(u32 *)(lbl_805F1404 + i * 0x10C + 0x88) = result;
         if (result == 0) {
             break;
@@ -837,7 +838,7 @@ void fn_8043D6FC(u32 *object) {
     fn_8038A338(owner[0xD]);
     *owner |= 0x40000000;
     *(int *)(lbl_805F1404 + 0x3C) -= 1;
-    u32 result = fn_80383C48(0x1B, fn_8043D6FC);
+    u32 result = fn_80383C48(0x1B, fn_8043D6FC, owner);
     owner[0xD] = result;
     if (result == 0) {
         OSReport("AX SDLIB: AXAcquireVoice() failed in drop callback\n");
