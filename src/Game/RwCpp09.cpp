@@ -16,4 +16,10 @@ u32 fn_8044757C(u8 *object) {
 void fn_80447598(u8 *base) {
     *(u32 *)(base + lbl_805F1448) = 0;
 }
+
+void fn_80446BE0(u32 *object) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
+    target[1] = 0;
+    target[0] = 0xFFFFFFFF;
+}
 }

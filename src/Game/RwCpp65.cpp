@@ -24,4 +24,16 @@ void fn_804A1910(u8 *base) {
 void fn_804A1920(u8 *base) {
     *(u32 *)(base + lbl_805F16B0) = 0;
 }
+
+void fn_804A1838(u8 *base, u8 *other) {
+    if (*(s32 *)(other + lbl_805F16AC) != 0) {
+        *(u32 *)(base + lbl_805F16AC) = 1;
+    }
+}
+
+void fn_804A1930(u8 *base, u8 *other) {
+    if (*(s32 *)(other + lbl_805F16B0) != 0) {
+        *(u32 *)(base + lbl_805F16B0) = 1;
+    }
+}
 }

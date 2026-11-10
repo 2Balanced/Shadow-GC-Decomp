@@ -36,4 +36,21 @@ void fn_8047DB70(void) {
 u32 fn_8047E0CC(u32 *object, u32 value) {
     return object[0] + object[3] * value;
 }
+
+u32 fn_8047E0E8(u32 *object) {
+    u32 stride = object[3];
+    u32 value = object[1];
+    return object[0] + stride * value;
+}
+
+void fn_8047EBA0(u32 *object) {
+    object[3] &= 0xFFFDFFFC;
+}
+
+u32 fn_8047DFAC(s32 *object) {
+    if (object[1] != 0) {
+        return object[0];
+    }
+    return 0;
+}
 }

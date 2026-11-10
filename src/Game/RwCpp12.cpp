@@ -21,4 +21,13 @@ void fn_8044CC98(u8 *base, u32 value) {
 u32 fn_8044CCAC(u8 *object) {
     return *(u32 *)(object + lbl_8056D708[2]);
 }
+
+void fn_8044C30C(u8 *base) {
+    *(u32 *)(base + lbl_8056D708[2]) = 0;
+}
+
+void fn_8044C3FC(u8 *base, u8 *other) {
+    u32 offset = lbl_8056D708[1];
+    *(u32 *)(base + offset) = *(u32 *)(other + offset);
+}
 }

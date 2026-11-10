@@ -11,4 +11,9 @@ void fn_8045984C(s16 *object) {
 void fn_80458D10(void) {
     (&lbl_805F14D0)[1]--;
 }
+
+void fn_80458CF8(u32 unused, u32 value) {
+    lbl_805F14D0 = value;
+    (&lbl_805F14D0)[1]++;
+}
 }
