@@ -460,21 +460,21 @@ int fn_8043FDF8(u32 *object, int index, u32 command, u32 flags) {
                 object[0x28] = 0;
             }
             u32 offset = *entry & 0xFFFFFF;
-            *(u16 *)(object + 0x12) = *(u16 *)((u8 *)table + offset + 0x10);
-            memset(object + 0x12, 0, 0x58);
-            f32 initial = lbl_805FAF68;
+            u32 *fields = object + 0x12;
+            *(u16 *)fields = *(u16 *)((u8 *)table + offset + 0x10);
+            memset(fields, 0, 0x58);
             u32 data = (u32)((u8 *)table + offset + 0x28);
-            object[0x13] = *(u16 *)((u8 *)table + offset + 0x1E);
+            fields[1] = *(u16 *)((u8 *)table + offset + 0x1E);
             u32 hi = ((u32 *)lbl_805F1404)[6];
             u32 lo = ((u32 *)lbl_805F1404)[7];
-            object[0x1A] = hi;
-            object[0x1B] = lo;
-            object[0x1C] = hi;
-            object[0x1D] = lo;
-            object[0x18] = *(u32 *)&initial;
-            object[0x21] = flags;
-            object[0x22] = data;
-            object[0x23] = data;
+            fields[8] = hi;
+            fields[9] = lo;
+            fields[0x0A] = hi;
+            fields[0x0B] = lo;
+            *(f32 *)(fields + 6) = lbl_805FAF68;
+            fields[0x0F] = flags;
+            fields[0x10] = data;
+            fields[0x11] = data;
             OSRestoreInterrupts(interrupt);
             return 0;
         }
