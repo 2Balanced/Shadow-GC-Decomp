@@ -719,7 +719,7 @@ int fn_8043EC3C(u32 *object) {
     }
     for (int i = 0; i < 8; i++) {
         if (object == (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478)) {
-            if (*object != 0) {
+            if (*(s32 *)object != 0) {
                 fn_8043FB58();
                 return 0;
             }
@@ -738,7 +738,7 @@ int fn_8043ECDC(u32 *object) {
     }
     for (int i = 0; i < 8; i++) {
         if (object == (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478)) {
-            if (*object != 0) {
+            if (*(s32 *)object != 0) {
                 fn_8043FC98();
                 return 0;
             }
