@@ -655,11 +655,12 @@ void fn_8043E950(void) {
 
 void fn_8043E9C4(u32 arg1, u32 arg2) {
     u32 interrupt = OSDisableInterrupts();
-    if (arg1 == 0) {
-        arg1 = (u32)OSAllocFromHeap(__OSCurrHeap, arg2);
-    } else {
+    if (arg1 != 0) {
         lbl_805F1408 = 1;
+        goto allocated;
     }
+    arg1 = (u32)OSAllocFromHeap(__OSCurrHeap, arg2);
+allocated:
     if (arg1 == 0) {
         OSReport("AX SDLIB: Panic: cannot allocate memory (%d)\n", arg2);
         while (1) {
@@ -668,25 +669,29 @@ void fn_8043E9C4(u32 arg1, u32 arg2) {
     OSReport("AX SDLIB: allocated (%d)\n", arg2);
     lbl_805F1404 = (u8 *)((arg1 + 0x1F) & 0xFFFFFFE0);
     lbl_805F1400 = arg1;
-    *lbl_805F1404 = 0;
-    ((u32 *)lbl_805F1404)[0x4E8E] = 0;
+    *(u32 *)lbl_805F1404 = 0;
+    lbl_805F1404[0x13A38] = 0;
     OSRestoreInterrupts(interrupt);
     memset(lbl_805F1404, 0, 0x14470);
     u32 heap = ((u32)lbl_805F1404 + 0x1448F) & 0xFFFFFFE0;
     fn_8043AEBC(heap, arg2 - (heap - arg1));
-    ((u32 *)lbl_805F1404)[0x3FD0] = 0;
-    ((u32 *)lbl_805F1404)[0x3FD3] = (u32)lbl_805FAF48;
-    ((u32 *)lbl_805F1404)[0x3FD5] = (u32)lbl_805FAF4C;
-    ((u32 *)lbl_805F1404)[0x3FD4] = (u32)lbl_805FAF50;
-    ((u32 *)lbl_805F1404)[0x3FD1] = (u32)lbl_805FAF50;
-    ((u32 *)lbl_805F1404)[0x3FD2] = (u32)lbl_805FAF50;
-    ((u32 *)lbl_805F1404)[0x4047] = 0;
-    ((u32 *)lbl_805F1404)[0x404A] = (u32)lbl_805FAF48;
-    ((u32 *)lbl_805F1404)[0x404C] = (u32)lbl_805FAF4C;
-    ((u32 *)lbl_805F1404)[0x404B] = (u32)lbl_805FAF50;
-    ((u32 *)lbl_805F1404)[0x4048] = (u32)lbl_805FAF50;
-    ((u32 *)lbl_805F1404)[0x404D] = (u32)lbl_805FAF54;
-    ((u32 *)lbl_805F1404)[0x4049] = (u32)lbl_805FAF50;
+    lbl_805F1404[0xFF40] = 0;
+    float f48 = lbl_805FAF48;
+    float f4c = lbl_805FAF4C;
+    float f50 = lbl_805FAF50;
+    float f54 = lbl_805FAF54;
+    *(float *)(lbl_805F1404 + 0xFF4C) = f48;
+    *(float *)(lbl_805F1404 + 0xFF54) = f4c;
+    *(float *)(lbl_805F1404 + 0xFF50) = f50;
+    *(float *)(lbl_805F1404 + 0xFF44) = f50;
+    *(float *)(lbl_805F1404 + 0xFF48) = f50;
+    lbl_805F1404[0x1011C] = 0;
+    *(float *)(lbl_805F1404 + 0x10128) = f48;
+    *(float *)(lbl_805F1404 + 0x10130) = f4c;
+    *(float *)(lbl_805F1404 + 0x1012C) = f50;
+    *(float *)(lbl_805F1404 + 0x10120) = f50;
+    *(float *)(lbl_805F1404 + 0x10134) = f54;
+    *(float *)(lbl_805F1404 + 0x10124) = f50;
     ((u32 *)lbl_805F1404)[0x4072] = 0xF;
     ((u32 *)lbl_805F1404)[0x4073] = 0;
     ((u32 *)lbl_805F1404)[0x4074] = 500;
