@@ -133,18 +133,18 @@ void fn_8043E430(int value) {
 
 void fn_8043D99C(float *object) {
     float maximum = lbl_805FAF28;
-    if (*(float *)(object + 0x20) >= maximum) {
-        *(float *)(object + 0x20) -= lbl_805FAF34;
+    if (object[8] >= maximum) {
+        object[8] -= lbl_805FAF34;
         float minimum = lbl_805FAF2C;
-        if (*(float *)(object + 0x20) <= maximum) {
+        if (object[8] <= maximum) {
             object[8] = object[0x14];
             *(float *)(object + 0x1C) = maximum;
             object[0x20] = minimum;
             return;
         }
-        *(float *)(object + 8) =
+        object[8] =
             (*(float *)(object + 0x14) - *(float *)(object + 0x18)) *
-                (lbl_805FAF30 - *(float *)(object + 0x20) / *(float *)(object + 0x1C)) +
+                (lbl_805FAF30 - object[8] / *(float *)(object + 0x1C)) +
             *(float *)(object + 0x18);
     }
 }
