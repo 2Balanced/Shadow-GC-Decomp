@@ -322,7 +322,7 @@ void fn_8043DD14(u32 *object) {
         s32 high = (command >> 0x18) & 0xF0;
         u32 index = (command >> 0x18) & 0xF;
         u32 sub = (command >> 0x10) & 0xFF;
-        u32 low = command >> 8;
+        u32 low = (command >> 8) & 0xFF;
         if (high == 0xB0) {
             fn_8043DB08((u8 *)object, index, sub, low & 0xFF);
         } else if (high < 0xB0) {
