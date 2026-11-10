@@ -235,83 +235,80 @@ initialized:
 }
 
 void fn_8043DB08(u8 *object, u32 index, u8 command, u32 value) {
-    if (command != 0x20) {
-        if (command >= 0x20) {
-            if (command == 0x40) {
-                object += (index & 0xFF) * 0x48;
-                if ((value & 0x7F) >= 0x40) {
-                    *(u32 *)(object + 0xA4) |= 1;
-                } else {
-                    *(u32 *)(object + 0xA4) &= 0xFFFFFFFE;
-                }
-                return;
-            }
-            if (command >= 0x40) {
-                if (command != 0x79) {
-                    return;
-                }
-                OSDisableInterrupts();
-                object += (index & 0xFF) * 0x48;
-                *(u32 *)(object + 0xA4) = 0;
-                *(u32 *)(object + 0xB4) = 100;
-                *(u32 *)(object + 0xBC) = 0x40;
-                *(u32 *)(object + 0xC0) = 0x2000;
-                *(u32 *)(object + 0xB8) = 0x7F;
-                *(u32 *)(object + 0xC4) = 0;
-                *(u32 *)(object + 0xCC) = 0;
-                *(u32 *)(object + 0xC8) = 0xFFFFFFFF;
-                *(u32 *)(object + 0xDC) = 0x88888888;
-                *(float *)(object + 0xE0) = lbl_805FAF38;
-                *(float *)(object + 0xE4) = lbl_805FAF38;
-                OSRestoreInterrupts(0);
-                return;
-            }
-            if (command == 0x3E) {
-                u32 clamped;
-                u32 other;
-                if ((value & 0x7F) < 0x41) {
-                    clamped = ((value & 0xFF) << 1) & 0xFE;
-                    if (clamped > 0x7F) {
-                        clamped = 0x7F;
-                    }
-                    other = 0;
-                } else {
-                    other = 0x7F;
-                    clamped = (0x7F - (value & 0x7F)) << 1;
-                }
-                object += (index & 0xFF) * 0x48;
-                *(u32 *)(object + 0xC8) = clamped;
-                *(u32 *)(object + 0xC4) = other;
-                return;
-            }
-            if (command < 0x3E) {
-                return;
-            }
-            *(u32 *)(object + (index & 0xFF) * 0x48 + 0xC4) = value & 0x7F;
-            return;
-        }
-        if (command == 7) {
-            *(u32 *)(object + (index & 0xFF) * 0x48 + 0xB4) = value & 0x7F;
-            return;
-        }
-        if (command > 6) {
-            if (command == 0xB) {
-                *(u32 *)(object + (index & 0xFF) * 0x48 + 0xB8) = value & 0x7F;
-                return;
-            }
-            if (command > 10 || command < 10) {
-                return;
-            }
-            object += (index & 0xFF) * 0x48;
-            *(u32 *)(object + 0xBC) = value & 0x7F;
-            *(u32 *)(object + 0xC8) = 0xFFFFFFFF;
-            return;
-        }
-        if (command != 0) {
-            return;
-        }
+    switch (command) {
+    case 0:
+    case 0x20: {
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xAC) = value & 0x7F;
+        return;
     }
-    *(u32 *)(object + (index & 0xFF) * 0x48 + 0xAC) = value & 0x7F;
+    case 7: {
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xB4) = value & 0x7F;
+        return;
+    }
+    case 0xB: {
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xB8) = value & 0x7F;
+        return;
+    }
+    case 0xA:
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xBC) = value & 0x7F;
+        *(u32 *)(object + 0xC8) = 0xFFFFFFFF;
+        return;
+    case 0x40:
+        object += (index & 0xFF) * 0x48;
+        if ((value & 0x7F) >= 0x40) {
+            *(u32 *)(object + 0xA4) |= 1;
+        } else {
+            *(u32 *)(object + 0xA4) &= 0xFFFFFFFE;
+        }
+        return;
+    case 0x3E: {
+        s32 clamped;
+        s32 other;
+        if ((value & 0x7F) < 0x41) {
+            u8 byte = value;
+            clamped = (byte << 1) & 0xFE;
+            if (clamped > 0x7F) {
+                clamped = 0x7F;
+            }
+            other = 0;
+        } else {
+            other = 0x7F;
+            clamped = (0x7F - (value & 0x7F)) << 1;
+        }
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xC8) = clamped;
+        *(u32 *)(object + 0xC4) = other;
+        return;
+    }
+    case 0x3F: {
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xC4) = value & 0x7F;
+        return;
+    }
+    case 0x79:
+        OSDisableInterrupts();
+        object += (index & 0xFF) * 0x48;
+        *(u32 *)(object + 0xA4) = 0;
+        *(u32 *)(object + 0xB4) = 100;
+        *(u32 *)(object + 0xBC) = 0x40;
+        *(u32 *)(object + 0xC0) = 0x2000;
+        *(u32 *)(object + 0xB8) = 0x7F;
+        *(u32 *)(object + 0xC4) = 0;
+        *(u32 *)(object + 0xCC) = 0;
+        *(u32 *)(object + 0xC8) = 0xFFFFFFFF;
+        *(u32 *)(object + 0xDC) = 0x88888888;
+        float initial = lbl_805FAF38;
+        *(float *)(object + 0xE0) = initial;
+        *(float *)(object + 0xE4) = initial;
+        OSRestoreInterrupts(0);
+        return;
+    default:
+        return;
+    }
 }
 
 void fn_8043DD14(u32 *object) {
