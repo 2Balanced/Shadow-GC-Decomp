@@ -53,4 +53,8 @@ void fn_8037C6A0(u8 *, u32);
 void fn_8047B384(u8 *object) {
     fn_8037C6A0(object + 0x40, 0);
 }
+
+void fn_8047A650(u32 *object) {
+    ((void (*)(void))*(u32 *)(object[0x0E] + 0x44))();
+}
 }

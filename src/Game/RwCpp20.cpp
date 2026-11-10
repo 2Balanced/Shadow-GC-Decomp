@@ -22,4 +22,11 @@ void fn_8045ACD4(void);
 void fn_8045A760(void) {
     fn_8045ACD4();
 }
+
+extern u8 lbl_8056D7E0[];
+void fn_80481D98(u8 *, u32);
+
+void fn_80458C90(u32 argument) {
+    fn_80481D98(lbl_8056D7E0, argument);
+}
 }

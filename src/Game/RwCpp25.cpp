@@ -85,4 +85,13 @@ void fn_80462770(void) {
     fn_80463308();
     fn_804631D4();
 }
+
+u32 fn_80462184(u32 unused, u8 *object) {
+    u32 *target = (u32 *)(object + lbl_805F1508);
+    if (target[3] != 0) {
+        target[3] = 0;
+        target[2] = 0;
+    }
+    return 0;
+}
 }

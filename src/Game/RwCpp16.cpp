@@ -1,6 +1,9 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior. */
 #include <dolphin/types.h>
 
+extern u32 lbl_805F1458;
+extern u32 lbl_805F1460;
+
 extern "C" {
 void fn_80453818(void) {
 }
@@ -24,5 +27,23 @@ void fn_80452730(u8 *base, u32 offset) {
     u8 *target = base + offset;
     *(u32 *)target = 0;
     *(u32 *)(target + 4) = 0;
+}
+
+u32 fn_80452BD8(u8 *object, s32 index) {
+    object += lbl_805F1458;
+    s32 count = *(s32 *)object;
+    if (index < count) {
+        return *(u32 *)(object + 4) + index * 0x10;
+    }
+    return 0;
+}
+
+u32 fn_80452C4C(u8 *object, s32 index) {
+    object += lbl_805F1460;
+    s32 count = *(s32 *)object;
+    if (index < count) {
+        return *(u32 *)(object + 4) + index * 0x10;
+    }
+    return 0;
 }
 }
