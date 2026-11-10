@@ -35,6 +35,10 @@ void fn_80399238(void *, void *);
 void *fn_8044E408(void *, u32);
 u32 fn_8044BDBC(u32 *);
 void fn_8046288C(void);
+u32 fn_8047CEF0(void *, u32, u32, u32, u32);
+u32 fn_8047D458(void *, void *, u32);
+u32 fn_80480ED0(void *, void *, u32);
+u32 fn_8044BB18(void *, void *);
 }
 
 extern "C" {
@@ -343,4 +347,38 @@ extern "C" u32 fn_8044EE3C(u32 *object) {
         entry[2] = 0;
     }
     return 0;
+}
+
+extern "C" void *fn_8044E89C(void *stream, u32 *object) {
+    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
+    u32 size = record[1] + 0x14;
+    if (record[4] > 1) size += object[5] * (record[4] * 2);
+    size += record[0] * 0x40;
+    if (record[7] != 0) {
+        u32 *target = (u32 *)object[0x16];
+        u32 *header = *(u32 **)(target[9] - 4);
+        header[4] = 0;
+        target[9] = record[7];
+        if ((object[2] & 0x10) != 0) target[11] = record[8];
+        target[5] = (u32)fn_8046288C;
+        record[7] = 0;
+        record[8] = 0;
+    }
+    size += fn_8044BDBC(record);
+    if (fn_8047CEF0(stream, 1, size - 0xC, 0x37002, 0x37) == 0) return NULL;
+
+    u32 marker = 6;
+    if (fn_8047D458(stream, &marker, 4) == 0) return NULL;
+    u32 header = ((record[1] & 0xFF) << 8) | ((record[4] & 0xFF) << 16) | (record[0] & 0xFF);
+    u32 count = object[5];
+    u32 channels = record[4];
+    if (fn_8047D458(stream, &header, 4) == 0) return NULL;
+    if (fn_80480ED0(stream, (void *)record[2], record[1]) == 0) return NULL;
+    if (channels > 1) {
+        u32 bytes = channels * count;
+        if (fn_80480ED0(stream, (void *)record[10], bytes) == 0) return NULL;
+        if (fn_80480ED0(stream, (void *)record[9], bytes) == 0) return NULL;
+    }
+    if (fn_80480ED0(stream, (void *)record[3], record[0] * 0x40) == 0) return NULL;
+    return fn_8044BB18(stream, record) != 0 ? stream : NULL;
 }
