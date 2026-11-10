@@ -291,6 +291,29 @@ void fn_80445E08(float *out, float *a, float *b, float t) {
     out[5] = second * b[5] + first * a[5];
 }
 
+void fn_8044621C(float *out, float *a, float *b, float t) {
+    out[6] = a[6] + t * (b[6] - a[6]);
+    out[7] = a[7] + t * (b[7] - a[7]);
+    out[8] = a[8] + t * (b[8] - a[8]);
+
+    float dot = a[3] * b[3] + a[2] * b[2] + a[4] * b[4] + a[5] * b[5];
+    if (dot < 0.0f) {
+        dot = -dot;
+        b[2] = -b[2];
+        b[3] = -b[3];
+        b[4] = -b[4];
+        b[5] = -b[5];
+    }
+    float angle = RwCpp08Angle(dot);
+    float first = (1.0f - t) * angle;
+    float second = t * angle;
+    RwCpp08NormalizeWeights(angle, &first, &second);
+    out[2] = second * b[2] + first * a[2];
+    out[3] = second * b[3] + first * a[3];
+    out[4] = second * b[4] + first * a[4];
+    out[5] = second * b[5] + first * a[5];
+}
+
 u32 fn_80446780(u32 *object) {
     return object[1] * 0x24;
 }
