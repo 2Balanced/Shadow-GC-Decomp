@@ -326,9 +326,9 @@ extern float lbl_805FAF98;
 
 void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *user) {
     float work[208];
-    work[0] = *(float *)input;
-    work[1] = *(float *)(input + 1);
-    work[2] = *(float *)(input + 2);
+    *(u32 *)(work + 0) = input[0];
+    *(u32 *)(work + 1) = input[1];
+    *(u32 *)(work + 2) = input[2];
     float rangeX = *(float *)(input + 3) - work[0];
     float rangeY = *(float *)(input + 4) - work[1];
     float rangeZ = *(float *)(input + 5) - work[2];
@@ -419,7 +419,7 @@ void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
         u32 baseA = entry[1];
         u32 baseB = entry[2];
         u32 *callbackEntry = entry;
-        u32 linkWords[128];
+        u32 linkWords[136];
         RwCpp05Record *initial = (RwCpp05Record *)linkWords;
         initial->id = 0xFF;
         initial->index = 0;
