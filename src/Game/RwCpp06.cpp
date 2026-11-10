@@ -229,7 +229,10 @@ void *fn_80442210(void *worldArg, void *sphereArg, void *intersectionArg, void *
         } else {
             dz = lbl_805FAF8C;
         }
-        if (dx * dx + dy * dy + dz * dz > radius * radius) continue;
+        float distance2 = dx * dx;
+        distance2 += dy * dy;
+        distance2 += dz * dz;
+        if (distance2 > radius * radius) continue;
         if (tree->bbox.inf.x > box.sup.x || tree->bbox.inf.y > box.sup.y || tree->bbox.inf.z > box.sup.z ||
             tree->bbox.sup.x < box.inf.x || tree->bbox.sup.y < box.inf.y || tree->bbox.sup.z < box.inf.z) {
             continue;
