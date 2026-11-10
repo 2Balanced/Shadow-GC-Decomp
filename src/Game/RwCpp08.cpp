@@ -314,6 +314,34 @@ void fn_8044621C(float *out, float *a, float *b, float t) {
     out[5] = second * b[5] + first * a[5];
 }
 
+u32 fn_8047D784(void *, void *, u32);
+u32 fn_8047D868(void *, void *, u32);
+u32 fn_8047D350(void *, void *, u32);
+u32 fn_8047D458(void *, void *, u32);
+
+void *fn_80446620(void *stream, u32 *object) {
+    u32 *entry = (u32 *)object[4];
+    for (u32 i = 0; i < object[1]; i++) {
+        if (fn_8047D784(stream, entry + 1, 0x20) == 0) return NULL;
+        u32 value;
+        if (fn_8047D868(stream, &value, 4) == 0) return NULL;
+        entry[0] = object[4] + (value / 0x24) * 0x24;
+        entry += 9;
+    }
+    return object;
+}
+
+u32 fn_804466DC(void *stream, u32 *object) {
+    u32 *entry = (u32 *)object[4];
+    for (u32 i = 0; i < object[1]; i++) {
+        if (fn_8047D350(stream, entry + 1, 0x20) == 0) return 0;
+        u32 value = entry[0] - object[4];
+        if (fn_8047D458(stream, &value, 4) == 0) return 0;
+        entry += 9;
+    }
+    return 1;
+}
+
 u32 fn_80446780(u32 *object) {
     return object[1] * 0x24;
 }
