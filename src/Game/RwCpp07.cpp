@@ -19,10 +19,21 @@ void fn_80444284(u32 *object) {
     object[0x12] = (u32)fn_80443A74;
 }
 
-void fn_804442A4(u32, u32);
+void fn_804442A4(u32 *, u32);
 
-u32 fn_804441E4(u32 first) {
+u32 fn_804441E4(u32 *first) {
     fn_804442A4(first, 1);
     return 1;
+}
+
+void fn_80445CE0(void);
+
+void fn_804442A4(u32 *object, u32 value) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1430);
+    if (target[2] != 0) {
+        object[0x12] = target[2];
+        target[2] = 0;
+    }
+    fn_80445CE0();
 }
 }

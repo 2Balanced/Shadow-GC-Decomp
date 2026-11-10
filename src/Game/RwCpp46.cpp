@@ -35,4 +35,43 @@ char *fn_80482DBC(char *text, char value) {
     } while (current != 0);
     return found;
 }
+
+void fn_80482D3C(char *text) {
+    if (text == NULL) {
+        return;
+    }
+    char *cursor = text;
+    while (*cursor != 0) {
+        char current = *cursor;
+        if (current >= 'a' && current <= 'z') {
+            *cursor = current - 0x20;
+        }
+        cursor++;
+    }
+}
+
+void fn_80482D7C(char *text) {
+    if (text == NULL) {
+        return;
+    }
+    char *cursor = text;
+    while (*cursor != 0) {
+        char current = *cursor;
+        if (current >= 'A' && current <= 'Z') {
+            *cursor = current + 0x20;
+        }
+        cursor++;
+    }
+}
+
+extern u32 lbl_805FB2D0;
+extern u8 *lbl_805F15B4;
+
+u32 fn_80482F64(u32 argument) {
+    if (argument == 0) {
+        argument = (u32)&lbl_805FB2D0;
+    }
+    u32 result = ((u32 (*)(u32))*(u32 *)(lbl_805F15B4 + 0xF4))(argument);
+    return (result + 4) & ~3;
+}
 }

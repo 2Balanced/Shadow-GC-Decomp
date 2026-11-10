@@ -113,4 +113,15 @@ u32 fn_80463CE0(u32 *object) {
     table[3] = (u32)fn_80462914;
     return 1;
 }
+
+s32 fn_80462ED4(void);
+s32 fn_804647C8(void);
+
+u32 fn_8046318C(void) {
+    if (fn_80462ED4() == 0) {
+        return 0;
+    }
+    u32 result = fn_804647C8();
+    return (-result | result) >> 31;
+}
 }

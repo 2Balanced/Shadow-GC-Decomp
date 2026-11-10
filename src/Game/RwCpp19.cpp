@@ -41,4 +41,15 @@ void fn_804815F0(u8 *, u32, u32, u32, u32);
 void fn_80458BEC(u32 first, u32 second, u32 third, u32 fourth) {
     fn_804815F0(lbl_8056D7E0, first, second, third, fourth);
 }
+
+extern u8 lbl_8056D7F8[];
+void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
+
+void fn_80458B6C(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D7E0, first, second, third, fourth, fifth);
+}
+
+void fn_80458BAC(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D7F8, first, second, third, fourth, fifth);
+}
 }

@@ -16,4 +16,11 @@ void *fn_80483F8C(void *argument) {
     fn_8048CD8C();
     return argument;
 }
+
+extern u8 lbl_8056DF70[];
+void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
+
+void fn_804859B8(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056DF70, first, second, third, fourth, fifth);
+}
 }

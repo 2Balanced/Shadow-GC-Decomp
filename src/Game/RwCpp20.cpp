@@ -55,4 +55,21 @@ void fn_804815F0(u8 *, u32, u32, u32, u32);
 void fn_8045998C(u32 first, u32 second, u32 third, u32 fourth) {
     fn_804815F0(lbl_8056D810, first, second, third, fourth);
 }
+
+void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
+
+void fn_8045994C(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D810, first, second, third, fourth, fifth);
+}
+
+void fn_8048722C(void);
+
+u32 fn_8045A784(volatile u32 *object, float value) {
+    u32 count = object[1];
+    ((float *)object)[5] = value;
+    if (count != 0) {
+        fn_8048722C();
+    }
+    return (u32)object;
+}
 }

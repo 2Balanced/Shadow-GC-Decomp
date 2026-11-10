@@ -21,4 +21,16 @@ u32 fn_80481D98(u32 *object, u32 value) {
     }
     return 0xFFFFFFFF;
 }
+
+float fn_80482340(float);
+
+float fn_80482300(const float *object) {
+    float x = object[0];
+    float y = object[1];
+    float z = object[2];
+    float xx = x * x;
+    float yy = y * y;
+    float zz = z * z;
+    return fn_80482340(xx + yy + zz);
+}
 }

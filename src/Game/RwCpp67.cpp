@@ -22,4 +22,13 @@ void fn_804A1A08(void);
 void fn_804A55AC(void) {
     fn_804A1A08();
 }
+
+u32 fn_804A55CC(u8 *object) {
+    u32 result = object[0x3B] * 0x34 + 0x38;
+    result += object[0x39] * 0x0C;
+    result += object[0x3D] * 0x1C;
+    result += object[0x3C] << 3;
+    result += object[0x3A] * 0x1C;
+    return result;
+}
 }

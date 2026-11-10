@@ -39,4 +39,10 @@ void fn_804815F0(u8 *, u32, u32, u32, u32);
 void fn_8045F338(u32 first, u32 second, u32 third, u32 fourth) {
     fn_804815F0(lbl_8056D880, first, second, third, fourth);
 }
+
+void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
+
+void fn_8045F2F8(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D880, first, second, third, fourth, fifth);
+}
 }

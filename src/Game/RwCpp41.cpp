@@ -70,4 +70,13 @@ void fn_8047A938(u8 *object) {
     fn_80379D20(object + 0x40);
     ((u32 *)object)[8] = 1;
 }
+
+void fn_8047B154(u32, u32);
+
+u32 fn_8047B3AC(s32 *object) {
+    if (object[8] != 1) {
+        fn_8047B154((u32)object, 0);
+    }
+    return object[8];
+}
 }

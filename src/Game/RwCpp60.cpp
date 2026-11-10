@@ -29,4 +29,12 @@ void fn_80499BC8(void) {
         *--target = 0;
     }
 }
+
+void fn_80499B24(u8 *);
+void fn_80499B38(void);
+u32 fn_8048D280(u32, u32, void *, void *, u32);
+
+void fn_80499BF8(void) {
+    lbl_805F1670 = fn_8048D280(0x24, 0x40C, fn_80499B24, fn_80499B38, 0);
+}
 }

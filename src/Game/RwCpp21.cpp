@@ -51,4 +51,14 @@ void fn_8045AAE0(u32 first, u32 second, u32 third, u32 fourth) {
 void fn_8045B30C(u32 first, u32 second, u32 third, u32 fourth) {
     fn_804815F0(lbl_8056D840, first, second, third, fourth);
 }
+
+void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
+
+void fn_8045AAA0(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D828, first, second, third, fourth, fifth);
+}
+
+void fn_8045B2CC(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
+    fn_80481DC8(lbl_8056D840, first, second, third, fourth, fifth);
+}
 }
