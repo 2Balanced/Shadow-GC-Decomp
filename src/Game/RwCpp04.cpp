@@ -291,7 +291,7 @@ int fn_8043F70C(s8 *object) {
     return result;
 }
 
-int fn_8043F8C4(s8 *object) {
+int fn_8043F8C4(u8 *object) {
     if (lbl_805F1404 == NULL) return 0x0D000001;
     int result;
     if (object == NULL) {
@@ -301,16 +301,20 @@ int fn_8043F8C4(s8 *object) {
         int count = 0x40;
         result = 0x07000102;
         do {
-            if (object == (s8 *)(lbl_805F1404 + offset + 0x13F6C)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+            if (object == (u8 *)(lbl_805F1404 + offset + 0x13F6C)) {
+                if (*object != 0) {
+                    result = 0;
+                } else {
+                    result = 0x07000102;
+                }
                 break;
             }
             offset += 0x14;
         } while (--count != 0);
     }
     if (result != 0) return result;
-    if (*object != 0 && object[1] >= 0) {
-        while (*(s8 *)(lbl_805F1404 + object[1] + 0x505C) != 0) {}
+    if (*object != 0 && *(s8 *)(object + 1) >= 0) {
+        while (*(u8 *)(lbl_805F1404 + *(s8 *)(object + 1) + 0x505C) != 0) {}
     }
     *object = 0;
     return 0;
