@@ -1,6 +1,7 @@
 /* RenderWare vertex conversion routines. The object and stream layouts are inferred from the
  * callers; the functions retain their address names until their interfaces are known. */
 #include <dolphin/types.h>
+#include <string.h>
 
 extern u32 lbl_805FB0C0;
 extern u8 lbl_805FB0C4;
@@ -40,6 +41,13 @@ u32 fn_8047CEF0(void *, u32, u32, u32, u32);
 u32 fn_8047D458(void *, void *, u32);
 u32 fn_80480ED0(void *, void *, u32);
 u32 fn_8044BB18(void *, void *);
+s32 fn_8047CF50(void *, u32, u32 *, u32 *);
+u32 fn_8047DC28(u32, ...);
+void fn_8047DB84(void *);
+u32 fn_8047D868(void *, void *, u32);
+u32 fn_80480D4C(void *, void *, u32);
+void *fn_8044BBFC(void *, u32 *);
+void *fn_8044CCC0(void *, void *);
 }
 
 extern "C" {
@@ -444,4 +452,48 @@ extern "C" void *fn_8044E408(u32 *object, u32 count) {
         }
     }
     return object;
+}
+
+extern "C" void *fn_8044EAD0(void *stream, u32 *object) {
+    u32 local[8];
+    if (fn_8047CF50(stream, 1, local + 4, local + 5) == 0) return NULL;
+    if (local[5] < 0x35000 || local[5] > 0x37002) {
+        local[6] = 0x116;
+        local[7] = fn_8047DC28(0x80000004, local[5]);
+        fn_8047DB84(local + 6);
+        return NULL;
+    }
+    if (fn_8047D868(stream, local + 2, 4) == 0 || local[2] != 6) return NULL;
+
+    u32 *record = (u32 *)((void *(*)(void *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        (void *)lbl_8056D708[6], 0x4C, 0x30116);
+    memset(record, 0, 0x4C);
+    if (fn_8047D868(stream, local + 3, 4) == 0) return NULL;
+    record[0] = local[3] & 0xFF;
+    record[1] = (local[3] >> 16) & 0xFF;
+    record[4] = (local[3] >> 8) & 0xFF;
+    local[4] -= 8;
+    u32 count = object[5];
+    u32 channels = record[4];
+
+    if (channels > 1) {
+        record[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(local[4] + 5, 0x30116);
+        record[10] = (record[9] + channels * count + 3) & ~3;
+        record[3] = (record[10] + channels * count + 3) & ~3;
+        record[2] = record[3] + record[0] * 0x40;
+        if (fn_80480D4C(stream, (void *)record[2], record[1]) != record[1]) return NULL;
+        u32 bytes = channels * count;
+        if (fn_80480D4C(stream, (void *)record[10], bytes) != bytes) return NULL;
+        if (fn_80480D4C(stream, (void *)record[9], bytes) != bytes) return NULL;
+        if (fn_80480D4C(stream, (void *)record[3], record[0] * 0x40) != record[0] * 0x40) return NULL;
+    } else {
+        record[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(local[4] + 3, 0x30116);
+        record[3] = (record[9] + 3) & ~3;
+        record[2] = record[3] + record[0] * 0x40;
+        if (fn_80480D4C(stream, (void *)record[2], record[1]) != record[1]) return NULL;
+        if (fn_80480D4C(stream, (void *)record[3], record[0] * 0x40) != record[0] * 0x40) return NULL;
+    }
+    if (fn_8044BBFC(stream, record) == NULL) return NULL;
+    fn_8044CCC0(object, record);
+    return stream;
 }
