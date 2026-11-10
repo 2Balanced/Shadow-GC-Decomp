@@ -226,29 +226,35 @@ u32 *fn_80487F50(u32 *texture) {
 }
 
 void fn_80487FA8(u32 *texture) {
-    u32 kind = texture[3];
-    if (kind == 0x20) {
+    s32 kind = (s32)texture[3];
+    switch (kind) {
+    case 4:
+    case 8: {
+        u8 *palette = (u8 *)texture[6];
+        for (s32 i = 0; i < (1 << kind); i++) {
+            s32 alpha = palette[0];
+            if (palette[1] > alpha) alpha = palette[1];
+            if (palette[2] > alpha) alpha = palette[2];
+            palette[3] = alpha;
+            palette += 4;
+        }
+        break;
+    }
+    case 0x20: {
         u8 *pixels = (u8 *)texture[5];
-        for (u32 row = 0; row < texture[2]; row++) {
+        for (s32 row = 0; row < (s32)texture[2]; row++) {
             u8 *pixel = pixels;
-            for (u32 x = 0; x < texture[1]; x++) {
-                u8 alpha = pixel[0];
-                if (alpha < pixel[1]) alpha = pixel[1];
-                if (alpha < pixel[2]) alpha = pixel[2];
+            for (s32 x = 0; x < (s32)texture[1]; x++) {
+                s32 alpha = pixel[0];
+                if (pixel[1] > alpha) alpha = pixel[1];
+                if (pixel[2] > alpha) alpha = pixel[2];
                 pixel[3] = alpha;
                 pixel += 4;
             }
             pixels += texture[4];
         }
-    } else if (kind == 4 || kind == 8) {
-        u8 *palette = (u8 *)texture[6];
-        for (u32 i = 0; i < (1u << kind); i++) {
-            u8 alpha = palette[0];
-            if (alpha < palette[1]) alpha = palette[1];
-            if (alpha < palette[2]) alpha = palette[2];
-            palette[3] = alpha;
-            palette += 4;
-        }
+        break;
+    }
     }
 }
 
