@@ -29,6 +29,8 @@ u32 fn_8044CF68(u32 *, u32 *, u32 *, u32 **);
 void fn_8044D344(u8 *, u32 *, const void *, u32 *);
 void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
 void fn_80463840(void *, void *);
+void fn_803991E8(void *);
+void fn_80399238(void *, void *);
 }
 
 extern "C" {
@@ -220,4 +222,58 @@ extern "C" void *fn_8044DA3C(u32 *object, u32 *arg2) {
                     *(u32 **)((u8 *)object + lbl_8056D708[1]));
     }
     return object;
+}
+
+extern "C" void fn_8044DC4C(const float *input, void *out, int transform) {
+    float matrix[12];
+    matrix[0] = -input[0];
+    matrix[1] = -input[4];
+    matrix[2] = -input[8];
+    matrix[3] = -input[12];
+    matrix[4] = input[1];
+    matrix[5] = input[5];
+    matrix[6] = input[9];
+    matrix[7] = input[13];
+    matrix[8] = -input[2];
+    matrix[9] = -input[6];
+    matrix[10] = -input[10];
+    matrix[11] = -input[14];
+    fn_803991E8(matrix);
+    if (transform != 0) fn_80399238(matrix, out);
+}
+
+extern "C" void fn_8044DD1C(u32 *object, u32 index, int transform) {
+    u8 *table = (u8 *)object[0x10];
+    u32 pair = index * 2;
+    u32 first = table[pair];
+    u32 outerCount = table[pair + 1];
+    u32 outputIndex = 0;
+    u32 tableOffset = (first & 0x7F) * 2;
+
+    for (u32 outer = 0; (outer & 0xFF) < outerCount; outer++) {
+        u8 *entry = (u8 *)object[0x11] + (outer & 0xFF) * 2 + tableOffset;
+        u32 matrixIndex = entry[0];
+        u32 innerCount = entry[1];
+        u32 matrixOffset = matrixIndex * 0x40;
+        for (u32 inner = 0; inner < innerCount; inner++) {
+            const float *input = (const float *)(lbl_8056D708[3] + matrixOffset);
+            float matrix[12];
+            matrix[0] = -input[0];
+            matrix[1] = -input[4];
+            matrix[2] = -input[8];
+            matrix[3] = -input[12];
+            matrix[4] = input[1];
+            matrix[5] = input[5];
+            matrix[6] = input[9];
+            matrix[7] = input[13];
+            matrix[8] = -input[2];
+            matrix[9] = -input[6];
+            matrix[10] = -input[10];
+            matrix[11] = -input[14];
+            fn_803991E8(matrix);
+            if (transform != 0) fn_80399238(matrix, (void *)outputIndex);
+            outputIndex += 3;
+            matrixOffset += 0x40;
+        }
+    }
 }
