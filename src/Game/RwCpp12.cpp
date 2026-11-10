@@ -36,4 +36,11 @@ void fn_8044EE3C(void);
 void fn_8044CB70(void) {
     fn_8044EE3C();
 }
+
+void fn_8044C3D8(u8 *base) {
+    u32 offset = lbl_8056D708[1];
+    if (*(u32 *)(base + offset) != 0) {
+        *(u32 *)(base + offset) = 0;
+    }
+}
 }

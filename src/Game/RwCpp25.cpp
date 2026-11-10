@@ -43,4 +43,15 @@ void fn_80461C80(void) {
 void fn_80461D08(void) {
     fn_804651AC();
 }
+
+void fn_80465138(u32, u32);
+void fn_80465200(u32, u32);
+
+void fn_80461C18(u32 first, u32 second, u32 third) {
+    fn_80465138(first, third);
+}
+
+void fn_80461CA0(u32 first, u32 second, u32 third) {
+    fn_80465200(first, third);
+}
 }

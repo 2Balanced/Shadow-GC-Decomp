@@ -40,4 +40,11 @@ void fn_804797F0(void);
 void fn_8047B3EC(void) {
     fn_804797F0();
 }
+
+u32 fn_8047A7C8(u32 *object, u32 index) {
+    if (index < object[1]) {
+        return object[0x16] + index * 0x90;
+    }
+    return 0;
+}
 }

@@ -13,4 +13,10 @@ u32 fn_80499520(u32 unused, u32 value) {
 void fn_80499B24(u8 *base) {
     *(u32 *)(base + lbl_805F1670 + 0x20) = 0x1000000;
 }
+
+void fn_804990D4(u32);
+
+void fn_804994B8(void) {
+    fn_804990D4(lbl_805F1668);
+}
 }

@@ -28,4 +28,10 @@ void fn_80456FD8(void);
 void fn_804483E8(void) {
     fn_80456FD8();
 }
+
+void fn_80448598(u8 *object) {
+    u32 *nested = *(u32 **)(object + lbl_805F1448);
+    nested[0x10] |= nested[0x0F];
+    nested[0x0F] = 0;
+}
 }
