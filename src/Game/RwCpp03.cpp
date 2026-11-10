@@ -599,7 +599,7 @@ void fn_8043E624(void) {
 u32 fn_8043E6F4(u32 arg1, u32 arg2, u32 arg3, u32 arg4) {
     fn_8043E9C4(arg1, arg2);
     ((u32 *)lbl_805F1404)[1] = 0x14470;
-    ((u32 *)lbl_805F1404)[0xB] = (u32)lbl_805FAF40;
+    *(float *)(lbl_805F1404 + 0x2C) = lbl_805FAF40;
     ((u32 *)lbl_805F1404)[0x1427] = 0xF;
     ((u32 *)lbl_805F1404)[0xE] = arg2;
     ((u32 *)lbl_805F1404)[0x14A9] = arg4;
@@ -613,7 +613,7 @@ u32 fn_8043E6F4(u32 arg1, u32 arg2, u32 arg3, u32 arg4) {
     ((u32 *)lbl_805F1404)[0x14AD] = ((u32 *)lbl_805F1404)[0x14AB];
     ((u32 *)lbl_805F1404)[0x14AB] += 0x500;
     ((u32 *)lbl_805F1404)[0x14AA] -= 0x500;
-    ((u32 *)lbl_805F1404)[0x4E91] = (u32)lbl_805FAF44;
+    *(float *)(lbl_805F1404 + 0x13A44) = lbl_805FAF44;
     ((u32 *)lbl_805F1404)[0x14AE] = 0x7D000;
     ((u32 *)lbl_805F1404)[0x14AF] = 460000;
     ((u32 *)lbl_805F1404)[0x14B0] = 360000;
@@ -638,7 +638,7 @@ u32 fn_8043E6F4(u32 arg1, u32 arg2, u32 arg3, u32 arg4) {
     OSReport("AX SDLIB: aramRest=%d\n", ((u32 *)lbl_805F1404)[0x14AA]);
     ((u32 *)lbl_805F1404)[0x11] = 1;
     fn_8043E950();
-    *lbl_805F1404 = 1;
+    *(u32 *)lbl_805F1404 = 1;
     return 0;
 }
 
