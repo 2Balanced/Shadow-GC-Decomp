@@ -32,12 +32,12 @@ void fn_8047D158(void *, u32);
 void fn_8047D1C8(void *, u32);
 void fn_8047D254(void *, u32);
 void fn_8047D2C4(void *, u32);
-int fn_8047D560(void *, void *, u32);
-int fn_8047D684(void *, void *, u32);
-u32 fn_8047DC28(u32, u32);
+u32 fn_8047D560(void *, void *, u32);
+u32 fn_8047D684(void *, void *, u32);
+u32 fn_8047DC28(u32, ...);
 void fn_8047DB84(void *);
-int fn_80480D4C(void *, void *, u32);
-int fn_80480ED0(void *, void *, u32);
+u32 fn_80480D4C(void *, void *, u32);
+u32 fn_80480ED0(void *, void *, u32);
 
 typedef struct __va_list_struct {
     char gpr;
@@ -705,7 +705,7 @@ void *fn_80440670(void *context) {
     header[9] = ((flags & 1) == 0) ? 0 : ((u32)next + 1) & ~1;
     if (*(u16 *)((u8 *)header + 0x1E) != 0) {
         u32 bytes = (u32)*(u16 *)((u8 *)header + 0x1E) << 4;
-        if (fn_80480D4C(context, (void *)header[8], bytes) != (int)bytes) {
+        if (fn_80480D4C(context, (void *)header[8], bytes) != bytes) {
             fn_80440410(header);
             return NULL;
         }
