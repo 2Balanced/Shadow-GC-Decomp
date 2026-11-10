@@ -342,6 +342,60 @@ u32 fn_804466DC(void *stream, u32 *object) {
     return 1;
 }
 
+void fn_80446790(float *out, const float *q) {
+    float x = q[2];
+    float y = q[3];
+    float z = q[4];
+    float w = q[5];
+    float norm = x * x + y * y + z * z + w * w;
+    float xNorm = x;
+    float yNorm = y;
+    float zNorm = z;
+    float wNorm = w;
+    if (norm > 0.0f) {
+        float inverse = 1.0f / norm;
+        float negative = -inverse;
+        wNorm = w * inverse;
+        xNorm = x * negative;
+        yNorm = y * negative;
+        zNorm = z * negative;
+    }
+
+    float oldX = out[2];
+    float oldY = out[3];
+    float oldZ = out[4];
+    float oldW = out[5];
+    out[5] = wNorm * oldW - (zNorm * oldZ + xNorm * oldX + yNorm * oldY);
+    out[2] = yNorm * oldZ - zNorm * oldY;
+    out[3] = zNorm * oldX - xNorm * oldZ;
+    out[4] = xNorm * oldY - yNorm * oldX;
+    out[2] += oldX * wNorm;
+    out[3] += oldY * wNorm;
+    out[4] += oldZ * wNorm;
+    out[2] += oldW * xNorm;
+    out[3] += oldW * yNorm;
+    out[4] += oldW * zNorm;
+    out[6] -= q[6];
+    out[7] -= q[7];
+    out[8] -= q[8];
+}
+
+void fn_804468D0(float *out, const float *a, const float *b) {
+    out[5] = a[5] * b[5] - (a[3] * b[3] + a[2] * b[2] + a[4] * b[4]);
+    out[2] = a[3] * b[4] - a[4] * b[3];
+    out[3] = a[4] * b[2] - a[2] * b[4];
+    out[4] = a[2] * b[3] - a[3] * b[2];
+    out[2] += b[2] * a[5];
+    out[3] += b[3] * a[5];
+    out[4] += b[4] * a[5];
+    out[2] += a[2] * b[5];
+    out[3] += a[3] * b[5];
+    out[4] += a[4] * b[5];
+    out[6] = a[6] + b[6];
+    out[7] = a[7] + b[7];
+    out[8] = a[8] + b[8];
+}
+
 u32 fn_80446780(u32 *object) {
     return object[1] * 0x24;
 }
