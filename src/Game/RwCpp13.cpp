@@ -11,6 +11,7 @@ extern u8 lbl_805FB0BC;
 extern u32 lbl_8056D708[];
 extern u32 lbl_805EDDD8;
 extern u32 lbl_805F1520;
+extern u8 *lbl_805F15B4;
 
 extern "C" {
 void fn_80482458(void *, const void *, const void *);
@@ -31,6 +32,9 @@ void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
 void fn_80463840(void *, void *);
 void fn_803991E8(void *);
 void fn_80399238(void *, void *);
+void *fn_8044E408(void *, u32);
+u32 fn_8044BDBC(u32 *);
+void fn_8046288C(void);
 }
 
 extern "C" {
@@ -276,4 +280,67 @@ extern "C" void fn_8044DD1C(u32 *object, u32 index, int transform) {
             matrixOffset += 0x40;
         }
     }
+}
+
+extern "C" void *fn_8044E6BC(u32 *object) {
+    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
+    if (record == NULL) return object;
+    u32 flags = object[2];
+    if ((flags & 0x01000000) != 0) {
+        if ((flags & 0x10) != 0) {
+            *(u16 *)((u8 *)object + 0xC) |= 6;
+        } else {
+            *(u16 *)((u8 *)object + 0xC) |= 2;
+        }
+        record[7] = 0;
+        record[8] = 0;
+        return object;
+    }
+    return fn_8044E408(record, object[5]) != NULL ? object : NULL;
+}
+
+extern "C" void *fn_8044E758(u32 *object) {
+    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
+    if (record[9] != 0) {
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)record[9]);
+        record[9] = 0;
+        record[10] = 0;
+    }
+    record[7] = 0;
+    record[8] = 0;
+    return object;
+}
+
+extern "C" u32 fn_8044E7D0(u32 *object) {
+    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
+    u32 result = record[1] + 0x14;
+    if (record[4] > 1) result += object[5] * (record[4] * 2);
+    result += record[0] * 0x40;
+    if (record[7] != 0) {
+        u32 *target = (u32 *)object[0x16];
+        u32 *header = *(u32 **)(target[9] - 4);
+        header[4] = 0;
+        target[9] = record[7];
+        if ((object[2] & 0x10) != 0) target[11] = record[8];
+        target[5] = (u32)fn_8046288C;
+        record[7] = 0;
+        record[8] = 0;
+    }
+    return result + fn_8044BDBC(record);
+}
+
+extern "C" u32 fn_8044EE3C(u32 *object) {
+    u32 *entry = (u32 *)((u8 *)object + lbl_8056D708[1]);
+    if (entry[1] != 0) {
+        u32 *target = (u32 *)object[5];
+        u32 *owner = (u32 *)object[6];
+        u32 *header = *(u32 **)(target[9] - 4);
+        header[4] = 0;
+        target[9] = entry[1];
+        if ((owner[2] & 0x10) != 0) target[11] = entry[2];
+        target[5] = (u32)fn_8046288C;
+        entry[1] = 0;
+        entry[2] = 0;
+    }
+    return 0;
 }
