@@ -149,17 +149,17 @@ void fn_8043D99C(float *object) {
 
 void fn_8043D8E0(float *object, float first, float second) {
     OSDisableInterrupts();
-    object[0x18] = object[0x8];
-    object[0x14] = first;
-    object[0x1C] = second;
-    object[0x20] = second;
-    if (object[0x20] <= lbl_805FAF28) {
-        object[0x8] = object[0x14];
-        object[0x1C] = lbl_805FAF28;
-        object[0x20] = lbl_805FAF2C;
+    object[0x06] = object[0x02];
+    object[0x05] = first;
+    object[0x07] = second;
+    object[0x08] = second;
+    if (object[0x08] <= lbl_805FAF28) {
+        object[0x02] = object[0x05];
+        object[0x07] = lbl_805FAF28;
+        object[0x08] = lbl_805FAF2C;
     } else {
-        object[0x8] = (object[0x14] - object[0x18]) *
-            (lbl_805FAF30 - object[0x20] / object[0x1C]) + object[0x18];
+        object[0x02] = (object[0x05] - object[0x06]) *
+            (lbl_805FAF30 - object[0x08] / object[0x07]) + object[0x06];
     }
     OSRestoreInterrupts(0);
 }
@@ -181,17 +181,17 @@ void fn_8043D870(float *object) {
 
 void fn_8043D7B4(float *object, float first, float second) {
     OSDisableInterrupts();
-    object[0x30] = object[0x24];
-    object[0x2C] = first;
-    object[0x34] = second;
-    object[0x38] = second;
-    if (object[0x38] <= lbl_805FAF28) {
-        object[0x24] = object[0x2C];
-        object[0x34] = lbl_805FAF28;
-        object[0x38] = lbl_805FAF2C;
+    object[0x0C] = object[0x09];
+    object[0x0B] = first;
+    object[0x0D] = second;
+    object[0x0E] = second;
+    if (object[0x0E] <= lbl_805FAF28) {
+        object[0x09] = object[0x0B];
+        object[0x0D] = lbl_805FAF28;
+        object[0x0E] = lbl_805FAF2C;
     } else {
-        object[0x24] = (object[0x2C] - object[0x30]) *
-            (lbl_805FAF30 - object[0x38] / object[0x34]) + object[0x30];
+        object[0x09] = (object[0x0B] - object[0x0C]) *
+            (lbl_805FAF30 - object[0x0E] / object[0x0D]) + object[0x0C];
     }
     OSRestoreInterrupts(0);
 }
