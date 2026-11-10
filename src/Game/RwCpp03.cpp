@@ -89,7 +89,7 @@ void fn_8043E624(void);
 u32 fn_8043EBFC(void);
 int fn_8043EC3C(u32 *);
 int fn_8043ECDC(u32 *);
-int fn_8043ED7C(u32 *, s8);
+int fn_8043ED7C(u32 *, s8, int);
 int fn_8043EE74(u32 *, s16);
 int fn_8043EF50(u32 *);
 void fn_80386348(u32, u32);
@@ -748,7 +748,7 @@ int fn_8043ECDC(u32 *object) {
     return 0x7000102;
 }
 
-int fn_8043ED7C(u32 *object, s8 value) {
+int fn_8043ED7C(u32 *object, s8 value, int arg2) {
     if (lbl_805F1404 == NULL) {
         return 0xD000001;
     }
@@ -757,11 +757,14 @@ int fn_8043ED7C(u32 *object, s8 value) {
     }
     for (int i = 0; i < 8; i++) {
         if (object == (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478)) {
-            if (*object != 0) {
+            if (*(s32 *)object != 0) {
+                u32 unsignedValue = (u32)value;
+                u32 unsignedArg = (u32)arg2;
                 if (value < -0x7F || value > 0x7F) {
                     return 0x3000001;
                 }
-                fn_8043D8E0((float *)object, 0.0f, 0.0f);
+                fn_8043D8E0((float *)object, (float)unsignedValue / 127.0f,
+                            (float)unsignedArg);
                 return 0;
             }
             break;
