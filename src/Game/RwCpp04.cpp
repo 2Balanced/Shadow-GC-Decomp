@@ -20,7 +20,7 @@ void fn_8043E228(u8 *, int);
 void fn_8043E2B4(int, int);
 void fn_8043E47C(int);
 void fn_8043E494(void);
-void fn_8043E6F4(void);
+u32 fn_8043E6F4(u32, u32, u32, u32);
 int fn_8043AF64(u32, void *, u32, u32, u8);
 int fn_8043B05C(u32, void *, u32, u32, u8);
 void fn_8043B6D0(void *);
@@ -383,8 +383,8 @@ done:
     return 0;
 }
 
-int fn_8043FB24(void) {
-    fn_8043E6F4();
+int fn_8043FB24(void *heap, int arg1, int arg2) {
+    fn_8043E6F4((u32)heap, 0x30, 0xE1000, 0x800000);
     return 0;
 }
 
