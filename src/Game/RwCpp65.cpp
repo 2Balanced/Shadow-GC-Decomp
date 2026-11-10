@@ -53,4 +53,16 @@ u32 fn_804A22E4(u8 *object) {
     }
     return nested[0x0C];
 }
+
+void fn_8047D458(u32, void *, u32);
+
+void fn_804A1854(u32 stream, u32 unused, u8 *other) {
+    u32 value = *(u32 *)(other + lbl_805F16AC);
+    fn_8047D458(stream, &value, 4);
+}
+
+void fn_804A194C(u32 stream, u32 unused, u8 *other) {
+    u32 value = *(u32 *)(other + lbl_805F16B0);
+    fn_8047D458(stream, &value, 4);
+}
 }

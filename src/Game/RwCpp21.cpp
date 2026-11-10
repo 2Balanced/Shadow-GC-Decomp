@@ -21,4 +21,10 @@ u32 fn_8045B020(u32 *object) {
     }
     return 0;
 }
+
+extern u8 *lbl_805F15B4;
+
+void fn_8045BF30(u32 first) {
+    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(first, 0x30502);
+}
 }

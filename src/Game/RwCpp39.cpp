@@ -25,4 +25,15 @@ u8 *fn_80477978(u32 *object) {
     callback();
     return (u8 *)object + 0x14;
 }
+
+u32 fn_804779A8(u32 *object) {
+    u32 count = 0;
+    u32 *cursor = object + 4;
+    u32 stride = ((u32 *)object[0])[2];
+    while (cursor[0] != (u32)object) {
+        cursor = (u32 *)((u8 *)cursor + stride);
+        count++;
+    }
+    return count;
+}
 }

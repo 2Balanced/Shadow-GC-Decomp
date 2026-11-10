@@ -21,4 +21,18 @@ char *fn_80482DF0(char *text, char value) {
     } while (current != 0);
     return found;
 }
+
+char *fn_80482DBC(char *text, char value) {
+    char *found = NULL;
+    char current;
+    do {
+        current = *text;
+        if (current == value) {
+            found = text;
+            break;
+        }
+        text++;
+    } while (current != 0);
+    return found;
+}
 }

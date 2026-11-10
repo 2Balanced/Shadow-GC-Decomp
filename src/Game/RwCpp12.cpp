@@ -43,4 +43,12 @@ void fn_8044C3D8(u8 *base) {
         *(u32 *)(base + offset) = 0;
     }
 }
+
+u32 fn_8044BDBC(u32 *object) {
+    u32 result = 0x0C;
+    if (object[0x0D] != 0) {
+        result = object[0] + (object[0x0D] << 1) + (object[0x0E] << 1) + 0x0C;
+    }
+    return result;
+}
 }

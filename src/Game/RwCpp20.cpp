@@ -29,4 +29,15 @@ void fn_80481D98(u8 *, u32);
 void fn_80458C90(u32 argument) {
     fn_80481D98(lbl_8056D7E0, argument);
 }
+
+void fn_80481634(u8 *, u32, u32);
+void fn_80481670(u8 *, u32, u32);
+
+void fn_80458C28(u32 first, u32 second) {
+    fn_80481634(lbl_8056D7E0, first, second);
+}
+
+void fn_80458C5C(u32 first, u32 second) {
+    fn_80481670(lbl_8056D7E0, first, second);
+}
 }

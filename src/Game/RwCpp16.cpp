@@ -46,4 +46,13 @@ u32 fn_80452C4C(u8 *object, s32 index) {
     }
     return 0;
 }
+
+void fn_80453594(float *dest, const float *source) {
+    dest[0] = source[0];
+    dest[1] = source[1];
+    dest[2] = source[4];
+    dest[3] = source[5];
+    dest[4] = source[0x0C];
+    dest[5] = source[0x0D];
+}
 }

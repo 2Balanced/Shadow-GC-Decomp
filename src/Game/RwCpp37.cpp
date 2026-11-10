@@ -30,4 +30,12 @@ u32 fn_80474228(float value) {
     }
     return 0;
 }
+
+void fn_804748C8(void) {
+    if (lbl_805E1950[0x91] != 0) {
+        lbl_805E1950[0x91]--;
+        lbl_805E1950[0xC6] = 0;
+        lbl_805E1950[0xCB] = 0;
+    }
+}
 }

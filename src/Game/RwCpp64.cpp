@@ -23,4 +23,14 @@ u32 fn_8049FAFC(u32 unused, u32 *object) {
 void fn_804A0884(u8 *base) {
     *(u32 *)(base + lbl_805F16A8) = 0;
 }
+
+u32 fn_80483B38(void *);
+
+u32 fn_804A0DB8(void *argument) {
+    u32 result = 4;
+    if (argument != NULL) {
+        result = fn_80483B38(argument) + 0x10;
+    }
+    return result;
+}
 }

@@ -94,4 +94,10 @@ u32 fn_80462184(u32 unused, u8 *object) {
     }
     return 0;
 }
+
+void fn_8045C56C(u32, u32, u32);
+
+void fn_80461B60(u32 first, u32 second, u32 *third) {
+    fn_8045C56C(third[0x15], first, second + 0x20);
+}
 }
