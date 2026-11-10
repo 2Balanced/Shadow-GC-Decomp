@@ -435,9 +435,7 @@ void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
 
         while (linkCursor > linkBase) {
             linkCursor -= 3;
-            bool descend = true;
-            while (descend) {
-                descend = false;
+            for (;;) {
                 RwCpp05Record *record = (RwCpp05Record *)linkCursor[0];
                 if (record->id != 0xFF) {
                     u32 start = record->index;
@@ -512,6 +510,7 @@ void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                             }
                         } while (0);
                     }
+                    break;
                 } else {
                     record = (RwCpp05Record *)(node->records + record->index * 0x10);
                     u32 kind = record->kind & 0xC;
@@ -546,7 +545,7 @@ void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                             if (f7 > f3) {
                                 ((float *)linkCursor)[-2] += inverse * (f7 - f3);
                             }
-                            descend = true;
+
                         }
                     } else {
                         if (f4 < f1) {
@@ -566,10 +565,10 @@ void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                             if (f4 < f3) {
                                 ((float *)linkCursor)[-2] += inverse * (f4 - f3);
                             }
-                            descend = true;
+
                         }
                     }
-                    descend = true;
+
                 }
             }
         }
@@ -645,14 +644,13 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
 
         while (linkCursor > linkBase) {
             linkCursor -= 2;
-            bool descend = true;
-            while (descend) {
-                descend = false;
+            for (;;) {
                 RwCpp05Record *record = (RwCpp05Record *)linkCursor[0];
                 u32 extra = linkCursor[1];
                 if (record->id != 0xFF) {
                     RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, record->index,
                                         record->id, extra, callback, user);
+                    break;
                 } else if (extra == 0) {
                     RwCpp05Record *first = (RwCpp05Record *)(node->records + record->index * 0x10);
                     while (first->id == 0xFF) {
@@ -665,6 +663,7 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                     u32 span = (u16)(second->index + second->id - first->index);
                     RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, first->index,
                                         span, 0, callback, user);
+                    break;
                 } else {
                     record = (RwCpp05Record *)(node->records + record->index * 0x10);
                     u32 kind = record->kind & 0xC;
@@ -684,7 +683,7 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                             }
                         }
                     }
-                    descend = true;
+
                 }
             }
         }
