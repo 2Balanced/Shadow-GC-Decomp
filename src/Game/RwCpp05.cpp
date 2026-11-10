@@ -295,41 +295,34 @@ extern float lbl_805FAF90;
 extern float lbl_805FAF94;
 extern float lbl_805FAF98;
 
-static inline int RwCpp05EmitTriangles(u32 *input, u32 *entry, RwCpp05Node *node, u32 baseA,
-                                       u32 baseB, u32 start, u32 span, u32 extra,
-                                       RwCpp05EmitCallback callback, void *user) {
-    u32 end = start + span;
-    for (u32 i = start; i < end; i++) {
-        u32 value = node->tail != NULL ? node->tail[i] : i;
-        value <<= 3;
-        u16 *indices = (u16 *)(baseA + value);
-        u32 *a = (u32 *)(baseB + indices[0] * 0xC);
-        u32 *b = (u32 *)(baseB + indices[1] * 0xC);
-        u32 *c = (u32 *)(baseB + indices[2] * 0xC);
-        if (extra != 0 && fn_8047BDD0(input, a, b, c) == 0) {
-            continue;
-        }
-
-        float abx = *(float *)b - *(float *)a;
-        float acx = *(float *)c - *(float *)a;
-        float aby = *(float *)(b + 1) - *(float *)(a + 1);
-        float acy = *(float *)(c + 1) - *(float *)(a + 1);
-        float abz = *(float *)(b + 2) - *(float *)(a + 2);
-        float acz = *(float *)(c + 2) - *(float *)(a + 2);
-        float x = aby * acz - abz * acy;
-        float y = abz * acx - abx * acz;
-        float z = abx * acy - aby * acx;
-        float scale = fn_80482394(x * x + y * y + z * z);
-        float normal[3];
-        normal[0] = x * scale;
-        normal[1] = y * scale;
-        normal[2] = z * scale;
-        if (callback(input, entry, normal, user, lbl_805FAF8C) == 0) {
-            return 1;
-        }
-    }
-    return 0;
-}
+#define RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, start, span, extra, callback, user)                 \
+    do {                                                                                                         \
+        u32 rwEnd = (start) + (span);                                                                             \
+        for (u32 rwI = (start); rwI < rwEnd; rwI++) {                                                            \
+            u32 rwValue = (node)->tail != NULL ? (node)->tail[rwI] : rwI;                                         \
+            rwValue <<= 3;                                                                                        \
+            u16 *rwIndices = (u16 *)((baseA) + rwValue);                                                          \
+            u32 *rwA = (u32 *)((baseB) + rwIndices[0] * 0xC);                                                     \
+            u32 *rwB = (u32 *)((baseB) + rwIndices[1] * 0xC);                                                     \
+            u32 *rwC = (u32 *)((baseB) + rwIndices[2] * 0xC);                                                     \
+            if ((extra) != 0 && fn_8047BDD0((input), rwA, rwB, rwC) == 0) continue;                               \
+            float rwAbx = *(float *)rwB - *(float *)rwA;                                                          \
+            float rwAcx = *(float *)rwC - *(float *)rwA;                                                          \
+            float rwAby = *(float *)(rwB + 1) - *(float *)(rwA + 1);                                              \
+            float rwAcy = *(float *)(rwC + 1) - *(float *)(rwA + 1);                                              \
+            float rwAbz = *(float *)(rwB + 2) - *(float *)(rwA + 2);                                              \
+            float rwAcz = *(float *)(rwC + 2) - *(float *)(rwA + 2);                                              \
+            float rwX = rwAby * rwAcz - rwAbz * rwAcy;                                                            \
+            float rwY = rwAbz * rwAcx - rwAbx * rwAcz;                                                            \
+            float rwZ = rwAbx * rwAcy - rwAby * rwAcx;                                                            \
+            float rwScale = fn_80482394(rwX * rwX + rwY * rwY + rwZ * rwZ);                                      \
+            float rwNormal[3];                                                                                    \
+            rwNormal[0] = rwX * rwScale;                                                                          \
+            rwNormal[1] = rwY * rwScale;                                                                          \
+            rwNormal[2] = rwZ * rwScale;                                                                          \
+            if ((callback)((input), (entry), rwNormal, (user), lbl_805FAF8C) == 0) return;                       \
+        }                                                                                                         \
+    } while (0)
 
 void fn_80441188(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *user) {
     float work[208];
@@ -622,7 +615,7 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
             boundsA[i] = input[i];
             boundsB[i] = input[i];
         }
-        u32 linkWords[64];
+        u32 linkWords[124];
         RwCpp05Record *initial = (RwCpp05Record *)linkWords;
         initial->id = 0xFF;
         initial->index = 0;
@@ -657,10 +650,8 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                 RwCpp05Record *record = (RwCpp05Record *)linkCursor[0];
                 u32 extra = linkCursor[1];
                 if (record->id != 0xFF) {
-                    if (RwCpp05EmitTriangles(input, entry, node, baseA, baseB, record->index,
-                                             record->id, extra, callback, user) != 0) {
-                        return;
-                    }
+                    RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, record->index,
+                                        record->id, extra, callback, user);
                 } else if (extra == 0) {
                     RwCpp05Record *first = (RwCpp05Record *)(node->records + record->index * 0x10);
                     while (first->id == 0xFF) {
@@ -671,10 +662,8 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
                         second = (RwCpp05Record *)(node->records + second->index * 0x10 + 8);
                     }
                     u32 span = (u16)(second->index + second->id - first->index);
-                    if (RwCpp05EmitTriangles(input, entry, node, baseA, baseB, first->index,
-                                             span, 0, callback, user) != 0) {
-                        return;
-                    }
+                    RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, first->index,
+                                        span, 0, callback, user);
                 } else {
                     record = (RwCpp05Record *)(node->records + record->index * 0x10);
                     u32 kind = record->kind & 0xC;
