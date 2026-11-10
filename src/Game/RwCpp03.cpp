@@ -578,7 +578,7 @@ void fn_8043E624(void) {
     u8 local[8];
     if (lbl_805F1404 != NULL) {
         OSDisableInterrupts();
-        *lbl_805F1404 = 0;
+        *(u32 *)lbl_805F1404 = 0;
         ((u32 *)lbl_805F1404)[2]++;
         OSRestoreInterrupts(0);
     }
@@ -588,7 +588,7 @@ void fn_8043E624(void) {
     fn_80389230((u32)(lbl_805F1404 + 0x4075));
     if (lbl_805F1404 != NULL) {
         lbl_805F1404 = NULL;
-        if (lbl_805F1408 == 0) {
+        if ((s32)lbl_805F1408 == 0) {
             OSFreeToHeap(__OSCurrHeap, lbl_805F1400);
         } else {
             lbl_805F1408 = 0;
