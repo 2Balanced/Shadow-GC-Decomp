@@ -222,7 +222,9 @@ int fn_8043F60C(u32 *object) {
         result = 0x07000102;
         do {
             if (object == (u32 *)(lbl_805F1404 + offset + 0x5478)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+                if (*object != 0) {
+                    result = 0;
+                }
                 break;
             }
             offset += 0x1530;
@@ -340,11 +342,10 @@ int fn_8043F980(s8 *object, u32 a, u32 b, u32 c, u32 d) {
     return 0;
 }
 
-int fn_8043FA20(s8 **out) {
+int fn_8043FA20(u8 **out) {
     if (lbl_805F1404 == NULL) return 0x0D000001;
-    s8 *object = (s8 *)(lbl_805F1404 + 0x13F6C);
-    int count = 0x40;
-    do {
+    u8 *object = (u8 *)(lbl_805F1404 + 0x13F6C);
+    for (u32 i = 0; i < 0x40; i++) {
         if (*object == 0) {
             memset(object, 0, 0x14);
             *object = 1;
@@ -352,7 +353,7 @@ int fn_8043FA20(s8 **out) {
             return 0;
         }
         object += 0x14;
-    } while (--count != 0);
+    }
     return 0x07000101;
 }
 
