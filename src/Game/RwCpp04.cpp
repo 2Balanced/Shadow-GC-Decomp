@@ -710,30 +710,31 @@ void *fn_80440670(void *context) {
         local[1] = 0x11D;
         local[2] = fn_8047DC28(0x80000013, size);
         fn_8047DB84(local + 1);
-        return NULL;
-    }
-    header[0] = flags;
-    *(u16 *)(header + 7) = (u16)extraCount;
-    *(u16 *)((u8 *)header + 0x1E) = (u16)nameCount;
-    header[1] = local[8];
-    header[2] = local[7];
-    header[3] = local[6];
-    header[4] = local[5];
-    header[5] = local[4];
-    header[6] = local[18];
-    u8 *next = (u8 *)(header + 10);
-    if (nameCount == 0) {
-        header[8] = 0;
     } else {
-        next = (u8 *)(((u32)header + 0x37) & ~0xF);
-        header[8] = (u32)next;
-        next += nameCount * 0x10;
+        header[0] = flags;
+        *(u16 *)(header + 7) = (u16)extraCount;
+        *(u16 *)((u8 *)header + 0x1E) = (u16)nameCount;
+        header[1] = local[8];
+        header[2] = local[7];
+        header[3] = local[6];
+        header[4] = local[5];
+        header[5] = local[4];
+        header[6] = local[18];
+        u8 *next = (u8 *)(header + 10);
+        if (nameCount == 0) {
+            header[8] = 0;
+        } else {
+            next = (u8 *)(((u32)header + 0x37) & ~0xF);
+            header[8] = (u32)next;
+            next += nameCount * 0x10;
+        }
+        header[9] = ((flags & 1) == 0) ? 0 : ((u32)next + 1) & ~1;
     }
-    header[9] = ((flags & 1) == 0) ? 0 : ((u32)next + 1) & ~1;
+    if (header == NULL) return NULL;
     if (*(u16 *)((u8 *)header + 0x1E) != 0) {
         u32 bytes = (u32)*(u16 *)((u8 *)header + 0x1E) << 4;
         if (fn_80480D4C(context, (void *)header[8], bytes) != bytes) {
-            fn_80440410(header);
+            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(header);
             return NULL;
         }
         u8 *entry = (u8 *)header[8];
@@ -747,7 +748,7 @@ void *fn_80440670(void *context) {
     }
     if ((header[0] & 1) != 0 &&
         fn_8047D684(context, (void *)header[9], (u32)*(u16 *)(header + 7) << 1) == 0) {
-        fn_80440410(header);
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(header);
         return NULL;
     }
     return header;
