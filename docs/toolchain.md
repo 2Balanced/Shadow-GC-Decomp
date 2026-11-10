@@ -19,7 +19,7 @@ Background for contributors. The README covers building.
 Approximate `.text` layout: game code 0x80008D40–0x8036FC94 · Dolphin SDK
 0x8036FC94–~0x8039A000 · MetroTRK · Runtime/MSL ~0x803A0000–0x803B3000 ·
 more SDK · CRI ADX/Sofdec ~0x803B6700–0x80408000 · Sonic Team engine/effect
-library · RenderWare ~0x80440000–0x804A9C00.
+library · RenderWare ~0x8043AA7C–0x804A9C00.
 
 Linker note: the GC 2.7 linker deadstrips the compiled runtime's
 `__init_cpp_exceptions_reference` / `__fini_cpp_exceptions_reference`, so they

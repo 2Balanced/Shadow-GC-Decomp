@@ -31,7 +31,7 @@ REGIONS = [
     (0x8039A000, "Runtime, MSL & MetroTRK"),
     (0x803B6700, "CRI ADX/Sofdec"),
     (0x80408000, "Sonic Team engine & effects"),
-    (0x80440000, "RenderWare"),
+    (0x8043AA7C, "RenderWare"),
     (0x804A9C00, None),
 ]
 
