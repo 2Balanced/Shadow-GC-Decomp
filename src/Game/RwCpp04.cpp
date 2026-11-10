@@ -184,7 +184,11 @@ int fn_8043F41C(u32 *object, s8 *out, u32 type, ...) {
         result = 0x07000102;
         do {
             if (object == (u32 *)(lbl_805F1404 + offset + 0x5478)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+                if (*(s32 *)object != 0) {
+                    result = 0;
+                } else {
+                    result = 0x07000102;
+                }
                 break;
             }
             offset += 0x1530;
@@ -195,12 +199,18 @@ int fn_8043F41C(u32 *object, s8 *out, u32 type, ...) {
     va_start(args, type);
     out[0] = (s8)type;
     out[1] = (s8)*(u32 *)__va_arg(args, 1);
-    u32 command = type & 0xF0;
-    if (command == 0x80 || command == 0x90 || command == 0xA0 || command == 0xB0 ||
-        command == 0xD0 || command == 0xE0) {
+    switch (type & 0xF0) {
+    case 0x80:
+    case 0x90:
+    case 0xA0:
+    case 0xB0:
+    case 0xD0:
+    case 0xE0:
         out[2] = (s8)*(u32 *)__va_arg(args, 1);
-    } else {
+        break;
+    default:
         out[2] = 0;
+        break;
     }
     out[3] = 0;
     va_end(args);
