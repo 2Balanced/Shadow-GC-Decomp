@@ -444,8 +444,8 @@ found:
     *(float *)(entry + 4) = f30;
     *(float *)(entry + 8) = f2c;
     *(float *)(entry + 0xE) = f2c;
-    for (i = 0; i < 0x10; i++) {
-        u8 *slot = (u8 *)entry + i * 0x48;
+    for (int j = 0; j < 0x10; j++) {
+        u8 *slot = (u8 *)entry + j * 0x48;
         *(u32 *)(slot + 0xA8) = 0;
         OSDisableInterrupts();
         *(u32 *)(slot + 0xA4) = 0;
