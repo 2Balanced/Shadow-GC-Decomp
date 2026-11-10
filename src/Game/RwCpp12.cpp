@@ -68,8 +68,8 @@ void *fn_8044C174(u32 *object) {
     return object;
 }
 
-void *fn_8044BDF0(u32 count, u32 records, u32 deduplicate, u32 *groups, u32 *values, u32 *recordsOut,
-                  u32 first, u32 second) {
+void *fn_8044BDF0(u32 count, u32 records, u32 deduplicate, u32 first, u32 *groups, u32 *values,
+                  u32 *recordsOut) {
     u32 *object = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x4C, 0x30116);
     if (object == NULL) return NULL;
     memset(object, 0, 0x4C);
@@ -202,6 +202,150 @@ u32 fn_8044C56C(u32 *object) {
         }
     }
     return result;
+}
+
+u32 fn_8047D458(void *, void *, u32);
+u32 fn_80480ED0(void *, void *, u32);
+u32 fn_8047D350(void *, void *, u32);
+u32 fn_8047D784(void *, void *, u32);
+u32 fn_8044BB18(void *, void *);
+u32 fn_8044E89C(void *, void *);
+u32 fn_8044EAD0(void *, void *);
+void *fn_8044CCC0(void *, void *);
+
+void *fn_8044C5FC(void *stream, u32 unused, u32 *object) {
+    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
+    if (record == NULL) return stream;
+    if ((object[2] & 0x01000000) != 0) {
+        return fn_8044E89C(stream, object) != 0 ? stream : NULL;
+    }
+
+    u32 header = ((record[1] & 0xFF) << 8) | ((record[4] & 0xFF) << 16) | (record[0] & 0xFF);
+    u32 count = object[5];
+    if (fn_8047D458(stream, &header, 4) == 0) return NULL;
+    if (fn_80480ED0(stream, (void *)record[2], record[1]) == 0) return NULL;
+    if (fn_8047D458(stream, (void *)record[5], count * 4) == 0) return NULL;
+    if (fn_8047D350(stream, (void *)record[6], count * 0x10) == 0) return NULL;
+    if (fn_8047D350(stream, (void *)record[3], record[0] * 0x40) == 0) return NULL;
+    if (fn_8044BB18(stream, record) == 0) return NULL;
+    return stream;
+}
+
+void *fn_8044C754(void *stream, u32 unused, u32 *object) {
+    if ((object[2] & 0x01000000) != 0) {
+        return fn_8044EAD0(stream, object) != 0 ? stream : NULL;
+    }
+
+    u32 header;
+    if (fn_8047D868(stream, &header, 4) == 0) return NULL;
+    u32 count = object[5];
+    u32 records = header & 0xFF;
+    u32 unique = (header >> 16) & 0xFF;
+    u32 first = (header >> 8) & 0xFF;
+    u32 *record = (u32 *)fn_8044BDF0(count, records, unique, first, NULL, NULL, NULL);
+    if (record == NULL) return NULL;
+    if (fn_80480D4C(stream, (void *)record[2], unique) != unique) return NULL;
+    if (fn_8047D868(stream, (void *)record[5], count * 4) == 0) return NULL;
+    if (fn_8047D784(stream, (void *)record[6], count * 0x10) == 0) return NULL;
+    record[4] = first;
+    if (fn_8047D784(stream, (void *)record[3], record[0] * 0x40) == 0) return NULL;
+    if (fn_8044BBFC(stream, record) == NULL) return NULL;
+    fn_8044CCC0(object, record);
+    return stream;
+}
+
+u32 fn_804810FC(void *, u32);
+u32 fn_8044E6BC(void *);
+
+void *fn_8044C8C0(void *stream, u32 unused, u32 *object, u32 unused2, u32 size) {
+    u32 *owner = (u32 *)object[6];
+    if (fn_8044CCAC((u8 *)owner) != 0) {
+        return fn_804810FC(stream, size) != 0 ? stream : NULL;
+    }
+
+    u32 header;
+    if (fn_8047D868(stream, &header, 4) == 0) return NULL;
+    u32 count = owner[5];
+    u32 *record = (u32 *)fn_8044BDF0(count, header, header, 4, NULL, NULL, NULL);
+    if (record == NULL) return NULL;
+    if (fn_804810FC(stream, 4) == 0) return NULL;
+    if (fn_8047D868(stream, (void *)record[5], count * 4) == 0) return NULL;
+    if (fn_8047D784(stream, (void *)record[6], count * 0x10) == 0) return NULL;
+
+    u32 offset = 0;
+    for (u32 i = 0; i < record[0]; i++) {
+        if (fn_804810FC(stream, 0xC) == 0) return NULL;
+        if (fn_8047D784(stream, (void *)(record[3] + offset), 0x40) == 0) return NULL;
+        offset += 0x40;
+    }
+
+    record[4] = 1;
+    for (u32 i = 0; i < count && record[4] < 4; i++) {
+        u32 *group = (u32 *)record[6] + i * 4;
+        while (record[4] < 4 && group[record[4]] != 0) record[4]++;
+    }
+
+    u32 *groups = (u32 *)record[6];
+    u32 *values = (u32 *)record[5];
+    u8 *unique = (u8 *)record[2];
+    record[1] = 0;
+    for (u32 i = 0; i < count; i++) {
+        for (u32 channel = 0; channel < record[4]; channel++) {
+            if (groups[i * 4 + channel] == 0) continue;
+            u8 value = (u8)(values[i] >> (channel * 8));
+            bool present = false;
+            for (u32 j = 0; j < record[1]; j++) {
+                if (unique[j] == value) {
+                    present = true;
+                    break;
+                }
+            }
+            if (!present) unique[record[1]++] = value;
+        }
+    }
+    fn_8044CCC0(owner, record);
+    return stream;
+}
+
+void *fn_8044CCC0(void *object, void *record) {
+    u32 old = *(u32 *)((u8 *)object + lbl_8056D708[2]);
+    if (old != (u32)record) {
+        if (old != 0) fn_8044E758();
+        *(u32 *)((u8 *)object + lbl_8056D708[2]) = (u32)record;
+        if (record != NULL && fn_8044E6BC(object) == 0) return NULL;
+    }
+    return object;
+}
+
+typedef void (*RwCpp12Callback)(void);
+void fn_8044CB6C(void);
+void fn_8044CB70(void);
+void fn_8044C3D8(u8 *);
+void fn_8044C3FC(u8 *, u8 *);
+void fn_8044C30C(u8 *);
+void fn_8044C38C(void);
+s32 fn_80485D78(u32, u32, RwCpp12Callback, RwCpp12Callback);
+s32 fn_80458B6C(u32, u32, RwCpp12Callback, RwCpp12Callback, RwCpp12Callback);
+s32 fn_80458BEC(u32, RwCpp12Callback, RwCpp12Callback, RwCpp12Callback);
+s32 fn_80458C28(u32, RwCpp12Callback);
+s32 fn_80458C5C(u32, RwCpp12Callback);
+s32 fn_8045994C(u32, u32, RwCpp12Callback, RwCpp12Callback, RwCpp12Callback);
+s32 fn_8045998C(u32, RwCpp12Callback, RwCpp12Callback, RwCpp12Callback);
+
+u32 fn_8044CB90(void) {
+    lbl_8056D708[0] = fn_80485D78(0, 0x116, (RwCpp12Callback)fn_8044C174,
+                                  (RwCpp12Callback)fn_8044C280);
+    lbl_8056D708[1] = fn_80458B6C(0xC, 0x116, (RwCpp12Callback)fn_8044C390,
+                                  (RwCpp12Callback)fn_8044C3D8, (RwCpp12Callback)fn_8044C3FC);
+    fn_80458BEC(0x116, (RwCpp12Callback)fn_8044C8C0, (RwCpp12Callback)fn_8044CB6C,
+                (RwCpp12Callback)fn_8044CB70);
+    fn_80458C28(0x116, (RwCpp12Callback)fn_8044C414);
+    fn_80458C5C(0x116, (RwCpp12Callback)fn_8044C4D4);
+    fn_8045994C(4, 0x116, (RwCpp12Callback)fn_8044C30C, (RwCpp12Callback)fn_8044C324,
+                (RwCpp12Callback)fn_8044C38C);
+    lbl_8056D708[2] = fn_8045998C(0x116, (RwCpp12Callback)fn_8044C754,
+                                  (RwCpp12Callback)fn_8044C5FC, (RwCpp12Callback)fn_8044C56C);
+    return 1;
 }
 
 void fn_8044C38C(void) {
