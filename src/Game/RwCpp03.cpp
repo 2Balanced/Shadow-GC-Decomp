@@ -840,12 +840,12 @@ void fn_8043D6FC(u32 *object) {
     *(int *)(lbl_805F1404 + 0x3C) -= 1;
     u32 result = fn_80383C48(0x1B, fn_8043D6FC, owner);
     owner[0xD] = result;
-    if (result == 0) {
-        OSReport("AX SDLIB: AXAcquireVoice() failed in drop callback\n");
-    } else {
+    if (owner[0xD] != 0) {
         *owner &= 0xBFFFFFFF;
         fn_80386348(owner[0xD], 0);
         *(int *)(lbl_805F1404 + 0x3C) += 1;
+    } else {
+        OSReport("AX SDLIB: AXAcquireVoice() failed in drop callback\n");
     }
 }
 
