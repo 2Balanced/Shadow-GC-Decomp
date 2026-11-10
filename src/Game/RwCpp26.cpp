@@ -5,6 +5,7 @@ extern u32 lbl_805EDDD8;
 extern u8 lbl_805E1688[];
 extern u8 lbl_8056D8CC[];
 extern u8 lbl_8056D934[];
+extern u32 lbl_805F1528;
 
 extern "C" {
 void fn_804631D4(void) {
@@ -72,5 +73,9 @@ u8 *fn_80463D1C(void) {
 
 u8 *fn_804641C0(void) {
     return lbl_8056D934;
+}
+
+void fn_80462EC0(void) {
+    (&lbl_805F1528)[1]--;
 }
 }

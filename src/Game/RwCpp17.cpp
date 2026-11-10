@@ -9,4 +9,8 @@ u32 fn_80454494(void) {
 u32 fn_804548E4(u32 *object) {
     return object[5];
 }
+
+void fn_80454618(u32 *object) {
+    ((u32 *)object[5])[0x10]++;
+}
 }

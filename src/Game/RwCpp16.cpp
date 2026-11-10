@@ -19,4 +19,10 @@ u32 fn_80452C80(u32 *object) {
 u32 fn_80452C88(u32 *object, u32 index) {
     return ((u32 *)object[3])[index];
 }
+
+void fn_80452730(u8 *base, u32 offset) {
+    u8 *target = base + offset;
+    *(u32 *)target = 0;
+    *(u32 *)(target + 4) = 0;
+}
 }
