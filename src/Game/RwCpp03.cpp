@@ -417,9 +417,9 @@ void fn_8043E004(u32 *object, u32 value) {
 
 void fn_8043E088(u32 *object) {
     u32 interrupt = OSDisableInterrupts();
-    if (object[0xA] != 0) {
-        fn_8043B840((void **)(object + 0xA));
-        object[0xA] = 0;
+    if (object[0x28] != 0) {
+        fn_8043B840((void **)(object + 0x28));
+        object[0x28] = 0;
     }
     *object &= 0x7FFFFFFF;
     OSRestoreInterrupts(interrupt);
