@@ -224,7 +224,7 @@ int fn_8043F60C(u32 *object) {
         result = 0x07000102;
         do {
             if (object == (u32 *)(lbl_805F1404 + offset + 0x5478)) {
-                if (*object != 0) {
+                if (*(s32 *)object != 0) {
                     result = 0;
                 }
                 break;
@@ -232,11 +232,9 @@ int fn_8043F60C(u32 *object) {
             offset += 0x1530;
         } while (--count != 0);
     }
-    if (result == 0) {
-        fn_8043E088(object);
-        result = 0;
-    }
-    return result;
+    if (result != 0) return result;
+    fn_8043E088(object);
+    return 0;
 }
 
 int fn_8043F6AC(u32 **out) {
