@@ -21,10 +21,6 @@ Approximate `.text` layout: game code 0x80008D40–0x8036FC94 · Dolphin SDK
 more SDK · CRI ADX/Sofdec ~0x803B6700–0x80408000 · Sonic Team engine/effect
 library · RenderWare ~0x8043AA7C–0x804A9C00.
 
-RenderWare's `.text` is fully matched and linked. `Game/RwText01.s` and `Game/RwText02.s`
-preserve the retail code as Gecko assembly. In `RwText02.s`, 210 branches with `+`/`-`
-prediction hints use exact `.long` words because GNU `as -mgekko` otherwise drops the hint bits.
-
 Linker note: the GC 2.7 linker deadstrips the compiled runtime's
 `__init_cpp_exceptions_reference` / `__fini_cpp_exceptions_reference`, so they
 are listed under `force_active` in `config/GUPE8P/config.yml`.

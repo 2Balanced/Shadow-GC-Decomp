@@ -7010,17 +7010,8 @@ Game/EffectLocusRW3.cpp:
 	.rodata     start:0x8051BA60 end:0x8051BB28
 	.data       start:0x8056B028 end:0x8056B090
 
-Game/RwObjectPool.cpp:
-	.text       start:0x8043AA7C end:0x8043ACE8
-
-Game/RwText01.s:
-	.text       start:0x8043ACE8 end:0x8043B810
-
 Game/RwObjectUtil.cpp:
 	.text       start:0x8043B810 end:0x8043B954
-
-Game/RwText02.s:
-	.text       start:0x8043B954 end:0x804A9BF8
 
 Runtime.PPCEABI.H/__mem.c:
 	.init       start:0x8000540C end:0x80005544
