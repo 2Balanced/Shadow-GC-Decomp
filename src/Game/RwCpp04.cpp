@@ -316,7 +316,7 @@ int fn_8043F8C4(s8 *object) {
     return 0;
 }
 
-int fn_8043F980(s8 *object, u32 a, u32 b, u32 c, u32 d) {
+int fn_8043F980(u8 *object, u32 a, u32 b, u32 c, u32 d) {
     if (lbl_805F1404 == NULL) return 0x0D000001;
     int result;
     if (object == NULL) {
@@ -326,8 +326,12 @@ int fn_8043F980(s8 *object, u32 a, u32 b, u32 c, u32 d) {
         int count = 0x40;
         result = 0x07000102;
         do {
-            if (object == (s8 *)(lbl_805F1404 + offset + 0x13F6C)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+            if (object == (u8 *)(lbl_805F1404 + offset + 0x13F6C)) {
+                if (*object != 0) {
+                    result = 0;
+                } else {
+                    result = 0x07000102;
+                }
                 break;
             }
             offset += 0x14;
@@ -335,7 +339,7 @@ int fn_8043F980(s8 *object, u32 a, u32 b, u32 c, u32 d) {
     }
     if (result != 0) return result;
     *(u32 *)(object + 4) = a;
-    object[1] = -1;
+    *(s8 *)(object + 1) = -1;
     *(u32 *)(object + 8) = b;
     *(u32 *)(object + 0xC) = c;
     *(u32 *)(object + 0x10) = d;
