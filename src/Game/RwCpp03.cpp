@@ -524,39 +524,37 @@ void fn_8043E394(void) {
 }
 
 void fn_8043E494(void) {
-    if (lbl_805F1404 == NULL || *lbl_805F1404 == 0) {
+    if (lbl_805F1404 == NULL || *(s32 *)lbl_805F1404 == 0) {
         return;
     }
     OSDisableInterrupts();
     ((u32 *)lbl_805F1404)[2]++;
     OSRestoreInterrupts(0);
-    if (((u32 *)lbl_805F1404)[2] == 1) {
-        u32 *global = (u32 *)lbl_805F1404;
-        global[9] = global[7];
-        global[8] = global[6];
-        global[7] = (u32)global;
-        global[6] = OSGetTime();
-        global[4] = fn_8043BB18();
-        global[3] = fn_8043D49C();
-        for (int i = 0; i < 8; i++) {
-            u32 *entry = (u32 *)((u8 *)global + i * 0x1530 + 0x5478);
-            if ((*entry & 0x80000000) != 0) {
-                fn_8043FF5C(entry);
-                fn_8043DD14(entry);
-            }
-            fn_8043D99C((float *)entry);
-            fn_8043D870((float *)entry);
-            fn_8043DAB0(entry);
-            fn_8043DA0C(entry);
-            fn_8043B5FC((u8 *)entry + 0xA0);
-        }
-        global[4] = fn_8043BB18();
-        global[3] = fn_8043D49C();
+    if (((s32 *)lbl_805F1404)[2] != 1) {
+        lbl_805F1404[0x13A3B]++;
         OSDisableInterrupts();
-        global[2]--;
+        ((u32 *)lbl_805F1404)[2]--;
         OSRestoreInterrupts(0);
     } else {
-        ((u32 *)lbl_805F1404)[0x13A3B]++;
+        ((u32 *)lbl_805F1404)[9] = ((u32 *)lbl_805F1404)[7];
+        ((u32 *)lbl_805F1404)[8] = ((u32 *)lbl_805F1404)[6];
+        ((u32 *)lbl_805F1404)[7] = (u32)lbl_805F1404;
+        ((u32 *)lbl_805F1404)[6] = OSGetTime();
+        ((u32 *)lbl_805F1404)[4] = fn_8043BB18();
+        ((u32 *)lbl_805F1404)[3] = fn_8043D49C();
+        for (int i = 0; i < 8; i++) {
+            if ((*(u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478) & 0x80000000) != 0) {
+                fn_8043FF5C((u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+                fn_8043DD14((u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+            }
+            fn_8043D99C((float *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+            fn_8043D870((float *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+            fn_8043DAB0((u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+            fn_8043DA0C((u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478));
+            fn_8043B5FC((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478 + 0xA0);
+        }
+        ((u32 *)lbl_805F1404)[4] = fn_8043BB18();
+        ((u32 *)lbl_805F1404)[3] = fn_8043D49C();
         OSDisableInterrupts();
         ((u32 *)lbl_805F1404)[2]--;
         OSRestoreInterrupts(0);
