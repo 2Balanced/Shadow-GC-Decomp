@@ -19,4 +19,14 @@ void fn_804990D4(u32);
 void fn_804994B8(void) {
     fn_804990D4(lbl_805F1668);
 }
+
+extern u32 lbl_8056EC1C[];
+
+void fn_80499BC8(void) {
+    u32 *target = lbl_8056EC1C + 8;
+    u32 count = 8;
+    while (count-- > 1) {
+        *--target = 0;
+    }
+}
 }

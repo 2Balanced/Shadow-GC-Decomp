@@ -57,4 +57,10 @@ void fn_8047B384(u8 *object) {
 void fn_8047A650(u32 *object) {
     ((void (*)(void))*(u32 *)(object[0x0E] + 0x44))();
 }
+
+extern u8 *lbl_805F15B4;
+
+void fn_8047A7F4(u32 *object) {
+    ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(object[0x16]);
+}
 }

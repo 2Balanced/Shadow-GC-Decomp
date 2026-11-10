@@ -59,4 +59,15 @@ void fn_8047E298(void);
 void fn_8047ECB4(void) {
     fn_8047E298();
 }
+
+extern u32 lbl_805F1560;
+extern u8 *lbl_805F15B4;
+
+u32 fn_8047E960(u32 *object) {
+    u32 *target = (u32 *)(lbl_805F15B4 + lbl_805F1560 + 0x0C);
+    target[0] = object[0];
+    target[1] = object[1];
+    target[2] = object[2];
+    return 1;
+}
 }

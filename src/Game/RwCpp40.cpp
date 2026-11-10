@@ -30,4 +30,17 @@ u32 fn_8047909C(u32 *object) {
     fn_8047DFC8(object[4]);
     return 1;
 }
+
+extern u32 lbl_805E2A40[];
+extern u32 lbl_805F1548;
+
+u32 fn_80479A50(u32 value) {
+    lbl_805E2A40[1] = value;
+    lbl_805E2A40[2] = 0;
+    lbl_805E2A40[5] = 0;
+    lbl_805F1548 = 0;
+    lbl_805E2A40[0] = 0;
+    lbl_805E2A40[3] = 1;
+    return 1;
+}
 }

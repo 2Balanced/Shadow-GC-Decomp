@@ -14,4 +14,11 @@ u32 fn_8049B140(void) {
 u32 fn_8049B66C(void) {
     return lbl_805F169C;
 }
+
+void fn_8049B1F8(void);
+
+void *fn_8049B110(void *argument) {
+    fn_8049B1F8();
+    return argument;
+}
 }

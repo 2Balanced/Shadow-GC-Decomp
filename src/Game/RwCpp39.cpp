@@ -13,4 +13,16 @@ extern u8 *lbl_805F15B4;
 void fn_80477A8C(void) {
     ((void (*)(void))*(u32 *)(lbl_805F15B4 + 0x10C))();
 }
+
+u32 fn_8047759C(void) {
+    ((void (*)(void))*(u32 *)(lbl_805F15B4 + 0x10C))();
+    return 1;
+}
+
+u8 *fn_80477978(u32 *object) {
+    u32 *table = (u32 *)object[0];
+    void (*callback)(void) = (void (*)(void))table[0x0A];
+    callback();
+    return (u8 *)object + 0x14;
+}
 }

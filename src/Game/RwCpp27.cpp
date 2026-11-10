@@ -34,4 +34,11 @@ void fn_80465260(u32 first, u8 *object) {
     u16 *header = *(u16 **)(object + 0x78);
     fn_80464A94(first, object, object + 0x34, header[2]);
 }
+
+void fn_80396B54(u32, u32 *);
+
+void fn_8046551C(u32 unused, u32 *other) {
+    u32 value = other[0];
+    fn_80396B54(4, &value);
+}
 }

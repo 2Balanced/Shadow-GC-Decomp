@@ -24,4 +24,12 @@ void fn_8045E904(u32, u32, u32);
 void fn_8045EF3C(u32 first) {
     fn_8045E904(first, 0, 1);
 }
+
+extern u8 *lbl_805F15B4;
+
+void fn_8045F2C8(void) {
+    u32 *table = (u32 *)lbl_805F15B4;
+    table = (u32 *)table[1];
+    ((void (*)(void))table[0x1A])();
+}
 }
