@@ -16,6 +16,9 @@ treat every rule here as part of their instructions.
   it, and say so in the commit message.
 - **The build is the judge.** A change is good when `ninja` exits 0 and ends with
   `build/GUPE8P/main.dol: OK`. objdiff at 100% is not enough on its own.
+- **RenderWare source is C++.** RenderWare units must be reconstructed as matching C++ source.
+  `.s` files, inline-asm functions, and one-to-one assembly transcriptions do not count as
+  decompilation and must not be committed as RenderWare progress.
 
 ## References
 

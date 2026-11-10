@@ -7010,8 +7010,218 @@ Game/EffectLocusRW3.cpp:
 	.rodata     start:0x8051BA60 end:0x8051BB28
 	.data       start:0x8056B028 end:0x8056B090
 
+Game/RwCpp01.cpp:
+	.text       start:0x8043AA7C end:0x8043B810
+
 Game/RwObjectUtil.cpp:
 	.text       start:0x8043B810 end:0x8043B954
+
+Game/RwCpp02.cpp:
+	.text       start:0x8043B954 end:0x8043D4D8
+
+Game/RwCpp03.cpp:
+	.text       start:0x8043D4D8 end:0x8043EFF0
+
+Game/RwCpp04.cpp:
+	.text       start:0x8043EFF0 end:0x80440920
+
+Game/RwCpp05.cpp:
+	.text       start:0x80440920 end:0x80442210
+
+Game/RwCpp06.cpp:
+	.text       start:0x80442210 end:0x80443A74
+
+Game/RwCpp07.cpp:
+	.text       start:0x80443A74 end:0x80444E7C
+
+Game/RwCpp08.cpp:
+	.text       start:0x80444E7C end:0x80446A04
+
+Game/RwCpp09.cpp:
+	.text       start:0x80446A04 end:0x804485BC
+
+Game/RwCpp10.cpp:
+	.text       start:0x804485BC end:0x8044A168
+
+Game/RwCpp11.cpp:
+	.text       start:0x8044A168 end:0x8044BBFC
+
+Game/RwCpp12.cpp:
+	.text       start:0x8044BBFC end:0x8044D6E8
+
+Game/RwCpp13.cpp:
+	.text       start:0x8044D6E8 end:0x8044EEAC
+
+Game/RwCpp14.cpp:
+	.text       start:0x8044EEAC end:0x80450938
+
+Game/RwCpp15.cpp:
+	.text       start:0x80450938 end:0x80452434
+
+Game/RwCpp16.cpp:
+	.text       start:0x80452434 end:0x80453FB0
+
+Game/RwCpp17.cpp:
+	.text       start:0x80453FB0 end:0x804556F4
+
+Game/RwCpp18.cpp:
+	.text       start:0x804556F4 end:0x80457090
+
+Game/RwCpp19.cpp:
+	.text       start:0x80457090 end:0x80458C28
+
+Game/RwCpp20.cpp:
+	.text       start:0x80458C28 end:0x8045A7C4
+
+Game/RwCpp21.cpp:
+	.text       start:0x8045A7C4 end:0x8045C340
+
+Game/RwCpp22.cpp:
+	.text       start:0x8045C340 end:0x8045D898
+
+Game/RwCpp23.cpp:
+	.text       start:0x8045D898 end:0x8045F458
+
+Game/RwCpp24.cpp:
+	.text       start:0x8045F458 end:0x80460E74
+
+Game/RwCpp25.cpp:
+	.text       start:0x80460E74 end:0x80462914
+
+Game/RwCpp26.cpp:
+	.text       start:0x80462914 end:0x804643E8
+
+Game/RwCpp27.cpp:
+	.text       start:0x804643E8 end:0x80465ED4
+
+Game/RwCpp28.cpp:
+	.text       start:0x80465ED4 end:0x80466B58
+
+Game/RwCpp29.cpp:
+	.text       start:0x80466B58 end:0x804683AC
+
+Game/RwCpp30.cpp:
+	.text       start:0x804683AC end:0x804699F0
+
+Game/RwCpp31.cpp:
+	.text       start:0x804699F0 end:0x8046B554
+
+Game/RwCpp32.cpp:
+	.text       start:0x8046B554 end:0x8046CB94
+
+Game/RwCpp33.cpp:
+	.text       start:0x8046CB94 end:0x8046E594
+
+Game/RwCpp34.cpp:
+	.text       start:0x8046E594 end:0x8046FF34
+
+Game/RwCpp35.cpp:
+	.text       start:0x8046FF34 end:0x80471A54
+
+Game/RwCpp36.cpp:
+	.text       start:0x80471A54 end:0x80473584
+
+Game/RwCpp37.cpp:
+	.text       start:0x80473584 end:0x80474FF8
+
+Game/RwCpp38.cpp:
+	.text       start:0x80474FF8 end:0x80476ABC
+
+Game/RwCpp39.cpp:
+	.text       start:0x80476ABC end:0x8047832C
+
+Game/RwCpp40.cpp:
+	.text       start:0x8047832C end:0x80479DCC
+
+Game/RwCpp41.cpp:
+	.text       start:0x80479DCC end:0x8047B720
+
+Game/RwCpp42.cpp:
+	.text       start:0x8047B720 end:0x8047D2C4
+
+Game/RwCpp43.cpp:
+	.text       start:0x8047D2C4 end:0x8047ECD4
+
+Game/RwCpp44.cpp:
+	.text       start:0x8047ECD4 end:0x80480878
+
+Game/RwCpp45.cpp:
+	.text       start:0x80480878 end:0x804823F0
+
+Game/RwCpp46.cpp:
+	.text       start:0x804823F0 end:0x80483F8C
+
+Game/RwCpp47.cpp:
+	.text       start:0x80483F8C end:0x80485A58
+
+Game/RwCpp48.cpp:
+	.text       start:0x80485A58 end:0x804875B0
+
+Game/RwCpp49.cpp:
+	.text       start:0x804875B0 end:0x8048915C
+
+Game/RwCpp50.cpp:
+	.text       start:0x8048915C end:0x8048A96C
+
+Game/RwCpp51.cpp:
+	.text       start:0x8048A96C end:0x8048C038
+
+Game/RwCpp52.cpp:
+	.text       start:0x8048C038 end:0x8048DBEC
+
+Game/RwCpp53.cpp:
+	.text       start:0x8048DBEC end:0x8048F5D0
+
+Game/RwCpp54.cpp:
+	.text       start:0x8048F5D0 end:0x80490E30
+
+Game/RwCpp55.cpp:
+	.text       start:0x80490E30 end:0x804929F0
+
+Game/RwCpp56.cpp:
+	.text       start:0x804929F0 end:0x80493E8C
+
+Game/RwCpp57.cpp:
+	.text       start:0x80493E8C end:0x804959C0
+
+Game/RwCpp58.cpp:
+	.text       start:0x804959C0 end:0x80497474
+
+Game/RwCpp59.cpp:
+	.text       start:0x80497474 end:0x80498E08
+
+Game/RwCpp60.cpp:
+	.text       start:0x80498E08 end:0x8049A95C
+
+Game/RwCpp61.cpp:
+	.text       start:0x8049A95C end:0x8049C1E0
+
+Game/RwCpp62.cpp:
+	.text       start:0x8049C1E0 end:0x8049D934
+
+Game/RwCpp63.cpp:
+	.text       start:0x8049D934 end:0x8049F3F8
+
+Game/RwCpp64.cpp:
+	.text       start:0x8049F3F8 end:0x804A0DEC
+
+Game/RwCpp65.cpp:
+	.text       start:0x804A0DEC end:0x804A29A8
+
+Game/RwCpp66.cpp:
+	.text       start:0x804A29A8 end:0x804A3DB0
+
+Game/RwCpp67.cpp:
+	.text       start:0x804A3DB0 end:0x804A560C
+
+Game/RwCpp68.cpp:
+	.text       start:0x804A560C end:0x804A6F8C
+
+Game/RwCpp69.cpp:
+	.text       start:0x804A6F8C end:0x804A8B08
+
+Game/RwCpp70.cpp:
+	.text       start:0x804A8B08 end:0x804A9BF8
 
 Runtime.PPCEABI.H/__mem.c:
 	.init       start:0x8000540C end:0x80005544
