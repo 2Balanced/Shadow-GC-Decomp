@@ -67,6 +67,73 @@ void *fn_80446B90(u32 *object) {
     return object;
 }
 
+void fn_80447418(u32 *);
+void fn_804472AC(u32, u32, u32, u32);
+u32 fn_8047D458(void *, void *, u32);
+
+void *fn_80446BFC(u32 *object) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
+    if (target[1] != 0) {
+        u32 *list = (u32 *)target[1];
+        u32 *entry = (u32 *)list[4];
+        for (u32 i = 0; i < list[1]; i++) {
+            entry[3] = 0;
+            entry += 4;
+        }
+        if (list[5] == (u32)object) fn_80447418(list);
+        target[1] = 0;
+    }
+    target[0] = 0xFFFFFFFF;
+    return object;
+}
+
+void *fn_80446C94(u32 *object, u32 *other) {
+    u32 *otherTarget = (u32 *)((u8 *)other + lbl_805F1440);
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
+    u32 *list = (u32 *)otherTarget[1];
+    target[0] = otherTarget[0];
+    if (list != NULL && (list[0] & 1) == 0) {
+        u32 *source = (u32 *)list[4];
+        fn_804472AC(list[1], 0, source[8], 0);
+        u32 *entry = (u32 *)list[4];
+        for (u32 i = 0; i < list[1]; i++) {
+            entry[3] = 0;
+            entry[2] = source[2];
+            entry[1] = source[1];
+            entry[0] = source[0];
+            source += 4;
+            entry += 4;
+        }
+        target[1] = (u32)list;
+        list[5] = (u32)object;
+    }
+    return object;
+}
+
+void *fn_80446D84(void *stream, u32 *object, u32 *plugin) {
+    u32 value = 0x100;
+    if (fn_8047D458(stream, &value, 4) == 0) return NULL;
+    u32 *target = (u32 *)((u8 *)plugin + lbl_805F1440);
+    if (fn_8047D458(stream, target, 4) == 0) return NULL;
+    u32 *list = (u32 *)target[1];
+    if (list != NULL && (list[0] & 1) == 0) {
+        if (fn_8047D458(stream, list + 1, 4) == 0) return NULL;
+        if (fn_8047D458(stream, list, 4) == 0) return NULL;
+        if (fn_8047D458(stream, (u32 *)(list[8] + 0x20), 4) == 0) return NULL;
+        u32 *entry = (u32 *)list[4];
+        for (u32 i = 0; i < list[1]; i++) {
+            if (fn_8047D458(stream, entry, 4) == 0) return NULL;
+            if (fn_8047D458(stream, entry + 1, 4) == 0) return NULL;
+            if (fn_8047D458(stream, entry + 2, 4) == 0) return NULL;
+            entry += 4;
+        }
+    } else {
+        value = 0;
+        if (fn_8047D458(stream, &value, 4) == 0) return NULL;
+    }
+    return stream;
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
