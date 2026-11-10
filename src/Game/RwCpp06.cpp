@@ -91,8 +91,8 @@ u32 *fn_80442C24(void *context) {
     } else {
         tree[0] = count;
         tree[1] = (u32)(tree + 2);
-        for (u32 i = 0; i < count * 2; i++) {
-            ((u32 *)tree[1])[i] = 0;
+        for (u32 i = 0; i < count; i++) {
+            ((u64 *)tree[1])[i] = 0;
         }
     }
     if (tree == NULL) return NULL;
