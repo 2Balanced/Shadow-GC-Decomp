@@ -477,38 +477,37 @@ int fn_8043FDF8(u32 *object, int index, u32 command, u32 flags) {
     if (table == NULL) return -1;
     u32 *entry = table;
     while (*entry != 0) {
-        if ((*entry >> 24) == command) {
-            u32 *header = (u32 *)((u8 *)table + (*entry & 0xFFFFFF));
-            if (header[0] != 0x67636178 || header[1] != 0x4D53424D) return -1;
-            u32 interrupt = OSDisableInterrupts();
-            object[1] = 0;
-            object[1] |= 2;
-            if (object[0x28] != 0) {
-                fn_8043B840((void **)(object + 0x28));
-                object[0x28] = 0;
-            }
-            u32 offset = *entry & 0xFFFFFF;
-            u32 *fields = object + 0x12;
-            *(u16 *)fields = *(u16 *)((u8 *)table + offset + 0x10);
-            memset(fields, 0, 0x58);
-            u32 data = (u32)((u8 *)table + offset + 0x28);
-            fields[1] = *(u16 *)((u8 *)table + offset + 0x1E);
-            u32 hi = ((u32 *)lbl_805F1404)[6];
-            u32 lo = ((u32 *)lbl_805F1404)[7];
-            fields[8] = hi;
-            fields[9] = lo;
-            fields[0x0A] = hi;
-            fields[0x0B] = lo;
-            *(f32 *)(fields + 6) = lbl_805FAF68;
-            fields[0x0F] = flags;
-            fields[0x10] = data;
-            fields[0x11] = data;
-            OSRestoreInterrupts(interrupt);
-            return 0;
-        }
+        if ((*entry >> 24) == command) break;
         entry++;
     }
-    return -1;
+    if (*entry == 0) return -1;
+    u32 *header = (u32 *)((u8 *)table + (*entry & 0xFFFFFF));
+    if (header[0] != 0x67636178 || header[1] != 0x4D53424D) return -1;
+    u32 interrupt = OSDisableInterrupts();
+    object[1] = 0;
+    object[1] |= 2;
+    if (object[0x28] != 0) {
+        fn_8043B840((void **)(object + 0x28));
+        object[0x28] = 0;
+    }
+    u32 offset = *entry & 0xFFFFFF;
+    u32 *fields = object + 0x12;
+    *(u16 *)fields = *(u16 *)((u8 *)table + offset + 0x10);
+    memset(fields, 0, 0x58);
+    u32 data = (u32)((u8 *)table + offset + 0x28);
+    fields[1] = *(u16 *)((u8 *)table + offset + 0x1E);
+    u32 hi = ((u32 *)lbl_805F1404)[6];
+    u32 lo = ((u32 *)lbl_805F1404)[7];
+    fields[8] = hi;
+    fields[9] = lo;
+    fields[0x0A] = hi;
+    fields[0x0B] = lo;
+    *(f32 *)(fields + 6) = lbl_805FAF68;
+    fields[0x0F] = flags;
+    fields[0x10] = data;
+    fields[0x11] = data;
+    OSRestoreInterrupts(interrupt);
+    return 0;
 }
 
 void fn_8043FF5C(u32 *object) {
