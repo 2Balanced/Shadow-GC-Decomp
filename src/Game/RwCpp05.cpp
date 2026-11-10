@@ -297,8 +297,9 @@ extern float lbl_805FAF98;
 
 #define RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, start, span, extra, callback, user)                 \
     do {                                                                                                         \
-        u32 rwEnd = (start) + (span);                                                                             \
-        for (u32 rwI = (start); rwI < rwEnd; rwI++) {                                                            \
+        u16 rwStart = (u16)(start);                                                                                \
+        s32 rwEnd = (s32)rwStart + (s32)(span);                                                                    \
+        for (u16 rwI = rwStart; (s32)rwI < rwEnd; rwI++) {                                                        \
             u32 rwValue = (node)->tail != NULL ? (node)->tail[rwI] : rwI;                                         \
             rwValue <<= 3;                                                                                        \
             u16 *rwIndices = (u16 *)((baseA) + rwValue);                                                          \
