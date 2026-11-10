@@ -4,6 +4,53 @@
 extern u32 lbl_805F1438;
 
 extern "C" {
+s32 fn_80462C28(void);
+void fn_80462C20(u32);
+void fn_804639AC(u32 *, u32);
+
+void *fn_80445934(u32 *object, u32 argument) {
+    u32 *owner = (u32 *)object[6];
+    if ((owner[2] & 0x02000000) != 0) {
+        s32 mode = fn_80462C28();
+        if (mode == 1) fn_80462C20(0);
+        fn_804639AC(object, argument);
+        if (mode == 1) fn_80462C20(1);
+    } else {
+        fn_804639AC(object, argument);
+    }
+    return object;
+}
+
+void fn_804459C0(u8 *destination, u8 *source, float *coefficients, float *delta, u32 *groups,
+                 u32 step, u32 stride) {
+    destination -= step;
+    source -= step;
+    if ((s32)groups[1] <= 0) return;
+    float scale = *delta;
+    for (u32 group = 0; group < groups[1]; group++) {
+        u8 mask = *(u8 *)(groups[0] + group);
+        u32 count = mask & 0x7F;
+        if ((mask & 0x80) != 0) {
+            for (u32 i = 0; i < count; i++) {
+                *(float *)(destination + step) = *(float *)(source + step) + scale * coefficients[0];
+                *(float *)(destination + step + 4) = *(float *)(source + step + 4) + scale * coefficients[1];
+                *(float *)(destination + step * 2) = *(float *)(source + step * 2) + scale * coefficients[2];
+                coefficients += 3;
+                destination += stride;
+                source += stride;
+            }
+        } else {
+            for (u32 i = 0; i < count; i++) {
+                *(float *)(destination + step) = *(float *)(source + step);
+                *(float *)(destination + step + 4) = *(float *)(source + step + 4);
+                *(float *)(destination + step * 2) = *(float *)(source + step * 2);
+                destination += stride;
+                source += stride;
+            }
+        }
+    }
+}
+
 u32 fn_80446780(u32 *object) {
     return object[1] * 0x24;
 }
