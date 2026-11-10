@@ -520,15 +520,15 @@ void fn_8043E2B4(int param_1, int param_2) {
 }
 
 void fn_8043E394(void) {
-    if (lbl_805F1404 == NULL || ((u32 *)lbl_805F1404)[0x4E8E] == 0) {
-        if (lbl_805F1404 != NULL && *lbl_805F1404 != 0) {
+    if (lbl_805F1404 == NULL || lbl_805F1404[0x13A38] == 0) {
+        if (lbl_805F1404 != NULL && *(s32 *)lbl_805F1404 != 0) {
             fn_8043E494();
         }
         fn_8038A3EC();
     } else {
-        ((u32 *)lbl_805F1404)[0x13A39]++;
+        lbl_805F1404[0x13A39]++;
         OSEnableInterrupts();
-        if (lbl_805F1404 != NULL && *lbl_805F1404 != 0) {
+        if (lbl_805F1404 != NULL && *(s32 *)lbl_805F1404 != 0) {
             fn_8043E494();
             ((u32 *)lbl_805F1404)[0x10]++;
         }
