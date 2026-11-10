@@ -12,12 +12,12 @@ void *fn_80441BF8(void *, void *, void *, void *, void *);
 void *fn_80442210(void *, void *, void *, void *, void *);
 u32 *fn_804566D0(u32);
 int fn_8047CF50(void *, u32, void *, void *);
-int fn_8047D350(void *, void *, u32);
-int fn_8047D458(void *, void *, u32);
-int fn_8047D784(void *, void *, u32);
-int fn_8047D868(void *, void *, u32);
-int fn_80480D4C(void *, void *, u32);
-int fn_80480ED0(void *, void *, u32);
+u32 fn_8047D350(void *, void *, u32);
+u32 fn_8047D458(void *, void *, u32);
+u32 fn_8047D784(void *, void *, u32);
+u32 fn_8047D868(void *, void *, u32);
+u32 fn_80480D4C(void *, void *, u32);
+u32 fn_80480ED0(void *, void *, u32);
 u32 fn_8047DC28(u32, ...);
 void fn_8047DB84(void *);
 s32 fn_8045994C(u32, u32, void *, void *, void *);
@@ -385,7 +385,7 @@ u32 *fn_80442C24(void *context) {
         fn_8047D868(context, local + 2, 4) == 0 ||
         fn_8047D868(context, local + 1, 4) == 0 ||
         fn_8047D868(context, local, 4) == 0) return NULL;
-    if (local[0] >= 0x101) {
+    if (local[0] > 0x100) {
         local[4] = 0x122;
         local[5] = fn_8047DC28(0x80000004);
         fn_8047DB84(local + 4);
