@@ -1,5 +1,7 @@
 /* RenderWare list, callback, and owner helpers. Function and member names are inferred from
- * behavior. Definitions are in reverse address order because deferred inlining emits the last one first. */
+ * behavior. Definitions are in reverse address order because deferred inlining emits the last one first.
+ * Measured floors: direct traversal inlining in fn_8043C89C and fn_8043C9D0, owner-pointer
+ * sharing in the allocators, and eliminating the callback's curve-table locals all generate worse code. */
 #include <dolphin/types.h>
 
 struct RwCpp02Object {
@@ -28,6 +30,22 @@ extern double lbl_805FAE88;
 extern double lbl_805FAE90;
 extern double lbl_805FAE98;
 extern float lbl_805FAEA0;
+extern float lbl_805FAEE8;
+extern float lbl_805FAEEC;
+extern double lbl_805FAEF0;
+extern double lbl_805FAEF8;
+extern float lbl_805FAF00;
+extern "C" {
+extern double fn_803B1C9C(double);
+extern double pow(double, double);
+extern void *memcpy(void *, const void *, u32);
+extern void fn_803894BC(u32, int, int, int, int, int, int, int);
+extern void fn_803865F8(u32);
+extern void fn_80386284(u32, int);
+extern void fn_803867AC(u32, void *);
+extern void fn_80386708(u32, void *);
+extern void fn_803868DC(u32, void *);
+}
 extern double lbl_805FAF10;
 extern double lbl_805FAF18;
 extern double lbl_805FAF20;
@@ -148,7 +166,7 @@ void fn_80386844(u32, float);
 void fn_8043C084(void *);
 
 void fn_8043C2A4(RwSoundChannel *self, RwPatchHeader *arg2) {
-    if ((arg2->field000 & 1) == 0) return;
+    if ((arg2->field000 & 0x80000000) == 0) return;
 
     const unsigned char *tbl = lbl_8056D098;
     const unsigned char *selPtr = (const unsigned char *)self->field108;
@@ -515,9 +533,11 @@ void fn_8043BD80(u32 *object) {
     if (object[0xD] == 0) {
         return;
     }
-    if ((*object & 0x80000000) != 0 && (*object & 1) != 0 && (*object & 0x40000000) == 0) {
-        fn_8043CA7C(object[0x39], (u32)object, object[0x3A], object[0x3B], object[0x3C],
-                    object[0x3D], object[0x3E], object[0x3F]);
+    if ((*object & 0x80000000) != 0 && (*object & 1) != 0) {
+        if ((*object & 0x40000000) == 0) {
+            fn_8043CA7C(object[0x39], (u32)object, object[0x3A], object[0x3B], object[0x3C],
+                        object[0x3D], object[0x3E], object[0x3F]);
+        }
         *object &= 0xFFFFFFFE;
     }
 }
@@ -546,16 +566,17 @@ void fn_8043BE6C(u32 *object) {
     float scaled;
     switch (state) {
     case 0: {
-        float rate = lbl_805FAE70;
         float value = *(float *)(object + 0x2B);
+        float rate = lbl_805FAE70;
+        float limit = lbl_805FAE74;
         value += *(float *)(object + 0x32);
         *(float *)(object + 0x2B) = value;
         value = *(float *)(object + 0x2B);
         scaled = -(rate - value * rate);
         *(float *)(object + 0x2C) = scaled;
-        if (*(float *)(object + 0x2B) >= lbl_805FAE74) {
-            *(float *)(object + 0x2B) = lbl_805FAE74;
-            scaled = -(rate - lbl_805FAE74 * rate);
+        if (*(float *)(object + 0x2B) >= limit) {
+            *(float *)(object + 0x2B) = limit;
+            scaled = -(rate - *(float *)(object + 0x2B) * rate);
             *(float *)(object + 0x2C) = scaled;
             object[0x36]++;
         }
@@ -565,16 +586,17 @@ void fn_8043BE6C(u32 *object) {
         if (*(float *)(object + 0x2C) <= *(float *)(object + 0x31)) {
             object[0x36]++;
         } else {
-            float rate = lbl_805FAE70;
             float value = *(float *)(object + 0x2B);
+            float rate = lbl_805FAE70;
+            float limit = lbl_805FAE78;
             value -= *(float *)(object + 0x33);
             *(float *)(object + 0x2B) = value;
             value = *(float *)(object + 0x2B);
             scaled = -(rate - value * rate);
             *(float *)(object + 0x2C) = scaled;
-            if (*(float *)(object + 0x2B) <= lbl_805FAE78) {
-                *(float *)(object + 0x2B) = lbl_805FAE78;
-                scaled = -(rate - lbl_805FAE78 * rate);
+            if (*(float *)(object + 0x2B) <= limit) {
+                *(float *)(object + 0x2B) = limit;
+                scaled = -(rate - *(float *)(object + 0x2B) * rate);
                 *(float *)(object + 0x2C) = scaled;
             }
             if (!(*(float *)(object + 0x2C) <= *(float *)(object + 0x31))) {
@@ -585,16 +607,17 @@ void fn_8043BE6C(u32 *object) {
     case 2:
         object[0x36]++;
     case 3: {
-        float rate = lbl_805FAE70;
         float value = *(float *)(object + 0x2B);
+        float rate = lbl_805FAE70;
+        float limit = lbl_805FAE78;
         value -= *(float *)(object + 0x34);
         *(float *)(object + 0x2B) = value;
         value = *(float *)(object + 0x2B);
         scaled = -(rate - value * rate);
         *(float *)(object + 0x2C) = scaled;
-        if (*(float *)(object + 0x2B) <= lbl_805FAE78) {
-            *(float *)(object + 0x2B) = lbl_805FAE78;
-            scaled = -(rate - lbl_805FAE78 * rate);
+        if (*(float *)(object + 0x2B) <= limit) {
+            *(float *)(object + 0x2B) = limit;
+            scaled = -(rate - *(float *)(object + 0x2B) * rate);
             *(float *)(object + 0x2C) = scaled;
         }
         break;
@@ -602,16 +625,17 @@ void fn_8043BE6C(u32 *object) {
     case 4:
         object[0x36]++;
     case 5: {
-        float rate = lbl_805FAE70;
         float value = *(float *)(object + 0x2B);
+        float rate = lbl_805FAE70;
+        float limit = lbl_805FAE78;
         value -= *(float *)(object + 0x35);
         *(float *)(object + 0x2B) = value;
         value = *(float *)(object + 0x2B);
         scaled = -(rate - value * rate);
         *(float *)(object + 0x2C) = scaled;
-        if (*(float *)(object + 0x2B) <= lbl_805FAE78) {
-            *(float *)(object + 0x2B) = lbl_805FAE78;
-            scaled = -(rate - lbl_805FAE78 * rate);
+        if (*(float *)(object + 0x2B) <= limit) {
+            *(float *)(object + 0x2B) = limit;
+            scaled = -(rate - *(float *)(object + 0x2B) * rate);
             *(float *)(object + 0x2C) = scaled;
         }
         break;
@@ -677,9 +701,10 @@ static inline void RwCpp02WalkGroups(u8 *table, u32 group, u8 *firstBase, void *
         while (j < childCount) {
             u8 *entry = itemBase + childOffset;
             if ((int)(u8)entry[8] <= value && value <= (int)(u8)entry[9]) {
-                cursor = (u32)fn_8043B3DC(param, (void *)cursor);
-                if (cursor != 0 && *(u32 *)(cursor + 4) != 0) {
-                    fn_8043CA7C(bank, *(u32 *)(cursor + 4), (u32)groupEntry,
+                void *found = fn_8043B3DC(param, (void *)cursor);
+                cursor = (u32)found;
+                if (found != NULL && *(u32 *)((u8 *)found + 4) != 0) {
+                    fn_8043CA7C(bank, *(u32 *)((u8 *)found + 4), (u32)groupEntry,
                                 (u32)table, (u32)entry, value, (u32)firstBase, data);
                 }
             }
@@ -705,6 +730,212 @@ void fn_8043C89C(void *param, int bank, u32 index, int value, u32 data) {
             u8 *firstBase = table + __rlwinm(first, 0, 8, 31);
             RwCpp02WalkGroups(table, group, firstBase, param, bank, value, data, cursor);
         }
+    }
+}
+
+u32 fn_8043D20C(int value, float factor);
+float fn_8043D3BC(int first, int second, int third);
+
+void fn_8043CA7C(u32 bank, u32 object, u32 groupEntry, u32 table, u32 entry, int value,
+                 u32 firstBase, u32 data) {
+    u32 *params = (u32 *)object;
+    u8 *entryPtr = (u8 *)entry;
+    u8 *tablePtr = (u8 *)table;
+    u8 *groupPtr = (u8 *)groupEntry;
+    u8 *firstPtr = (u8 *)firstBase;
+    const unsigned char *tbl = lbl_8056D098;
+
+    params[0x39] = bank;
+    params[0x3A] = groupEntry;
+    params[0x3B] = table;
+    params[0x3C] = entry;
+    params[0x3D] = value;
+    params[0x3E] = firstBase;
+    params[0x3F] = data;
+
+    u8 *slot = tablePtr + (*(u32 *)groupPtr & 0xFFFFFF);
+    slot += entryPtr[0] * 0x50;
+    u8 *owner = (u8 *)params[0x42];
+    u32 base = *(u32 *)(owner + 0xC);
+    u32 selector = owner[2];
+
+    int pan = value;
+    if (pan > entryPtr[6]) pan = entryPtr[6];
+    if (pan > entryPtr[7]) pan = entryPtr[7];
+    if (pan < 0) pan = 0;
+    if (pan > 0x7F) pan = 0x7F;
+    pan = firstPtr[entryPtr[5] * 0x80 + pan];
+    if (pan < 0) pan = 0;
+    if (pan > 0x7F) pan = 0x7F;
+    params[0x40] = pan;
+
+    params[0x08] = entryPtr[0xA];
+    params[0x09] = ((const unsigned char *)(tbl + 0x100))[entryPtr[0xB] & 0x1F];
+    params[0x0A] = entryPtr[0x16];
+    *(float *)(params + 4) = lbl_805FAE74;
+    *(float *)(params + 5) = fn_8043D3BC(entryPtr[0xC], entryPtr[0xD], value);
+    params[0x06] = groupPtr[4];
+    params[0x07] = groupPtr[5];
+
+    u32 *pitchEntry = (u32 *)(base + selector * 0x48);
+    int pitch = (int)pitchEntry[0x34];
+    if (pitch >= 0) {
+        pitch *= (int)params[0x06];
+    } else {
+        pitch *= (int)params[0x07];
+    }
+    u32 pitchScale = fn_8043D20C(pitch, *(float *)(params + 5));
+    params[0x37] = entryPtr[0xE];
+    params[0x38] = entryPtr[0xF];
+    ((short *)params)[0x24] = (short)(pitchScale >> 0x10);
+    ((short *)params)[0x25] = (short)pitchScale;
+    ((short *)params)[0x26] = 0;
+    ((short *)params)[0x27] = 0;
+    ((short *)params)[0x28] = 0;
+    ((short *)params)[0x29] = 0;
+    ((short *)params)[0x2A] = 0;
+
+    double f31 = fn_803B1C9C(lbl_805FAE80);
+    float pitchTerm = (float)pitchScale / lbl_805FAEA0;
+    int scaled = (int)(lbl_805FAEE8 + lbl_805FAEEC * pitchTerm);
+    double curve = fn_803B1C9C((double)scaled / lbl_805FAEF0);
+    int key = (int)(curve / f31);
+    int index = (key - 8) & 0xF;
+    double inverse = lbl_805FAEF0 / pow((double)-key, lbl_805FAE80);
+    if (index > 8) index = -(0x10 - index);
+    int curved = (int)(lbl_805FAEF8 * ((double)scaled - inverse) / inverse);
+    int curveBase = index + ((curved >> 9) & 1);
+    const float *curveTbl = (const float *)(tbl + 0x260);
+    const float *curveTbl2 = (const float *)(tbl + 0x360);
+    int curveIndex = curveBase + entryPtr[0x10] * 2 + entryPtr[0x15];
+    if (curveIndex < 0) curveIndex = 0;
+    if (curveIndex > 0x3F) curveIndex = 0x3F;
+    *(float *)(params + 0x2D) = curveTbl[curveIndex];
+    curveIndex = curveBase + entryPtr[0x11] * 2 + entryPtr[0x15];
+    if (curveIndex < 0) curveIndex = 0;
+    if (curveIndex > 0x3F) curveIndex = 0x3F;
+    *(float *)(params + 0x2E) = curveTbl2[curveIndex];
+    curveIndex = curveBase + entryPtr[0x12] * 2 + entryPtr[0x15];
+    if (curveIndex < 0) curveIndex = 0;
+    if (curveIndex > 0x3F) curveIndex = 0x3F;
+    *(float *)(params + 0x2F) = curveTbl2[curveIndex];
+    curveIndex = curveBase + entryPtr[0x14] * 2 + entryPtr[0x15];
+    if (curveIndex < 0) curveIndex = 0;
+    if (curveIndex > 0x3F) curveIndex = 0x3F;
+    *(float *)(params + 0x30) = curveTbl2[curveIndex];
+
+    if (*(float *)(params + 0x2D) < lbl_805FAE7C) {
+        *(float *)(params + 0x32) = lbl_805FAE74;
+    } else {
+        *(float *)(params + 0x32) = lbl_805FAE7C / *(float *)(params + 0x2D);
+    }
+    params[0x36] = 0;
+    if (*(float *)(params + 0x32) >= lbl_805FAE74) {
+        *(float *)(params + 0x32) = lbl_805FAE74;
+        *(float *)(params + 0x2B) = lbl_805FAE74;
+        *(float *)(params + 0x2C) = lbl_805FAE78;
+        params[0x36] = 1;
+    } else {
+        *(float *)(params + 0x2B) = lbl_805FAE78;
+        *(float *)(params + 0x2C) = lbl_805FAEA8;
+    }
+    *(float *)(params + 0x33) = lbl_805FAE7C / *(float *)(params + 0x2E);
+    *(float *)(params + 0x34) = lbl_805FAE7C / *(float *)(params + 0x2F);
+    *(float *)(params + 0x35) = lbl_805FAE7C / *(float *)(params + 0x30);
+    if (entryPtr[0x13] == 0) {
+        *(float *)(params + 0x31) = lbl_805FAE78;
+    } else {
+        float delta = -(float)(0x1F - entryPtr[0x13]);
+        *(float *)(params + 0x31) = fn_8043B3A0(lbl_805FAF00 * delta);
+    }
+    *(float *)(params + 0x2A) = lbl_805FAE78;
+    fn_803894BC(params[0xD], 0, 0, -0x3C, -0x3C, 0x40, 0, 0);
+
+    switch (slot[0x4A]) {
+    case 0: {
+        u32 bankValue = (u32)((RwCpp02BankEntry *)(lbl_805F1404 + 0x52F8))[bank].table;
+        u32 sum = *(u32 *)(slot + 0x4C) + bankValue;
+        u32 sum1 = sum * 2 + *(u32 *)(slot + 0x10);
+        u32 sum2 = sum * 2 + *(u32 *)(slot + 0x14);
+        u32 sum3 = sum * 2 + *(u32 *)(slot + 0x18);
+        ((short *)params)[0x1C] = *(u16 *)(slot + 0xC);
+        ((short *)params)[0x1D] = 0;
+        ((short *)params)[0x1E] = (short)(sum1 >> 0x10);
+        ((short *)params)[0x1F] = (short)sum1;
+        ((short *)params)[0x20] = (short)(sum2 >> 0x10);
+        ((short *)params)[0x21] = (short)sum2;
+        ((short *)params)[0x22] = (short)(sum3 >> 0x10);
+        ((short *)params)[0x23] = (short)sum3;
+        memcpy(params + 0x16, slot + 0x1C, 0x20);
+        ((short *)params)[0x3B] = *(u16 *)(slot + 0x3C);
+        ((short *)params)[0x3C] = *(u16 *)(slot + 0x3E);
+        ((short *)params)[0x3D] = *(u16 *)(slot + 0x40);
+        ((short *)params)[0x3E] = *(u16 *)(slot + 0x42);
+        ((short *)params)[0x3F] = *(u16 *)(slot + 0x44);
+        ((short *)params)[0x40] = *(u16 *)(slot + 0x46);
+        ((short *)params)[0x41] = *(u16 *)(slot + 0x48);
+        fn_803865F8(params[0xD]);
+        fn_80386284(params[0xD], 1);
+        fn_803867AC(params[0xD], params + 0x12);
+        fn_80386708(params[0xD], params + 0x16);
+        fn_803868DC(params[0xD], params + 0x1F);
+        fn_8043C2A4((RwSoundChannel *)params, (RwPatchHeader *)owner);
+        if (*(u32 *)slot >= 3) {
+            fn_80386348(params[0xD], 1);
+        }
+        *params |= 2;
+        break;
+    }
+    case 0xA: {
+        u32 bankValue = (u32)((RwCpp02BankEntry *)(lbl_805F1404 + 0x52F8))[bank].table;
+        u32 sum1 = *(u32 *)(slot + 0x4C) + *(u32 *)(slot + 0x10) * 2 + bankValue;
+        u32 sum2 = *(u32 *)(slot + 0x4C) + *(u32 *)(slot + 0x14) * 2 + bankValue;
+        u32 sum3 = *(u32 *)(slot + 0x4C) + *(u32 *)(slot + 0x18) * 2 + bankValue;
+        if (*(u16 *)(slot + 0xC) == 0) {
+            sum1 = (u32)((RwCpp02BankEntry *)(lbl_805F1404 + 0x52B4))[bank].table;
+        }
+        ((short *)params)[0x1C] = *(u16 *)(slot + 0xC);
+        ((short *)params)[0x1D] = 0xA;
+        ((short *)params)[0x1E] = (short)(sum1 >> 0x11);
+        ((short *)params)[0x1F] = (short)__rlwinm(sum1, 31, 16, 31);
+        ((short *)params)[0x20] = (short)(sum2 >> 0x11);
+        ((short *)params)[0x21] = (short)__rlwinm(sum2, 31, 16, 31);
+        ((short *)params)[0x22] = (short)(sum3 >> 0x11);
+        ((short *)params)[0x23] = (short)__rlwinm(sum3, 31, 16, 31);
+        fn_803865F8(params[0xD]);
+        fn_80386284(params[0xD], 1);
+        fn_803867AC(params[0xD], params + 0x12);
+        fn_8043C2A4((RwSoundChannel *)params, (RwPatchHeader *)owner);
+        fn_80386348(params[0xD], 1);
+        *params |= 2;
+        break;
+    }
+    case 0x19: {
+        u32 bankValue = (u32)((RwCpp02BankEntry *)(lbl_805F1404 + 0x52F8))[bank].table;
+        u32 sum1 = *(u32 *)(slot + 0x4C) + bankValue + *(u32 *)(slot + 0x10);
+        u32 sum2 = *(u32 *)(slot + 0x4C) + bankValue + *(u32 *)(slot + 0x14);
+        u32 sum3 = *(u32 *)(slot + 0x4C) + bankValue + *(u32 *)(slot + 0x18);
+        if (*(u16 *)(slot + 0xC) == 0) {
+            sum1 = (u32)((RwCpp02BankEntry *)(lbl_805F1404 + 0x52B4))[bank].table;
+        }
+        ((short *)params)[0x1C] = *(u16 *)(slot + 0xC);
+        ((short *)params)[0x1D] = 0x19;
+        ((short *)params)[0x1E] = (short)(sum1 >> 0x10);
+        ((short *)params)[0x1F] = (short)sum1;
+        ((short *)params)[0x20] = (short)(sum2 >> 0x10);
+        ((short *)params)[0x21] = (short)sum2;
+        ((short *)params)[0x22] = (short)(sum3 >> 0x10);
+        ((short *)params)[0x23] = (short)sum3;
+        fn_803865F8(params[0xD]);
+        fn_80386284(params[0xD], 1);
+        fn_803867AC(params[0xD], params + 0x12);
+        fn_8043C2A4((RwSoundChannel *)params, (RwPatchHeader *)owner);
+        fn_80386348(params[0xD], 1);
+        *params |= 2;
+        break;
+    }
+    default:
+        break;
     }
 }
 
