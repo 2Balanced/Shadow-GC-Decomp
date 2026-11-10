@@ -94,16 +94,19 @@ int fn_8043F13C(u32 *object) {
         result = 0x07000102;
         do {
             if (object == (u32 *)(lbl_805F1404 + offset + 0x5478)) {
-                result = (*object != 0) ? 0 : 0x07000102;
+                if (*(s32 *)object != 0) {
+                    result = 0;
+                } else {
+                    result = 0x07000102;
+                }
                 break;
             }
             offset += 0x1530;
         } while (--count != 0);
     }
-    if (result == 0) {
-        for (int i = 0; i < 0x10; i++) fn_8043E228((u8 *)object, i);
-    }
-    return result;
+    if (result != 0) return result;
+    for (int i = 0; i < 0x10; i++) fn_8043E228((u8 *)object, i);
+    return 0;
 }
 
 int fn_8043F1FC(void) {
