@@ -18,4 +18,10 @@ u32 fn_8045F374(u32 value, u32 *object) {
     }
     return 0;
 }
+
+void fn_8045E904(u32, u32, u32);
+
+void fn_8045EF3C(u32 first) {
+    fn_8045E904(first, 0, 1);
+}
 }

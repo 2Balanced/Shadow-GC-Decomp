@@ -47,4 +47,14 @@ void fn_80455D0C(void) {
 void fn_80455D2C(void) {
     fn_80456FD8();
 }
+
+u32 fn_80455E44(u32 *object) {
+    u32 *nested = (u32 *)object[0x1B];
+    if (nested != NULL) {
+        if (nested[0x0B] != 0) {
+            return 8;
+        }
+    }
+    return 0;
+}
 }

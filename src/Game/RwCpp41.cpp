@@ -47,4 +47,10 @@ u32 fn_8047A7C8(u32 *object, u32 index) {
     }
     return 0;
 }
+
+void fn_8037C6A0(u8 *, u32);
+
+void fn_8047B384(u8 *object) {
+    fn_8037C6A0(object + 0x40, 0);
+}
 }

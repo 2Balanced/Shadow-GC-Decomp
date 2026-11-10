@@ -23,4 +23,11 @@ void fn_80478700(void);
 void fn_80478AC8(void) {
     fn_80478700();
 }
+
+void fn_8047DFC8(u32);
+
+u32 fn_8047909C(u32 *object) {
+    fn_8047DFC8(object[4]);
+    return 1;
+}
 }

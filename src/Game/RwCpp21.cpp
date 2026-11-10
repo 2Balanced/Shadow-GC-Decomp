@@ -11,4 +11,14 @@ void fn_8045B788(u32 *object) {
     object[0] = 0;
     object[1] = 0;
 }
+
+u32 fn_8045B020(u32 *object) {
+    u32 *nested = (u32 *)object[2];
+    if (nested != NULL) {
+        if (nested[0x0B] != 0) {
+            return 8;
+        }
+    }
+    return 0;
+}
 }

@@ -18,4 +18,11 @@ void fn_80444284(u32 *object) {
     *(u32 *)((u8 *)object + lbl_805F1430 + 8) = previous;
     object[0x12] = (u32)fn_80443A74;
 }
+
+void fn_804442A4(u32, u32);
+
+u32 fn_804441E4(u32 first) {
+    fn_804442A4(first, 1);
+    return 1;
+}
 }
