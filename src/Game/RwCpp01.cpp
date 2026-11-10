@@ -111,8 +111,8 @@ found:
 }
 
 void fn_8043ACE8(void *param) {
+    u32 interrupt = OSDisableInterrupts();
     RwCpp01Node *node = (RwCpp01Node *)((u8 *)param - 0x20);
-    OSDisableInterrupts();
     node->m_magic = 0x4D46;
     RwCpp01Node *next = node->m_next;
     if (next != NULL && next->m_magic == 0x4D46) {
@@ -120,18 +120,19 @@ void fn_8043ACE8(void *param) {
     }
     RwCpp01Node *current = (RwCpp01Node *)lbl_805F1404->m_list;
     RwCpp01Node *previous = NULL;
-    do {
+    while (current->m_next != NULL) {
+        if (current == node) {
+            goto found;
+        }
         previous = current;
         current = current->m_next;
-        if (current == NULL) {
-            previous = NULL;
-            break;
-        }
-    } while (current != node);
+    }
+    previous = NULL;
+found:
     if (previous != NULL && previous->m_magic == 0x4D46) {
         previous->m_next = node->m_next;
     }
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(interrupt);
 }
 
 void *fn_8043AD94(u32 size) {

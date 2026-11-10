@@ -168,6 +168,21 @@ void fn_8043D8E0(float *object, float first, float second) {
     OSRestoreInterrupts(0);
 }
 
+void fn_8043D870(float *object) {
+    float maximum = lbl_805FAF28;
+    if (object[0x0E] >= maximum) {
+        object[0x0E] -= lbl_805FAF34;
+        if (object[0x0E] <= maximum) {
+            object[0x09] = object[0x0B];
+            object[0x0D] = maximum;
+            object[0x0E] = lbl_805FAF2C;
+            return;
+        }
+        object[0x09] = (object[0x0B] - object[0x0C]) *
+            (lbl_805FAF30 - object[0x0E] / object[0x0D]) + object[0x0C];
+    }
+}
+
 void fn_8043D7B4(float *object, float first, float second) {
     OSDisableInterrupts();
     object[0x30] = object[0x24];
