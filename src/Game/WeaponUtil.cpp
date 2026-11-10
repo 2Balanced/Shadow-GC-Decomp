@@ -7,11 +7,15 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: everything matches but the two ShotInfo constructors. Game/WeaponBullet.h declares
- * their side parameter as bool, and GC/2.7 zero-extends a bool (clrlwi) before storing it in the
- * 32-bit m_side; retail stores the register as it is, as for a 32-bit parameter (as does the third
- * constructor at 0x80051FC8). Declaring it so would rename the constructors that about eight
- * matched units call. */
+ * NonMatching: everything matches but the two ShotInfo constructors. The macros below remove the
+ * local shared_ptr/base and bad_weak_ptr bodies and records, reducing our .text from 3400 to 2612
+ * bytes against retail's 1404. Game/WeaponBullet.h declares their side parameter as bool, and
+ * GC/2.7 zero-extends a bool (clrlwi) before storing it in the 32-bit m_side; retail stores the
+ * register as it is, as for a 32-bit parameter (as does the third constructor at 0x80051FC8).
+ * Declaring it so would rename the constructors that about eight matched units call. */
+#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
+#define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+#define BOOST_SP_NO_BAD_WEAK_PTR
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "Game/WeaponBase.h"

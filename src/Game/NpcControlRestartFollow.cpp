@@ -5,7 +5,15 @@
  * around that player and puts the NPC there, then switches the NPC back to control 2. The unit
  * also holds the mission manager's accessor (fn_8006D6A8, which other units call by its address).
  * File name from the RTTI name; function and member names are inferred. Definitions are in reverse
- * address order (deferred inlining emits functions last-defined first). */
+ * address order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: every function body matches. The three macros below remove bad_weak_ptr and the
+ * shared_ptr/base bodies and records, reducing our .text from 4648 to 3888 bytes against retail's
+ * 3020. What remains is emission order: the constructor and the weak shared_ptr copies land in a
+ * different order from retail's, so the flipped DOL's branch displacements differ. */
+#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
+#define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+#define BOOST_SP_NO_BAD_WEAK_PTR
 #define BOSSCTRLUNIT_HELPERS
 #include "Game/BossCtrlUnit.h"
 #include "Game/CharaColliBaseCharInfo.h"
