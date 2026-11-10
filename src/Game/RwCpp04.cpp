@@ -511,11 +511,13 @@ int fn_8043FDF8(u32 *object, int index, u32 command, u32 flags) {
 }
 
 void fn_8043FF5C(u32 *object) {
-    if ((object[0] & 0x80000000) == 0 || (object[1] & 2) == 0 || (object[1] & 1) != 0) return;
+    if ((object[0] & 0x80000000) == 0) return;
+    if ((object[1] & 2) == 0) return;
+    if ((object[1] & 1) != 0) return;
     u8 *cursor = (u8 *)object[0x23];
     if (cursor == NULL) return;
 
-    s32 elapsed = (s32)(((u32 *)lbl_805F1404)[7] - object[0x1D]);
+    s32 elapsed = ((s32 *)lbl_805F1404)[7] - (s32)object[0x1D];
     ((s32 *)lbl_805F1404)[10] = elapsed;
     if (((s32 *)lbl_805F1404)[10] < 0) ((s32 *)lbl_805F1404)[10] = -((s32 *)lbl_805F1404)[10];
 
@@ -525,9 +527,12 @@ restart:
     u32 divisor = (clock >> 2) / 125000;
     u32 frames = ((u32 *)lbl_805F1404)[10] * 8 / divisor;
     *(f32 *)(object + 0x17) = *(f32 *)(object + 0x16);
-    *(f32 *)(object + 0x20) =
-        (f32)(s32)frames * *(f32 *)(lbl_805F1404 + 0x13A44) *
-        (f32)object[0x13] * *(f32 *)(object + 0x18) / 60000000.0f;
+    f32 value = (f32)(s32)frames;
+    value *= *(f32 *)(lbl_805F1404 + 0x13A44);
+    value *= (f32)object[0x13];
+    value *= *(f32 *)(object + 0x18);
+    value /= 60000000.0f;
+    *(f32 *)(object + 0x20) = value;
     *(f32 *)(object + 0x16) += *(f32 *)(object + 0x20);
 
     while (true) {
@@ -562,11 +567,11 @@ restart:
         }
         if (status == 0xFF) {
             *(u8 *)(object + 0x1E) = 0xFF;
-            if (*cursor == 0x51) {
+            if (*(s8 *)cursor == 0x51) {
                 u32 tempo = ((u32)cursor[2] << 16) | ((u32)cursor[3] << 8) | cursor[4];
                 cursor += 5;
                 *(f32 *)(object + 0x18) = 60000000.0f / (f32)tempo;
-            } else if (*cursor == 0x2F) {
+            } else if (*(s8 *)cursor == 0x2F) {
                 cursor = NULL;
                 break;
             }
@@ -635,8 +640,9 @@ restart:
     }
 
     object[0x23] = (u32)cursor;
-    object[0x1C] = ((u32 *)lbl_805F1404)[6];
-    object[0x1D] = ((u32 *)lbl_805F1404)[7];
+    u32 *global = (u32 *)lbl_805F1404;
+    object[0x1C] = global[6];
+    object[0x1D] = global[7];
     if (cursor == NULL) {
         object[1] &= ~3;
         if (object[0x28] != 0) {
