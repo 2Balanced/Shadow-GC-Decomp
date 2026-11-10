@@ -5,14 +5,136 @@
 extern u32 lbl_805F1430;
 extern u8 *lbl_805F15B4;
 extern float lbl_805FAFA8;
+extern s32 lbl_805F1428;
 
 extern "C" {
-void fn_80443A74(void);
+void *fn_80443A74(u32 *);
 u32 fn_80443A54(u8 *);
 u32 fn_8047DC28(u32, ...);
 void fn_8047DB84(void *);
 void fn_80445CE0(void);
 void fn_80444284(u32 *);
+void fn_8045916C(u32 *, u32);
+void fn_804591C4(u32 *);
+
+void *fn_80443A74(u32 *object) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1430);
+    u32 *owner = (u32 *)object[6];
+    u32 *tree = *(u32 **)((u8 *)owner + lbl_805F1428);
+    if (tree != NULL && target[0] != 0) {
+
+    u32 *format = (u32 *)owner[0x17];
+    float *vectorA = (float *)format[5];
+    float *vectorB = (float *)format[6];
+    u8 *colorTarget = (u8 *)owner[0xC];
+    float *pairTarget = (float *)owner[0xD];
+    for (u32 i = 0; i < tree[0]; i++) {
+        float next = *(float *)(target[0] + i * 4);
+        float current = *(float *)(tree[2] + i * 4);
+        if (next != current) {
+            float delta = next - current;
+            u32 *record = (u32 *)(tree[1] + i * 0x40);
+            float *sourceA = (float *)record[8];
+            float *sourceB = (float *)record[9];
+            u8 *sourceColor = (u8 *)record[0xA];
+            float *sourcePair = (float *)record[0xB];
+            fn_8045916C(owner, record[3]);
+
+            if ((record[2] & 2) != 0) {
+                u32 targetIndex = 0;
+                for (u32 group = 0; group < record[5]; group++) {
+                    u8 mask = *(u8 *)(record[4] + group);
+                    if ((mask & 0x80) != 0) {
+                        float *dst = vectorA + targetIndex * 3;
+                        for (u32 j = 0; j < (mask & 0x7F); j++) {
+                            dst[0] += delta * sourceA[0];
+                            dst[1] += delta * sourceA[1];
+                            dst[2] += delta * sourceA[2];
+                            targetIndex++;
+                            sourceA += 3;
+                            dst += 3;
+                        }
+                    } else {
+                        targetIndex += mask & 0x7F;
+                    }
+                }
+            }
+            if ((record[2] & 0x10) != 0) {
+                u32 targetIndex = 0;
+                for (u32 group = 0; group < record[5]; group++) {
+                    u8 mask = *(u8 *)(record[4] + group);
+                    if ((mask & 0x80) != 0) {
+                        float *dst = vectorB + targetIndex * 3;
+                        for (u32 j = 0; j < (mask & 0x7F); j++) {
+                            dst[0] += delta * sourceB[0];
+                            dst[1] += delta * sourceB[1];
+                            dst[2] += delta * sourceB[2];
+                            targetIndex++;
+                            sourceB += 3;
+                            dst += 3;
+                        }
+                    } else {
+                        targetIndex += mask & 0x7F;
+                    }
+                }
+            }
+            if ((record[2] & 8) != 0) {
+                u32 targetIndex = 0;
+                for (u32 group = 0; group < record[5]; group++) {
+                    u8 mask = *(u8 *)(record[4] + group);
+                    if ((mask & 0x80) != 0) {
+                        u8 *dst = colorTarget + targetIndex * 4;
+                        for (u32 j = 0; j < (mask & 0x7F); j++) {
+                            s32 change = (s32)(current * (float)sourceColor[3]);
+                            dst[3] = (u8)(dst[3] - change);
+                            change = (s32)(current * (float)sourceColor[2]);
+                            dst[2] = (u8)(dst[2] - change);
+                            change = (s32)(current * (float)sourceColor[1]);
+                            dst[1] = (u8)(dst[1] - change);
+                            change = (s32)(current * (float)sourceColor[0]);
+                            dst[0] = (u8)(dst[0] - change);
+                            change = (s32)(next * (float)sourceColor[3]);
+                            dst[3] = (u8)(dst[3] + change);
+                            change = (s32)(next * (float)sourceColor[2]);
+                            dst[2] = (u8)(dst[2] + change);
+                            change = (s32)(next * (float)sourceColor[1]);
+                            dst[1] = (u8)(dst[1] + change);
+                            change = (s32)(next * (float)sourceColor[0]);
+                            dst[0] = (u8)(dst[0] + change);
+                            targetIndex++;
+                            sourceColor += 4;
+                            dst += 4;
+                        }
+                    } else {
+                        targetIndex += mask & 0x7F;
+                    }
+                }
+            }
+            if ((record[2] & 4) != 0) {
+                u32 targetIndex = 0;
+                for (u32 group = 0; group < record[5]; group++) {
+                    u8 mask = *(u8 *)(record[4] + group);
+                    if ((mask & 0x80) != 0) {
+                        float *dst = pairTarget + targetIndex * 2;
+                        for (u32 j = 0; j < (mask & 0x7F); j++) {
+                            dst[0] += delta * sourcePair[0];
+                            dst[1] += delta * sourcePair[1];
+                            targetIndex++;
+                            sourcePair += 2;
+                            dst += 2;
+                        }
+                    } else {
+                        targetIndex += mask & 0x7F;
+                    }
+                }
+            }
+            fn_804591C4(owner);
+        }
+        *(float *)(tree[2] + i * 4) = next;
+    }
+    }
+    return ((void *(*)(u32 *))target[2])(object);
+}
 
 void fn_80443FE0(u8 *base) {
     u32 *target = (u32 *)(base + lbl_805F1430);
