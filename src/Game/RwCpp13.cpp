@@ -12,6 +12,7 @@ extern u32 lbl_8056D708[];
 extern u32 lbl_805EDDD8;
 extern u32 lbl_805F1520;
 extern u8 *lbl_805F15B4;
+extern float lbl_805FB0D0;
 
 extern "C" {
 void fn_80482458(void *, const void *, const void *);
@@ -32,7 +33,7 @@ void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
 void fn_80463840(void *, void *);
 void fn_803991E8(void *);
 void fn_80399238(void *, void *);
-void *fn_8044E408(void *, u32);
+void *fn_8044E408(u32 *, u32);
 u32 fn_8044BDBC(u32 *);
 void fn_8046288C(void);
 u32 fn_8047CEF0(void *, u32, u32, u32, u32);
@@ -381,4 +382,66 @@ extern "C" void *fn_8044E89C(void *stream, u32 *object) {
     }
     if (fn_80480ED0(stream, (void *)record[3], record[0] * 0x40) == 0) return NULL;
     return fn_8044BB18(stream, record) != 0 ? stream : NULL;
+}
+
+extern "C" void *fn_8044E408(u32 *object, u32 count) {
+    object[7] = 0;
+    object[8] = 0;
+    object[9] = 0;
+    object[10] = 0;
+
+    for (u32 group = 0; group < count; group++) {
+        for (u32 pass = 0; pass < 3; pass++) {
+            for (u32 j = 0; j < 3 - pass; j++) {
+                float *values = (float *)((u8 *)object[6] + group * 0x10 + pass * 4 + j * 4);
+                if (values[1] > values[0]) {
+                    float temporary = values[0];
+                    values[0] = values[1];
+                    values[1] = temporary;
+
+                    u32 *packed = (u32 *)((u8 *)object[5] + group * 4);
+                    u32 shiftA = pass * 8;
+                    u32 shiftB = (pass + j + 1) * 8;
+                    u32 value = *packed;
+                    u32 byteA = (value >> shiftA) & 0xFF;
+                    u32 byteB = (value >> shiftB) & 0xFF;
+                    *packed = (value & ~(0xFF << shiftA) & ~(0xFF << shiftB)) |
+                              (byteA << shiftB) | (byteB << shiftA);
+                }
+            }
+        }
+    }
+
+    if (object[4] > 1) {
+        u32 channels = object[4];
+        u32 bytes = count * channels * 2;
+        object[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes + 3, 0x30116);
+        u8 *encoded = (u8 *)object[9];
+        for (u32 group = 0; group < count; group++) {
+            u32 sum = 0;
+            for (u32 channel = 0; channel < channels; channel++) {
+                float value = *(float *)((u8 *)object[6] + group * 0x10 + channel * 4);
+                s32 converted = (s32)(lbl_805FB0D0 * value);
+                *encoded++ = (u8)converted;
+                sum += (u8)converted;
+            }
+            if ((sum & 0xFF) < 0x80) {
+                for (u32 channel = 0; channel < channels && (sum & 0xFF) != 0x80; channel++) {
+                    u8 *value = encoded - channels + channel;
+                    sum++;
+                    if ((sum & 0xFF) != 0x80) *value = (u8)(*value + 1);
+                }
+            }
+        }
+
+        object[10] = (u32)(encoded + 3) & ~3;
+        u8 *unpacked = (u8 *)object[10];
+        for (u32 group = 0; group < count; group++) {
+            u32 packed = *(u32 *)((u8 *)object[5] + group * 4);
+            for (u32 channel = 0; channel < channels; channel++) {
+                *unpacked++ = (u8)(packed >> (channel * 8));
+            }
+        }
+    }
+    return object;
 }
