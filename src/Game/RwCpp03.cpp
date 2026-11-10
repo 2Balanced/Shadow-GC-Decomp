@@ -321,8 +321,7 @@ void fn_8043DD14(u32 *object) {
         OSRestoreInterrupts(0);
         s32 high = (command >> 0x18) & 0xF0;
         u32 index = (command >> 0x18) & 0xF;
-        u32 middle = command >> 0x10;
-        u32 sub = middle & 0xFF;
+        u32 sub = (command >> 0x10) & 0xFF;
         u32 low = command >> 8;
         if (high == 0xB0) {
             fn_8043DB08((u8 *)object, index, sub, low & 0xFF);
@@ -357,7 +356,7 @@ void fn_8043DD14(u32 *object) {
                             fn_8043B868((u8 *)object + 0x28, created);
                         } else {
                             *(u32 **)((u8 *)entry + 0xC) = object;
-                            *(u8 *)((u8 *)entry + 3) = (u8)middle;
+                            *(u8 *)((u8 *)entry + 3) = (u8)sub;
                             *(u8 *)((u8 *)entry + 2) = (u8)index;
                             *(void **)((u8 *)created + 4) = entry;
                         }
@@ -386,10 +385,10 @@ void fn_8043DD14(u32 *object) {
         } else if (high != 0xD0) {
             if (high < 0xD0) {
                 if (high == 0xC0) {
-                    object[index * 0x12 + 0x2C] = middle & 0x7F;
+                    object[index * 0x12 + 0x2C] = sub & 0x7F;
                 }
             } else if (high == 0xE0) {
-                fn_8043DAE4((u8 *)object, index, (low & 0x7F) * 0x80 + (middle & 0x7F));
+                fn_8043DAE4((u8 *)object, index, (low & 0x7F) * 0x80 + (sub & 0x7F));
             }
         }
     }
