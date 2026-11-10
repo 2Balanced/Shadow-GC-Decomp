@@ -4,6 +4,12 @@
 
 extern u32 lbl_8056D708[];
 extern u8 *lbl_805F15B4;
+extern u16 lbl_805EDF40;
+extern u32 lbl_805E31CC[];
+extern u32 lbl_805FB0A8;
+extern u8 lbl_805FB0AC;
+extern u32 lbl_805FB0B0;
+extern u8 lbl_805FB0B4;
 
 extern "C" {
 u32 fn_8047D868(void *, void *, u32);
@@ -352,6 +358,189 @@ void fn_8044C38C(void) {
 }
 
 void fn_8044CB6C(void) {
+}
+
+void fn_8044BAB4(void *);
+void fn_8039561C(u32);
+s32 fn_8049A78C(u32);
+void fn_8048071C(void *);
+
+void *fn_8044CD4C(void *object) {
+    u32 *fields = (u32 *)object;
+    if (fields[0x12] != 0) {
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)fields[0x12]);
+    }
+    fn_8044BAB4(object);
+    ((void (*)(void *, void *))*(u32 *)(lbl_805F15B4 + 0x11C))((void *)lbl_8056D708[6], object);
+    return NULL;
+}
+
+static inline void RwCpp12AdvanceSeed(u32 *object) {
+    if (*(u16 *)((u8 *)object + 0x18) == lbl_805EDF40) {
+        fn_8039561C(lbl_805EDF40);
+        u32 value = (u32)lbl_805EDF40 + 1;
+        lbl_805EDF40 = (u16)(value % 0xE000);
+    }
+    while (fn_8049A78C(*(u16 *)((u8 *)object + 0x18)) == 0) {
+    }
+}
+
+void fn_8044CDC4(u32 *object) {
+    RwCpp12AdvanceSeed(object);
+    if (object[9] != 0) fn_8048071C((void *)*(u32 *)(object[9] - 4));
+
+    u8 *data = (u8 *)object[3];
+    u32 flags = *(u32 *)(data + 8);
+    if (data[0] == 1) {
+        u32 *entry = (u32 *)(data + lbl_8056D708[1]);
+        object[9] = entry[1];
+        if ((flags & 0x10) != 0) object[11] = entry[2];
+        entry[1] = 0;
+        entry[2] = 0;
+    } else {
+        u32 *entry = *(u32 **)(data + lbl_8056D708[2]);
+        object[9] = entry[7];
+        if ((flags & 0x10) != 0) object[11] = entry[8];
+        entry[7] = 0;
+        entry[8] = 0;
+    }
+}
+
+void fn_8044CEE0(u32 *object) {
+    RwCpp12AdvanceSeed(object);
+}
+
+void *RwFrameGetLTM(void *);
+void fn_8047F0B0(void *, const void *);
+void fn_8047EBB8(void *, const void *, const void *);
+void fn_80450D6C(void *, const void *, const void *, const void *, const void *, u32);
+
+void fn_8044D344(u8 *out, u32 *object, const void *arg5, u32 *data) {
+    if (data == NULL) return;
+    u32 local[64];
+    u8 *matrixA = (u8 *)local + 0xC8;
+    u8 *matrixB = (u8 *)local + 0x88;
+    u8 *matrixC = (u8 *)local + 0x48;
+    u8 *matrixD = (u8 *)local + 8;
+    u32 flags = data[0];
+
+    if ((flags & 0x2) != 0) {
+        const void *matrix;
+        if (object[4] > 1 || object[11] == 3) {
+            *(u32 *)(matrixA + 0xC) = 0;
+            fn_8047F0B0(matrixA, arg5);
+            matrix = matrixA;
+        } else {
+            matrix = lbl_805E31CC;
+        }
+        u8 *indices = (u8 *)object[2];
+        u8 *matrixIndices = indices;
+        u8 *outputIndices = indices;
+        u32 count = object[1];
+        for (u32 i = 0; i < count; i++) {
+            u32 frameIndex = indices[i];
+            void *frame = *(void **)(data[4] + frameIndex * 0x10 + 0xC);
+            fn_8047EBB8(matrixB, (void *)(object[3] + matrixIndices[i] * 0x40), RwFrameGetLTM(frame));
+            fn_8047EBB8(out + outputIndices[i] * 0x40, matrixB, matrix);
+        }
+    } else if ((flags & 0x4000) != 0) {
+        if (object[4] > 1 || object[11] == 3) {
+            u8 *indices = (u8 *)object[2];
+            for (u32 i = 0; i < object[1]; i++) {
+                u32 offset = indices[i] * 0x40;
+                fn_8047EBB8(out + offset, (void *)(object[3] + offset), (void *)(data[2] + offset));
+            }
+        } else {
+            *(u32 *)(matrixC + 0xC) = 0;
+            fn_8047EBB8(matrixC, arg5, lbl_805E31CC);
+            fn_80450D6C(out, (void *)object[3], (void *)data[2], matrixC, (void *)object[2], object[1]);
+        }
+    } else {
+        const void *matrix;
+        if (object[4] > 1 || object[11] == 3) {
+            *(u32 *)(matrixD + 0xC) = 0;
+            fn_8047F0B0(matrixD, arg5);
+            matrix = matrixD;
+        } else {
+            matrix = lbl_805E31CC;
+        }
+        fn_80450D6C(out, (void *)object[3], (void *)data[2], matrix, (void *)object[2], object[1]);
+    }
+}
+
+static asm u32 RwCpp12ReadGqr5(void) {
+    nofralloc
+    mfspr r3, 917
+    blr
+}
+
+static asm void RwCpp12WriteGqr5(register u32 value) {
+    nofralloc
+    mtspr 917, value
+    blr
+}
+
+static asm void RwCpp12WriteGqr6(register u32 value) {
+    nofralloc
+    mtspr 918, value
+    blr
+}
+
+void fn_80482458(void *, const void *, const void *);
+void fn_80450F68(void *, void *, void *);
+void fn_80451254(void *, void *, void *);
+void fn_80451618(void *, void *, void *);
+void DCFlushRange(void *, u32);
+void fn_80394F2C(void);
+
+void fn_8044D554(u32 *object, u8 *matrices, void *arg5, u8 *output, u8 *format, u32 count) {
+    u8 local[0x60];
+    *(u32 *)(local + 0x1C) = (u32)output;
+    *(u32 *)(local + 0x24) = (u32)arg5;
+    *(u32 *)(local + 0x38) = count;
+    u32 gqr6 = 0;
+    u32 stride;
+    if (format != NULL) {
+        *(u32 *)(local + 0x14) = lbl_805FB0A8;
+        *(u8 *)(local + 0x18) = lbl_805FB0AC;
+        *(u32 *)(local + 0xC) = lbl_805FB0B0;
+        *(u8 *)(local + 0x10) = lbl_805FB0B4;
+        u32 index = format[0];
+        gqr6 = *(u8 *)(local + 0x14 + index);
+        u32 value = format[0xC];
+        gqr6 = (gqr6 & ~0xFF00) | ((value & 0xFF) << 8);
+        gqr6 = ((gqr6 & 0xFFFF) << 16) | (gqr6 & 0xFFFF);
+        stride = *(u8 *)(local + 0xC + index);
+    } else {
+        stride = 4;
+    }
+    *(u32 *)(local + 0x2C) = stride;
+
+    u32 savedGqr5 = RwCpp12ReadGqr5();
+    RwCpp12WriteGqr5(0x07040000);
+    RwCpp12WriteGqr6(gqr6);
+    switch (object[4]) {
+    case 1:
+        for (u32 i = 0; i < count; i++) {
+            u32 matrixIndex = *(u32 *)(object[5] + i * 4) & 0xFF;
+            fn_80482458(output + i * 0xC, (void *)(object[7] + i * 0xC), matrices + matrixIndex * 0x40);
+        }
+        break;
+    case 2:
+        fn_80450F68(matrices, object, local + 0x1C);
+        break;
+    case 3:
+        fn_80451254(matrices, object, local + 0x1C);
+        break;
+    case 4:
+        fn_80451618(matrices, object, local + 0x1C);
+        break;
+    default:
+        break;
+    }
+    RwCpp12WriteGqr5(savedGqr5);
+    DCFlushRange(output, (count * (stride * 3) + 0x1F) & ~0x1F);
+    fn_80394F2C();
 }
 
 u32 fn_8044CDBC(u32 *object) {
