@@ -248,8 +248,8 @@ u32 fn_804436B0(u8 *owner) {
         size += 4;
         if (entry[1] != 0) size += ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entry[1]) + 1;
         u32 flags = entry[2];
-        u32 stride = ((flags & 2) ? 0xC : 0) + ((flags & 0x10) ? 0xC : 0) +
-                     ((flags & 8) ? 4 : 0) + ((flags & 4) ? 8 : 0);
+        u32 stride = ((flags & 0x8) ? 0xC : 0) + ((flags & 0x4) ? 0x4 : 0) +
+                     ((flags & 0x2) ? 0x8 : 0) + ((flags & 0x1) ? 0xC : 0);
         size += entry[5] + entry[6] * stride + 0x20;
     }
     return size;
