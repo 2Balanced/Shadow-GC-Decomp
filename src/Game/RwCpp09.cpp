@@ -5,6 +5,68 @@ extern u32 lbl_805F1440;
 extern u32 lbl_805F1448;
 
 extern "C" {
+void fn_80445CF4(float *, const float *);
+void fn_8044621C(float *, float *, float *, float);
+void fn_80445E08(float *, float *, float *, float);
+void fn_804468D0(float *, const float *, const float *);
+void fn_80446790(float *, const float *);
+void *fn_80446620(void *, u32 *);
+u32 fn_804466DC(void *, u32 *);
+u32 fn_80446780(u32 *);
+void fn_8048722C(u32 *);
+void fn_8048752C(u32 *, void *, u32 *);
+u32 fn_8044758C(u8 *);
+
+void *fn_80446A04(u32 *object, u32 *other) {
+    u32 *entry = (u32 *)other[4];
+    for (u32 i = 0; i < other[1]; i++) {
+        if (fn_8044758C((u8 *)object) == entry[0]) {
+            entry[3] = (u32)object;
+        }
+        entry += 4;
+    }
+    fn_8048722C(object);
+    fn_8048752C(object, (void *)fn_80446A04, other);
+    return object;
+}
+
+extern u32 lbl_805EDD70;
+extern u32 lbl_805EDD74;
+extern u32 lbl_805E1510;
+void *fn_8047FC04(u32, void *, void *, u32, void *, u32);
+void fn_80477344(void *);
+
+void *fn_80446AA8(u32 *object) {
+    void *result = fn_8047FC04(0x24, &lbl_805EDD70, &lbl_805EDD74, 4, &lbl_805E1510, 0x40011E);
+    ((u32 *)&lbl_805F1440)[1] = (u32)result;
+    if (result == NULL) object = NULL;
+    u32 callbacks[12];
+    callbacks[0] = 1;
+    callbacks[1] = 0x24;
+    callbacks[2] = 0x24;
+    callbacks[3] = (u32)fn_80445CF4;
+    callbacks[4] = (u32)fn_8044621C;
+    callbacks[5] = (u32)fn_80445E08;
+    callbacks[6] = (u32)fn_804468D0;
+    callbacks[7] = (u32)fn_80446790;
+    callbacks[8] = (u32)fn_80446620;
+    callbacks[9] = (u32)fn_804466DC;
+    callbacks[10] = (u32)fn_80446780;
+    callbacks[11] = 0;
+    fn_80477344(callbacks);
+    return object;
+}
+
+void fn_8047FCDC(void *);
+
+void *fn_80446B90(u32 *object) {
+    if (((u32 *)&lbl_805F1440)[1] != 0) {
+        fn_8047FCDC((void *)((u32 *)&lbl_805F1440)[1]);
+        ((u32 *)&lbl_805F1440)[1] = 0;
+    }
+    return object;
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
