@@ -72,10 +72,10 @@ u32 fn_80442B98(u32 *tree) {
 u32 *fn_80442C24(void *context) {
     u32 local[6];
     if (fn_8047CF50(context, 1, local + 4, local + 5) == 0) return NULL;
-    if (fn_8047D868(context, local, 4) == 0 ||
-        fn_8047D868(context, local + 1, 4) == 0 ||
+    if (fn_8047D868(context, local + 3, 4) == 0 ||
         fn_8047D868(context, local + 2, 4) == 0 ||
-        fn_8047D868(context, local + 3, 4) == 0) return NULL;
+        fn_8047D868(context, local + 1, 4) == 0 ||
+        fn_8047D868(context, local, 4) == 0) return NULL;
     if (local[0] >= 0x101) {
         local[4] = 0x122;
         local[5] = fn_8047DC28(0x80000004);
@@ -88,11 +88,14 @@ u32 *fn_80442C24(void *context) {
         local[4] = 0x122;
         local[5] = fn_8047DC28(0x80000013, count * 8 + 8);
         fn_8047DB84(local + 4);
-        return NULL;
+    } else {
+        tree[0] = count;
+        tree[1] = (u32)(tree + 2);
+        for (u32 i = 0; i < count * 2; i++) {
+            ((u32 *)tree[1])[i] = 0;
+        }
     }
-    tree[0] = count;
-    tree[1] = (u32)(tree + 2);
-    memset((void *)tree[1], 0, count * 8);
+    if (tree == NULL) return NULL;
     for (u32 i = 0; i < count; i++) {
         u32 items;
         if (fn_8047D868(context, &items, 4) == 0) return NULL;
