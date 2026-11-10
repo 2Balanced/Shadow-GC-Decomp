@@ -741,6 +741,7 @@ config.libs = [
             Object(NonMatching, "Game/EffectLocus.cpp", cflags=cflags_effect_lib),
             Object(NonMatching, "Game/EffectLocusRW3.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectLocusUSA.cpp"),
+            Object(Matching, "Game/RwObjectPool.cpp"),
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
             Object(NonMatching, "Game/EffectManagerRW3.cpp", cflags=cflags_effect_lib),
