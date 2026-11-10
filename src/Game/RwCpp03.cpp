@@ -872,11 +872,7 @@ void fn_8043DA0C(u32 *object) {
     while ((outer = (int)fn_8043B8F0((u8 *)object + 0x28, (void *)outer)) != 0) {
         int inner = 0;
         u8 index = *(u8 *)(*(u32 *)(outer + 4) + 2);
-        for (;;) {
-            inner = (int)fn_8043C10C(*(u8 **)(outer + 4) + 0x10, (void *)inner);
-            if (inner == 0) {
-                break;
-            }
+        while ((inner = (int)fn_8043C10C(*(u8 **)(outer + 4) + 0x10, (void *)inner)) != 0) {
             fn_8043BE6C(*(u32 **)(inner + 4));
             fn_8043C2A4(*(u32 **)(inner + 4), object);
             fn_8043C170(*(u32 **)(inner + 4), object[index * 0x12 + 0x34],
