@@ -396,15 +396,16 @@ void fn_8043DD14(u32 *object) {
 }
 
 void fn_8043E004(u32 *object, u32 value) {
-    OSDisableInterrupts();
+    u32 interrupt = OSDisableInterrupts();
     if ((int)object[0x54B] < 0x400) {
-        object[object[0x548] + 0x149] = value;
+        object[object[0x54A] + 0x149] = value;
         object[0x54B]++;
-        object[0x548]++;
-        int sign = (int)object[0x548] >> 31;
-        object[0x548] = (sign * 0x400 | (u32)(object[0x548] * 0x400000 + sign) >> 0x16) - sign;
+        object[0x54A]++;
+        u32 sign = object[0x54A] >> 31;
+        u32 wrapped = (object[0x54A] << 22) - sign;
+        object[0x54A] = (wrapped << 10 | wrapped >> 22) + sign;
     }
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(interrupt);
 }
 
 void fn_8043E088(u32 *object) {
