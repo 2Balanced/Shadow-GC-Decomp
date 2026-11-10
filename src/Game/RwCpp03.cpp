@@ -122,15 +122,12 @@ void fn_8043DAB0(u32 *object) {
 }
 
 void fn_8043E430(int value) {
-    s32 result = -1;
-    if (value != 0) {
-        result = 0;
-    }
+    u8 result = value == 0 ? 0xFF : 0;
     lbl_805F1404[0xFDFB] = result;
-    if (value != 0) {
-        fn_80384978(0);
-    } else {
+    if (value == 0) {
         fn_80384978(2);
+    } else {
+        fn_80384978(0);
     }
 }
 
