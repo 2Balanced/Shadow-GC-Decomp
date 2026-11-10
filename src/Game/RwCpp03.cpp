@@ -764,22 +764,24 @@ int fn_8043ED7C(u32 *object, s8 value, u32 arg2) {
     if (object == NULL) {
         return 0x7000103;
     }
+    int result = 0x7000102;
     for (int i = 0; i < 8; i++) {
         if (object == (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478)) {
             if (*(s32 *)object != 0) {
-                u32 unsignedValue = (u32)value;
-                u32 unsignedArg = (u32)arg2;
-                if (value < -0x7F || value > 0x7F) {
-                    return 0x3000001;
-                }
-                fn_8043D8E0((float *)object, (float)unsignedValue / 127.0f,
-                            (float)unsignedArg);
-                return 0;
+                result = 0;
             }
             break;
         }
     }
-    return 0x7000102;
+    if (result != 0) return result;
+    if (value < -0x7F || value > 0x7F) {
+        return 0x3000001;
+    }
+    u32 unsignedValue = (u32)value;
+    u32 unsignedArg = (u32)arg2;
+    fn_8043D8E0((float *)object, (float)unsignedValue / 127.0f,
+                (float)unsignedArg);
+    return 0;
 }
 
 int fn_8043EE74(u32 *object, s16 value, u32 arg2) {
@@ -789,16 +791,18 @@ int fn_8043EE74(u32 *object, s16 value, u32 arg2) {
     if (object == NULL) {
         return 0x7000103;
     }
+    int result = 0x7000102;
     for (int i = 0; i < 8; i++) {
         if (object == (u32 *)((u8 *)lbl_805F1404 + i * 0x1530 + 0x5478)) {
             if (*(s32 *)object != 0) {
-                fn_8043D7B4((float *)object, fn_8043D318(value), (float)(u32)arg2);
-                return 0;
+                result = 0;
             }
             break;
         }
     }
-    return 0x7000102;
+    if (result != 0) return result;
+    fn_8043D7B4((float *)object, fn_8043D318(value), (float)(u32)arg2);
+    return 0;
 }
 
 int fn_8043EF50(u32 *object) {
