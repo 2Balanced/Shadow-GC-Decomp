@@ -13,7 +13,9 @@ extern u32 lbl_8056D708[];
 extern u32 lbl_805EDDD8;
 extern u32 lbl_805F1520;
 extern u8 *lbl_805F15B4;
+extern u32 lbl_805F1658;
 extern float lbl_805FB0D0;
+extern u16 lbl_805EDF40;
 
 extern "C" {
 void fn_80482458(void *, const void *, const void *);
@@ -48,6 +50,14 @@ u32 fn_8047D868(void *, void *, u32);
 u32 fn_80480D4C(void *, void *, u32);
 void *fn_8044BBFC(void *, u32 *);
 void *fn_8044CCC0(void *, void *);
+void fn_80462C30(void *, void *);
+void fn_804950AC(void *, u32);
+void fn_80394500(u32, u32);
+void fn_80462E1C(void *);
+u32 fn_804655D4(u32, u32, u32, u32);
+void fn_80499C38(void *, u32);
+void fn_80497778(u32);
+void fn_80399000(void *, void *);
 }
 
 extern "C" {
@@ -496,4 +506,110 @@ extern "C" void *fn_8044EAD0(void *stream, u32 *object) {
     if (fn_8044BBFC(stream, record) == NULL) return NULL;
     fn_8044CCC0(object, record);
     return stream;
+}
+
+static inline void RwCpp13TransformMatrix(const float *input, u32 outputIndex, u32 transform) {
+    float matrix[12];
+    matrix[0] = -input[0];
+    matrix[1] = -input[4];
+    matrix[2] = -input[8];
+    matrix[3] = -input[12];
+    matrix[4] = input[1];
+    matrix[5] = input[5];
+    matrix[6] = input[9];
+    matrix[7] = input[13];
+    matrix[8] = -input[2];
+    matrix[9] = -input[6];
+    matrix[10] = -input[10];
+    matrix[11] = -input[14];
+    fn_803991E8(matrix);
+    if (transform != 0) fn_80399238(matrix, (void *)outputIndex);
+}
+
+static inline void RwCpp13InitialMatrices(u32 *record, u32 *node) {
+    if (record[4] != 1 || record[13] != 0) return;
+    u32 outputIndex = 0;
+    u8 *indices = (u8 *)record[2];
+    for (u32 i = 0; i < record[1]; i++) {
+        const float *input = (const float *)(lbl_8056D708[3] + indices[i] * 0x40);
+        RwCpp13TransformMatrix(input, outputIndex, (node[2] >> 4) & 1);
+        outputIndex += 3;
+    }
+}
+
+static inline void RwCpp13NestedMatrices(u32 *record, u32 *node, u32 remaining) {
+    u32 *descriptor = (u32 *)node[1];
+    u32 total = *(u16 *)((u8 *)descriptor + 4);
+    u32 pair = (total - (remaining + 1)) * 2;
+    u8 *table = (u8 *)record[16] + pair;
+    u32 first = table[0];
+    u32 outerCount = table[1];
+    u32 tableOffset = (first & 0x7F) * 2;
+    u32 outputIndex = 0;
+    u32 transform = (node[2] >> 4) & 1;
+
+    for (u32 outer = 0; (outer & 0xFF) < outerCount; outer++) {
+        u8 *entry = (u8 *)record[17] + (outer & 0xFF) * 2 + tableOffset;
+        u32 matrixOffset = entry[0] * 0x40;
+        u32 innerCount = entry[1];
+        for (u32 inner = 0; inner < innerCount; inner++) {
+            const float *input = (const float *)(lbl_8056D708[3] + matrixOffset);
+            RwCpp13TransformMatrix(input, outputIndex, transform);
+            outputIndex += 3;
+            matrixOffset += 0x40;
+        }
+    }
+}
+
+extern "C" void *fn_8044DE74(u32 *context, u32 *node) {
+    u32 *nodeData = (u32 *)node[0];
+    u32 *callbackPair = (u32 *)((u8 *)nodeData + 0x18 + (nodeData[8] - 1) * 8 + 0x14);
+    *(u16 *)((u8 *)nodeData + 0x18) = lbl_805EDF40;
+    void *frameMatrix = RwFrameGetLTM((void *)context[1]);
+    u32 *owner = (u32 *)context[6];
+    u32 *format = *(u32 **)((u8 *)owner + lbl_805F1520);
+    fn_80462C30(format, node);
+    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
+    if (record[4] > 1 || record[11] == 3) {
+        fn_804950AC(frameMatrix, (node[2] >> 4) & 1);
+    } else {
+        fn_80394500(0, 1);
+    }
+    if (format == NULL) fn_80462E1C(owner);
+
+    u32 callback = fn_804655D4(node[2], node[8], node[7], nodeData[7] & 1);
+    u32 *descriptor = (u32 *)node[1];
+    u32 remaining = *(u16 *)((u8 *)descriptor + 4);
+    u32 *entry = (u32 *)((u8 *)descriptor + 0x10);
+    RwCpp13InitialMatrices(record, node);
+
+    bool lookup = (node[2] & 0x84) != 0;
+    if (!lookup) fn_80497778(1);
+    while (remaining != 0) {
+        if (lookup) {
+            u32 *value = *(u32 **)entry[2];
+            fn_80499C38(value, 0);
+            if (value != NULL && value[0] != 0) {
+                u32 *child = *(u32 **)value[0];
+                u32 flags = *(u32 *)((u8 *)child + lbl_805F1658 + 0x14);
+                fn_80497778((flags & 1) ^ 1);
+            } else {
+                fn_80497778(1);
+            }
+        }
+
+        if (callback != 0) {
+            u32 *data = (u32 *)entry[2];
+            ((void (*)(void *, void *, float))callback)(node + 3, data + 1,
+                                                         *(float *)((u8 *)data + 0xC));
+        }
+        if (record[4] == 1 && record[13] != 0) {
+            RwCpp13NestedMatrices(record, node, remaining);
+        }
+        fn_80399000((void *)callbackPair[0], (void *)callbackPair[1]);
+        callbackPair += 2;
+        entry += 3;
+        remaining--;
+    }
+    return context;
 }
