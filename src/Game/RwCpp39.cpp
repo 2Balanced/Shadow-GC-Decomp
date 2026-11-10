@@ -36,4 +36,14 @@ u32 fn_804779A8(u32 *object) {
     }
     return count;
 }
+
+void fn_8047FCDC(u32);
+
+extern u32 lbl_805E1950[];
+
+void fn_804771E0(void) {
+    u32 value = lbl_805E1950[0x5B];
+    fn_8047FCDC(value);
+    lbl_805E1950[0x5B] = 0;
+}
 }

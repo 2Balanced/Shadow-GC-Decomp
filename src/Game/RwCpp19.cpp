@@ -34,4 +34,11 @@ void fn_80457664(u8 *other) {
     target[1] = 0;
     target[0] = 0;
 }
+
+extern u8 lbl_8056D7E0[];
+void fn_804815F0(u8 *, u32, u32, u32, u32);
+
+void fn_80458BEC(u32 first, u32 second, u32 third, u32 fourth) {
+    fn_804815F0(lbl_8056D7E0, first, second, third, fourth);
+}
 }

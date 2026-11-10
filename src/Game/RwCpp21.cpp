@@ -39,4 +39,16 @@ void fn_8045B8EC(u32 *object, u32 value) {
         entries--;
     }
 }
+
+extern u8 lbl_8056D828[];
+extern u8 lbl_8056D840[];
+void fn_804815F0(u8 *, u32, u32, u32, u32);
+
+void fn_8045AAE0(u32 first, u32 second, u32 third, u32 fourth) {
+    fn_804815F0(lbl_8056D828, first, second, third, fourth);
+}
+
+void fn_8045B30C(u32 first, u32 second, u32 third, u32 fourth) {
+    fn_804815F0(lbl_8056D840, first, second, third, fourth);
+}
 }

@@ -32,4 +32,11 @@ void fn_8045F2C8(void) {
     table = (u32 *)table[1];
     ((void (*)(void))table[0x1A])();
 }
+
+extern u8 lbl_8056D880[];
+void fn_804815F0(u8 *, u32, u32, u32, u32);
+
+void fn_8045F338(u32 first, u32 second, u32 third, u32 fourth) {
+    fn_804815F0(lbl_8056D880, first, second, third, fourth);
+}
 }

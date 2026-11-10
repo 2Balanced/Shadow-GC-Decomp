@@ -91,4 +91,26 @@ u32 fn_80464188(u32 *object) {
     table[3] = (u32)fn_80462914;
     return 1;
 }
+
+void fn_804630C0(void);
+
+void *fn_80462E34(u8 *object, u32 offset) {
+    if (*(u32 *)(object + offset) != 0) {
+        fn_804630C0();
+    }
+    return object;
+}
+
+void fn_804639AC(void);
+void fn_80463840(void);
+void fn_80463428(void);
+
+u32 fn_80463CE0(u32 *object) {
+    u32 *table = (u32 *)object[5];
+    table[0] = (u32)fn_804639AC;
+    table[1] = (u32)fn_80463840;
+    table[2] = (u32)fn_80463428;
+    table[3] = (u32)fn_80462914;
+    return 1;
+}
 }

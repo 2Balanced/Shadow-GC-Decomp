@@ -133,4 +133,26 @@ u32 fn_80461AD8(u32 first, u32 second) {
 u32 fn_80461DE8(u32 *object) {
     return fn_8045C9C8(object[0x1E], fn_8045FEA0());
 }
+
+extern u32 lbl_805F1690;
+
+void fn_804626F8(u32 value) {
+    if (value == 0) {
+        value = *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x58);
+    }
+    if (value == 0) {
+        value = 0;
+    }
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x40) = value;
+}
+
+void fn_80462734(u32 value) {
+    if (value == 0) {
+        value = *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x54);
+    }
+    if (value == 0) {
+        value = 0;
+    }
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x3C) = value;
+}
 }
