@@ -89,8 +89,8 @@ void fn_8043E624(void);
 u32 fn_8043EBFC(void);
 int fn_8043EC3C(u32 *);
 int fn_8043ECDC(u32 *);
-int fn_8043ED7C(u32 *, s8, int);
-int fn_8043EE74(u32 *, s16, int);
+int fn_8043ED7C(u32 *, s8, u32);
+int fn_8043EE74(u32 *, s16, u32);
 int fn_8043EF50(u32 *);
 void fn_80386348(u32, u32);
 void fn_8038A338(u32);
@@ -308,7 +308,7 @@ void fn_8043DB08(u8 *object, u32 index, u8 command, u32 value) {
 }
 
 void fn_8043DD14(u32 *object) {
-    while (object[0x54B] != 0) {
+    while ((s32)object[0x54B] != 0) {
         OSDisableInterrupts();
         object[0x54B]--;
         u32 command = object[object[0x549] + 0x149];
@@ -751,7 +751,7 @@ int fn_8043ECDC(u32 *object) {
     return 0x7000102;
 }
 
-int fn_8043ED7C(u32 *object, s8 value, int arg2) {
+int fn_8043ED7C(u32 *object, s8 value, u32 arg2) {
     if (lbl_805F1404 == NULL) {
         return 0xD000001;
     }
@@ -776,7 +776,7 @@ int fn_8043ED7C(u32 *object, s8 value, int arg2) {
     return 0x7000102;
 }
 
-int fn_8043EE74(u32 *object, s16 value, int arg2) {
+int fn_8043EE74(u32 *object, s16 value, u32 arg2) {
     if (lbl_805F1404 == NULL) {
         return 0xD000001;
     }
