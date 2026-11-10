@@ -357,15 +357,15 @@ int fn_8043FA20(u8 **out) {
     if (lbl_805F1404 == NULL) return 0x0D000001;
     u8 *object = (u8 *)(lbl_805F1404 + 0x13F6C);
     for (u32 i = 0; i < 0x40; i++) {
-        if (*object == 0) {
-            memset(object, 0, 0x14);
-            *object = 1;
-            *out = object;
-            return 0;
-        }
+        if (*object == 0) goto found;
         object += 0x14;
     }
     return 0x07000101;
+found:
+    memset(object, 0, 0x14);
+    *object = 1;
+    *out = object;
+    return 0;
 }
 
 int fn_8043FAB0(int value) {
