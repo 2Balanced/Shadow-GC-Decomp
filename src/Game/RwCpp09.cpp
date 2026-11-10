@@ -358,6 +358,55 @@ void *fn_80448074(u32 *object, u32 value, void *argument) {
     return fn_804480C8(object, fn_80447EB4(value), argument, &lbl_8056D6F8);
 }
 
+extern u32 lbl_8051BCA8;
+
+static inline u32 RwCpp09Process(u32 *object, u32 flags, int multiply) {
+    static const u16 indices[9] = {0x13, 0x15, 0x17, 0x19, 0x1B, 0x1D, 0x1F, 0x21, 0x23};
+    static const u16 sizes[9] = {0xC, 0x40, 0xC, 8, 4, 0x10, 4, 0x10, 0x20};
+    static const u16 bits[9] = {1, 8, 0x10, 4, 2, 0x40, 0x20, 0x80, 0x100};
+    u32 *table = (u32 *)lbl_8051BCA8;
+    u32 result = 0;
+    object[0x28] &= ~0x1FF;
+    object[0x26] = 0;
+    object[0x27] = 0;
+    if (multiply) object[0xF] = 0;
+
+    for (u32 i = 0; i < 9; i++) {
+        if ((flags & bits[i]) == 0) continue;
+        object[0x26]++;
+        object[0x28] |= bits[i];
+        if (i == 0) {
+            if (multiply) result = object[0] * table[0];
+        } else {
+            result += multiply ? object[0] * table[i] : table[i];
+        }
+    }
+
+    if (!multiply) {
+        object[0x27] = (result + 3) & ~3;
+        result = object[0] * object[0x27];
+    }
+    u32 *raw = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(result + 0x10, 0x3012F);
+    if (raw == NULL) return 0;
+    u32 base = ((u32)raw + 0xF) & ~0xF;
+    for (u32 i = 0; i < 9; i++) {
+        if ((flags & bits[i]) == 0) continue;
+        object[indices[i]] = base + result;
+        object[indices[i] + 1] = sizes[i];
+        if (i != 8) result += multiply ? object[0] * table[i] : table[i];
+    }
+    object[0x3] = (u32)raw;
+    return 1;
+}
+
+u32 fn_804476B8(u32 *object, u32 flags, void *argument) {
+    return RwCpp09Process(object, flags, 1);
+}
+
+u32 fn_80447AF8(u32 *object, u32 flags, void *argument) {
+    return RwCpp09Process(object, flags, 0);
+}
+
 void *fn_804480C8(void *parent, u32 flags, void *argument, void *config) {
     if (fn_80456DD8() == 0) {
         fn_80456FD8();
