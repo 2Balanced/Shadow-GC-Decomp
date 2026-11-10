@@ -207,8 +207,8 @@ void fn_802E0658(RwTexDictionary *dict);
 /* Opaque white (unused here). */
 UnkColor_8040D2D8 lbl_805EE0F0(0xFF, 0xFF, 0xFF, 0xFF);
 
-static RwIm2DVertex lbl_80571418[4];
 static RwIm3DVertex lbl_805712F8[8];
+static RwIm2DVertex lbl_80571418[4];
 
 extern "C" {
 void fn_80039920(const UnkDebugLine_80020A20 *line, const UnkColor_8040D2D8 *color);
@@ -292,9 +292,8 @@ inline void SetPosition(RwIm3DVertex *vertex, float x, float y, float z) {
     vertex->objVertex.z = z;
 }
 
-/* NonMatching (4 instructions): retail loads the line's y before its z for both points (the
- * registers match); ~6 shapes tried. */
-/* Draws a line in 3D (the debug view's lines; Game/DebugDispLine.cpp). */
+/* Draws a line in 3D (the debug view's lines; Game/DebugDispLine.cpp). The y and z coordinates
+ * are read into locals before SetPosition so retail's load order is preserved. */
 extern "C" void fn_80039920(const UnkDebugLine_80020A20 *line, const UnkColor_8040D2D8 *color) {
     void *zWrite;
     void *zTest;
@@ -310,8 +309,12 @@ extern "C" void fn_80039920(const UnkDebugLine_80020A20 *line, const UnkColor_80
     lbl_805F15B4->fpRenderStateSet(12, (void *)1);
     lbl_805F15B4->fpRenderStateSet(1, (void *)0);
     RwRGBA rgba = ToRwRGBA(*color);
-    SetPosition(&lbl_805712F8[0], line->m_start.x, line->m_start.y, line->m_start.z);
-    SetPosition(&lbl_805712F8[1], line->m_end.x, line->m_end.y, line->m_end.z);
+    float startY = line->m_start.y;
+    float startZ = line->m_start.z;
+    float endY = line->m_end.y;
+    float endZ = line->m_end.z;
+    SetPosition(&lbl_805712F8[0], line->m_start.x, startY, startZ);
+    SetPosition(&lbl_805712F8[1], line->m_end.x, endY, endZ);
     lbl_805712F8[0].u = 0.0f;
     lbl_805712F8[0].v = 0.0f;
     lbl_805712F8[1].u = 0.0f;

@@ -6,8 +6,12 @@
  * inferred)"). Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: fn_801D93FC (99.7%) differs only in two registers: retail keeps the sound mode in
- * r7 and the boost in r6, where GC/2.7 swaps them. */
+ * The boost and weak-pointer bodies are referenced from their owning units rather than emitted
+ * here. In fn_801D93FC computing boost before loading the sound mode keeps them in retail's r7
+ * and r6 respectively; every function matches. */
+#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
+#define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+#define BOOST_SP_NO_BAD_WEAK_PTR
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "Game/SoundManager.h"
@@ -270,8 +274,8 @@ s8 UnkSoundChannel_801D98FC::fn_801D93FC() {
     if (distance >= range) {
         return -0x7F;
     }
+    s16 boost = lbl_8057D6A0.m_soundMode == 2 ? (s16)0x1E : (s16)0;
     s32 mode = lbl_8057D6A0.m_soundMode;
-    s16 boost = mode == 2 ? (s16)0x1E : (s16)0;
     s16 volume;
     if (distance < 60.0f) {
         volume = 0;

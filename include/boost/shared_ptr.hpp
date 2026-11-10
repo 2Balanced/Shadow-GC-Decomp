@@ -236,10 +236,12 @@ inline shared_count::shared_count(weak_count const & r): pi_(r.pi_)
     {
         pi_->add_ref_lock();
     }
+#ifndef BOOST_SP_NO_BAD_WEAK_PTR
     else
     {
         boost::throw_exception(boost::bad_weak_ptr());
     }
+#endif
 }
 
 // The overload for enable_shared_from_this (used by EggLastMech::EggLastMech) is declared in

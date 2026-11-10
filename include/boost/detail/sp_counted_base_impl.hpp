@@ -79,7 +79,11 @@ public:
 
     void add_ref_lock()
     {
+#ifdef BOOST_SP_NO_BAD_WEAK_PTR
+        if(use_count_ == 0) return;
+#else
         if(use_count_ == 0) boost::throw_exception(boost::bad_weak_ptr());
+#endif
         ++use_count_;
     }
 
