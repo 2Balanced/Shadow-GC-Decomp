@@ -1,8 +1,19 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior. */
 #include <dolphin/types.h>
 
+extern u32 lbl_805F16BC;
+extern u32 lbl_805F16C0;
+
 extern "C" {
 u32 fn_804A55A4(void) {
     return 1;
+}
+
+void fn_804A558C(u32 *object) {
+    object[0x1B] = lbl_805F16BC;
+}
+
+void fn_804A5598(u32 *object) {
+    object[0x1F] = lbl_805F16C0;
 }
 }

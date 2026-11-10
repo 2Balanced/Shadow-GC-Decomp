@@ -3,6 +3,7 @@
 
 extern u32 lbl_805F1548;
 extern u8 lbl_805EDE94;
+extern u8 lbl_805E2A40[];
 
 extern "C" {
 void fn_8047A168(u32 value) {
@@ -23,5 +24,9 @@ u8 *fn_8047A7EC(void) {
 
 void fn_8047A970(u32 value, u32 *object) {
     object[0x0B] = value;
+}
+
+u8 *fn_80479FC4(void) {
+    return lbl_805E2A40;
 }
 }
