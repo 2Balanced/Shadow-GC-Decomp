@@ -148,7 +148,7 @@ void fn_8043D99C(float *object) {
 }
 
 void fn_8043D8E0(float *object, float first, float second) {
-    OSDisableInterrupts();
+    u32 interrupt = OSDisableInterrupts();
     object[0x06] = object[0x02];
     object[0x05] = first;
     object[0x07] = second;
@@ -161,7 +161,7 @@ void fn_8043D8E0(float *object, float first, float second) {
         object[0x02] = (object[0x05] - object[0x06]) *
             (lbl_805FAF30 - object[0x08] / object[0x07]) + object[0x06];
     }
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(interrupt);
 }
 
 void fn_8043D870(float *object) {
@@ -180,7 +180,7 @@ void fn_8043D870(float *object) {
 }
 
 void fn_8043D7B4(float *object, float first, float second) {
-    OSDisableInterrupts();
+    u32 interrupt = OSDisableInterrupts();
     object[0x0C] = object[0x09];
     object[0x0B] = first;
     object[0x0D] = second;
@@ -193,7 +193,7 @@ void fn_8043D7B4(float *object, float first, float second) {
         object[0x09] = (object[0x0B] - object[0x0C]) *
             (lbl_805FAF30 - object[0x0E] / object[0x0D]) + object[0x0C];
     }
-    OSRestoreInterrupts(0);
+    OSRestoreInterrupts(interrupt);
 }
 
 u32 *fn_8043D4D8(u32 arg1, u32 arg2, u32 arg3) {
