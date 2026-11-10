@@ -320,7 +320,7 @@ void fn_8043DD14(u32 *object) {
         int sign = (int)object[0x549] >> 31;
         object[0x549] = (sign * 0x400 | (u32)(object[0x549] * 0x400000 + sign) >> 0x16) - sign;
         OSRestoreInterrupts(0);
-        u32 high = (command >> 0x18) & 0xF0;
+        s32 high = (command >> 0x18) & 0xF0;
         u32 index = (command >> 0x18) & 0xF;
         u32 middle = command >> 0x10;
         u32 sub = middle & 0xFF;
