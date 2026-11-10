@@ -226,4 +226,34 @@ void *fn_80444630(u32 *object, float delta) {
     }
     return object;
 }
+
+extern s32 lbl_805EDD68[];
+void fn_80445C38(u32);
+void fn_80445C9C(void);
+s32 fn_80485D78(u32, u32, RwCpp07Callback, RwCpp07Callback);
+s32 fn_804437B0(void);
+
+void *fn_804447B0(u32 *object) {
+    if (lbl_805EDD68[1] == 0) {
+        fn_80445C38(1);
+    }
+    lbl_805EDD68[1]++;
+    return object;
+}
+
+void *fn_80444808(u32 *object) {
+    if (--lbl_805EDD68[1] == 0) {
+        fn_80445C9C();
+    }
+    return object;
+}
+
+u32 fn_8044484C(void) {
+    s32 result = fn_80485D78(0, 0x122, (RwCpp07Callback)fn_804447B0,
+                             (RwCpp07Callback)fn_80444808);
+    if (result < 0) return 0;
+    if (fn_804437B0() == 0) return 0;
+    u32 initialized = fn_8044420C();
+    return ((0 - initialized) | initialized) >> 31;
+}
 }
