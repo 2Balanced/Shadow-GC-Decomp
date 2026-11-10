@@ -319,6 +319,30 @@ u32 fn_80447EB4(u32 value) {
     return value;
 }
 
+void *fn_80447FC0(u32 *object) {
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1448);
+    if ((s32)target[1] <= 0) return object;
+    if (target[7] != 0) {
+        ((void (*)(void *, u32))target[7])(target + 0x12, target[0x10]);
+        target[0x10] = 0;
+    }
+    u32 result = 1;
+    if (target[8] != 0) {
+        result = ((u32 (*)(u32 *, void *, u32))target[8])(object, target + 0x12, target[1]);
+    }
+    if (result == 1 && target[4] != 0) {
+        ((void (*)(u32 *))target[4])(object);
+    }
+    return object;
+}
+
+extern u32 lbl_8056D6F8;
+void *fn_804480C8(void *, u32, void *, void *);
+
+void *fn_80448074(u32 *object, u32 value, void *argument) {
+    return fn_804480C8(object, fn_80447EB4(value), argument, &lbl_8056D6F8);
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
