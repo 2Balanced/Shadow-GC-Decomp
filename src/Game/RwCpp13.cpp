@@ -10,6 +10,7 @@ extern u32 lbl_805FB0B8;
 extern u8 lbl_805FB0BC;
 extern u32 lbl_8056D708[];
 extern u32 lbl_805EDDD8;
+extern u32 lbl_805F1520;
 
 extern "C" {
 void fn_80482458(void *, const void *, const void *);
@@ -23,6 +24,11 @@ u32 fn_8044CCAC(u8 *);
 void *fn_8044F9E4(void *, void *, void *);
 void *fn_8046C0D4(void *, void *, void *);
 void *fn_80450938(void *, void *, void *);
+void *RwFrameGetLTM(void *);
+u32 fn_8044CF68(u32 *, u32 *, u32 *, u32 **);
+void fn_8044D344(u8 *, u32 *, const void *, u32 *);
+void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
+void fn_80463840(void *, void *);
 }
 
 extern "C" {
@@ -153,5 +159,65 @@ extern "C" void *fn_8044D924(u32 *object, u32 *out) {
     }
     *out = (u32)result;
     *(u16 *)((u8 *)owner + 0xC) = 0;
+    return object;
+}
+
+extern "C" void *fn_8044DA3C(u32 *object, u32 *arg2) {
+    u32 *owner = (u32 *)object[6];
+    u32 *record = *(u32 **)((u8 *)owner + lbl_8056D708[2]);
+    if (record[4] > 1 || record[11] == 3) {
+        u32 *node = (u32 *)*arg2;
+        u32 *data = (u32 *)node[3];
+        u32 *state = (u32 *)((u8 *)node + 0x18);
+        u32 *first;
+        u32 *second;
+        if (((u8 *)data)[0] == 1) {
+            u32 *entry = (u32 *)((u8 *)data + lbl_8056D708[1]);
+            first = entry + 1;
+            second = entry + 2;
+        } else {
+            first = record + 7;
+            second = record + 8;
+        }
+
+        if (*first == 0) {
+            if ((owner[2] & 0x01000000) == 0) fn_80463840(object, arg2);
+            *first = state[3];
+            state[3] = 0;
+            if ((owner[2] & 0x10) != 0) {
+                *second = state[5];
+                state[5] = 0;
+            }
+        } else if ((owner[2] & 0x01000000) == 0) {
+            u32 savedFirst = state[3];
+            state[3] = *first;
+            if ((owner[2] & 0x10) != 0) {
+                u32 savedSecond = state[5];
+                state[5] = *second;
+                fn_80463840(object, arg2);
+                state[5] = savedSecond;
+            } else {
+                fn_80463840(object, arg2);
+            }
+            state[3] = savedFirst;
+        }
+
+        if (fn_8044CF68(record, object, state, (u32 **)arg2) == 0) return NULL;
+        void *frameMatrix = RwFrameGetLTM((void *)object[1]);
+        fn_8044D344((u8 *)lbl_8056D708[3], record, frameMatrix,
+                    *(u32 **)((u8 *)object + lbl_8056D708[1]));
+        if ((owner[2] & 0x10) != 0) {
+            fn_8044D6E8(record, (u8 *)lbl_8056D708[3], (void *)*first, (void *)*second,
+                        (u8 *)state[3], (u8 *)state[5],
+                        *(u8 **)((u8 *)owner + lbl_805F1520), owner[5]);
+        } else {
+            fn_8044D554(record, (u8 *)lbl_8056D708[3], (void *)*first, (u8 *)state[3],
+                        *(u8 **)((u8 *)owner + lbl_805F1520), owner[5]);
+        }
+    } else {
+        void *frameMatrix = RwFrameGetLTM((void *)object[1]);
+        fn_8044D344((u8 *)lbl_8056D708[3], record, frameMatrix,
+                    *(u32 **)((u8 *)object + lbl_8056D708[1]));
+    }
     return object;
 }
