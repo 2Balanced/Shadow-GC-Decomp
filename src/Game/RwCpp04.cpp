@@ -499,25 +499,30 @@ restart:
     u32 frames = ((u32 *)lbl_805F1404)[10] * 8 / divisor;
     *(f32 *)(object + 0x17) = *(f32 *)(object + 0x16);
     *(f32 *)(object + 0x20) =
-        (f32)((f64)(s32)frames * (f64) * (f32 *)(lbl_805F1404 + 0x13A44) *
-              (f64)object[0x13] * (f64) * (f32 *)(object + 0x18) / 60000000.0);
+        (f32)(s32)frames * *(f32 *)(lbl_805F1404 + 0x13A44) *
+        (f32)object[0x13] * *(f32 *)(object + 0x18) / 60000000.0f;
     *(f32 *)(object + 0x16) += *(f32 *)(object + 0x20);
 
     while (true) {
         u8 *scan = cursor;
         int length = 0;
-        u32 delta = 0;
-        do {
+        int delta = 0;
+        for (; length < 4; length++) {
             if ((scan[length] & 0x80) == 0) break;
-            length++;
-        } while (length < 4);
+        }
         if (length == 4) {
+            delta = -1;
+        } else {
+            length++;
+            for (int i = 0; i < length; i++) {
+                delta = (delta << 7) + (*scan++ & 0x7F);
+            }
+            cursor = scan;
+        }
+        if (delta < 0) {
             cursor = NULL;
             break;
         }
-        length++;
-        for (int i = 0; i < length; i++) delta = (delta << 7) + (scan[i] & 0x7F);
-        cursor = scan + length;
         if (*(f32 *)(object + 0x14) + (f32)delta > *(f32 *)(object + 0x16)) break;
         *(f32 *)(object + 0x15) = *(f32 *)(object + 0x14);
         *(f32 *)(object + 0x14) += (f32)delta;
@@ -539,14 +544,18 @@ restart:
                 break;
             }
         } else {
-            u32 kind = status & 0xF0;
-            if (kind == 0x80 || kind == 0x90 || kind == 0xE0) {
+            switch (status & 0xF0) {
+            case 0x80:
+            case 0x90:
+            case 0xE0: {
                 u32 value = ((u32)status << 24) | ((u32)cursor[0] << 16) |
                             ((u32)cursor[1] << 8) | (object[0x21] & 0xFF);
                 fn_8043E004(object, value);
                 *(u8 *)(object + 0x1E) = status;
                 cursor += 2;
-            } else if (kind == 0xB0) {
+                break;
+            }
+            case 0xB0:
                 if (cursor[0] == 0x1F) {
                     if (object[0x24] == 0) {
                         object[0x24] = (u32)(cursor + 2);
@@ -555,20 +564,22 @@ restart:
                         *(f32 *)(object + 0x25) = *(f32 *)(object + 0x14);
                         *(f32 *)(object + 0x26) = *(f32 *)(object + 0x17);
                         *(f32 *)(object + 0x19) = *(f32 *)(object + 0x18);
-                    } else if (object[0x27] == 0) {
+                    } else if (*(s32 *)(object + 0x27) == 0) {
                         cursor = (u8 *)object[0x24];
                         *(f32 *)(object + 0x16) = *(f32 *)(object + 0x26);
                         *(f32 *)(object + 0x14) = *(f32 *)(object + 0x25);
                         *(f32 *)(object + 0x18) = *(f32 *)(object + 0x19);
                         goto restart;
-                    } else if (object[0x27] > 0) {
-                        object[0x27]--;
-                        if (object[0x27] > 0) {
-                            cursor = (u8 *)object[0x24];
-                            *(f32 *)(object + 0x16) = *(f32 *)(object + 0x26);
-                            *(f32 *)(object + 0x14) = *(f32 *)(object + 0x25);
-                            *(f32 *)(object + 0x18) = *(f32 *)(object + 0x19);
-                            goto restart;
+                    } else {
+                        if (*(s32 *)(object + 0x27) > 0) {
+                            --*(s32 *)(object + 0x27);
+                            if (*(s32 *)(object + 0x27) > 0) {
+                                cursor = (u8 *)object[0x24];
+                                *(f32 *)(object + 0x16) = *(f32 *)(object + 0x26);
+                                *(f32 *)(object + 0x14) = *(f32 *)(object + 0x25);
+                                *(f32 *)(object + 0x18) = *(f32 *)(object + 0x19);
+                                goto restart;
+                            }
                         }
                         cursor += 2;
                         *(u8 *)(object + 0x1E) = 0;
@@ -580,14 +591,20 @@ restart:
                     *(u8 *)(object + 0x1E) = status;
                     cursor += 2;
                 }
-            } else if (kind == 0xA0 || kind == 0xC0 || kind == 0xD0) {
+                break;
+            case 0xA0:
+            case 0xC0:
+            case 0xD0: {
                 u32 value = ((u32)status << 24) | ((u32)cursor[0] << 16);
                 fn_8043E004(object, value);
                 *(u8 *)(object + 0x1E) = status;
                 cursor++;
+                break;
+            }
             }
         }
-        if (*(f32 *)(object + 0x14) >= *(f32 *)(object + 0x16)) break;
+        if (*(f32 *)(object + 0x14) < *(f32 *)(object + 0x16)) continue;
+        break;
     }
 
     object[0x23] = (u32)cursor;
