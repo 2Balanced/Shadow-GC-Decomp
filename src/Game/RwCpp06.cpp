@@ -33,17 +33,28 @@ static inline void rwFree(void *memory) {
 /* fn_80442210: collision traversal, defined from the retail branch tree below. */
 
 void *fn_80442AA4(void *context, u32 *shape, void *a, void *b, void *c) {
-    u32 kind = shape[6];
-    if (kind == 3) {
-        fn_80442210(context, shape, shape, a, b);
-    } else if (kind == 1) {
+    switch (shape[6]) {
+    case 1:
         fn_80441188(context, shape, a, b, c);
-    } else if (kind == 4) {
+        break;
+    case 3:
+        fn_80442210(context, shape, shape, a, b);
+        break;
+    case 4:
         fn_80441BF8(context, shape, a, b, c);
-    } else if (kind == 5) {
+        break;
+    case 5: {
         u32 *matrix = fn_804566D0(shape[0]);
-        u32 local[4] = {matrix[0], matrix[1], matrix[2], matrix[3]};
+        u32 local[4];
+        local[0] = matrix[0];
+        local[1] = matrix[1];
+        local[2] = matrix[2];
+        local[3] = matrix[3];
         fn_80442210(context, local, shape, a, b);
+        break;
+    }
+    default:
+        break;
     }
     return context;
 }
