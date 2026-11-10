@@ -100,10 +100,7 @@ u32 fn_8043EF48(void) {
 }
 
 void fn_8043E47C(int value) {
-    s32 result = -1;
-    if (value != 0) {
-        result = 0;
-    }
+    u8 result = value == 0 ? 0xFF : 0;
     lbl_805F1404[0xFDFA] = result;
 }
 
