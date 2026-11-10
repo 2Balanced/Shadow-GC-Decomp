@@ -472,7 +472,8 @@ int fn_8043FD70(u32 *object) {
 
 int fn_8043FDF8(u32 *object, int index, u32 command, u32 flags) {
     if ((object[0] & 0x80000000) == 0) return -1;
-    u32 *table = *(u32 **)(lbl_805F1404 + index * 8 + 0x53F8);
+    u32 *base = (u32 *)lbl_805F1404;
+    u32 *table = (u32 *)base[index * 2 + 0x53F8 / 4];
     if (table == NULL) return -1;
     u32 *entry = table;
     while (*entry != 0) {
