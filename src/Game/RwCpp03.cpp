@@ -474,34 +474,37 @@ void fn_8043E228(u8 *object, int index) {
 void fn_8043E2B4(int param_1, int param_2) {
     void (*callback)(void) = NULL;
     void *data = NULL;
-    if (param_2 == 2) {
+    switch (param_2) {
+    case 0:
+        break;
+    case 1:
+        callback = fn_803882A4;
+        data = lbl_805F1404 + 0xFE04;
+        break;
+    case 2:
         callback = fn_80387794;
         data = lbl_805F1404 + 0xFF58;
-    } else if (param_2 < 2) {
-        if (param_2 == 0) {
-            callback = NULL;
-            data = NULL;
-        } else {
-            if (param_2 < 0) {
-                return;
-            }
-            callback = fn_803882A4;
-            data = lbl_805F1404 + 0xFE04;
-        }
-    } else if (param_2 == 4) {
-        callback = fn_80388D50;
-        data = lbl_805F1404 + 0x101D4;
-    } else {
-        if (param_2 > 3) {
-            return;
-        }
+        break;
+    case 3:
         callback = fn_80388A00;
         data = lbl_805F1404 + 0x10138;
+        break;
+    case 4:
+        callback = fn_80388D50;
+        data = lbl_805F1404 + 0x101D4;
+        break;
+    default:
+        return;
     }
-    if (param_1 == 1) {
-        fn_80384250(callback);
-    } else if (param_1 >= 0 && param_1 < 1) {
+    switch (param_1) {
+    case 0:
         fn_80384244(callback, data);
+        break;
+    case 1:
+        fn_80384250(callback);
+        break;
+    default:
+        break;
     }
 }
 
