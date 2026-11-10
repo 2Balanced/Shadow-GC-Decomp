@@ -361,11 +361,18 @@ int fn_8043FAB0(int value) {
     if (lbl_805F1404 == NULL) return 0x0D000001;
     if (value == 1) {
         fn_8043E47C(0);
-    } else {
-        if (value != 0) return 0x03000001;
-        fn_8043E47C(1);
+        return 0;
     }
+    if (value > 1) {
+        goto error;
+    }
+    if (value < 0) {
+        goto error;
+    }
+    fn_8043E47C(1);
     return 0;
+error:
+    return 0x03000001;
 }
 
 int fn_8043FB24(void) {
