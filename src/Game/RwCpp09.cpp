@@ -272,6 +272,39 @@ void *fn_804474D8(u32 *object) {
     return object;
 }
 
+void fn_8045B270(u32, u32);
+
+void *fn_804475A8(u32 *object) {
+    if (*(u32 *)((u8 *)object + lbl_805F1448) != 0) {
+        u32 *owner = (u32 *)object[6];
+        fn_8045B270(*(u32 *)(owner[8] + 0), 0);
+        if (object[3] != 0) {
+            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)object[3]);
+        }
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+        *(u32 *)((u8 *)object + lbl_805F1448) = 0;
+    }
+    return object;
+}
+
+extern u32 lbl_805F144C;
+void fn_804485BC(void);
+void fn_80448610(void);
+void fn_80447598(u8 *);
+void *fn_804475A8(u32 *);
+s32 fn_80458B6C(u32, u32, RwCpp09Callback, RwCpp09Callback, void *);
+
+u32 fn_80447640(void) {
+    s32 result = fn_80485D78(4, 0x12F, (RwCpp09Callback)fn_804485BC,
+                             (RwCpp09Callback)fn_80448610);
+    lbl_805F144C = result;
+    if (result < 0) return 0;
+    result = fn_80458B6C(4, 0x12F, (RwCpp09Callback)fn_80447598,
+                         (RwCpp09Callback)fn_804475A8, NULL);
+    lbl_805F1448 = result;
+    return ((u32)result >> 31) ^ 1;
+}
+
 u32 fn_8044758C(u8 *object) {
     return *(u32 *)(object + lbl_805F1440);
 }
