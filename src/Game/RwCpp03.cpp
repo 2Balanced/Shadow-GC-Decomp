@@ -876,7 +876,7 @@ void fn_8043DA0C(u32 *object) {
         return;
     }
     int outer = 0;
-    while ((outer = (int)fn_8043B8F0((u8 *)(object + 0xA), (void *)outer)) != 0) {
+    while ((outer = (int)fn_8043B8F0((u8 *)(object + 0x28), (void *)outer)) != 0) {
         int inner = 0;
         u8 index = *(u8 *)(*(u32 *)(outer + 4) + 2);
         while ((inner = (int)fn_8043C10C(*(u8 **)(outer + 4) + 0x10, (void *)inner)) != 0) {
