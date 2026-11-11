@@ -12,11 +12,11 @@ static inline u32 rwElementSize(u32 type) {
     case 2: return 2;
     case 3: return 3;
     case 4: return 4;
-    case 6: return 4;
-    case 10: return 4;
     case 7: return 8;
     case 8: return 12;
     case 9: return 16;
+    case 6: return 4;
+    case 10: return 4;
     default: return 0;
     }
 }
@@ -45,8 +45,8 @@ static inline bool rwElementEqual(u32 type, const u8 *a, const u8 *b) {
     }
 }
 
-static inline void *rwAlloc(u32 size) {
-    return ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x3050D);
+static inline u32 *rwAlloc(u32 size) {
+    return (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x3050D);
 }
 
 u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
@@ -54,7 +54,7 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     for (u32 i = 0; i < streams; i++) {
         bytes += descriptors[i * 2 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
     }
-    u32 *result = (u32 *)rwAlloc(bytes);
+    u32 *result = rwAlloc(bytes);
     if (result == NULL) return NULL;
     u32 headerBytes = (streams & 0x1FFFFFFF) * 8;
     memset(result, 0, headerBytes);
@@ -64,8 +64,8 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     }
     for (u32 i = 0; i < streams; i++) {
         u32 size = rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
-        u8 *source = *(u8 **)(inputs + i * 0x18);
         u8 *dest = (u8 *)result[i * 2];
+        u8 *source = *(u8 **)(inputs + i * 0x18);
         u32 *indices = (u32 *)descriptors[i * 2];
         for (u32 j = 0; j < vertices; j++) {
             if ((s32)indices[j] == -1) {
@@ -79,60 +79,61 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     return result;
 }
 
+/* descriptors is an array of 0x18-byte stream descriptors: +0x0 element data
+ * pointer, +0x4 element type, +0x8 onward signed stream indices whose elements
+ * must match as well, terminated by the first negative index.  The returned
+ * block is streams {pointer, count} pairs followed by streams * vertices
+ * index words; every vertex starts unassigned (0xFFFFFFFF) and a vertex that
+ * duplicates an earlier one stores that earlier vertex index and drops the
+ * stream count. */
 u32 *fn_80466194(u32 *descriptors, u32 streams, u32 vertices) {
     u32 total = streams * vertices;
-    u32 headerBytes = (streams & 0x1FFFFFFF) * 8;
-    u32 *result = (u32 *)rwAlloc(headerBytes + total * 4);
+    u32 headerBytes = streams * 8;
+    u32 *result = rwAlloc(headerBytes + total * 4);
     if (result == NULL) return NULL;
     memset(result, 0, headerBytes);
     u32 *indices = (u32 *)((u8 *)result + headerBytes);
     for (u32 i = 0; i < total; i++) indices[i] = 0xFFFFFFFF;
-    u8 *next = (u8 *)indices;
+    u32 *header = result;
     for (u32 i = 0; i < streams; i++) {
-        result[i * 2] = (u32)next;
-        result[i * 2 + 1] = vertices;
-        next += vertices * 4;
+        header[i * 2] = (u32)(indices + i * vertices);
+        header[i * 2 + 1] = vertices;
     }
-
+    u8 *descriptor = (u8 *)descriptors;
     for (u32 stream = 0; stream < streams; stream++) {
-        u8 *descriptor = (u8 *)descriptors + stream * 0x18;
-        u32 type = *(u32 *)(descriptor + 4);
-        u32 size = rwElementSize(type);
-        u32 *streamIndices = (u32 *)result[stream * 2];
-        u8 *data = *(u8 **)descriptor;
+        u32 size = rwElementSize(*(u32 *)(descriptor + 4));
         for (u32 i = 0; i < vertices; i++) {
-            if (streamIndices[i] != 0xFFFFFFFF) continue;
+            if (((s32 *)header[0])[i] != -1) continue;
             for (u32 j = i; j < vertices; j++) {
-                if (i == j || !rwElementEqual(type, data + i * size, data + j * size)) continue;
-                bool equal = true;
-                s8 *link = (s8 *)(descriptor + 8);
-                if (*link >= 0) {
-                    u8 *other = (u8 *)descriptors + (u8)*link * 0x18;
-                    u32 otherSize = rwElementSize(*(u32 *)(other + 4));
+                if (i == j) continue;
+                if (!rwElementEqual(*(u32 *)(descriptor + 4),
+                                    *(u8 **)descriptor + i * size,
+                                    *(u8 **)descriptor + j * size))
+                    continue;
+                s32 equal = 1;
+                const s8 *link = (const s8 *)(descriptor + 8);
+                u32 linkSize =
+                    rwElementSize(*(u32 *)((u8 *)descriptors + (s32)*link * 0x18 + 4));
+                while ((s32)*link >= 0) {
+                    u8 *other = (u8 *)descriptors + (s32)*link * 0x18;
                     u8 *otherData = *(u8 **)other;
-                    if (!rwElementEqual(*(u32 *)(other + 4), otherData + i * otherSize,
-                                        otherData + j * otherSize)) {
+                    if (!rwElementEqual(*(u32 *)(other + 4), otherData + i * linkSize,
+                                        otherData + j * linkSize)) {
                         equal = false;
+                        break;
                     }
                     link++;
-                    while (equal && *link >= 0) {
-                        other = (u8 *)descriptors + (u8)*link * 0x18;
-                        otherSize = rwElementSize(*(u32 *)(other + 4));
-                        otherData = *(u8 **)other;
-                        if (!rwElementEqual(*(u32 *)(other + 4), otherData + i * otherSize,
-                                            otherData + j * otherSize)) {
-                            equal = false;
-                            break;
-                        }
-                        link++;
-                    }
+                    linkSize =
+                        rwElementSize(*(u32 *)((u8 *)descriptors + (s32)*link * 0x18 + 4));
                 }
                 if (equal) {
-                    streamIndices[j] = i;
-                    result[stream * 2 + 1]--;
+                    ((u32 *)header[0])[j] = i;
+                    header[1]--;
                 }
             }
         }
+        descriptor += 0x18;
+        header += 2;
     }
     return result;
 }
