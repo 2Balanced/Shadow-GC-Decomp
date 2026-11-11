@@ -309,9 +309,11 @@ void UnkScreenBlur_8042DA00::SetParam(const UnkScreenBlurParam_8042D974 &param) 
     m_param = param;
 }
 
+#pragma scheduling off
 UnkScreenBlurParam_8042D974 UnkScreenBlur_8042DA00::GetParam() const {
     return m_param;
 }
+#pragma scheduling reset
 
 void UnkScreenBlur_8042DA00::Capture() {
     m_captured = 0;
