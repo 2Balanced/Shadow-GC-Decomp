@@ -203,6 +203,80 @@ done:
     }
 }
 
+void *memcpy(void *destination, const void *source, u32 size);
+
+u32 *fn_8045CBD4(u32 *object) {
+    u32 size;
+    u32 *bitset;
+    u32 groups;
+    u16 *data;
+    u32 count = object[1];
+    data = (u16 *)object[0];
+    groups = count / 3;
+    u32 bits = 0;
+    u32 i = 0;
+    while (i < count) {
+        bits |= data[i];
+        i++;
+    }
+    size = (bits + 31) >> 3;
+    bitset = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x00010502);
+    if (bitset != NULL) {
+        u32 copy_size = object[1] * 2;
+        u16 *copy = ((u16 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(copy_size, 0x00010502);
+        if (copy != NULL) {
+            memcpy(copy, data, copy_size);
+            u32 clear;
+            u16 *source;
+            u32 processed = 0;
+            while (processed < groups) {
+                clear = size;
+                u8 *clear_pointer = (u8 *)bitset;
+                while (clear-- != 0) {
+                    *clear_pointer++ = 0;
+                }
+                source = copy;
+                for (u32 j = 0; j < groups; j++) {
+                    s32 first = source[0];
+                    s32 second = source[1];
+                    s32 third = source[2];
+                    s32 mask;
+                    if ((first & second & third) == 0xFFFF) {
+                        goto next;
+                    }
+                    mask = 1 << (first & 31);
+                    if (bitset[first >> 5] & mask) {
+                        goto next;
+                    }
+                    if (bitset[second >> 5] & (1 << (second & 31))) {
+                        goto next;
+                    }
+                    if (bitset[third >> 5] & (1 << (third & 31))) {
+                        goto next;
+                    }
+                    bitset[first >> 5] |= mask;
+                    bitset[source[1] >> 5] |= 1 << (source[1] & 31);
+                    bitset[source[2] >> 5] |= 1 << (source[2] & 31);
+                    processed++;
+                    data[0] = source[0];
+                    data[1] = source[1];
+                    data[2] = source[2];
+                    data += 3;
+                    source[2] = 0xFFFF;
+                    source[1] = 0xFFFF;
+                    source[0] = 0xFFFF;
+next:
+                    source += 3;
+                }
+            }
+            ((void (*)(u16 *))*(u32 *)(lbl_805F15B4 + 0x10C))(copy);
+        }
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(bitset);
+        return object;
+    }
+    return object;
+}
+
 s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {
     s32 left_value = 0;
     s32 right_value = 0;
