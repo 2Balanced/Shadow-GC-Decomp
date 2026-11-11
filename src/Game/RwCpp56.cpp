@@ -108,29 +108,37 @@ void fn_80492BE8(u32 *object, u8 *source) {
     RW_SELECT_READER((u8 *)object, reader);
     u8 *frame = (u8 *)(object[0] + lbl_805F1658);
     u32 kind = *(u32 *)(source + 0xC);
-    if (kind == 8 || kind == 0x20) {
+    switch (kind) {
+    case 4:
+        for (u32 row = 0; row < object[4]; row++) {
+            u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
+            u8 *output = (u8 *)object[1] + object[6] * row;
+            for (u32 x = 0; x < object[3]; x += 2) {
+                *output++ = (input[0] << 4) | (input[1] & 0xF);
+                input += 2;
+            }
+        }
+        if (*(s8 *)(frame + 0x33) == 0) {
+            u16 *palettePtr = (u16 *)object[2];
+            const u8 *paletteInput = *(u8 **)(source + 0x18);
+            for (u32 i = 0; i < 0x10; i++) {
+                *palettePtr++ = (u16)reader(paletteInput);
+                paletteInput += 4;
+            }
+        }
+        break;
+    case 8:
+    case 0x20: {
         void *nested = fn_80492B24(source, object[5]);
         if (nested != NULL) {
             fn_80492BE8(object, (u8 *)nested);
             fn_80487DB0(nested);
         }
-        return;
+        break;
     }
-    if (kind != 4) {
+    default:
         RW_ERROR(0x80000008);
-        return;
-    }
-    for (u32 row = 0; row < object[4]; row++) {
-        u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
-        u8 *output = (u8 *)object[1] + object[6] * row;
-        for (u32 x = 0; x < object[3]; x += 2) {
-            *output++ = (input[0] << 4) | (input[1] & 0xF);
-            input += 2;
-        }
-    }
-    if (*(s8 *)(frame + 0x33) == 0) {
-        u16 *palette = (u16 *)object[2];
-        for (u32 i = 0; i < 0x10; i++) palette[i] = (u16)reader(*(u8 **)(source + 0x18) + i * 4);
+        break;
     }
 }
 
