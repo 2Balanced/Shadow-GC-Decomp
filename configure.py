@@ -770,7 +770,7 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp21.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp22.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp23.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp24.cpp"),
+            Object(NonMatching, "Game/RwCpp24.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp25.cpp"),
             Object(NonMatching, "Game/RwCpp26.cpp"),
             Object(NonMatching, "Game/RwCpp27.cpp"),

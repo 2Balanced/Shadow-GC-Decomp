@@ -90,4 +90,50 @@ u32 *fn_8045F9E8(u32 *object) {
     (&lbl_805F1500)[1]--;
     return object;
 }
+
+s32 fn_804606F0(u32, u32 *);
+u32 fn_8045F374(u32 value, u32 *object);
+extern u32 lbl_805F1518;
+
+u32 *fn_8045FEA0(u32 target) {
+    u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+    u32 *current = (u32 *)sentinel[0];
+    while (current != sentinel) {
+        u32 *candidate = (u32 *)current[-2];
+        if ((candidate[3] & 1) != 0) {
+            if (target < (u32)candidate || target >= (u32)((u8 *)candidate + current[-1])) {
+                current = (u32 *)current[0];
+                continue;
+            }
+            return candidate;
+        }
+        if (fn_804606F0((u32)fn_8045F374, &target) != 0) {
+            return (u32 *)current[-2];
+        }
+        current = (u32 *)current[0];
+    }
+    return NULL;
+}
+
+u32 fn_80460D80(u32 *object) {
+    ((u32 *)object[4])[0] = object[3];
+    ((u32 *)object[3])[1] = object[4];
+    ((u32 *)object[1])[0] = object[0];
+    ((u32 *)object[0])[1] = object[1];
+    ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F1518 + 4), object);
+    return 1;
+}
+
+u32 fn_80460DF0(u32 *object) {
+    if (object[2] != 0 && object[5] != 0) {
+        ((u32 *)object[4])[0] = object[3];
+        ((u32 *)object[3])[1] = object[4];
+        ((u32 *)object[1])[0] = object[0];
+        ((u32 *)object[0])[1] = object[1];
+        ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 **)(lbl_805F15B4 + lbl_805F1518), object);
+    }
+    return 1;
+}
 }
