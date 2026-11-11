@@ -363,18 +363,87 @@ int fn_8046B110(u32 *object, u32 **out1, u32 **out2) {
     } \
 } while (0)
 
+#define RW31_FIRST_PACK_C_UNROLL() do { \
+    RW31_FIRST_PACK_C(out, source); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 4); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 8); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 12); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 16); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 20); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 24); \
+    out += stride; \
+    RW31_FIRST_PACK_C(out, source + 28); \
+    out += stride; \
+    source += 32; \
+} while (0)
+#define RW31_FIRST_PACK_C_CONVERT() do { \
+    u8 *out = dest; \
+    if (vertices > 0) { \
+        s32 i = 0; \
+        s32 remaining = vertices - 8; \
+        if (vertices > 8) { \
+            for (; i < remaining; i += 8) { \
+                RW31_FIRST_PACK_C_UNROLL(); \
+            } \
+        } \
+        for (; i < vertices; i++) { \
+            RW31_FIRST_ONE(RW31_FIRST_PACK_C); \
+        } \
+    } \
+} while (0)
+#define RW31_FIRST_PRE_UNROLL(PACK) do { \
+    u8 *out1 = out + stride; \
+    u8 *out2 = out1 + stride; \
+    u8 *out3 = out2 + stride; \
+    u8 *out4 = out3 + stride; \
+    u8 *out5 = out4 + stride; \
+    u8 *out6 = out5 + stride; \
+    u8 *out7 = out6 + stride; \
+    PACK(out, source); \
+    PACK(out1, source + 4); \
+    PACK(out2, source + 8); \
+    PACK(out3, source + 12); \
+    PACK(out4, source + 16); \
+    PACK(out5, source + 20); \
+    PACK(out6, source + 24); \
+    PACK(out7, source + 28); \
+    out = out7 + stride; \
+    source += 32; \
+} while (0)
+#define RW31_FIRST_PRE_CONVERT(PACK) do { \
+    u8 *out = dest; \
+    if (vertices > 0) { \
+        s32 i = 0; \
+        s32 remaining = vertices - 8; \
+        if (vertices > 8) { \
+            for (; i < remaining; i += 8) { \
+                RW31_FIRST_PRE_UNROLL(PACK); \
+            } \
+        } \
+        for (; i < vertices; i++) { \
+            RW31_FIRST_ONE(PACK); \
+        } \
+    } \
+} while (0)
+
 #pragma scheduling off
 s32 fn_804699F0(u8 *dest, const u8 *source, s32 type, s32 vertices, u32 stride) {
     s32 bytes = 0;
     switch (type) {
     case 0:
         if (stride == 0) stride = 2;
-        RW31_FIRST_CONVERT(RW31_FIRST_PACK_A);
+        RW31_FIRST_PRE_CONVERT(RW31_FIRST_PACK_A);
         bytes = vertices * 2;
         break;
     case 1:
         if (stride == 0) stride = 3;
-        RW31_FIRST_CONVERT(RW31_FIRST_COPY3);
+        RW31_FIRST_PRE_CONVERT(RW31_FIRST_COPY3);
         bytes = vertices * 3;
         break;
     case 3:
@@ -384,13 +453,13 @@ s32 fn_804699F0(u8 *dest, const u8 *source, s32 type, s32 vertices, u32 stride) 
         break;
     case 4:
         if (stride == 0) stride = 3;
-        RW31_FIRST_CONVERT(RW31_FIRST_PACK_C);
+        RW31_FIRST_PACK_C_CONVERT();
         bytes = vertices * 3;
         break;
     case 2:
     case 5:
         if (stride == 0) stride = 4;
-        RW31_FIRST_CONVERT(RW31_FIRST_WORD);
+        RW31_FIRST_PRE_CONVERT(RW31_FIRST_WORD);
         bytes = vertices * 4;
         break;
     }
