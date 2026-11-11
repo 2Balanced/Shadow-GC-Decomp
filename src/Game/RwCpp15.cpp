@@ -1,4 +1,8 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare small callbacks and accessors. Names are inferred from behavior.
+ * NonMatching: the interpolation routines below remain scalar C++; retail uses paired-single
+ * arithmetic that GC/2.7 does not generate from these C++ forms. No inline assembly is used.
+ * fn_80451E6C also retains one merged range branch, and fn_80450938 retains a larger stack frame
+ * and register-allocation differences. */
 #include <dolphin/types.h>
 #include <string.h>
 

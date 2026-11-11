@@ -95,7 +95,7 @@ extern "C" u32 fn_8044F4D0(u32 *object, u32 *table) {
     return (u32)lbl_805E1560;
 }
 
-extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32 index) {
+extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, s32 count, u32 index) {
     u16 *output;
     if (object[13] != 0) {
         u8 local[0x28];
@@ -113,7 +113,7 @@ extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32
         }
 
         output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
-        for (u32 i = 0; i < count; i++) {
+        for (s32 i = 0; i < count; i++) {
             u32 expected = tableB[tableA[i]] & 0xFF;
             u32 candidate = 0;
             bool found = false;
@@ -130,7 +130,7 @@ extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32
         }
     } else {
         output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
-        for (u32 i = 0; i < count; i++) {
+        for (s32 i = 0; i < count; i++) {
             u32 expected = tableB[tableA[i]] & 0xFF;
             u8 *candidates = (u8 *)object[2];
             for (u32 j = 0; j < object[1]; j++) {
