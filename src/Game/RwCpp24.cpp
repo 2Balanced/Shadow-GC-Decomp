@@ -1,5 +1,6 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior. */
 #include <dolphin/types.h>
+#include <string.h>
 
 extern "C" {
 u32 *fn_8045FB10(u32 *object);
@@ -680,5 +681,181 @@ u32 *fn_8045F458(u32 *object, u32 *value, u32 *node, u32 *slot) {
         return NULL;
     }
     return object;
+}
+
+void fn_8045B788(u32 *);
+void fn_8048209C(u8 *, u32 *);
+u32 fn_8047DC28(u32, u32, ...);
+void fn_8047DB84(u32 *);
+extern f32 lbl_805FB178;
+
+u32 *fn_80460138(u32 *config) {
+    u32 errors[4];
+    u32 resolve_stack[64];
+    u32 cleanup_stack[64];
+    u32 *outer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(
+        *(u32 *)lbl_8056D898, 0x3000B);
+    if (outer == NULL) {
+        errors[2] = 2;
+        errors[3] = fn_8047DC28(0x80000013, *(u32 *)lbl_8056D898);
+        fn_8047DB84(errors + 2);
+        return NULL;
+    }
+    ((u8 *)outer)[0] = 7;
+    ((u8 *)outer)[1] = 0;
+    ((u8 *)outer)[2] = 0;
+    ((u8 *)outer)[3] = 0;
+    outer[1] = 0;
+    fn_8045B788(outer + 4);
+    outer[3] = 2;
+    outer[2] = 0;
+    u32 *inner = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(
+        *(u32 *)lbl_8056D880, 0x3000B);
+    if (inner == NULL) {
+        errors[0] = 2;
+        errors[1] = fn_8047DC28(0x80000013, 4);
+        fn_8047DB84(errors);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+        return NULL;
+    }
+    ((s32 *)inner)[0] = -1;
+    inner[13] = 0;
+    inner[30] = 0;
+    inner[14] = (u32)(inner + 14);
+    inner[15] = (u32)(inner + 14);
+    inner[16] = (u32)(inner + 16);
+    inner[17] = (u32)(inner + 16);
+    ((u16 *)inner)[65] = 0;
+    ((u16 *)inner)[66] = 0;
+    inner[2] = 0;
+    inner[1] = 0;
+    inner[3] = 0;
+    memset(inner + 4, 0, 32);
+    inner[12] = 0;
+    inner[21] = config[3];
+    inner[22] = config[4];
+    inner[23] = config[5];
+    inner[18] = config[0];
+    inner[19] = config[1];
+    inner[20] = config[2];
+    inner[27] = config[3];
+    inner[28] = config[4];
+    inner[29] = config[5];
+    inner[24] = config[0];
+    inner[25] = config[1];
+    inner[26] = config[2];
+    inner[31] = 0;
+    outer[7] = (u32)inner;
+    outer[8] = 0;
+    ((f32 *)outer)[19] = lbl_805FB178;
+    ((f32 *)outer)[18] = lbl_805FB178;
+    ((f32 *)outer)[17] = lbl_805FB178;
+    outer[23] = config[3];
+    outer[24] = config[4];
+    outer[25] = config[5];
+    outer[20] = config[0];
+    outer[21] = config[1];
+    outer[22] = config[2];
+    outer[11] = (u32)(outer + 11);
+    outer[12] = (u32)(outer + 11);
+    outer[9] = 0;
+    outer[10] = (u32)(outer + 11);
+    outer[13] = (u32)(outer + 13);
+    outer[14] = (u32)(outer + 13);
+    outer[15] = (u32)(outer + 15);
+    outer[16] = (u32)(outer + 15);
+    outer[26] = (u32)fn_8045FB10;
+    outer[27] = 0;
+    u32 config_value = *(u32 *)lbl_8056D898;
+    u32 *link_node = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F1500), 0x40507);
+    if (link_node != NULL) {
+        link_node[0] = (u32)outer;
+        link_node[1] = config_value;
+        u32 *link = link_node + 2;
+        link_node[2] = *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+        link_node[3] = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
+        *(u32 *)(*(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) + 4) = (u32)link;
+        *(u32 **)(lbl_805F15B4 + lbl_805F1500 + 4) = link;
+    }
+    fn_8048209C(lbl_8056D898, outer);
+    fn_8048209C(lbl_8056D880, inner);
+    u32 *resolved = NULL;
+    u32 *node = (u32 *)outer[7];
+    s32 index = 0;
+    if (node != NULL) {
+        resolved = outer;
+        do {
+            if (*(s32 *)node < 0) {
+                u32 *slot = (u32 *)(resolved[4] + ((u16 *)node)[64] * 4);
+                if (node[30] == 0) {
+                    u32 *value = fn_8045C144(((u16 *)node)[66], resolved[4]);
+                    if (value == NULL) {
+                        resolved = NULL;
+                        break;
+                    }
+                    resolved = fn_8045F458(resolved, value, node, slot);
+                    if (resolved == NULL) {
+                        break;
+                    }
+                }
+                node = (u32 *)resolve_stack[index--];
+            } else {
+                u32 child = node[3];
+                node = (u32 *)node[2];
+                resolve_stack[++index] = child;
+            }
+        } while (index >= 0);
+    }
+    if (resolved != NULL) {
+        return outer;
+    }
+    u32 *current;
+    u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+    current = (u32 *)sentinel[0];
+    while (current != sentinel) {
+        u32 *link = current - 2;
+        if (current[-2] == (u32)outer) {
+            ((u32 *)link[3])[0] = link[2];
+            ((u32 *)link[2])[1] = link[3];
+            ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+                *(u32 **)(lbl_805F15B4 + lbl_805F1500), link);
+            break;
+        }
+        current = (u32 *)current[0];
+    }
+    node = (u32 *)outer[7];
+    index = 0;
+    if (node != NULL) {
+        u32 zero = index;
+        do {
+            if (*(s32 *)node < 0) {
+                if (node[30] != 0) {
+                    fn_8045C2D4((u32 *)node[30]);
+                    node[30] = zero;
+                }
+                node = (u32 *)cleanup_stack[index--];
+            } else {
+                u32 child = node[3];
+                node = (u32 *)node[2];
+                cleanup_stack[++index] = child;
+            }
+        } while (index >= 0);
+    }
+    fn_8045B6F0(outer + 4);
+    if (((u8 *)outer)[3] & 1) {
+        if (outer[7] != 0) {
+            fn_8045F6E0((u32 *)outer[7]);
+        }
+        fn_80482144(lbl_8056D898, outer);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+    } else {
+        if (outer[7] != 0) {
+            fn_8045F7D0((u32 *)outer[7]);
+        }
+        fn_80482144(lbl_8056D898, outer);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+    }
+    return NULL;
 }
 }
