@@ -2,7 +2,8 @@
  * fn_8045CA38 has retail's instruction sequence and size; GC/2.7 assigns one extra saved register
  * to the final field temporaries. Direct, cached, and scoped comparison forms were measured.
  * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift.
- * fn_8045C56C matches size and the expansion loops; only setup scheduling/register choices differ. */
+ * fn_8045C56C matches size and the expansion loops; only setup scheduling/register choices differ.
+ * fn_8045C770 matches size and all conversion code; its entry-type load is scheduled one store later. */
 #include <dolphin/types.h>
 
 extern u8 *lbl_805F15B4;
@@ -125,6 +126,81 @@ next_record:
         record += 12;
     }
     return stream;
+}
+
+u32 fn_8047D868(u8 *stream, void *data, u32 size);
+u32 fn_8045B79C(u32 *object, u32 index);
+
+u32 *fn_8045C770(u8 *stream, u8 *entry, u32 *search) {
+    u32 pair[2];
+    u32 header[3];
+    if (fn_8047D868(stream, header, 12) == 0) {
+        return NULL;
+    }
+    u32 size = header[1] * 16 + 16;
+    if (entry[0] == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+        goto add_values;
+    }
+    if (entry[0] == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+        goto add_values;
+    }
+    goto size_ready;
+add_values:
+    size += header[2] * 2;
+size_ready:
+    {
+        u32 *object = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x00030502);
+        if (object == NULL) {
+            goto done;
+        }
+        u32 type;
+        u8 *record = (u8 *)object + 16;
+        u8 *output = record + header[1] * 12;
+        object[0] = header[0];
+        type = entry[0];
+        *(u16 *)((u8 *)object + 4) = header[1];
+        *(s16 *)((u8 *)object + 6) = *(s16 *)(lbl_805F15B4 + lbl_805F14F0);
+        object[2] = header[2];
+        object[3] = 0;
+        (*(s16 *)(lbl_805F15B4 + lbl_805F14F0))++;
+        u32 count = *(u16 *)((u8 *)object + 4);
+        while (count-- != 0) {
+            if (fn_8047D868(stream, pair, 8) == 0) {
+                return NULL;
+            }
+            ((u32 *)record)[1] = pair[0];
+            ((u32 *)record)[2] = fn_8045B79C(search, pair[1]);
+            ((u32 *)record)[0] = (u32)output;
+            if (type == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+                goto convert;
+            }
+            if (type == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+                goto convert;
+            }
+            goto next_record;
+convert:
+            {
+                u32 remaining = ((u32 *)record)[1];
+                u32 values[256];
+                while (remaining != 0) {
+                    u32 *input = values;
+                    u32 chunk = remaining < 256 ? remaining : 256;
+                    if (fn_8047D868(stream, input, chunk * 4) == 0) {
+                        return NULL;
+                    }
+                    remaining -= chunk;
+                    while (chunk-- != 0) {
+                        *(u16 *)output = *input++;
+                        output += 2;
+                    }
+                }
+            }
+next_record:
+            record += 12;
+        }
+done:
+        return object;
+    }
 }
 
 s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {
