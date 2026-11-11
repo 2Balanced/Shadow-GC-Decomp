@@ -28,29 +28,34 @@ void fn_80460790(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
 }
 
 void fn_80460B68(u8 *object) {
+    u32 offset = lbl_805F1508;
+    u32 *target = (u32 *)(object + offset);
     ((u32 *)lbl_805F15B4)[1] = 0;
-    u32 *target = (u32 *)(object + lbl_805F1508);
-    void (*callback)(void) = (void (*)(void))target[5];
-    callback();
+    void (*callback)(u8 *) = (void (*)(u8 *))target[5];
+    callback(object);
 }
 
 u32 *fn_8045F390(u32 *object);
 void fn_804624E8(u8 *, u32, u32 *, u32);
-void fn_80462130(u32 *object);
+void fn_80462130(u32 *, u32 *, u32);
 void fn_8047FCDC(u32 *table);
 void fn_80462770(void);
 extern u32 lbl_805F1500;
 
-u32 *fn_8045FF5C(u32 *object) {
-    fn_804624E8(lbl_805F15B4, (u32)fn_8045F390, object, object[1]);
+u32 *fn_8045FF5C(u32 *object, u32 unused_a, u32 unused_b, u32 last) {
+    fn_804624E8(*(u8 **)lbl_805F15B4, (u32)fn_8045F390, object, last);
     return object;
 }
 
 void fn_80460B1C(u32 *object) {
-    u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
-    ((u32 *)lbl_805F15B4)[1] = table[3];
-    ((u16 *)lbl_805F15B4)[4]++;
-    ((void (*)(void))table[4])();
+    u8 *engine = lbl_805F15B4;
+    u32 offset = lbl_805F1508;
+    u32 *table = (u32 *)((u8 *)object + offset);
+    ((u32 *)engine)[1] = table[3];
+    engine = lbl_805F15B4;
+    u32 count = ((u16 *)engine)[4];
+    ((u16 *)engine)[4] = count + 1;
+    ((void (*)(u32 *, u32))table[4])(object, count);
 }
 
 u32 *fn_80460BA4(u32 *object);
@@ -70,13 +75,16 @@ void fn_80460C48(u32 *object) {
     table[3] = 0;
 }
 
-u32 *fn_80460CA4(u32 *object) {
-    u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
-    table[0] = 0;
-    table[1] = 0;
-    table[2] = 0;
-    if (*(u32 *)((u8 *)object + lbl_805F1508 + 12) != 0) {
-        fn_80462130(object);
+u32 *fn_80460CA4(u32 *object, u32 *engine) {
+    u32 zero = 0;
+    u32 offset = lbl_805F1508;
+    u32 *table = (u32 *)((u8 *)object + offset);
+    table[0] = zero;
+    table[1] = zero;
+    table[2] = zero;
+    u32 condition = *(u32 *)((u8 *)engine + offset + 12);
+    if (condition != 0) {
+        fn_80462130((u32 *)condition, object, zero);
     }
     return object;
 }
