@@ -250,13 +250,12 @@ int fn_8043B05C(int bank, int *header, void (*callback)(void *), void *data, int
     if (*(u32 *)((u8 *)lbl_805F1404 + bank + 0x5378) != 0) {
         fn_8043ACE8(*(void **)((u8 *)lbl_805F1404 + bank + 0x5378));
     }
-    void *memory = fn_8043AD94(wave[3]);
-    *(void **)((u8 *)lbl_805F1404 + bank + 0x5378) = memory;
-    if (memory == NULL) {
+    *(void **)((u8 *)lbl_805F1404 + bank + 0x5378) = fn_8043AD94(wave[3]);
+    if (*(void **)((u8 *)lbl_805F1404 + bank + 0x5378) == NULL) {
         return -4;
     }
     *(int *)((u8 *)lbl_805F1404 + bank + 0x537C) = wave[3];
-    memcpy(memory, wave + 4, wave[3]);
+    memcpy(*(void **)((u8 *)lbl_805F1404 + bank + 0x5378), wave + 4, wave[3]);
     return result;
 }
 
