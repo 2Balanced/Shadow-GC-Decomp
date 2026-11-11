@@ -72,7 +72,7 @@ s32 fn_8045AAA0(u32, u32, void *, void *, void *);
 s32 fn_8045AAE0(u32, void *, void *, void *);
 s32 fn_8045B2CC(u32, u32, void *, void *, void *);
 s32 fn_8045B30C(u32, void *, void *, void *);
-u32 fn_8048D280(u32, u32, void *, void *, u32);
+u32 fn_8048D280(u32, u32, void *, void *, void *);
 s32 fn_80483AFC(u32, void *, void *, void *);
 
 u32 fn_8047D868(void *, void *, u32);
@@ -108,7 +108,7 @@ void fn_8047F958(void *);
 
 double fn_803B1C3C(double, double);
 
-u32 fn_80452C98(u32);
+u32 fn_80452C98(s32);
 float *fn_80453820(float *, const float *);
 
 /* Dictionary stream/interpolation callbacks registered by fn_80452CDC,
@@ -116,7 +116,7 @@ float *fn_80453820(float *, const float *);
 u32 fn_80453018(u32 *, u32 *, u32, float, u32 *);
 u32 fn_804530CC(void *, u32 *);
 u32 fn_804531B0(u32 *, void *);
-float *fn_804532E4(float *, const float *);
+void fn_804532E4(float *, const float *);
 void fn_80453350(float *, const float *, const float *, float);
 void fn_804533E0(float *, const float *, const float *, float);
 void fn_8045345C(float *, const float *);
@@ -411,14 +411,11 @@ u32 fn_80452A40(u8 *base, u32 offset)
 /* How many entries of the first dictionary carry values. */
 u32 fn_80452B90(u8 *object)
 {
-    u32 *dictionary = (u32 *)(object + lbl_805F1458);
-    if ((s32)dictionary[0] <= 0) {
-        return 0;
-    }
-    u32 *entry = (u32 *)dictionary[1];
     u32 found = 0;
-    for (u32 i = 0; i < dictionary[0]; i++, entry += 4) {
-        if (entry[3] != 0) {
+    u32 offset = found;
+    u32 *dictionary = (u32 *)(object + lbl_805F1458);
+    for (s32 i = found; i < (s32)dictionary[0]; i++, offset += 0x10) {
+        if (*(u32 *)(dictionary[1] + offset + 0x0C) != 0) {
             found++;
         }
     }
@@ -428,14 +425,11 @@ u32 fn_80452B90(u8 *object)
 /* The same count for the second dictionary. */
 u32 fn_80452C04(u8 *object)
 {
-    u32 *dictionary = (u32 *)(object + lbl_805F1460);
-    if ((s32)dictionary[0] <= 0) {
-        return 0;
-    }
-    u32 *entry = (u32 *)dictionary[1];
     u32 found = 0;
-    for (u32 i = 0; i < dictionary[0]; i++, entry += 4) {
-        if (entry[3] != 0) {
+    u32 offset = found;
+    u32 *dictionary = (u32 *)(object + lbl_805F1460);
+    for (s32 i = found; i < (s32)dictionary[0]; i++, offset += 0x10) {
+        if (*(u32 *)(dictionary[1] + offset + 0x0C) != 0) {
             found++;
         }
     }
@@ -443,11 +437,13 @@ u32 fn_80452C04(u8 *object)
 }
 
 /* Byte width of one value for an entry of the given type. */
-u32 fn_80452C98(u32 type)
+u32 fn_80452C98(s32 type)
 {
     switch (type) {
     case 1:
+        return 4;
     case 2:
+        return 4;
     case 3:
         return 4;
     default:
@@ -472,51 +468,51 @@ u32 fn_80452CDC(void)
     if ((s32)lbl_805F145C < 0) {
         return 0;
     }
-    lbl_805F1460 = fn_8045F2F8(8, 0x11F, fn_80453018, fn_804531B0, fn_804532E4);
+    lbl_805F1460 = fn_8045F2F8(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1458 < 0) {
         return 0;
     }
-    lbl_805F1464 = fn_8045F338(0x11F, fn_804530CC, fn_804531B0, fn_804532A4);
+    lbl_805F1464 = fn_8045F338(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F145C < 0) {
         return 0;
     }
-    lbl_805F1468 = fn_804878D4(8, 0x11F, fn_804532E4, fn_80453350, fn_804533E0);
+    lbl_805F1468 = fn_804878D4(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1468 < 0) {
         return 0;
     }
-    lbl_805F146C = fn_804836EC(0x11F, fn_80453350, fn_804533E0, fn_8045345C);
+    lbl_805F146C = fn_804836EC(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F146C < 0) {
         return 0;
     }
-    lbl_805F1470 = fn_804859B8(8, 0x11F, fn_8045345C, fn_80453500, fn_804535C8);
+    lbl_805F1470 = fn_804859B8(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1470 < 0) {
         return 0;
     }
-    lbl_805F1474 = fn_80483554(0x11F, fn_804535C8, fn_804536B4, fn_80453770);
+    lbl_805F1474 = fn_80483554(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F1474 < 0) {
         return 0;
     }
-    lbl_805F1478 = fn_8045AAA0(8, 0x11F, fn_80453770, fn_80453820, fn_804532E4);
+    lbl_805F1478 = fn_8045AAA0(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1478 < 0) {
         return 0;
     }
-    lbl_805F147C = fn_8045AAE0(0x11F, fn_80453820, fn_804535C8, fn_80453594);
+    lbl_805F147C = fn_8045AAE0(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F147C < 0) {
         return 0;
     }
-    lbl_805F1480 = fn_8045B2CC(8, 0x11F, fn_80453594, fn_804535C8, fn_804532E4);
+    lbl_805F1480 = fn_8045B2CC(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1480 < 0) {
         return 0;
     }
-    lbl_805F1484 = fn_8045B30C(0x11F, fn_804535C8, fn_804536B4, fn_80453770);
+    lbl_805F1484 = fn_8045B30C(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F1484 < 0) {
         return 0;
     }
-    lbl_805F1488 = fn_8048D280(8, 0x11F, fn_80453770, fn_80453820, 0x20);
+    lbl_805F1488 = fn_8048D280(8, 0x11F, fn_80452730, fn_80452744, fn_80452860);
     if ((s32)lbl_805F1488 < 0) {
         return 0;
     }
-    lbl_805F148C = fn_80483AFC(0x11F, fn_80453820, fn_804532E4, fn_80453500);
+    lbl_805F148C = fn_80483AFC(0x11F, fn_80452898, fn_8045294C, fn_80452A40);
     if ((s32)lbl_805F148C < 0) {
         return 0;
     }
@@ -599,22 +595,22 @@ u32 fn_804531B0(u32 *record, void *stream)
 
 /* A key record's six payload floats as a 0x40 byte matrix; the untouched words
    3, 7, 11 and 15 are the flags and padding. */
-float *fn_804532E4(float *dest, const float *source)
+void fn_804532E4(float *dest, const float *source)
 {
+    float zero = lbl_805FB0D8;
     dest[0] = source[2];
     dest[1] = source[3];
-    dest[2] = lbl_805FB0D8;
+    dest[2] = zero;
     dest[4] = source[4];
     dest[5] = source[5];
-    dest[6] = lbl_805FB0D8;
-    dest[8] = lbl_805FB0D8;
-    dest[9] = lbl_805FB0D8;
-    dest[10] = lbl_805FB0D8;
+    dest[6] = zero;
+    dest[8] = zero;
+    dest[9] = zero;
+    dest[10] = zero;
     dest[12] = source[6];
     dest[13] = source[7];
-    dest[14] = lbl_805FB0D8;
+    dest[14] = zero;
     fn_8047EBA0(dest);
-    return dest;
 }
 
 /* Linearly blend payload words 2..7 of two records at time. */
@@ -787,13 +783,14 @@ u32 fn_80453A78(void)
         return 0;
     }
     lbl_805F149C = fn_8045B2CC(0x28, 0x135, fn_80453B24, fn_80453B64, fn_80453C04);
-    if (fn_8045B30C(0x135, fn_80453FB0, fn_80453E24, fn_80454294) < 0) {
-        return 0;
+    s32 streamResult = fn_8045B30C(0x135, fn_80453FB0, fn_80453E24, fn_80454294);
+    s32 result = 0;
+    if (streamResult >= 0) {
+        if ((s32)lbl_805F149C >= 0) {
+            result = 1;
+        }
     }
-    if ((s32)lbl_805F149C < 0) {
-        return 0;
-    }
-    return 1;
+    return result;
 }
 
 /* Chunk 0x135 destructor callback: the two frames, then release the nodes. Retail
