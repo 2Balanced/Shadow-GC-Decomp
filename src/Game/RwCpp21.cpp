@@ -4,7 +4,9 @@
  * their remaining differences are copy-register and first-comparison scheduling choices.
  * fn_8045AFA4 matches size and returns; its first data-pointer setup is scheduled after the saves.
  * fn_8045AD34 matches size; its constant loads and assignments use different volatile registers.
- * fn_8045B13C also matches size; its byte temporary and source-table registers differ. */
+ * fn_8045B13C also matches size; its byte temporary and source-table registers differ.
+ * fn_8045BFBC matches size and the emitted byte layout; its temporary registers and final two
+ * store forms differ. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -288,6 +290,49 @@ u32 *fn_8045B6F0(u32 *object) {
 
 extern u32 lbl_805F14F0;
 extern u32 lbl_805EDDC0;
+
+u32 *fn_8047FBD8(u32 size, u32 count, u32 alignment, u32 tag);
+
+u8 *fn_8045BFBC(u8 *stream, u32 value) {
+    lbl_805F14F0 = value;
+    if ((s32)(&lbl_805F14F0)[1] == 0) {
+        lbl_805EDDC0 = (u32)fn_8047FBD8(12, 50, 4, 0x00040502);
+        if (lbl_805EDDC0 == 0) {
+            if (lbl_805EDDC0 != 0) {
+                fn_8047FCDC((u32 *)lbl_805EDDC0);
+                lbl_805EDDC0 = 0;
+            }
+            return NULL;
+        }
+    }
+    *(s16 *)(lbl_805F15B4 + lbl_805F14F0) = 1;
+    (&lbl_805F14F0)[1]++;
+    u32 offset = lbl_805F14F0 + 8;
+    lbl_805F15B4[offset] = 3;
+    offset = lbl_805F14F0 + 9;
+    lbl_805F15B4[offset] = 4;
+    offset = lbl_805F14F0 + 10;
+    lbl_805F15B4[offset] = 5;
+    offset = lbl_805F14F0 + 12;
+    lbl_805F15B4[offset] = 1;
+    offset = lbl_805F14F0 + 16;
+    lbl_805F15B4[offset] = 2;
+    offset = lbl_805F14F0 + 24;
+    lbl_805F15B4[offset] = 6;
+    offset = lbl_805F14F0 + 40;
+    lbl_805F15B4[offset] = 4;
+    offset = lbl_805F14F0 + 41;
+    lbl_805F15B4[offset] = 8;
+    offset = lbl_805F14F0 + 42;
+    lbl_805F15B4[offset] = 0;
+    offset = lbl_805F14F0 + 43;
+    lbl_805F15B4[offset] = 1;
+    offset = lbl_805F14F0 + 44;
+    lbl_805F15B4[offset] = 2;
+    offset = lbl_805F14F0 + 45;
+    lbl_805F15B4[offset] = 16;
+    return stream;
+}
 
 u32 *fn_8045BF64(u32 *object) {
     if (--(&lbl_805F14F0)[1] == 0 && lbl_805EDDC0 != 0) {
