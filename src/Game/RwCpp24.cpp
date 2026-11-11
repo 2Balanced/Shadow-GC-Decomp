@@ -267,7 +267,7 @@ u32 *fn_8045C144(u32, u32);
 u32 *fn_8045F458(u32 *, u32 *, u32 *, u32 *);
 
 u32 *fn_8045FDB0(u32 *object) {
-    u32 buffer[66];
+    volatile u32 buffer[66];
     u32 *node = (u32 *)object[7];
     s32 index = 0;
     if (node == NULL) {
@@ -293,7 +293,7 @@ pop_node:
             node = (u32 *)buffer[index--];
         } else {
             u32 child = node[3];
-            node = (u32 *)node[2];
+            node = *(u32 *volatile *)(node + 2);
             buffer[++index] = child;
         }
     } while (index >= 0);
@@ -354,7 +354,7 @@ u32 fn_8045FFA0(u32 *object) {
     current = (u32 *)sentinel[0];
     while (current != sentinel) {
         u32 *link = current - 2;
-        if (current[-2] == (u32)object) {
+        if (*(u32 volatile *)link == (u32)object) {
             ((u32 *)link[3])[0] = link[2];
             ((u32 *)link[2])[1] = link[3];
             ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
