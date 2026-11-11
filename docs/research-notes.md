@@ -284,3 +284,18 @@ GC/2.7 does not expose to the source.
 `Game/TGiNumberDisplay` is the counter-example worth remembering: two spelling changes (the
 bottom edge added at the store, and `-total / 2.0f` instead of `-total * 0.5f`) took `fn_800BC7BC`
 from 17 mismatched rows to 0 of its 220 instructions, so always probe before writing a floor.
+
+Two measured callback levers now account for several exact matches. If retail preserves an input
+pointer in `r3`, a source declaration that returns that pointer can be required: the `void` form
+lets GC/2.7 reuse `r3` for a temporary and changes the whole allocation. This matched helpers in
+`Game/RwCpp07`, `RwCpp09`, `RwCpp17`, `RwCpp18`, `RwCpp19`, `RwCpp25` and `RwCpp46`. Likewise, a
+wrapper that drops an existing argument or an indirect callee's result often shifts every temporary
+one register down. Forward the argument and result explicitly, using cross-unit declarations where
+available; `Game/TMessageDisp.cpp`'s declaration of `fn_80473CE0` identified its `path` argument and
+`RtCharset *` result. Check callers after these corrections: the right signature should not add
+instructions at the call site.
+
+`#pragma scheduling off` is useful but not universal. It made `Game/RwCpp16`'s `fn_804533E0` and
+`Game/EffectScreenBlurRW3`'s `GetParam` instruction-identical, while regressing the prologue and
+call setup of `Game/RwCpp16`'s `fn_804535C8` and the axis rotation in
+`Game/UnkAxisRotation_80049778`. Keep it scoped to one function and measure each use.
