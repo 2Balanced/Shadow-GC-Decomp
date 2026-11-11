@@ -233,6 +233,40 @@ u32 fn_8045B1F4(u32 *object) {
     return 1;
 }
 
+u32 fn_8047DC28(u32 code, u32 size, ...);
+void fn_8047DB84(u32 *error);
+
+s32 fn_8045B7AC(u32 *object, u32 *value) {
+    if ((s32)object[2] > (s32)object[1]) {
+        ((u32 *)object[0])[object[1]] = (u32)value;
+        (*(s16 *)((u8 *)value + 24))++;
+        object[1]++;
+        return (s32)object[1] - 1;
+    }
+    u32 capacity = object[2] + 20;
+    u32 error_size = capacity * 4;
+    u32 *buffer;
+    if (object[0] != 0) {
+        buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
+            (u32 *)object[0], capacity * 4, 0x01030008);
+    } else {
+        buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(capacity * 4, 0x01030008);
+    }
+    if (buffer == NULL) {
+        u32 error[2];
+        error[0] = 2;
+        error[1] = fn_8047DC28(0x80000013, error_size);
+        fn_8047DB84(error);
+        return -1;
+    }
+    object[0] = (u32)buffer;
+    object[2] += 20;
+    buffer[object[1]] = (u32)value;
+    (*(s16 *)((u8 *)value + 24))++;
+    object[1]++;
+    return (s32)object[1] - 1;
+}
+
 u32 *fn_8045B6F0(u32 *object) {
     u32 *current;
     u32 *entries = (u32 *)object[0];
