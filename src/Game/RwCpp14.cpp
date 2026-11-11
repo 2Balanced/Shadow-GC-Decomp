@@ -490,8 +490,10 @@ extern "C" u32 fn_8044F9E4(u32 *object, u32 arg2, u32 *out) {
         u32 *vertexValues = (u32 *)values[valuesIndex / 4];
         u32 *lookup = NULL;
         if (record[4] <= 1) {
-            u32 streamIndex = 1 + ((object[2] & 0x10) != 0 ? 1 : 0) + ((object[2] & 0x8) != 0 ? 1 : 0) +
-                              ((object[2] & 0x84) != 0 ? object[7] : 0);
+            u32 streamIndex = 1;
+            if ((object[2] & 0x10) != 0) streamIndex++;
+            if ((object[2] & 0x8) != 0) streamIndex++;
+            if ((object[2] & 0x84) != 0) streamIndex += object[7];
             lookup = (u32 *)fn_8044F740(record, (u16 *)vertexValues[0],
                                         (u32 *)packed[streamIndex], descriptor[5], vertex);
         }
@@ -537,8 +539,10 @@ extern "C" u32 fn_8044F9E4(u32 *object, u32 arg2, u32 *out) {
     fn_8046F208(context, payload, second, (u32)end);
     fn_8046F6CC(context, payload, second, 0, 0);
     if (record[4] > 1) {
-        u32 streamIndex = 1 + ((object[2] & 0x10) != 0 ? 1 : 0) + ((object[2] & 0x8) != 0 ? 1 : 0) +
-                          ((object[2] & 0x84) != 0 ? object[7] : 0);
+        u32 streamIndex = 1;
+        if ((object[2] & 0x10) != 0) streamIndex++;
+        if ((object[2] & 0x8) != 0) streamIndex++;
+        if ((object[2] & 0x84) != 0) streamIndex += object[7];
         memcpy((void *)record[10], (void *)packed[streamIndex], record[4] * packed[streamIndex + 1]);
         memcpy((void *)record[9], (void *)packed[streamIndex + 2], record[4] * packed[streamIndex + 3]);
     }
