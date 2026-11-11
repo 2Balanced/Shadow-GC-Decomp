@@ -297,6 +297,36 @@ u32 *fn_8045BF64(u32 *object) {
     return object;
 }
 
+u32 *fn_8045C144(u32 count) {
+    u32 *object = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        lbl_805EDDC0, 0x00030502);
+    if (object != NULL) {
+        object[1] = 0;
+        if (count != 0) {
+            u32 size = count * 20;
+            object[2] = (u32)((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030502);
+            if (object[2] == 0) {
+                ((void (*)(u32, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(lbl_805EDDC0, object);
+                u32 error[2];
+                error[0] = 2;
+                error[1] = fn_8047DC28(0x80000013, size);
+                fn_8047DB84(error);
+                return NULL;
+            }
+            object[0] = count;
+        } else {
+            object[2] = 0;
+            object[0] = 0;
+        }
+        return object;
+    }
+    u32 error[2];
+    error[0] = 2;
+    error[1] = fn_8047DC28(0x80000013, 12);
+    fn_8047DB84(error);
+    return NULL;
+}
+
 u32 fn_8045C26C(u32 *object) {
     if (object[2] != 0) {
         ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(object[2]);
