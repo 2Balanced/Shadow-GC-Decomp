@@ -344,7 +344,7 @@ void fn_8043B4B0(void *target, void **list, void (*callback)(void *)) {
     void *next;
     void *current = *list;
     if (current == target) {
-        next = current;
+        next = *(void **)current;
         if (callback != NULL) {
             callback(current);
         }
@@ -352,22 +352,26 @@ void fn_8043B4B0(void *target, void **list, void (*callback)(void *)) {
         *list = next;
         return;
     }
-    void *previous;
-    do {
-        previous = current;
-        if (previous == NULL) {
+    goto previous_check;
+    for (;;) {
+        next = *(void **)current;
+        if (next == NULL) {
             return;
         }
-        current = *(void **)previous;
+        if (next == target) {
+            *(void **)current = *(void **)next;
+            if (callback != NULL) {
+                callback(next);
+            }
+            fn_8043ACE8(next);
+            return;
+        }
+        current = next;
+previous_check:
         if (current == NULL) {
             return;
         }
-    } while (current != target);
-    *(void **)previous = *(void **)current;
-    if (callback != NULL) {
-        callback(current);
     }
-    fn_8043ACE8(current);
 }
 
 void *fn_8043B560(u32 size, void **list, void (*callback)(void *)) {
@@ -401,30 +405,22 @@ void fn_8043B5FC(void *param) {
         int count = 0;
         if (owner != NULL) {
             void *inner = NULL;
-            int currentCount = 0;
             goto inner_check;
             for (;;) {
-                count = currentCount;
-                inner = fn_8043B3DC((u8 *)owner + 0x10, inner);
-                if (inner != NULL) {
-                    void **object = *(void ***)((u8 *)inner + 4);
-                    currentCount = count;
-                    if (object != NULL) {
-                        currentCount = count + 1;
-                        if (((u32)object[0] & 0x80000003) - 0x80000000 == 2) {
-                            if (*(u16 *)((u8 *)object[0xD] + 0x146) != 0) {
-                                if (*(u32 *)((u8 *)object + 0xD8) != 5) {
-                                    continue;
-                                }
-                                if (*(float *)((u8 *)object + 0xAC) >= lbl_805FAE60) {
-                                    continue;
-                                }
-                            }
-                            currentCount = count;
+                void **object = *(void ***)((u8 *)inner + 4);
+                if (object != NULL) {
+                    count++;
+                    if (((u32)object[0] & 0x80000003) - 0x80000000 == 2) {
+                        if (*(u16 *)((u8 *)object[0xD] + 0x146) == 0) {
+                            count--;
+                        } else if (*(u32 *)((u8 *)object + 0xD8) == 5 &&
+                                   *(float *)((u8 *)object + 0xAC) < lbl_805FAE60) {
+                            count--;
                         }
                     }
                 }
 inner_check:
+                inner = fn_8043B3DC((u8 *)owner + 0x10, inner);
                 if (inner == NULL) {
                     break;
                 }
