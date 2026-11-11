@@ -613,6 +613,7 @@ void fn_804532E4(float *dest, const float *source)
 }
 
 /* Linearly blend payload words 2..7 of two records at time. */
+#pragma scheduling off
 void fn_80453350(float *out, const float *from, const float *to, float time)
 {
     float ratio = (time - from[1]) / (to[1] - from[1]);
@@ -620,6 +621,7 @@ void fn_80453350(float *out, const float *from, const float *to, float time)
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
+#pragma scheduling reset
 
 /* The same blend for a caller that has already worked out the ratio. */
 void fn_804533E0(float *out, const float *from, const float *to, float ratio)
