@@ -11,8 +11,8 @@ static inline u32 rwElementSize(u32 type) {
     case 1: return 1;
     case 2: return 2;
     case 3: return 3;
-    case 4:
-    case 6:
+    case 4: return 4;
+    case 6: return 4;
     case 10: return 4;
     case 7: return 8;
     case 8: return 12;
@@ -52,7 +52,7 @@ static inline void *rwAlloc(u32 size) {
 u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     u32 bytes = (streams & 0x1FFFFFFF) * 8;
     for (u32 i = 0; i < streams; i++) {
-        bytes += descriptors[i * 6 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
+        bytes += descriptors[i * 2 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
     }
     u32 *result = (u32 *)rwAlloc(bytes);
     if (result == NULL) return NULL;
@@ -61,21 +61,21 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     u32 offset = headerBytes;
     for (u32 i = 0; i < streams; i++) {
         result[i * 2] = (u32)result + offset;
-        offset += descriptors[i * 6 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
+        offset += descriptors[i * 2 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
     }
     for (u32 i = 0; i < streams; i++) {
         u32 size = rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
         u8 *source = *(u8 **)(inputs + i * 0x18);
         u8 *dest = (u8 *)result[i * 2];
-        u32 *indices = (u32 *)descriptors[i * 6];
+        u32 *indices = (u32 *)descriptors[i * 2];
         for (u32 j = 0; j < vertices; j++) {
-            if (indices[j] == 0xFFFFFFFF) {
+            if ((s32)indices[j] == -1) {
                 memcpy(dest, source, size);
                 dest += size;
             }
             source += size;
         }
-        result[i * 2 + 1] = descriptors[i * 6 + 1];
+        result[i * 2 + 1] = descriptors[i * 2 + 1];
     }
     return result;
 }
