@@ -91,7 +91,7 @@ u32 *fn_8045F9E8(u32 *object) {
     return object;
 }
 
-s32 fn_804606F0(u32, u32 *);
+u32 *fn_804606F0(u32 *object, u32 (*callback)(u32 *, u32 *), u32 *argument);
 u32 fn_8045F374(u32 value, u32 *object);
 extern u32 lbl_805F1518;
 
@@ -107,7 +107,7 @@ u32 *fn_8045FEA0(u32 target) {
             }
             return candidate;
         }
-        if (fn_804606F0((u32)fn_8045F374, &target) != 0) {
+        if (fn_804606F0(candidate, (u32 (*)(u32 *, u32 *))fn_8045F374, &target) != 0) {
             return (u32 *)current[-2];
         }
         current = (u32 *)current[0];
@@ -135,5 +135,33 @@ u32 fn_80460DF0(u32 *object) {
             *(u32 **)(lbl_805F15B4 + lbl_805F1518), object);
     }
     return 1;
+}
+
+u32 *fn_8046066C(u32 *object, u32 (*callback)(u32 *, u32 *), u32 *argument) {
+    s32 count = object[5];
+    for (s32 i = 0; i < count; i++) {
+        if (callback(((u32 **)object[4])[i], argument) == 0) {
+            return object;
+        }
+    }
+    return object;
+}
+
+u32 *fn_804606F0(u32 *object, u32 (*callback)(u32 *, u32 *), u32 *argument) {
+    u32 buffer[62];
+    u32 *node = (u32 *)object[7];
+    s32 index = 0;
+    do {
+        if (*(s32 *)node < 0) {
+            if (callback(node, argument) == 0) {
+                return object;
+            }
+            node = (u32 *)buffer[index--];
+        } else {
+            buffer[++index] = node[3];
+            node = (u32 *)node[2];
+        }
+    } while (index >= 0);
+    return object;
 }
 }
