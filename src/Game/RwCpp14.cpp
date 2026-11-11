@@ -239,25 +239,28 @@ extern "C" u32 fn_8044EEAC(u32 *object, u32 *outObject, u32 *outValues) {
     if (*(u32 *)((u8 *)object + lbl_805F1520) == 0) fn_80462E1C(object);
 
     RwCpp14Descriptor entries[16];
-    memset(entries, 0xFF, sizeof(entries));
     u32 *context = (u32 *)object[0x17];
     u32 streams = 1;
     entries[0].data = context[5];
     entries[0].type = 8;
+    entries[0].links[0] = -1;
     if ((object[2] & 0x10) != 0) {
         entries[1].data = context[6];
         entries[1].type = 8;
+        entries[1].links[0] = -1;
         streams = 2;
     }
     if ((object[2] & 0x8) != 0) {
         entries[streams].data = object[0x0C];
         entries[streams].type = 4;
+        entries[streams].links[0] = -1;
         streams++;
     }
     if ((object[2] & 0x84) != 0) {
         for (u32 i = 0; (s32)i < (s32)object[7]; i++) {
             entries[streams + i].data = object[0x0D + i];
             entries[streams + i].type = 7;
+            entries[streams + i].links[0] = -1;
         }
         streams += object[7];
     }
@@ -275,11 +278,15 @@ extern "C" u32 fn_8044EEAC(u32 *object, u32 *outObject, u32 *outValues) {
         }
         entries[base + 1].data = record[9];
         entries[base + 1].type = entries[base].type;
+        entries[base].links[0] = -1;
+        entries[base + 1].links[0] = -1;
     } else {
         entries[base].data = record[5];
         entries[base].type = 4;
         entries[base + 1].data = record[6];
         entries[base + 1].type = 9;
+        entries[base].links[0] = -1;
+        entries[base + 1].links[0] = -1;
     }
     streams += 2;
 
