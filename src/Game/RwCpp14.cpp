@@ -96,7 +96,7 @@ extern "C" u32 fn_8044F4D0(u32 *object, u32 *table) {
 }
 
 extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32 index) {
-    u16 *output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
+    u16 *output;
     if (object[13] != 0) {
         u8 local[0x28];
         u32 written = 0;
@@ -112,6 +112,7 @@ extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32
             for (u32 i = 0; i < innerCount; i++) local[written++] = (u8)(base + i);
         }
 
+        output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
         for (u32 i = 0; i < count; i++) {
             u32 expected = tableB[tableA[i]] & 0xFF;
             u32 candidate = 0;
@@ -128,6 +129,7 @@ extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, u32 count, u32
             }
         }
     } else {
+        output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
         for (u32 i = 0; i < count; i++) {
             u32 expected = tableB[tableA[i]] & 0xFF;
             u8 *candidates = (u8 *)object[2];
@@ -183,7 +185,7 @@ extern "C" u32 fn_80450448(u32 *object) {
 
 extern "C" u32 fn_8045066C(u32 *object, u32 *descriptor, u32 index) {
     u32 count = descriptor[1];
-    u16 *output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
+    u16 *output;
     u16 *entries = (u16 *)descriptor[0];
     u32 *table = (u32 *)object[5];
     if (object[13] != 0) {
@@ -201,6 +203,7 @@ extern "C" u32 fn_8045066C(u32 *object, u32 *descriptor, u32 index) {
             for (u32 i = 0; i < innerCount; i++) local[written++] = (u8)(base + i);
         }
 
+        output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
         for (u32 i = 0; i < count; i++) {
             u32 expected = table[entries[i]] & 0xFF;
             u32 candidate = 0;
@@ -218,6 +221,7 @@ extern "C" u32 fn_8045066C(u32 *object, u32 *descriptor, u32 index) {
         }
     } else {
         u8 *candidates = (u8 *)object[2];
+        output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
         for (u32 i = 0; i < count; i++) {
             u32 expected = table[entries[i]] & 0xFF;
             for (u32 j = 0; j < object[1]; j++) {
