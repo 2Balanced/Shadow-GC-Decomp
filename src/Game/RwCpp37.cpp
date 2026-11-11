@@ -14,12 +14,14 @@ void fn_80473D10(u32 *object) {
 
 extern float lbl_805FB254;
 
-void fn_80473CE0(void) {
-    ((void (*)(void))lbl_805E1950[0x210])();
+struct RtCharset;
+
+RtCharset *fn_80473CE0(const char *path) {
+    return ((RtCharset *(*)(const char *))lbl_805E1950[0x210])(path);
 }
 
-void fn_80473E9C(void) {
-    ((void (*)(void))lbl_805E1950[0xE6])();
+void fn_80473E9C(u32 *object) {
+    ((void (*)(u32 *))lbl_805E1950[0xE6])(object);
 }
 
 u32 fn_80474228(float value) {

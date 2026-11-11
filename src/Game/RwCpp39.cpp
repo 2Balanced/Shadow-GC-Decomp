@@ -10,12 +10,12 @@ void fn_804771C0(void) {
 
 extern u8 *lbl_805F15B4;
 
-void fn_80477A8C(void) {
-    ((void (*)(void))*(u32 *)(lbl_805F15B4 + 0x10C))();
+u32 fn_80477A8C(u32 argument) {
+    return ((u32 (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(argument);
 }
 
-u32 fn_8047759C(void) {
-    ((void (*)(void))*(u32 *)(lbl_805F15B4 + 0x10C))();
+u32 fn_8047759C(u32 argument) {
+    ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(argument);
     return 1;
 }
 

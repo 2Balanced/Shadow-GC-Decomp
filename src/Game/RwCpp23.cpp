@@ -18,7 +18,7 @@ u32 fn_8045F2B4(u32 object) {
 }
 
 extern u8 *lbl_805F15B4;
-u32 fn_8045F2C8(void);
+u32 fn_8045F2C8(u32 argument);
 u32 fn_8045C26C(u32 *object);
 u32 *fn_8045EF64(u32 *object, u32 value);
 u32 fn_804566D0(u32 *node);
@@ -248,7 +248,7 @@ initial_error:
 }
 
 u32 *fn_8045F390(u32 *object) {
-    if (fn_8045F2C8() == 0) {
+    if (fn_8045F2C8((u32)object) == 0) {
         goto done;
     }
     u32 *node;
@@ -284,10 +284,10 @@ void fn_8045EF3C(u32 first) {
     fn_8045E904(first, 0, 1);
 }
 
-u32 fn_8045F2C8(void) {
+u32 fn_8045F2C8(u32 argument) {
     u32 *table = (u32 *)lbl_805F15B4;
     table = (u32 *)table[1];
-    return ((u32 (*)(void))table[0x1A])();
+    return ((u32 (*)(u32))table[0x1A])(argument);
 }
 
 extern u8 lbl_8056D880[];

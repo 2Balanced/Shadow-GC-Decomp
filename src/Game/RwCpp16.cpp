@@ -92,7 +92,7 @@ void fn_8045459C(u32 *);
 
 u32 fn_804779A8(u32 *);
 u32 fn_804779DC(u32, u32);
-void fn_80477A8C(u32);
+u32 fn_80477A8C(u32);
 void fn_80477BF0(u32 *, u32 *);
 void fn_80477344(void *);
 void *fn_8047FC04(u32, void *, u32, void *, void *, u32);

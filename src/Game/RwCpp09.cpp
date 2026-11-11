@@ -210,7 +210,7 @@ u32 fn_80447200(void) {
     return lbl_805F1440 >= 0;
 }
 
-void fn_80477A8C(u32);
+u32 fn_80477A8C(u32);
 
 void *fn_804472AC(u32 count, u32 *first, u32 *second, u32 flags, u32 *owner) {
     u32 *list = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x24, 0x3011E);
