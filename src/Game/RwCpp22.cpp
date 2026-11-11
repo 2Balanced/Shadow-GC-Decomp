@@ -23,6 +23,27 @@ struct RwCpp22Record {
     u16 seventh;
 };
 
+static inline u32 *RwCpp22Link(u32 **head, u32 **slot, u32 *allocator, u16 key_a, u16 key_b) {
+    u32 *record = *head;
+    while (record != NULL) {
+        if (key_a == *(u16 *)((u8 *)record + 2) && key_b == *(u16 *)record && record[2] == 0) {
+            ((u8 *)record[1])[32]++;
+            ((u8 *)slot[0])[32]++;
+            record[2] = (u32)slot[0];
+            return record;
+        }
+        record = (u32 *)record[3];
+    }
+    record = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(allocator, 0x00030502);
+    *(u16 *)record = key_a;
+    *(u16 *)((u8 *)record + 2) = key_b;
+    record[1] = (u32)slot[0];
+    record[2] = 0;
+    record[3] = (u32)*head;
+    *head = record;
+    return record;
+}
+
 extern "C" {
 u32 fn_8047DC28(u32 code, u32 size, ...);
 void fn_8047DB84(u32 *error);
@@ -275,6 +296,36 @@ next:
         return object;
     }
     return object;
+}
+
+u32 *fn_8047FBD8(u32 size, u32 count, u32 alignment, u32 tag);
+
+u32 *fn_8045CED8(u32 count, u32 *output, u32 **head, u8 *input) {
+    u32 *slots = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 4, 0x00030502);
+    output[0] = (u32)fn_8047FBD8(36, count, 4, 0x00030502);
+    output[1] = (u32)fn_8047FBD8(16, count / 2 + 1, 4, 0x00030502);
+    u32 *slot = slots;
+    u8 *current = input;
+    u32 index = 0;
+    while (index < count) {
+        slot[0] = (u32)((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+            (u32 *)output[0], 0x00030502);
+        ((u8 *)slot[0])[32] = 0;
+        ((u32 *)slot[0])[0] = index;
+        ((u32 *)slot[0])[5] = 0;
+        ((u32 *)slot[0])[4] = 0;
+        ((u32 *)slot[0])[6] = 0;
+        ((u32 *)slot[0])[1] = (u32)RwCpp22Link(head, (u32 **)slot, (u32 *)output[1],
+                                                        *(u16 *)current, *(u16 *)(current + 2));
+        ((u32 *)slot[0])[2] = (u32)RwCpp22Link(head, (u32 **)slot, (u32 *)output[1],
+                                                        *(u16 *)(current + 2), *(u16 *)(current + 4));
+        ((u32 *)slot[0])[3] = (u32)RwCpp22Link(head, (u32 **)slot, (u32 *)output[1],
+                                                        *(u16 *)(current + 4), *(u16 *)current);
+        slot++;
+        current += 20;
+        index++;
+    }
+    return slots;
 }
 
 s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {
