@@ -108,17 +108,20 @@ u32 *fn_8045FEA0(u32 target) {
     u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
     u32 *current = (u32 *)sentinel[0];
     while (current != sentinel) {
-        u32 *candidate = (u32 *)current[-2];
-        if ((candidate[3] & 1) != 0) {
-            if (target < (u32)candidate || target >= (u32)((u8 *)candidate + current[-1])) {
-                current = (u32 *)current[0];
-                continue;
+        if (((u8 *)current[-2])[3] & 1) {
+            if (target < (u32)current[-2] || target >= (u32)((u8 *)current[-2] + current[-1])) {
+                goto advance;
             }
-            return candidate;
-        }
-        if (fn_804606F0(candidate, (u32 (*)(u32 *, u32 *))fn_8045F374, &target) != 0) {
             return (u32 *)current[-2];
         }
+        s32 search[2];
+        search[0] = (s32)target;
+        search[1] = 0;
+        fn_804606F0((u32 *)current[-2], (u32 (*)(u32 *, u32 *))fn_8045F374, (u32 *)search);
+        if (search[1] != 0) {
+            return (u32 *)current[-2];
+        }
+advance:
         current = (u32 *)current[0];
     }
     return NULL;
