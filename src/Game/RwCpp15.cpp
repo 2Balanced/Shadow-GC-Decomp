@@ -2,6 +2,12 @@
 #include <dolphin/types.h>
 
 extern u32 lbl_805F1490;
+extern u32 lbl_8056D708[];
+extern u32 lbl_805F1520;
+extern u16 lbl_805EDF40;
+extern u16 lbl_805F1678;
+extern u8 *lbl_805F15B4;
+extern u32 lbl_805F16B8;
 
 struct RwCpp15Pair {
     float x;
@@ -25,6 +31,24 @@ struct RwCpp15Pair {
     } while (0)
 
 extern "C" {
+u32 fn_8046335C(u32, u32, void *, void *, void *, void *);
+void fn_8049B800(void *);
+s32 fn_80458C90(u32);
+s32 fn_804A2064(void *);
+u32 fn_8044CCAC(u8 *);
+void *fn_8044D924(u32 *, u32 *);
+void *fn_8044DA3C(u32 *, u32 *);
+void *fn_8044DE74(u32 *, u32 *);
+void *fn_80451A6C(u32 *, u32 *);
+void *fn_80451B20(u32 *, u32 *);
+void *fn_80451BCC(u32 *, u32 *);
+void fn_80463428(void);
+s32 fn_804A8478(void *);
+void fn_80463104(void *, u32);
+s32 fn_80462C28(void);
+void fn_80462C20(u32);
+void fn_804A8120(void *, void *, u32);
+
 void fn_80451F48(void) {
     (&lbl_805F1490)[1]++;
 }
@@ -106,5 +130,76 @@ void fn_80450D6C(float *out, const float *matB, const float *matA, const float *
         dest[6] = o6;
         dest[7] = o7;
     }
+}
+
+void *fn_80451A6C(u32 *context, u32 *node) {
+    if (fn_804A8478(node) != 0) {
+        u32 *owner = (u32 *)context[6];
+        if (*(u32 *)((u8 *)owner + lbl_805F1520) == 0) {
+            fn_80463104(owner, lbl_805F16B8);
+        }
+        s32 state = fn_80462C28();
+        if (state == 1) fn_80462C20(0);
+        void *result = fn_8044D924(context, node);
+        if (state == 1) fn_80462C20(1);
+        return result;
+    }
+    return fn_8044D924(context, node);
+}
+
+void *fn_80451B20(u32 *context, u32 *node) {
+    if (fn_8044DA3C(context, node) == NULL) return NULL;
+    u32 *owner = (u32 *)context[6];
+    u8 *format = *(u8 **)((u8 *)owner + lbl_805F1520);
+    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
+    if (record[4] > 1 && format != NULL && format[0xD] != 0 && (owner[2] & 0x10) != 0) {
+        fn_804A8120(node, format, owner[5]);
+    }
+    return context;
+}
+
+u32 fn_80451D60(u32 mode) {
+    if ((mode & 1) != 0) {
+        lbl_8056D708[10] = fn_8046335C(0x116, 1, (void *)fn_8044D924, (void *)fn_8044DA3C,
+                                       (void *)fn_80463428, (void *)fn_8044DE74);
+    }
+    if ((mode & 2) != 0) {
+        lbl_8056D708[11] = fn_8046335C(0x116, 2, (void *)fn_80451A6C, (void *)fn_80451B20,
+                                       (void *)fn_80463428, (void *)fn_80451BCC);
+    }
+    return 1;
+}
+
+u32 fn_80451E0C(void) {
+    if (lbl_8056D708[10] != 0) {
+        fn_8049B800((void *)lbl_8056D708[10]);
+        lbl_8056D708[10] = 0;
+    }
+    if (lbl_8056D708[11] != 0) {
+        fn_8049B800((void *)lbl_8056D708[11]);
+        lbl_8056D708[11] = 0;
+    }
+    return 1;
+}
+
+void fn_80451E6C(u32 *object, u32 mode) {
+    u32 *record = (u32 *)fn_8044CCAC((u8 *)object[6]);
+    u32 value;
+    if (mode == 1) {
+        record[11] = 1;
+        value = 1;
+    } else if (mode == 2) {
+        record[11] = 2;
+        value = 2;
+    } else {
+        if (fn_80458C90(0x120) > 0 && fn_804A2064(object) != 0) {
+            record[11] = 2;
+            value = 2;
+        } else {
+            record[11] = 1;
+            value = 1;
+        }
+    }
+    object[0x1B] = lbl_8056D708[9 + value];
 }
 }
