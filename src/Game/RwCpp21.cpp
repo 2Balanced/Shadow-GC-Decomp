@@ -7,7 +7,8 @@
  * fn_8045B13C also matches size; its byte temporary and source-table registers differ.
  * fn_8045BFBC matches size and the emitted byte layout; its temporary registers and final two
  * store forms differ. fn_8045A818 implements all three easing branches; GC/2.7 adds seven
- * conversion/spill instructions and reschedules the polynomial temporaries. */
+ * conversion/spill instructions and reschedules the polynomial temporaries.
+ * fn_8045B348 matches size and all cleanup paths; its initializer temporary registers differ. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -381,6 +382,113 @@ u32 *fn_8045B13C(void) {
     return object;
 }
 
+extern u32 lbl_805F14E4;
+extern u32 lbl_805F14E0;
+static inline void RwCpp21CleanupObject(u32 *object) {
+    if (*(s16 *)((u8 *)object + 24) == 1) {
+        fn_80482144(lbl_8056D840, object);
+        if (object[0] != 0) {
+            fn_8048CD8C((u32 *)object[0]);
+        }
+        object[0] = 0;
+        ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u8 **)(lbl_805F15B4 + lbl_805F14E8), object);
+    } else {
+        (*(s16 *)((u8 *)object + 24))--;
+    }
+}
+
+u32 fn_80483D28(u8 *);
+void fn_80481870(u8 *, u32, u32 *, u32);
+
+u32 *fn_8045B348(u8 *stream) {
+    u32 second;
+    u32 first;
+    volatile u32 saved;
+    u8 buffer[28];
+    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
+        return NULL;
+    }
+    if (first < 0x00035000 || first > 0x00037002) {
+        goto invalid_first;
+    }
+    memset(buffer, 0, 28);
+    if (fn_80480D4C(stream, buffer, second) != second) {
+        return NULL;
+    }
+    saved = *(u32 *)(buffer + 4);
+    fn_8047D254(buffer, 28);
+    *(u32 *)(buffer + 4) = saved;
+    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F14E8), 0x00030007);
+    if (object == NULL) {
+        object = NULL;
+        goto initialized;
+    }
+    u32 *constants = (u32 *)lbl_8056D858;
+    u32 fill = 255;
+    u32 one = 1;
+    u8 bytes[4];
+    bytes[0] = fill;
+    bytes[1] = fill;
+    bytes[2] = fill;
+    bytes[3] = fill;
+    *(s16 *)((u8 *)object + 24) = one;
+    fill = *(u32 *)bytes;
+    object[1] = fill;
+    object[0] = 0;
+    object[2] = 0;
+    object[3] = constants[0];
+    object[4] = constants[1];
+    object[5] = constants[2];
+    fn_8048209C(lbl_8056D840, object);
+initialized:
+    if (object == NULL) {
+        return NULL;
+    }
+    object[1] = *(u32 *)(buffer + 4);
+    object[3] = *(u32 *)(buffer + 16);
+    object[4] = *(u32 *)(buffer + 20);
+    object[5] = *(u32 *)(buffer + 24);
+    object[0] = 0;
+    if ((s32)*(u32 *)(buffer + 12) != 0) {
+        if ((s32)fn_8047CF50(stream, 6, NULL, &first) == 0) {
+            RwCpp21CleanupObject(object);
+            return NULL;
+        }
+        if (first >= 0x00035000 && first <= 0x00037002) {
+            object[0] = fn_80483D28(stream);
+        } else {
+            RwCpp21CleanupObject(object);
+            {
+                u32 error[2];
+                error[0] = 2;
+                error[1] = fn_8047DC28(0x80000004);
+                fn_8047DB84(error);
+                return NULL;
+            }
+        }
+    }
+    lbl_805F14E4 = 0;
+    lbl_805F14E0 = 0;
+    if (fn_804816AC(lbl_8056D840, stream, object) == 0) {
+        RwCpp21CleanupObject(object);
+        return NULL;
+    }
+    if (lbl_805F14E4 != 0) {
+        fn_80481870(lbl_8056D840, lbl_805F14E4, object, lbl_805F14E0);
+    }
+    return object;
+invalid_first:
+    {
+        u32 error[2];
+        error[0] = 2;
+        error[1] = fn_8047DC28(0x80000004);
+        fn_8047DB84(error);
+        return NULL;
+    }
+}
+
 u32 fn_8045B1F4(u32 *object) {
     if (*(s16 *)((u8 *)object + 24) == 1) {
         fn_80482144(lbl_8056D840, object);
@@ -544,8 +652,6 @@ u32 fn_8045C2D4(u32 *object) {
     return 1;
 }
 
-extern u32 lbl_805F14E4;
-extern u32 lbl_805F14E0;
 u32 fn_8047D868(u8 *stream, void *data, u32 size);
 u32 fn_8047D458(u8 *stream, void *data, u32 size);
 
