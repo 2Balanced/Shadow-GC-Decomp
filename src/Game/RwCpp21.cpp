@@ -8,7 +8,9 @@
  * fn_8045BFBC matches size and the emitted byte layout; its temporary registers and final two
  * store forms differ. fn_8045A818 implements all three easing branches; GC/2.7 adds seven
  * conversion/spill instructions and reschedules the polynomial temporaries.
- * fn_8045B348 matches size and all cleanup paths; its initializer temporary registers differ. */
+ * fn_8045B348 matches size and all cleanup paths; its initializer temporary registers differ.
+ * fn_8045B924 implements every read/append/cleanup path; stack slots and error-block scheduling
+ * still differ from retail. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -158,9 +160,160 @@ u32 *fn_8045AE20(u32 *object) {
     return object;
 }
 
+u32 fn_8045B1F4(u32 *object);
+u32 *fn_8045B348(u8 *stream);
 u32 fn_8047DC28(u32 code, ...);
 void fn_8047DB84(u32 *error);
 u32 fn_8047CF50(u8 *, u32, u32 *, u32 *);
+u32 fn_8047D868(u8 *stream, void *data, u32 size);
+
+static inline void RwCpp21ClearOwner(u32 *owner) {
+    u32 *current;
+    u32 *entries = (u32 *)owner[0];
+    if (entries != NULL) {
+        s32 count = owner[1];
+        current = entries;
+        for (s32 i = 0; i < count; i++) {
+            fn_8045B1F4((u32 *)current[0]);
+            current[0] = 0;
+            current++;
+        }
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(entries);
+        owner[0] = 0;
+    }
+    owner[1] = 0;
+    owner[2] = 0;
+}
+
+static inline void RwCpp21AppendObject(u32 *owner, u32 *object) {
+    if ((s32)owner[2] > (s32)owner[1]) {
+        ((u32 *)owner[0])[owner[1]] = (u32)object;
+        (*(s16 *)((u8 *)object + 24))++;
+        owner[1]++;
+        return;
+    }
+    u32 capacity = owner[2] + 20;
+    u32 error_size = capacity * 4;
+    u32 *buffer;
+    if (owner[0] != 0) {
+        buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
+            (u32 *)owner[0], capacity * 4, 0x01030008);
+    } else {
+        buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(capacity * 4, 0x01030008);
+    }
+    if (buffer == NULL) {
+        u32 error[2];
+        error[0] = 2;
+        error[1] = fn_8047DC28(0x80000013, error_size);
+        fn_8047DB84(error);
+        return;
+    }
+    owner[0] = (u32)buffer;
+    owner[2] += 20;
+    buffer[owner[1]] = (u32)object;
+    (*(s16 *)((u8 *)object + 24))++;
+    owner[1]++;
+}
+
+u32 *fn_8045B924(u8 *stream, u32 *owner) {
+    u32 first;
+    u32 second;
+    u32 count;
+    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
+        return NULL;
+    }
+    if (first < 0x00035000 || first > 0x00037002) {
+        goto invalid;
+    }
+    bool read_ok = fn_8047D868(stream, &count, 4) != 0;
+    if (!read_ok) {
+        return NULL;
+    }
+    owner[2] = 0;
+    owner[0] = 0;
+    owner[1] = 0;
+    if ((s32)count == 0) {
+        return owner;
+    }
+    u32 *result = owner;
+    if ((s32)owner[2] < (s32)count) {
+        u32 size = count * 4;
+        u32 *buffer;
+        if (owner[0] != 0) {
+            buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
+                (u32 *)owner[0], size, 0x01030008);
+        } else {
+            buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030008);
+        }
+        if (buffer == NULL) {
+            u32 error[2];
+            error[0] = 2;
+            error[1] = fn_8047DC28(0x80000013, size);
+            fn_8047DB84(error);
+            result = NULL;
+        } else {
+            owner[0] = (u32)buffer;
+            owner[2] = count;
+        }
+    }
+    if (result == NULL) {
+        RwCpp21ClearOwner(owner);
+        return NULL;
+    }
+    u32 *table = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 4, 0x00010501);
+    read_ok = fn_8047D868(stream, table, count * 4) != 0;
+    if (!read_ok) {
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
+        RwCpp21ClearOwner(owner);
+        return NULL;
+    }
+    u32 *current = table;
+    for (s32 i = 0; i < (s32)count; i++) {
+        u32 *object;
+        if ((s32)current[0] < 0) {
+            if ((s32)fn_8047CF50(stream, 7, NULL, &first) == 0) {
+                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
+                RwCpp21ClearOwner(owner);
+                return NULL;
+            }
+            if (first >= 0x00035000 && first <= 0x00037002) {
+                object = fn_8045B348(stream);
+            } else {
+                {
+                    u32 error[2];
+                    error[0] = 2;
+                    error[1] = fn_8047DC28(0x80000004);
+                    fn_8047DB84(error);
+                }
+                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
+                RwCpp21ClearOwner(owner);
+                return NULL;
+            }
+            if (object == NULL) {
+                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
+                RwCpp21ClearOwner(owner);
+                return NULL;
+            }
+        } else {
+            object = ((u32 **)owner[0])[i];
+            (*(s16 *)((u8 *)object + 24))++;
+        }
+        RwCpp21AppendObject(owner, object);
+        fn_8045B1F4(object);
+        current++;
+    }
+    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
+    return owner;
+invalid:
+    {
+        u32 error[2];
+        error[0] = 2;
+        error[1] = fn_8047DC28(0x80000004);
+        fn_8047DB84(error);
+        return NULL;
+    }
+}
+
 u32 fn_80480D4C(u8 *, u8 *, u32);
 void fn_8047D254(u8 *, u32);
 u32 fn_804816AC(u8 *, u8 *, u32 *);
