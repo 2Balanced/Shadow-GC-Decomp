@@ -280,40 +280,54 @@ u32 fn_8049375C(u8 *source) {
     return result;
 }
 
+#pragma use_lmw_stmw off
 u32 fn_80493888(u8 *object, u8 *source, u32 mode) {
-    u32 kind = mode & 7;
-    object[0x20] = (u8)kind;
+    u32 originalMode = mode;
+    mode = (u8)(mode & 7);
+    object[0x20] = mode;
     *(u32 *)(object + 0x14) = 0;
-    if (kind == 3 || kind > 5) {
-        RW_ERROR(0x8000000D);
-        return 0;
+    switch (mode) {
+    case 0:
+    case 4:
+    case 5:
+        goto common;
+    case 1:
+    case 2:
+        goto direct;
+    default:
+        goto error;
     }
-    if (kind != 0 && kind < 3) {
-        object[0x23] = 0;
-        *(u32 *)(object + 0xC) = *(u32 *)(source + 4);
-        *(u32 *)(object + 0x10) = *(u32 *)(source + 8);
-        return 1;
-    }
-    u32 width = *(u32 *)(source + 4);
-    if (width > 0x400) width = 0x400;
-    *(u32 *)(object + 0xC) = width;
-    u32 height = *(u32 *)(source + 8);
-    if (height > 0x400) height = 0x400;
-    *(u32 *)(object + 0x10) = height;
-    if ((mode & 0x8000) != 0) {
-        u32 logWidth = 0xFFFFFFFF;
-        for (u32 value = width; value != 0; value >>= 1) logWidth++;
-        width = 1 << (logWidth & 0x3F);
+common:
+    {
+        s32 sourceWidth = *(s32 *)(source + 4);
+        s32 width = 0x400;
+        if (sourceWidth <= 0x400) width = sourceWidth;
         *(u32 *)(object + 0xC) = width;
-        u32 logHeight = 0xFFFFFFFF;
-        for (u32 value = height; value != 0; value >>= 1) logHeight++;
-        height = 1 << (logHeight & 0x3F);
+        s32 sourceHeight = *(s32 *)(source + 8);
+        s32 height = 0x400;
+        if (sourceHeight <= 0x400) height = sourceHeight;
         *(u32 *)(object + 0x10) = height;
     }
-    u8 flags = (u8)fn_8049375C(source);
-    object[0x23] = flags | ((mode >> 8) & 0x90);
+    if ((originalMode & 0x8000) != 0) {
+        s32 logWidth = -1;
+        for (s32 value = *(s32 *)(object + 0xC); value != 0; value >>= 1) logWidth++;
+        *(u32 *)(object + 0xC) = 1U << logWidth;
+        s32 logHeight = -1;
+        for (s32 value = *(s32 *)(object + 0x10); value != 0; value >>= 1) logHeight++;
+        *(u32 *)(object + 0x10) = 1U << logHeight;
+    }
+    object[0x23] = (u8)((s32)((originalMode & 0x9000) | fn_8049375C(source)) >> 8);
     return 1;
+direct:
+    object[0x23] = 0;
+    *(u32 *)(object + 0xC) = *(u32 *)(source + 4);
+    *(u32 *)(object + 0x10) = *(u32 *)(source + 8);
+    return 1;
+error:
+    RW_ERROR(0x8000000D);
+    return 0;
 }
+#pragma use_lmw_stmw on
 
 extern u32 lbl_805E3178[];
 extern s32 lbl_805F1608;
