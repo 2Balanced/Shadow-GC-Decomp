@@ -1,5 +1,6 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior. */
 #include <dolphin/types.h>
+#include <string.h>
 
 extern u32 lbl_805F1490;
 extern u32 lbl_8056D708[];
@@ -62,13 +63,149 @@ u32 fn_8047D784(void *, void *, u32);
 u32 fn_8047D350(void *, void *, u32);
 u32 fn_8047D458(void *, void *, u32);
 u32 fn_80480ED0(void *, void *, u32);
+u32 fn_80450448(u32 *);
+u32 fn_8045066C(u32 *, u32 *, u32);
+void fn_80462E1C(void *);
+u32 fn_8046EE8C(u32);
+u32 fn_8046EEA0(u32, u32 *);
+u32 fn_8046B094(u32, u32, u32);
+void fn_8046B0E0(u8 *, u32, u32, u8 *);
+void *fn_8046ACBC(u32);
+void fn_8046E594(u32, u8 *, u32 *, u32, u32, void *, u32, u32, u32);
+void fn_8046F208(u32, u8 *, u32 *, u32);
+void fn_8046F6CC(u32, u8 *, u32 *, u32, u32);
+void *fn_80480878(void *, void *, u32, void *);
+void fn_8046288C(void);
+void DCFlushRange(void *, u32);
+void fn_80394F2C(void);
 
-void fn_80451F48(u32, u32) {
-    (&lbl_805F1490)[1]++;
+u32 fn_80450938(u32 *object, u32 arg2, u32 *out) {
+    u32 record = fn_8044CCAC((u8 *)arg2);
+    u32 context = fn_80450448(object);
+    if (*(u32 *)((u8 *)object + lbl_805F1520) == 0) {
+        fn_80462E1C((void *)context);
+    }
+
+    u32 second[52];
+    second[9] = object[5];
+    second[35] = ((u32 *)object[0x17])[5];
+    if ((object[2] & 0x10) != 0) {
+        second[10] = object[5];
+        second[36] = ((u32 *)object[0x17])[6];
+    }
+    if ((object[2] & 0x8) != 0) {
+        second[11] = object[5];
+        second[37] = object[0x0C];
+    }
+    if ((object[2] & 0x84) != 0) {
+        for (s32 i = 0; i < (s32)object[7]; i++) {
+            second[13 + i] = object[5];
+            second[39 + i] = object[0x0D + i];
+        }
+    }
+
+    u32 base = fn_8046EE8C(context);
+    u32 vertices = *(u16 *)((u8 *)object[0x15] + 4);
+    u32 stride = (object[2] & 1) != 0 ? 0x98 : 0x90;
+    u32 size = base + vertices * 8 + 0x1F;
+    u32 sizeOffset = 0;
+    for (u32 i = 0; i < vertices; i++) {
+        u32 *descriptor = (u32 *)((u8 *)object[0x15] + sizeOffset);
+        size += fn_8046B094(context, 1, descriptor[5]);
+        sizeOffset += 0xC;
+    }
+    size += fn_8046EEA0(context, second);
+
+    u32 *block;
+    if ((object[2] & 0x02000000) != 0) {
+        block = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size + 0x18, 0x30116);
+        block[0] = 0;
+        block[1] = 0;
+        block[2] = size;
+        block[3] = arg2;
+        block[4] = (u32)out;
+        block[5] = (u32)fn_8046288C;
+        *out = (u32)block;
+    } else {
+        block = (u32 *)fn_80480878((void *)arg2, out, size, (void *)fn_8046288C);
+    }
+
+    u8 *payload = (u8 *)(block + 6);
+    memset(payload, 0, size);
+    *(u16 *)(payload + 0) = lbl_805F1678;
+    *(u16 *)(payload + 2) = *(u16 *)((u8 *)object[0x15] + 6);
+    *(u32 *)(payload + 4) = 0;
+
+    if ((object[2] & 0x8) != 0) {
+        u8 *format = *(u8 **)((u8 *)object + lbl_805F1520);
+        if (format == NULL) {
+            fn_80462E1C(format);
+            *(u32 *)(payload + 4) &= ~1;
+            u8 *bytes = (u8 *)object[0x0C];
+            for (s32 i = 0; i < (s32)object[5]; i++) {
+                if (bytes[i * 4 + 3] < 0xFF) {
+                    *(u32 *)(payload + 4) |= 1;
+                    break;
+                }
+            }
+        } else if (format[0xA] > 2) {
+            *(u32 *)(payload + 4) |= 1;
+        } else {
+            *(u32 *)(payload + 4) &= ~1;
+        }
+    }
+
+    u8 *data = payload + base;
+    u8 *end = (u8 *)(((u32)data + vertices * 8 + 0x1F) & ~0x1F);
+    u32 descriptorOffset = 0;
+    u8 *currentData = data;
+    for (u32 vertex = 0; vertex < vertices; vertex++) {
+        u32 *descriptor = (u32 *)((u8 *)object[0x15] + descriptorOffset);
+        u32 part = fn_8046B094(context, 1, descriptor[5]);
+        fn_8046B0E0(currentData, vertex, part, end);
+        u32 lookup = fn_8045066C((u32 *)record, descriptor + 4, vertex);
+        if (*(u32 *)((u8 *)object + lbl_805F1520) == 0) {
+            fn_80462E1C((void *)lookup);
+        }
+
+        u32 values[26];
+        values[0] = lookup;
+        values[9] = descriptor[4];
+        if ((object[2] & 0x10) != 0) {
+            values[10] = descriptor[4];
+        }
+        if ((object[2] & 0x8) != 0) {
+            values[11] = descriptor[4];
+        }
+        if ((object[2] & 0x84) != 0) {
+            for (s32 i = 0; i < (s32)object[7]; i++) {
+                values[13 + i] = descriptor[4];
+            }
+        }
+
+        void *acbc = fn_8046ACBC(context);
+        fn_8046E594(context, currentData, values, descriptor[5], 0, acbc, 1, stride, 0);
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)lookup);
+        end += part;
+        currentData += 8;
+        descriptorOffset += 0xC;
+    }
+
+    fn_8046F208(context, payload, second, (u32)end);
+    fn_8046F6CC(context, payload, second, 0, 0);
+    DCFlushRange(payload, size);
+    fn_80394F2C();
+    return (u32)block;
 }
 
-void fn_80451F5C(u32, u32) {
+u32 fn_80451F48(u32 object) {
+    (&lbl_805F1490)[1]++;
+    return object;
+}
+
+u32 fn_80451F5C(u32 object) {
     (&lbl_805F1490)[1]--;
+    return object;
 }
 
 void fn_80450F68(float *out, u32 *format, u32 *data) {
@@ -710,10 +847,13 @@ void *fn_80451B20(u32 *context, u32 *node) {
 
 void *fn_80451BCC(u32 *context, u32 *node) {
     u32 *nodeData = (u32 *)node[0];
-    u32 *callbackPair = (u32 *)((u8 *)nodeData + 0x18 + (nodeData[8] - 1) * 8 + 0x14);
+    u8 *callbackBytes = (u8 *)nodeData + 0x18;
+    callbackBytes += (nodeData[8] - 1) * 8;
+    callbackBytes += 0x14;
+    u32 *callbackPair = (u32 *)callbackBytes;
     *(u16 *)((u8 *)nodeData + 0x18) = lbl_805EDF40;
     u32 *owner = (u32 *)context[6];
-    u32 *descriptor = (u32 *)owner[0x54];
+    u32 *descriptor = *(u32 **)((u8 *)owner + 0x54);
     void *frameMatrix = RwFrameGetLTM((void *)context[1]);
     u32 *format = *(u32 **)((u8 *)owner + lbl_805F1520);
     fn_80462C30(format, node);
@@ -727,16 +867,15 @@ void *fn_80451BCC(u32 *context, u32 *node) {
     u32 last = (u32)record;
     if (record[4] == 1 && record[13] == 0) {
         u32 outputIndex = 0;
-        u8 *indices = (u8 *)record[2];
         for (u32 i = 0; i < record[1]; i++) {
-            const float *input = (const float *)(lbl_8056D708[3] + indices[i] * 0x40);
+            const float *input = (const float *)(lbl_8056D708[3] + ((u8 *)record[2])[i] * 0x40);
             last = fn_8044DC4C(input, (void *)outputIndex, (node[2] >> 4) & 1);
             outputIndex += 3;
         }
     }
     fn_804A2F08(last);
 
-    u32 remaining = *(u16 *)((u8 *)descriptor + 4);
+    s32 remaining = *(u16 *)((u8 *)descriptor + 4);
     u32 *entry = (u32 *)((u8 *)descriptor + 0x10);
     while (remaining != 0) {
         if (record[4] == 1 && record[13] != 0) {
@@ -780,25 +919,30 @@ u32 fn_80451E0C(void) {
 u32 *fn_80451E6C(u32 *object, s32 mode) {
     u32 *record = (u32 *)fn_8044CCAC((u8 *)object[6]);
     s32 value;
-    switch (mode) {
-    case 1:
-        record[11] = 1;
-        value = 1;
-        break;
-    case 2:
+    if (mode == 1) goto modeOne;
+    if (mode >= 1) {
+        if (mode >= 3) goto modeDefault;
+        goto modeTwo;
+    }
+    goto modeDefault;
+
+modeOne:
+    record[11] = 1;
+    value = 1;
+    goto modeDone;
+modeTwo:
+    record[11] = 2;
+    value = 2;
+    goto modeDone;
+modeDefault:
+    if (fn_80458C90(0x120) > 0 && fn_804A2064(object) != 0) {
         record[11] = 2;
         value = 2;
-        break;
-    default:
-        if (fn_80458C90(0x120) > 0 && fn_804A2064(object) != 0) {
-            record[11] = 2;
-            value = 2;
-        } else {
-            record[11] = 1;
-            value = 1;
-        }
-        break;
+    } else {
+        record[11] = 1;
+        value = 1;
     }
+modeDone:
     object[0x1B] = lbl_8056D708[9 + value];
     return object;
 }

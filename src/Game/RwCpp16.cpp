@@ -57,8 +57,8 @@ static inline void rwStringCopy(char *dest, const char *source) {
 extern "C" {
 /* Engine entry points used below; the argument lists come from the call sites
    in this unit. */
-void fn_80451F48(u32, u32);
-void fn_80451F5C(u32, u32);
+u32 fn_80451F48(u32);
+u32 fn_80451F5C(u32);
 s32 fn_80485D78(u32, u32, void *, void *);
 s32 fn_8045994C(u32, u32, void *, void *, void *);
 s32 fn_8045998C(u32, void *, void *, void *);
