@@ -63,11 +63,11 @@ u32 fn_8047D350(void *, void *, u32);
 u32 fn_8047D458(void *, void *, u32);
 u32 fn_80480ED0(void *, void *, u32);
 
-void fn_80451F48(void) {
+void fn_80451F48(u32, u32) {
     (&lbl_805F1490)[1]++;
 }
 
-void fn_80451F5C(void) {
+void fn_80451F5C(u32, u32) {
     (&lbl_805F1490)[1]--;
 }
 
@@ -690,9 +690,9 @@ void *fn_80451A6C(u32 *context, u32 *node) {
         }
         s32 state = fn_80462C28();
         if (state == 1) fn_80462C20(0);
-        void *result = fn_8044D924(context, node);
+        context = (u32 *)fn_8044D924(context, node);
         if (state == 1) fn_80462C20(1);
-        return result;
+        return context;
     }
     return fn_8044D924(context, node);
 }
@@ -752,39 +752,44 @@ void *fn_80451BCC(u32 *context, u32 *node) {
 }
 
 u32 fn_80451D60(u32 mode) {
+    u32 *callbacks = lbl_8056D708;
     if ((mode & 1) != 0) {
-        lbl_8056D708[10] = fn_8046335C(0x116, 1, (void *)fn_8044D924, (void *)fn_8044DA3C,
-                                       (void *)fn_80463428, (void *)fn_8044DE74);
+        callbacks[10] = fn_8046335C(0x116, 1, (void *)fn_8044D924, (void *)fn_8044DA3C,
+                                    (void *)fn_80463428, (void *)fn_8044DE74);
     }
     if ((mode & 2) != 0) {
-        lbl_8056D708[11] = fn_8046335C(0x116, 2, (void *)fn_80451A6C, (void *)fn_80451B20,
-                                       (void *)fn_80463428, (void *)fn_80451BCC);
+        callbacks[11] = fn_8046335C(0x116, 2, (void *)fn_80451A6C, (void *)fn_80451B20,
+                                    (void *)fn_80463428, (void *)fn_80451BCC);
     }
     return 1;
 }
 
 u32 fn_80451E0C(void) {
-    if (lbl_8056D708[10] != 0) {
-        fn_8049B800((void *)lbl_8056D708[10]);
-        lbl_8056D708[10] = 0;
+    u32 *callbacks = lbl_8056D708;
+    if (callbacks[10] != 0) {
+        fn_8049B800((void *)callbacks[10]);
+        callbacks[10] = 0;
     }
-    if (lbl_8056D708[11] != 0) {
-        fn_8049B800((void *)lbl_8056D708[11]);
-        lbl_8056D708[11] = 0;
+    if (callbacks[11] != 0) {
+        fn_8049B800((void *)callbacks[11]);
+        callbacks[11] = 0;
     }
     return 1;
 }
 
-void fn_80451E6C(u32 *object, u32 mode) {
+u32 *fn_80451E6C(u32 *object, s32 mode) {
     u32 *record = (u32 *)fn_8044CCAC((u8 *)object[6]);
-    u32 value;
-    if (mode == 1) {
+    s32 value;
+    switch (mode) {
+    case 1:
         record[11] = 1;
         value = 1;
-    } else if (mode == 2) {
+        break;
+    case 2:
         record[11] = 2;
         value = 2;
-    } else {
+        break;
+    default:
         if (fn_80458C90(0x120) > 0 && fn_804A2064(object) != 0) {
             record[11] = 2;
             value = 2;
@@ -792,37 +797,44 @@ void fn_80451E6C(u32 *object, u32 mode) {
             record[11] = 1;
             value = 1;
         }
+        break;
     }
     object[0x1B] = lbl_8056D708[9 + value];
+    return object;
 }
 
-void *fn_80451F70(void *stream, u32 *out) {
-    u32 count;
+void *fn_80451F70(u32 *out, void *stream) {
+    s32 count;
     if (fn_8047D868(stream, &count, 4) == 0) return NULL;
     if (count > 0) {
         out[0] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count, 0x3011F);
-        if (out[0] == 0 || fn_80480D4C(stream, (void *)out[0], count) == 0) return NULL;
+        if (out[0] == 0) return NULL;
+        if (fn_80480D4C(stream, (void *)out[0], count) == 0) return NULL;
     }
-    if (fn_8047D868(stream, out + 1, 4) == 0 || fn_8047D868(stream, out + 2, 4) == 0) return NULL;
+    if (fn_8047D868(stream, out + 1, 4) == 0) return NULL;
+    if (fn_8047D868(stream, out + 2, 4) == 0) return NULL;
 
     switch (out[1]) {
     case 1:
         out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
-        if (out[3] == 0 || fn_8047D868(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
+        if (out[3] == 0) return NULL;
+        if (fn_8047D868(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
         break;
     case 2:
         out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
-        if (out[3] == 0 || fn_8047D784(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
+        if (out[3] == 0) return NULL;
+        if (fn_8047D784(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
         break;
     case 3: {
         out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
         if (out[3] == 0) return NULL;
         u32 *entries = (u32 *)out[3];
-        for (u32 i = 0; i < out[2]; i++) {
+        for (s32 i = 0; i < (s32)out[2]; i++) {
             if (fn_8047D868(stream, &count, 4) == 0) return NULL;
             if (count > 0) {
                 entries[i] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count, 0x3011F);
-                if (entries[i] == 0 || fn_80480D4C(stream, (void *)entries[i], count) == 0) return NULL;
+                if (entries[i] == 0) return NULL;
+                if (fn_80480D4C(stream, (void *)entries[i], count) == 0) return NULL;
             } else {
                 entries[i] = 0;
             }
@@ -835,11 +847,12 @@ void *fn_80451F70(void *stream, u32 *out) {
     return stream;
 }
 
-void *fn_80452228(void *stream, u32 *out) {
-    u32 size = out[0] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)out[0]) + 1 : 0;
+void *fn_80452228(u32 *out, void *stream) {
+    s32 size = out[0] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)out[0]) + 1 : 0;
     if (fn_8047D458(stream, &size, 4) == 0) return NULL;
     if (size > 0 && fn_80480ED0(stream, (void *)out[0], size) == 0) return NULL;
-    if (fn_8047D458(stream, out + 1, 4) == 0 || fn_8047D458(stream, out + 2, 4) == 0) return NULL;
+    if (fn_8047D458(stream, out + 1, 4) == 0) return NULL;
+    if (fn_8047D458(stream, out + 2, 4) == 0) return NULL;
 
     switch (out[1]) {
     case 1:
@@ -850,7 +863,7 @@ void *fn_80452228(void *stream, u32 *out) {
         break;
     case 3: {
         u32 *entries = (u32 *)out[3];
-        for (u32 i = 0; i < out[2]; i++) {
+        for (s32 i = 0; i < (s32)out[2]; i++) {
             size = entries[i] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entries[i]) + 1 : 0;
             if (fn_8047D458(stream, &size, 4) == 0) return NULL;
             if (size > 0 && fn_80480ED0(stream, (void *)entries[i], size) == 0) return NULL;
