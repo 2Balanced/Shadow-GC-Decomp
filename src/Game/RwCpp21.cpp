@@ -6,7 +6,8 @@
  * fn_8045AD34 matches size; its constant loads and assignments use different volatile registers.
  * fn_8045B13C also matches size; its byte temporary and source-table registers differ.
  * fn_8045BFBC matches size and the emitted byte layout; its temporary registers and final two
- * store forms differ. */
+ * store forms differ. fn_8045A818 implements all three easing branches; GC/2.7 adds seven
+ * conversion/spill instructions and reschedules the polynomial temporaries. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -215,6 +216,102 @@ invalid:
         fn_8047DB84(error);
         return NULL;
     }
+}
+
+extern f32 lbl_805FB124;
+extern f32 lbl_805FB128;
+extern f32 lbl_805FB12C;
+extern f32 lbl_805FB130;
+extern f32 lbl_805FB134;
+extern f32 lbl_805FB138;
+extern f32 lbl_805FB13C;
+extern f32 lbl_805FB140;
+extern f32 lbl_805FB144;
+extern f32 lbl_805FB148;
+extern f32 lbl_805FB150;
+extern f32 lbl_805FB154;
+extern f32 lbl_805FB158;
+extern f32 lbl_805FB15C;
+extern f32 lbl_805FB160;
+extern f32 lbl_805FB164;
+extern f32 lbl_805FB168;
+
+f32 fn_8045A818(f32 *object) {
+    f32 input = object[10];
+    f32 value = -input;
+    u32 bits = *(u32 *)&value;
+    u32 magnitude = bits & 0x7FFFFFFF;
+    if ((s32)magnitude >= 0x3F800000) {
+        if ((s32)bits > 0) {
+            return lbl_805FB120;
+        }
+        return lbl_805FB124;
+    }
+    if ((s32)magnitude < 0x3F000000) {
+        if ((s32)magnitude <= 0x23000000) {
+            return lbl_805FB128;
+        }
+        f32 f8 = value * value;
+        f32 f4 = lbl_805FB148 * f8 + lbl_805FB144;
+        f32 f3 = f8 * f4 + lbl_805FB140;
+        f32 f1 = lbl_805FB15C * f8 + lbl_805FB158;
+        f32 f6 = f8 * f3 + lbl_805FB13C;
+        f3 = f8 * f1 + lbl_805FB154;
+        f32 f5 = f8 * f6 + lbl_805FB138;
+        f32 f2 = f8 * f3 + lbl_805FB150;
+        f3 = f8 * f5 + lbl_805FB134;
+        f1 = f8 * f2 + lbl_805FB14C;
+        f2 = f8 * f3;
+        f1 = f2 / f1;
+        f32 f0 = lbl_805FB130 - value * f1;
+        f0 = value - f0;
+        return lbl_805FB12C - f0;
+    }
+    if ((s32)bits < 0) {
+        f32 f0 = lbl_805FB14C + value;
+        f32 f31 = lbl_805FB160 * f0;
+        f32 f1 = f31;
+        f1 = fn_80482340(f1);
+        f32 f5 = lbl_805FB148 * f31 + lbl_805FB144;
+        f32 f4 = f31 * f5 + lbl_805FB140;
+        f32 f2 = lbl_805FB15C * f31 + lbl_805FB158;
+        f32 f7 = f31 * f4 + lbl_805FB13C;
+        f4 = f31 * f2 + lbl_805FB154;
+        f32 f6 = f31 * f7 + lbl_805FB138;
+        f4 = f31 * f4 + lbl_805FB150;
+        f5 = f31 * f6 + lbl_805FB134;
+        f32 f3 = f31 * f4 + lbl_805FB14C;
+        f4 = f31 * f5;
+        f3 = f4 / f3;
+        f2 = f3 * f1 - lbl_805FB130;
+        f1 = f1 + f2;
+        return lbl_805FB130 - lbl_805FB168 * f1;
+    }
+    f32 f0 = lbl_805FB14C - value;
+    f32 f31 = lbl_805FB160 * f0;
+    f32 result = fn_80482340(f31);
+    u32 rounded_bits = *(u32 *)&result;
+    rounded_bits &= 0xFFFFF000;
+    f32 rounded = *(f32 *)&rounded_bits;
+    f32 f2 = lbl_805FB148 * f31 + lbl_805FB144;
+    f32 f4 = f31 * f2 + lbl_805FB140;
+    f4 = f31 * f4 + lbl_805FB13C;
+    f2 = lbl_805FB15C * f31 + lbl_805FB158;
+    f4 = f31 * f4 + lbl_805FB138;
+    f2 = f31 * f2 + lbl_805FB154;
+    f4 = f31 * f4 + lbl_805FB134;
+    f2 = f31 * f2 + lbl_805FB150;
+    f32 f5 = f31 * f4 + lbl_805FB14C;
+    f4 = f31 * f2 + lbl_805FB130;
+    f2 = f31 - rounded * rounded;
+    f0 = result + rounded;
+    f5 = f31 * f5;
+    f32 f3 = f31 * f4 + lbl_805FB14C;
+    f0 = f2 / f0;
+    f2 = f5 / f3;
+    f0 = f2 * result + f0;
+    f0 = rounded + f0;
+    return lbl_805FB168 * f0;
 }
 
 extern u32 lbl_805EDDB8;
