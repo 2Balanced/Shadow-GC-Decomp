@@ -233,6 +233,25 @@ u32 fn_8045B1F4(u32 *object) {
     return 1;
 }
 
+u32 *fn_8045B6F0(u32 *object) {
+    u32 *current;
+    u32 *entries = (u32 *)object[0];
+    if (entries != NULL) {
+        s32 count = object[1];
+        current = entries;
+        for (s32 i = 0; i < count; i++) {
+            fn_8045B1F4((u32 *)current[0]);
+            current[0] = 0;
+            current++;
+        }
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(entries);
+        object[0] = 0;
+    }
+    object[1] = 0;
+    object[2] = 0;
+    return object;
+}
+
 extern u32 lbl_805F14F0;
 extern u32 lbl_805EDDC0;
 
