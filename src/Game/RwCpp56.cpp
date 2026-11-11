@@ -168,7 +168,24 @@ void fn_8049309C(u32 *object, u8 *source) {
     u32 (*reader)(const void *) = NULL;
     RW_SELECT_READER((u8 *)object, reader);
     u32 kind = *(u32 *)(source + 0xC);
-    if (kind == 0x20) {
+    switch (kind) {
+    case 4:
+    case 8: {
+        u16 palette[256];
+        u16 *palettePtr = palette;
+        const u8 *paletteInput = *(u8 **)(source + 0x18);
+        for (u32 i = 0; i < (1u << (kind & 0x3F)); i++) {
+            *palettePtr++ = (u16)reader(paletteInput);
+            paletteInput += 4;
+        }
+        for (u32 row = 0; row < object[4]; row++) {
+            u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
+            u16 *output = (u16 *)(object[1] + object[6] * row);
+            for (u32 x = 0; x < object[3]; x++) *output++ = palette[*input++];
+        }
+        break;
+    }
+    case 0x20:
         for (u32 row = 0; row < object[4]; row++) {
             const u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
             u16 *output = (u16 *)(object[1] + object[6] * row);
@@ -177,20 +194,10 @@ void fn_8049309C(u32 *object, u8 *source) {
                 input += 4;
             }
         }
-        return;
-    }
-    if (kind != 4 && kind != 8) {
+        break;
+    default:
         RW_ERROR(0x80000008);
-        return;
-    }
-    u16 palette[256];
-    for (u32 i = 0; i < (1u << (kind & 0x3F)); i++) {
-        palette[i] = (u16)reader(*(u8 **)(source + 0x18) + i * 4);
-    }
-    for (u32 row = 0; row < object[4]; row++) {
-        u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
-        u16 *output = (u16 *)(object[1] + object[6] * row);
-        for (u32 x = 0; x < object[3]; x++) *output++ = palette[*input++];
+        break;
     }
 }
 
@@ -198,7 +205,24 @@ void fn_80493330(u32 *object, u8 *source) {
     u32 (*reader)(const void *) = NULL;
     RW_SELECT_READER((u8 *)object, reader);
     u32 kind = *(u32 *)(source + 0xC);
-    if (kind == 0x20) {
+    switch (kind) {
+    case 4:
+    case 8: {
+        u32 palette[256];
+        u32 *palettePtr = palette;
+        const u8 *paletteInput = *(u8 **)(source + 0x18);
+        for (u32 i = 0; i < (1u << (kind & 0x3F)); i++) {
+            *palettePtr++ = reader(paletteInput);
+            paletteInput += 4;
+        }
+        for (u32 row = 0; row < object[4]; row++) {
+            u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
+            u32 *output = (u32 *)(object[1] + object[6] * row);
+            for (u32 x = 0; x < object[3]; x++) *output++ = palette[*input++];
+        }
+        break;
+    }
+    case 0x20:
         for (u32 row = 0; row < object[4]; row++) {
             const u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
             u32 *output = (u32 *)(object[1] + object[6] * row);
@@ -207,18 +231,10 @@ void fn_80493330(u32 *object, u8 *source) {
                 input += 4;
             }
         }
-        return;
-    }
-    if (kind != 4 && kind != 8) {
+        break;
+    default:
         RW_ERROR(0x80000008);
-        return;
-    }
-    u32 palette[256];
-    for (u32 i = 0; i < (1u << (kind & 0x3F)); i++) palette[i] = reader(*(u8 **)(source + 0x18) + i * 4);
-    for (u32 row = 0; row < object[4]; row++) {
-        u8 *input = *(u8 **)(source + 0x14) + *(u32 *)(source + 0x10) * row;
-        u32 *output = (u32 *)(object[1] + object[6] * row);
-        for (u32 x = 0; x < object[3]; x++) *output++ = palette[*input++];
+        break;
     }
 }
 
