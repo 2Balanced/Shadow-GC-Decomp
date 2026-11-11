@@ -192,6 +192,18 @@ u32 *fn_8045B270(u32 *object, u32 *value) {
     return object;
 }
 
+u32 fn_8045B1F4(u32 *object) {
+    if (*(s16 *)((u8 *)object + 24) == 1) {
+        fn_80482144(lbl_8056D840, object);
+        fn_8045B270(object, NULL);
+        ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u8 **)(lbl_805F15B4 + lbl_805F14E8), object);
+    } else {
+        (*(s16 *)((u8 *)object + 24))--;
+    }
+    return 1;
+}
+
 extern u32 lbl_805F14F0;
 extern u32 lbl_805EDDC0;
 
