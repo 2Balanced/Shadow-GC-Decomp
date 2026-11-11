@@ -139,32 +139,40 @@ void *fn_8043AD94(u32 size) {
     RwCpp01Node *current = (RwCpp01Node *)lbl_805F1404->m_list;
     u32 interrupt = OSDisableInterrupts();
     u32 aligned = (size + 0x1F) & 0xFFFFFFE0;
-    while (current != NULL) {
-        RwCpp01Node *next = current->m_next;
-        if (next == NULL) {
-            int remaining = 0;
-            OSDisableInterrupts();
-            if (lbl_805F1404 != NULL && lbl_805F1404->m_list != NULL) {
-                RwCpp01Node *block = (RwCpp01Node *)lbl_805F1404->m_list;
-                while (block->m_next != NULL) {
-                    if (block->m_magic == 0x4D46) {
-                        remaining += (u8 *)block->m_next - (u8 *)block - 0x20;
-                    }
-                    block = block->m_next;
-                }
+    RwCpp01Node *next;
+    goto next_check;
+    for (;;) {
+        if (current->m_magic == 0x4D46) {
+            u32 available = (u8 *)next - (u8 *)current - 0x20;
+            if (available >= aligned) {
+                goto found;
             }
-            OSRestoreInterrupts(0);
-            OSReport("AX SDLIB: gacxSndMalloc(%d) failed (should not happen, rest=%d\n", size, remaining);
-            OSRestoreInterrupts(interrupt);
-            return NULL;
-        }
-        u32 available = (u8 *)next - (u8 *)current - 0x20;
-        if (current->m_magic == 0x4D46 && available >= aligned) {
-            break;
         }
         current = next;
+next_check:
+        next = current->m_next;
+        if (next == NULL) {
+            break;
+        }
     }
-    RwCpp01Node *next = current->m_next;
+    {
+        int remaining = 0;
+        OSDisableInterrupts();
+        if (lbl_805F1404 != NULL && lbl_805F1404->m_list != NULL) {
+            RwCpp01Node *block = (RwCpp01Node *)lbl_805F1404->m_list;
+            while (block->m_next != NULL) {
+                if (block->m_magic == 0x4D46) {
+                    remaining += (u8 *)block->m_next - (u8 *)block - 0x20;
+                }
+                block = block->m_next;
+            }
+        }
+        OSRestoreInterrupts(0);
+        OSReport("AX SDLIB: gacxSndMalloc(%d) failed (should not happen, rest=%d\n", size, remaining);
+        OSRestoreInterrupts(interrupt);
+        return NULL;
+    }
+found:
     u32 available = (u8 *)next - (u8 *)current - 0x20;
     if (available > aligned + 0x20) {
         RwCpp01Node *split = (RwCpp01Node *)((u8 *)current + aligned + 0x20);
