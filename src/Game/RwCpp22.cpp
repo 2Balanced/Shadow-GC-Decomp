@@ -52,6 +52,65 @@ s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {
     return left_value - right_value;
 }
 
+void fn_8045D20C(u32 *object, u32 **array, s32 index) {
+    if (index < 4) {
+        object[7] = 1;
+        return;
+    }
+    object[6] = 1;
+    u32 *head = array[((u8 *)object)[32]];
+    if (head == object) {
+        array[((u8 *)object)[32]] = (u32 *)head[4];
+        if (array[((u8 *)object)[32]] != NULL) {
+            array[((u8 *)object)[32]][5] = 0;
+        }
+    } else {
+        if (object[4] != 0) {
+            ((u32 *)object[4])[5] = object[5];
+        }
+        if (object[5] != 0) {
+            ((u32 *)object[5])[4] = object[4];
+        }
+    }
+    for (u8 i = 0; i < 3; i++) {
+        u32 *child;
+        u32 *candidate = NULL;
+        u32 *container = (u32 *)object[i + 1];
+        child = (u32 *)container[1];
+        if (child != NULL && child != object && (s32)child[6] == 0) {
+            candidate = child;
+        } else {
+            child = (u32 *)container[2];
+            if (child != NULL && (s32)child[6] == 0) {
+                candidate = child;
+            }
+        }
+        if (candidate != NULL) {
+            head = array[((u8 *)candidate)[32]];
+            if (head == candidate) {
+                array[((u8 *)candidate)[32]] = (u32 *)head[4];
+                if (array[((u8 *)candidate)[32]] != NULL) {
+                    array[((u8 *)candidate)[32]][5] = 0;
+                }
+            } else {
+                if (candidate[4] != 0) {
+                    ((u32 *)candidate[4])[5] = candidate[5];
+                }
+                if (candidate[5] != 0) {
+                    ((u32 *)candidate[5])[4] = candidate[4];
+                }
+            }
+            ((u8 *)candidate)[32]--;
+            candidate[4] = (u32)array[((u8 *)candidate)[32]];
+            if (candidate[4] != 0) {
+                ((u32 *)candidate[4])[5] = (u32)candidate;
+            }
+            array[((u8 *)candidate)[32]] = candidate;
+            candidate[5] = 0;
+        }
+    }
+}
+
 u32 fn_8045C9C8(u32 *object, u8 *entry) {
     if (entry[0] == 8 && (*(u32 *)(entry + 8) & 0x01000000)) {
         goto fixed_size;
