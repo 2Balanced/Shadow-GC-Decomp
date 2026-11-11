@@ -130,6 +130,34 @@ u32 *fn_8045B270(u32 *object, u32 *value) {
     return object;
 }
 
+extern u32 lbl_805F14F0;
+extern u32 lbl_805EDDC0;
+
+u32 *fn_8045BF64(u32 *object) {
+    if (--(&lbl_805F14F0)[1] == 0 && lbl_805EDDC0 != 0) {
+        fn_8047FCDC((u32 *)lbl_805EDDC0);
+        lbl_805EDDC0 = 0;
+    }
+    return object;
+}
+
+u32 fn_8045C26C(u32 *object) {
+    if (object[2] != 0) {
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(object[2]);
+        object[2] = 0;
+    }
+    ((void (*)(u32, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(lbl_805EDDC0, object);
+    return 1;
+}
+
+u32 fn_8045C2D4(u32 *object) {
+    if (object[0] != 0 || *(u16 *)((u8 *)object + 4) != 0 || *(u16 *)((u8 *)object + 6) != 0 ||
+        object[2] != 0 || object[3] != 0) {
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+    }
+    return 1;
+}
+
 extern u32 lbl_805F14E4;
 extern u32 lbl_805F14E0;
 u32 fn_8047D868(u8 *stream, void *data, u32 size);
