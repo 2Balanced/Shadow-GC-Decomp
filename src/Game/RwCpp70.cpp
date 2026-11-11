@@ -1,6 +1,6 @@
 /* RenderWare container and resource helpers. Function and member names are inferred from behavior.
  * Definitions are in reverse address order because deferred inlining emits the last one first.
- * Remaining: register allocation in fn_804A8B08, fn_804A9274, fn_804A9674, and fn_804A9914.
+ * Remaining: register allocation in fn_804A8B08, fn_804A9274, and fn_804A9914.
  * Compiler profile: GC 2.7 -O4,p with use_lmw_stmw off. */
 #include <string.h>
 #include <dolphin/types.h>
@@ -114,38 +114,41 @@ void *fn_804A9914(void *param) {
     } local14;
     u8 *base = (u8 *)lbl_805F15B4 + lbl_805EDF68;
     void *found = NULL;
+    void *node;
     void *head = *(void **)(base + 8);
     if (head != NULL) {
         void *search = *(void **)head;
         while (search != head) {
-            void *node = (u8 *)search - 0x28;
+            node = (u8 *)search - 0x28;
             if (lbl_805F15B4->m_e8((u8 *)node + 8, param) == 0) {
-                found = node;
-                goto have;
+                goto firstFound;
             }
             search = *(void **)search;
         }
-        search = NULL;
-        found = search;
+        node = NULL;
+firstFound:
+        found = node;
     } else {
         void *outer = *(void **)base;
         while (outer != base) {
             void *end = (u8 *)outer - 8;
-            found = *(void **)end;
-            while (found != end) {
-                void *node = (u8 *)found - 0x28;
+            void *search = *(void **)end;
+            while (search != end) {
+                node = (u8 *)search - 0x28;
                 if (lbl_805F15B4->m_e8((u8 *)node + 8, param) == 0) {
-                    found = node;
-                    goto have;
+                    goto nestedFound;
                 }
-                found = *(void **)found;
+                search = *(void **)search;
             }
-            if (found != NULL) break;
-            found = NULL;
+            node = NULL;
+nestedFound:
+            found = node;
+            if (found != NULL) {
+                break;
+            }
             outer = *(void **)outer;
         }
     }
-have:
     if (found != NULL) {
         fn_804A9BE8(found);
         return found;
@@ -201,10 +204,10 @@ RwCpp70Node *fn_804A9584(RwCpp70Node *node);
             RwCpp70InitEntry *entry = &lbl_805E3378[(u32)(node)->m_field_0x0];                  \
             if (entry->m_field_0x4 != NULL) {                                                   \
                 ((void (*)(void *))entry->m_field_0x4)(node);                                   \
+                break;                                                                          \
             }                                                                                  \
-        } else {                                                                               \
-            lbl_805F15B4->m_free(node, lbl_805F15B4);                                            \
         }                                                                                      \
+        lbl_805F15B4->m_free(node, lbl_805F15B4);                                                \
     } while (0)
 
 void fn_804A9674(RwCpp70Node *node) {
@@ -358,11 +361,11 @@ int fn_804A9274(void) {
         *(void **)((u8 *)lbl_805F15B4 + lbl_805EDF68 + 0xC) = NULL;
     }
     void *list = (u8 *)lbl_805F15B4 + lbl_805EDF68;
+    void *target = lbl_805F16D0;
     void *current = *(void **)list;
     while (current != list) {
-        void *target = lbl_805F16D0;
         if ((u8 *)current - 8 == target) {
-            fn_804A9468(current);
+            fn_804A9468(target);
             lbl_805F16D0 = NULL;
             break;
         }
@@ -491,7 +494,9 @@ int fn_804A8E90(void) {
 
 #define RWCPP70_CONSTRUCT_FAIL(result)                                                          \
     do {                                                                                       \
-        for (u32 i = 0, *slot = result; i < (result)[1]; slot++, i++) {                       \
+        i = 0;                                                                                 \
+        slot = result;                                                                         \
+        for (; i < (result)[1]; slot++, i++) {                                                \
             if (slot[2] != 0) {                                                                \
                 fn_8048CD8C((void *)slot[2]);                                                  \
                 slot[2] = 0;                                                                   \
@@ -519,6 +524,8 @@ void *fn_804A8B08(void *stream, void *source, void *destination, void *context) 
     }
     u8 count = local8[1];
     size_t size;
+    u32 i;
+    u32 *slot;
     u32 *entry = (u32 *)lbl_805E32D8 + local8[0] * 4;
     size = entry[3] + 0x38;
     u32 *result = (u32 *)lbl_805F15B4->m_allocate(size, 0x103012C, lbl_805F15B4);
