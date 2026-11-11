@@ -191,7 +191,7 @@ u32 fn_8044719C(u32 *object) {
 }
 
 typedef void (*RwCpp09Callback)(void);
-void fn_80446BE0(u32 *);
+u32 *fn_80446BE0(u32 *);
 s32 fn_80485D78(u32, u32, RwCpp09Callback, RwCpp09Callback);
 s32 fn_804878D4(u32, u32, RwCpp09Callback, RwCpp09Callback, RwCpp09Callback);
 s32 fn_804836EC(u32, RwCpp09Callback, RwCpp09Callback, RwCpp09Callback);
@@ -557,10 +557,11 @@ void fn_80447598(u8 *base) {
     *(u32 *)(base + lbl_805F1448) = 0;
 }
 
-void fn_80446BE0(u32 *object) {
+u32 *fn_80446BE0(u32 *object) {
     u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
     target[1] = 0;
     target[0] = 0xFFFFFFFF;
+    return object;
 }
 
 void fn_80456FD8(void);

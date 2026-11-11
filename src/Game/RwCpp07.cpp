@@ -137,11 +137,12 @@ void *fn_80443A74(u32 *object) {
     return ((void *(*)(u32 *))target[2])(object);
 }
 
-void fn_80443FE0(u8 *base) {
+u8 *fn_80443FE0(u8 *base) {
     u32 *target = (u32 *)(base + lbl_805F1430);
     target[0] = 0;
     target[1] = 0;
     target[2] = 0;
+    return base;
 }
 
 void *fn_80443FFC(u8 *base) {

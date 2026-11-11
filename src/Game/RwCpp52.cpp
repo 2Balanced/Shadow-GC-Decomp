@@ -503,11 +503,8 @@ void fn_8048D834(u8 *object) {
 }
 
 void fn_8048D85C(f32 *color) {
-    f32 scale = lbl_805FB364;
-    f32 divisor = lbl_805FB360;
-    f32 value = color[0];
-    color[0] = value / divisor;
-    color[2] = color[2] / scale;
+    color[0] = color[0] / lbl_805FB360;
+    color[2] = color[2] / lbl_805FB364;
 }
 
 void fn_8048D880(f32 *color) {

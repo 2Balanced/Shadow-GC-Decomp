@@ -63,10 +63,11 @@ void fn_80463244(void);
 void fn_80463308(void);
 void fn_804631D4(void);
 
-void fn_80461238(u8 *object) {
+u8 *fn_80461238(u8 *object) {
     u32 *target = (u32 *)(object + lbl_805F1510);
     target[0] = 0;
     target[1] = *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 8);
+    return object;
 }
 
 void fn_80461548(u8 *object) {

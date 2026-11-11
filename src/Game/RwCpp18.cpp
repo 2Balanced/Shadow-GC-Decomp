@@ -23,18 +23,20 @@ void fn_80455CF8(void) {
     (&lbl_805F14B0)[1]++;
 }
 
-void fn_804561F0(u8 *base) {
+u8 *fn_804561F0(u8 *base) {
     u32 *target = (u32 *)(base + lbl_805F14B8);
     target[2] = 0;
     target[1] = 0;
     target[0] = 0;
+    return base;
 }
 
-void fn_80456210(u8 *base) {
+u8 *fn_80456210(u8 *base) {
     u32 *target = (u32 *)(base + lbl_805F14BC);
     target[2] = 0;
     target[1] = 0;
     target[0] = 0;
+    return base;
 }
 
 void fn_80457468(void);
