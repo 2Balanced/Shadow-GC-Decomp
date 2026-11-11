@@ -48,6 +48,14 @@ void fn_80463104(void *, u32);
 s32 fn_80462C28(void);
 void fn_80462C20(u32);
 void fn_804A8120(void *, void *, u32);
+void *RwFrameGetLTM(void *);
+void fn_80462C30(void *, void *);
+void fn_804950AC(void *, u32);
+void fn_80394500(u32, u32);
+u32 fn_804A2F08(u32);
+u32 fn_8044DC4C(const float *, void *, int);
+void fn_8044DD1C(u32 *, u32, int);
+void fn_804A457C(u32 *, u32 *, u32 *, void *, u32 *);
 
 void fn_80451F48(void) {
     (&lbl_805F1490)[1]++;
@@ -154,6 +162,49 @@ void *fn_80451B20(u32 *context, u32 *node) {
     u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
     if (record[4] > 1 && format != NULL && format[0xD] != 0 && (owner[2] & 0x10) != 0) {
         fn_804A8120(node, format, owner[5]);
+    }
+    return context;
+}
+
+void *fn_80451BCC(u32 *context, u32 *node) {
+    u32 *nodeData = (u32 *)node[0];
+    u32 *callbackPair = (u32 *)((u8 *)nodeData + 0x18 + (nodeData[8] - 1) * 8 + 0x14);
+    *(u16 *)((u8 *)nodeData + 0x18) = lbl_805EDF40;
+    u32 *owner = (u32 *)context[6];
+    u32 *descriptor = (u32 *)owner[0x54];
+    void *frameMatrix = RwFrameGetLTM((void *)context[1]);
+    u32 *format = *(u32 **)((u8 *)owner + lbl_805F1520);
+    fn_80462C30(format, node);
+    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
+    if (record[4] > 1) {
+        fn_804950AC(frameMatrix, (node[2] >> 4) & 1);
+    } else {
+        fn_80394500(0, 1);
+    }
+
+    u32 last = (u32)record;
+    if (record[4] == 1 && record[13] == 0) {
+        u32 outputIndex = 0;
+        u8 *indices = (u8 *)record[2];
+        for (u32 i = 0; i < record[1]; i++) {
+            const float *input = (const float *)(lbl_8056D708[3] + indices[i] * 0x40);
+            last = fn_8044DC4C(input, (void *)outputIndex, (node[2] >> 4) & 1);
+            outputIndex += 3;
+        }
+    }
+    fn_804A2F08(last);
+
+    u32 remaining = *(u16 *)((u8 *)descriptor + 4);
+    u32 *entry = (u32 *)((u8 *)descriptor + 0x10);
+    while (remaining != 0) {
+        if (record[4] == 1 && record[13] != 0) {
+            u32 total = *(u16 *)((u8 *)node[1] + 4);
+            fn_8044DD1C(record, total - (remaining + 1), (node[2] >> 4) & 1);
+        }
+        fn_804A457C(entry, callbackPair, context, frameMatrix, node);
+        callbackPair += 2;
+        entry += 3;
+        remaining--;
     }
     return context;
 }

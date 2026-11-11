@@ -34,8 +34,8 @@ u32 fn_8044CF68(u32 *, u32 *, u32 *, u32 **);
 void fn_8044D344(u8 *, u32 *, const void *, u32 *);
 void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
 void fn_80463840(void *, void *);
-void fn_803991E8(void *);
-void fn_80399238(void *, void *);
+u32 fn_803991E8(void *);
+u32 fn_80399238(void *, void *);
 void *fn_8044E408(u32 *, u32);
 u32 fn_8044BDBC(u32 *);
 void fn_8046288C(void);
@@ -251,7 +251,7 @@ extern "C" void *fn_8044DA3C(u32 *object, u32 *arg2) {
     return object;
 }
 
-extern "C" void fn_8044DC4C(const float *input, void *out, int transform) {
+extern "C" u32 fn_8044DC4C(const float *input, void *out, int transform) {
     float matrix[12];
     matrix[0] = -input[0];
     matrix[1] = -input[4];
@@ -265,8 +265,9 @@ extern "C" void fn_8044DC4C(const float *input, void *out, int transform) {
     matrix[9] = -input[6];
     matrix[10] = -input[10];
     matrix[11] = -input[14];
-    fn_803991E8(matrix);
-    if (transform != 0) fn_80399238(matrix, out);
+    u32 result = fn_803991E8(matrix);
+    if (transform != 0) return fn_80399238(matrix, out);
+    return result;
 }
 
 extern "C" void fn_8044DD1C(u32 *object, u32 index, int transform) {
