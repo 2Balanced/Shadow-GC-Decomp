@@ -107,36 +107,38 @@ void fn_804A2C2C(u8 *object, u32 *a, u32 *b) {
 
 void fn_804A2C90(u8 *object, u8 *resource) {
     u32 color;
-    u32 flags = *(u32 *)(object + 8);
-    if (*(s32 *)(object + 0x24) < 1) {
-        if ((flags & 8) == 0) {
+    if (*(s32 *)(object + 0x24) <= 0) {
+        if ((*(u32 *)(object + 8) & 8) == 0) {
             if (*(s32 *)(object + 0x1C) == 0) {
-                if ((flags & 0x40) != 0) {
+                if ((*(u32 *)(object + 8) & 0x40) != 0) {
                     color = resource[7];
                     fn_80396B54(4, &color);
                 }
             } else {
                 f32 intensity = *(f32 *)(resource + 0xC);
-                if ((flags & 0x40) == 0) {
+                if ((*(u32 *)(object + 8) & 0x40) == 0) {
                     intensity *= 255.0f;
                     ((u8 *)&color)[0] = (u8)(intensity * *(f32 *)(object + 0xC));
                     ((u8 *)&color)[1] = (u8)(intensity * *(f32 *)(object + 0x10));
                     ((u8 *)&color)[2] = (u8)(intensity * *(f32 *)(object + 0x14));
                     ((u8 *)&color)[3] = 0xFF;
                 } else {
-                    ((u8 *)&color)[0] = (u8)(resource[4] * intensity * *(f32 *)(object + 0xC));
-                    ((u8 *)&color)[1] = (u8)(resource[5] * intensity * *(f32 *)(object + 0x10));
-                    ((u8 *)&color)[2] = (u8)(resource[6] * intensity * *(f32 *)(object + 0x14));
+                    u32 red = resource[4];
+                    u32 green = resource[5];
+                    u32 blue = resource[6];
+                    ((u8 *)&color)[0] = (u8)(red * intensity * *(f32 *)(object + 0xC));
+                    ((u8 *)&color)[1] = (u8)(green * intensity * *(f32 *)(object + 0x10));
+                    ((u8 *)&color)[2] = (u8)(blue * intensity * *(f32 *)(object + 0x14));
                     ((u8 *)&color)[3] = resource[7];
                 }
                 fn_80396B54(4, &color);
             }
-        } else if ((flags & 0x40) != 0) {
+        } else if ((*(u32 *)(object + 8) & 0x40) != 0) {
             color = *(u32 *)(resource + 4);
             fn_80396B54(4, &color);
         }
     } else {
-        if (*(s32 *)(object + 0x1C) != 0 && (flags & 8) == 0) {
+        if (*(s32 *)(object + 0x1C) != 0 && (*(u32 *)(object + 8) & 8) == 0) {
             f32 intensity = 255.0f * *(f32 *)(resource + 0xC);
             ((u8 *)&color)[0] = (u8)(intensity * *(f32 *)(object + 0xC));
             ((u8 *)&color)[1] = (u8)(intensity * *(f32 *)(object + 0x10));
@@ -144,7 +146,7 @@ void fn_804A2C90(u8 *object, u8 *resource) {
             ((u8 *)&color)[3] = 0xFF;
             fn_80396A6C(4, &color);
         }
-        if ((flags & 0x40) != 0) {
+        if ((*(u32 *)(object + 8) & 0x40) != 0) {
             color = *(u32 *)(resource + 4);
             fn_80396B54(4, &color);
         }
