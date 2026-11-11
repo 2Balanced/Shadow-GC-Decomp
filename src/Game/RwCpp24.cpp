@@ -32,4 +32,62 @@ void fn_80460B68(u8 *object) {
     void (*callback)(void) = (void (*)(void))target[5];
     callback();
 }
+
+u32 *fn_8045F390(u32 *object);
+void fn_804624E8(u8 *, u32, u32 *, u32);
+void fn_80462130(u32 *object);
+void fn_8047FCDC(u32 *table);
+void fn_80462770(void);
+extern u32 lbl_805F1500;
+
+u32 *fn_8045FF5C(u32 *object) {
+    fn_804624E8(lbl_805F15B4, (u32)fn_8045F390, object, object[1]);
+    return object;
+}
+
+void fn_80460B1C(u32 *object) {
+    u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
+    ((u32 *)lbl_805F15B4)[1] = table[3];
+    ((u16 *)lbl_805F15B4)[4]++;
+    ((void (*)(void))table[4])();
+}
+
+void fn_80460BA4(u32 *object);
+void fn_80460B68(u8 *object);
+
+void fn_80460C48(u32 *object) {
+    u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
+    table[0] = 0;
+    table[1] = 0;
+    table[2] = 0;
+    table[4] = object[6];
+    table[5] = object[7];
+    table[6] = object[4];
+    object[4] = (u32)fn_80460BA4;
+    object[6] = (u32)fn_80460B1C;
+    object[7] = (u32)fn_80460B68;
+    table[3] = 0;
+}
+
+u32 *fn_80460CA4(u32 *object) {
+    u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
+    table[0] = 0;
+    table[1] = 0;
+    table[2] = 0;
+    if (*(u32 *)((u8 *)object + lbl_805F1508 + 12) != 0) {
+        fn_80462130(object);
+    }
+    return object;
+}
+
+u32 *fn_8045F9E8(u32 *object) {
+    u32 *table = *(u32 **)(lbl_805F15B4 + lbl_805F1500);
+    if (table != NULL) {
+        fn_8047FCDC(table);
+        *(u32 **)(lbl_805F15B4 + lbl_805F1500) = NULL;
+    }
+    fn_80462770();
+    (&lbl_805F1500)[1]--;
+    return object;
+}
 }
