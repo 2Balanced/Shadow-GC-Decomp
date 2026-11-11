@@ -366,41 +366,40 @@ u32 fn_80452A40(u8 *base, u32 offset)
 {
     u32 *dictionary = (u32 *)(base + offset);
     u32 total = 0;
-    if (dictionary == 0) {
-        return 0;
-    }
-    if ((s32)dictionary[0] <= 0) {
-        return 0;
-    }
-    for (s32 i = 0, off = 0; i < (s32)dictionary[0]; i++, off += 0x10) {
-        u32 *entry = (u32 *)(dictionary[1] + off);
-        if (entry[1] == 0) {
-            continue;
-        }
-        u32 size = 4;
-        if (entry[0] != 0) {
-            size = rwStringLength((char *)entry[0]) + 5;
-        }
-        size += 8;
-        switch (entry[1]) {
-        case 1:
-        case 2:
-            size += entry[2] << 2;
-            break;
-        case 3: {
-            u32 *value = (u32 *)entry[3];
-            for (u32 j = 0; j < entry[2]; j++, value += 4) {
-                size += 4;
-                if (value[0] != 0) {
-                    size += rwStringLength((char *)value[0]) + 1;
+    if (dictionary != 0 && (s32)dictionary[0] > 0) {
+        for (s32 i = 0, off = 0; i < (s32)dictionary[0]; i++, off += 0x10) {
+            u32 *entry = (u32 *)(dictionary[1] + off);
+            if ((s32)entry[1] == 0) {
+                continue;
+            }
+            u32 size = 0;
+            if (entry != 0) {
+                size = 4;
+                if (entry[0] != 0) {
+                    size = rwStringLength((char *)entry[0]) + 5;
+                }
+                size += 8;
+                switch ((s32)entry[1]) {
+                case 1:
+                case 2:
+                    size += entry[2] << 2;
+                    break;
+                case 3: {
+                    u32 *value = (u32 *)entry[3];
+                    for (s32 j = 0; j < (s32)entry[2]; j++, value++) {
+                        size += 4;
+                        if (value[0] != 0) {
+                            size += rwStringLength((char *)value[0]) + 1;
+                        }
+                    }
+                    break;
+                }
+                default:
+                    break;
                 }
             }
-            break;
+            total += size;
         }
-        default:
-            break;
-        }
-        total += size;
     }
     if ((s32)total > 0) {
         total += 4;
@@ -639,10 +638,10 @@ void fn_8045345C(float *out, const float *from)
         float upperRight = -from[3] * inverse;
         float lowerLeft = -from[4] * inverse;
         float lowerRight = from[5] * inverse;
-        float m00 = out[2];
-        float m01 = out[3];
         float m10 = out[4];
         float m11 = out[5];
+        float m00 = out[2];
+        float m01 = out[3];
         out[2] = lowerRight * m00 + upperRight * m10;
         out[3] = lowerRight * m01 + upperRight * m11;
         /* Retail multiplies both second row terms by the same cofactor; the
