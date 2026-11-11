@@ -603,4 +603,82 @@ void fn_8045F7D0(u32 *input) {
     }
     }
 }
+
+u32 *fn_8045F1FC(u32 *, u32);
+void fn_8045C26C(u32 *);
+void fn_8045C340(u32 *, u32 *, u32, u32, u32, u32, u32, u32);
+
+u32 *fn_8045F458(u32 *object, u32 *value, u32 *node, u32 *slot) {
+    u32 count_a = 0;
+    u32 count_b = 0;
+    u32 count_c = 0;
+    if (object[5] != 0) {
+        u32 size = object[5] * 4;
+        u32 *table_a = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10006);
+        u32 *table_b = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10507);
+        u32 *table_c = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10507);
+        s32 entry_index = 0;
+        u32 entry_offset = 0;
+        while (entry_index < ((u16 *)node)[66]) {
+            u16 *entry = (u16 *)(node[1] + entry_offset);
+            u32 *entry_slot = *(u32 **)((u8 *)slot + entry[3] * 4);
+            u32 index_a, index_b, index_c;
+            u32 *target_a = (u32 *)entry_slot[0];
+            index_a = 0;
+            while ((u16)index_a < (u16)count_a) {
+                if (table_a[(u16)index_a] == (u32)target_a) {
+                    break;
+                }
+                index_a++;
+            }
+            if ((u16)index_a == (u16)count_a) {
+                table_a[(u16)index_a] = (u32)target_a;
+                count_a++;
+            }
+            u32 target_b = target_a != NULL ? target_a[0] : 0;
+            index_b = 0;
+            while ((u16)index_b < (u16)count_b) {
+                if (table_b[(u16)index_b] == target_b) {
+                    break;
+                }
+                index_b++;
+            }
+            if ((u16)index_b == (u16)count_b) {
+                table_b[(u16)index_b] = target_b;
+                count_b++;
+            }
+            u32 target_c = entry_slot[2];
+            index_c = 0;
+            while ((u16)index_c < (u16)count_c) {
+                if (table_c[(u16)index_c] == target_c) {
+                    break;
+                }
+                index_c++;
+            }
+            if ((u16)index_c == (u16)count_c) {
+                table_c[(u16)index_c] = target_c;
+                count_c++;
+            }
+            fn_8045C340(value, entry_slot, entry[0], entry[1], entry[2], entry[3], index_a, index_c);
+            entry_offset += 8;
+            entry_index++;
+        }
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_a);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_b);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_c);
+    }
+    u32 *result;
+    if (object[2] & 1) {
+        result = fn_8045F1FC(value, 1);
+    } else {
+        result = fn_8045F1FC(value, 0);
+    }
+    if (result != NULL) {
+        node[30] = (u32)result;
+    } else {
+        fn_8045C26C(value);
+        return NULL;
+    }
+    return object;
+}
 }
