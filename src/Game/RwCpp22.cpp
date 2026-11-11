@@ -1,7 +1,8 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior.
  * fn_8045CA38 has retail's instruction sequence and size; GC/2.7 assigns one extra saved register
  * to the final field temporaries. Direct, cached, and scoped comparison forms were measured.
- * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift. */
+ * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift.
+ * fn_8045C56C matches size and the expansion loops; only setup scheduling/register choices differ. */
 #include <dolphin/types.h>
 
 extern u8 *lbl_805F15B4;
@@ -64,6 +65,66 @@ u8 *fn_8045C340(u32 *object, u32 value, u16 first, u16 second, u16 third,
     record->seventh = seventh;
     object[1]++;
     return (u8 *)object[2];
+}
+
+u32 fn_8047D458(u8 *stream, void *data, u32 size);
+s32 fn_8045B8EC(u32 *object, u32 value);
+
+u8 *fn_8045C56C(u32 *object, u8 *entry, u8 *stream, u32 *search) {
+    u32 pair[2];
+    u32 header[3];
+    u32 first = object[0];
+    u32 second = *(u16 *)((u8 *)object + 4);
+    u32 third = object[2];
+    header[0] = first;
+    header[1] = second;
+    header[2] = third;
+    if (fn_8047D458(stream, header, 12) == 0) {
+        return NULL;
+    }
+    u32 type;
+    u32 count = *(u16 *)((u8 *)object + 4);
+    u8 *record = (u8 *)object + 16;
+    type = entry[0];
+    while (count-- != 0) {
+        u32 key = ((u32 *)record)[2];
+        pair[0] = ((u32 *)record)[1];
+        pair[1] = fn_8045B8EC(search, key);
+        if ((s32)pair[1] < 0) {
+            pair[1] = 0;
+        }
+        if (fn_8047D458(stream, pair, 8) == 0) {
+            return NULL;
+        }
+        if (type == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+            goto convert;
+        }
+        if (type == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
+            goto convert;
+        }
+        goto next_record;
+convert:
+        {
+            u32 remaining = ((u32 *)record)[1];
+            u16 *source = (u16 *)((u32 *)record)[0];
+            u32 values[256];
+            while (remaining != 0) {
+                u32 chunk = remaining < 256 ? remaining : 256;
+                u32 i = 0;
+                while (i < chunk) {
+                    values[i] = *source++;
+                    i++;
+                }
+                if (fn_8047D458(stream, values, chunk * 4) == 0) {
+                    return NULL;
+                }
+                remaining -= chunk;
+            }
+        }
+next_record:
+        record += 12;
+    }
+    return stream;
 }
 
 s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {

@@ -1,4 +1,6 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare small callbacks and accessors. Names are inferred from behavior.
+ * fn_8045B8EC returns the found index or -1 with retail's size; GC/2.7 folds its pointer decrement
+ * into lwzu where retail uses a separate addi. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -28,16 +30,16 @@ void fn_8045BF30(u32 first) {
     ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(first, 0x30502);
 }
 
-void fn_8045B8EC(u32 *object, u32 value) {
-    u32 count = object[1];
+s32 fn_8045B8EC(u32 *object, u32 value) {
+    s32 count = object[1];
     u32 *entries = (u32 *)object[0] + count;
-    while (count != 0) {
-        if (entries[0] == value) {
-            return;
-        }
-        count--;
+    while (count-- > 0) {
         entries--;
+        if (entries[0] == value) {
+            return count;
+        }
     }
+    return -1;
 }
 
 extern u8 lbl_8056D828[];
