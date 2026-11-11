@@ -3,7 +3,8 @@
  * into lwzu where retail uses a separate addi. fn_8045A7C4 and fn_8045AA44 also match size;
  * their remaining differences are copy-register and first-comparison scheduling choices.
  * fn_8045AFA4 matches size and returns; its first data-pointer setup is scheduled after the saves.
- * fn_8045AD34 matches size; its constant loads and assignments use different volatile registers. */
+ * fn_8045AD34 matches size; its constant loads and assignments use different volatile registers.
+ * fn_8045B13C also matches size; its byte temporary and source-table registers differ. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -189,6 +190,34 @@ u32 *fn_8045B270(u32 *object, u32 *value) {
         fn_8048CD8C((u32 *)object[0]);
     }
     object[0] = (u32)value;
+    return object;
+}
+
+extern u8 lbl_8056D858[];
+
+u32 *fn_8045B13C(void) {
+    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F14E8), 0x00030007);
+    if (object == NULL) {
+        return NULL;
+    }
+    u32 *constants = (u32 *)lbl_8056D858;
+    u32 fill = 255;
+    u32 one = 1;
+    u8 bytes[4];
+    bytes[0] = fill;
+    bytes[1] = fill;
+    bytes[2] = fill;
+    bytes[3] = fill;
+    *(s16 *)((u8 *)object + 24) = one;
+    fill = *(u32 *)bytes;
+    object[1] = fill;
+    object[0] = 0;
+    object[2] = 0;
+    object[3] = constants[0];
+    object[4] = constants[1];
+    object[5] = constants[2];
+    fn_8048209C(lbl_8056D840, object);
     return object;
 }
 
