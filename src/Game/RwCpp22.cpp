@@ -1,14 +1,71 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior.
  * fn_8045CA38 has retail's instruction sequence and size; GC/2.7 assigns one extra saved register
- * to the final field temporaries. Direct, cached, and scoped comparison forms were measured. */
+ * to the final field temporaries. Direct, cached, and scoped comparison forms were measured.
+ * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift. */
 #include <dolphin/types.h>
 
-extern s16 *lbl_805F15B4;
+extern u8 *lbl_805F15B4;
 extern u32 lbl_805F14F0;
 
 extern u32 lbl_805FB170;
 
+struct RwCpp22Record {
+    u16 first;
+    u16 second;
+    u16 third;
+    u16 padding;
+    u32 value;
+    u16 fourth;
+    u16 fifth;
+    u16 sixth;
+    u16 seventh;
+};
+
 extern "C" {
+u32 fn_8047DC28(u32 code, u32 size, ...);
+void fn_8047DB84(u32 *error);
+
+u8 *fn_8045C340(u32 *object, u32 value, u16 first, u16 second, u16 third,
+                u16 fourth, u16 fifth, u16 sixth, u16 seventh) {
+    if (object[1] >= object[0]) {
+        u32 size = (object[1] + 1) * 20;
+        u8 *buffer;
+        if (object[1] != 0) {
+            buffer = ((u8 *(*)(u8 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
+                (u8 *)object[2], size, 0x01030502);
+        } else {
+            buffer = ((u8 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030502);
+        }
+        if (buffer == NULL) {
+            u32 error[2];
+            error[0] = 2;
+            error[1] = fn_8047DC28(0x80000013, size);
+            fn_8047DB84(error);
+            return NULL;
+        }
+        object[2] = (u32)buffer;
+        object[0] = object[1] + 1;
+    }
+    RwCpp22Record *record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->value = value;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->first = first;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->second = second;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->third = third;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->fourth = fourth;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->fifth = fifth;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->sixth = sixth;
+    record = (RwCpp22Record *)(object[2] + object[1] * 20);
+    record->seventh = seventh;
+    object[1]++;
+    return (u8 *)object[2];
+}
+
 s32 fn_8045CA38(u32 **left_argument, u32 **right_argument) {
     s32 left_value = 0;
     s32 right_value = 0;
