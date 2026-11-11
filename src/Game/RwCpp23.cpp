@@ -1,6 +1,7 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior.
  * fn_8045EF64 implements the full grouped-object factory; loop register allocation and group
- * initialization differ from retail. */
+ * initialization differ from retail. fn_8045E51C implements all staged reads and cleanup paths;
+ * loop scheduling and final link order differ. */
 #include <dolphin/types.h>
 
 extern u32 lbl_805F14F8;
@@ -61,6 +62,116 @@ u32 *fn_8045C4E4(u32 *object, u32 (*callback)(u8 *, u32 *, u32), u32 argument);
 u32 *fn_8045CBD4(u32 *object);
 u32 fn_8047DC28(u32 code, ...);
 void fn_8047DB84(u32 *error);
+
+static inline void RwCpp23Callback(u32 *node) {
+    ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F14F0 + 4), node);
+}
+
+static inline void RwCpp23Free(u32 *node) {
+    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(node);
+}
+
+u32 *fn_8045E51C(u32 *owner, u32 mode) {
+    u32 *current;
+    u32 *next;
+    u32 *node;
+    u32 count;
+    u16 *output;
+    if (owner[0] == 0) {
+        return NULL;
+    }
+    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F14F0 + 4), 0x00030502);
+    object[1] = 0;
+    object[2] = 0;
+    for (current = owner; current != NULL; current = (u32 *)current[3]) {
+        object[2] += current[2] + 6;
+    }
+    object[0] = (u32)((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(object[2] * 4, 0x00030502);
+    count = 0;
+    for (current = owner; current != NULL; current = (u32 *)current[3]) {
+        ((u16 *)object[0])[count] = *(u16 *)current;
+        count++;
+        RwCpp23Callback(current);
+    }
+    next = (u32 *)owner[3];
+    while (next != NULL) {
+        current = next;
+stage1:
+        if (current == NULL) {
+            goto stage2_reset;
+        }
+        count = object[1];
+        output = (u16 *)object[0] + count;
+        if (output[-1] == *(u16 *)current && (count & 1) != 0 && mode != 0) {
+            output[0] = output[-1];
+            object[1]++;
+            goto stage2_reset;
+        }
+        current = (u32 *)current[3];
+        goto stage1;
+stage2_reset:
+        if (current != NULL) {
+            goto final_loop;
+        }
+        current = next;
+stage2_condition:
+        if (current != NULL) {
+            goto stage2_body;
+        }
+        goto stage3_body;
+stage2_body:
+        count = object[1];
+        output = (u16 *)object[0] + count;
+        if (output[-2] == *(u16 *)current && (count & 1) == 0 && mode != 0) {
+            output[0] = output[-2];
+            output[1] = *(u16 *)current;
+            object[1] += 2;
+            goto final_loop;
+        }
+        output[0] = output[-2];
+        object[1]++;
+        goto final_loop;
+stage3_body:
+        count = object[1];
+        output = (u16 *)object[0] + count;
+        output[0] = output[-1];
+        if ((count & 1) == 0 || mode == 0) {
+            output[1] = *(u16 *)next;
+            object[1] += 2;
+        } else {
+            output[1] = *(u16 *)next;
+            output[2] = *(u16 *)next;
+            object[1] += 3;
+        }
+final_loop:
+        while (current != NULL) {
+            count = object[1];
+            output = (u16 *)object[0] + count;
+            output[0] = *(u16 *)current;
+            object[1]++;
+            RwCpp23Callback(current);
+            current = (u32 *)current[3];
+        }
+        RwCpp23Free(current);
+        current[0] = 0;
+        if (next == current) {
+            next = (u32 *)current[3];
+            RwCpp23Callback(current);
+        } else {
+            node = next;
+            while ((u32 *)node[3] != current) {
+                node = (u32 *)node[3];
+            }
+            node[3] = current[3];
+            RwCpp23Callback(current);
+        }
+    }
+    owner[0] = (u32)object;
+    object[3] = 0;
+    return (u32 *)1;
+}
 
 u32 *fn_8045EF64(u32 *input, u32) {
     u32 count = input[1];
