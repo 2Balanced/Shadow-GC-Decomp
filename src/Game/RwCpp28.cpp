@@ -58,8 +58,7 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
     if (result == NULL) return NULL;
     u32 headerBytes = (streams & 0x1FFFFFFF) * 8;
     memset(result, 0, headerBytes);
-    u32 offset = headerBytes;
-    for (u32 i = 0; i < streams; i++) {
+    for (u32 i = 0, offset = headerBytes; i < streams; i++) {
         result[i * 2] = (u32)result + offset;
         offset += descriptors[i * 2 + 1] * rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
     }
