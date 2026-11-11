@@ -263,8 +263,11 @@ int fn_8046B110(u32 *object, u32 **out1, u32 **out2) {
                     RW31_STORE_STREAM8();
                 }
             }
+            s32 index = stream + tableIndex;
             for (; stream < count; ) {
-                RW31_STORE_STREAM();
+                table[index] = *(u32 *)(source + 0x10);
+                index++;
+                stream++;
             }
         }
         tableIndex += count;
@@ -278,20 +281,22 @@ int fn_8046B110(u32 *object, u32 **out1, u32 **out2) {
         return 0;
     }
     tableIndex = 0;
+    s32 descriptorOffset = 0;
     for (s32 entry = 0; entry < entries; entry++) {
         (*out2)[entry] = fn_80465CDC(
             deduplicated, table + tableIndex, count,
-            *(u32 *)(object[0x15] + entry * 0xC + 0x14));
+            *(u32 *)((u8 *)object[0x15] + descriptorOffset + 0x14));
         if ((*out2)[entry] == 0) {
-            s32 byteOffset = entry * 4;
+            descriptorOffset = entry * 4;
             while (--entry > 0) {
-                byteOffset -= 4;
+                descriptorOffset -= 4;
                 ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(
-                    *(u32 **)((u8 *)*out2 + byteOffset));
+                    *(u32 **)((u8 *)*out2 + descriptorOffset));
             }
             return 0;
         }
         tableIndex += count;
+        descriptorOffset += 0xC;
     }
     ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
     ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
@@ -406,20 +411,20 @@ s32 fn_804699F0(u8 *dest, const u8 *source, s32 type, s32 vertices, u32 stride) 
     *(u32 *)((dst) + 4) = ((const u32 *)(src))[1]; \
 } while (0)
 #define RW31_PAIR_UNROLL(PACK) do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
     PACK(out, source); \
+    u8 *out1 = out + stride; \
     PACK(out1, source + 2); \
+    u8 *out2 = out1 + stride; \
     PACK(out2, source + 4); \
+    u8 *out3 = out2 + stride; \
     PACK(out3, source + 6); \
+    u8 *out4 = out3 + stride; \
     PACK(out4, source + 8); \
+    u8 *out5 = out4 + stride; \
     PACK(out5, source + 10); \
+    u8 *out6 = out5 + stride; \
     PACK(out6, source + 12); \
+    u8 *out7 = out6 + stride; \
     PACK(out7, source + 14); \
     out = out7 + stride; \
     source += 16; \
@@ -428,6 +433,74 @@ s32 fn_804699F0(u8 *dest, const u8 *source, s32 type, s32 vertices, u32 stride) 
     PACK(out, source); \
     out += stride; \
     source += 2; \
+} while (0)
+#define RW31_PAIR_SHORT_UNROLL() do { \
+    u8 *out1 = out + stride; \
+    u8 *out2 = out1 + stride; \
+    u8 *out3 = out2 + stride; \
+    u8 *out4 = out3 + stride; \
+    u8 *out5 = out4 + stride; \
+    u8 *out6 = out5 + stride; \
+    u8 *out7 = out6 + stride; \
+    RW31_PAIR_SHORT(out, source); \
+    RW31_PAIR_SHORT(out1, source + 2); \
+    RW31_PAIR_SHORT(out2, source + 4); \
+    RW31_PAIR_SHORT(out3, source + 6); \
+    RW31_PAIR_SHORT(out4, source + 8); \
+    RW31_PAIR_SHORT(out5, source + 10); \
+    RW31_PAIR_SHORT(out6, source + 12); \
+    RW31_PAIR_SHORT(out7, source + 14); \
+    out = out7 + stride; \
+    source += 16; \
+} while (0)
+#define RW31_PAIR_SHORT_CONVERT() do { \
+    u8 *out = dest; \
+    if (vertices > 0) { \
+        s32 i = 0; \
+        s32 remaining = vertices - 8; \
+        if (vertices > 8) { \
+            for (; i < remaining; i += 8) { \
+                RW31_PAIR_SHORT_UNROLL(); \
+            } \
+        } \
+        for (; i < vertices; i++) { \
+            RW31_PAIR_ONE(RW31_PAIR_SHORT); \
+        } \
+    } \
+} while (0)
+#define RW31_PAIR_WORD_UNROLL() do { \
+    u8 *out1 = out + stride; \
+    u8 *out2 = out1 + stride; \
+    u8 *out3 = out2 + stride; \
+    u8 *out4 = out3 + stride; \
+    u8 *out5 = out4 + stride; \
+    u8 *out6 = out5 + stride; \
+    u8 *out7 = out6 + stride; \
+    RW31_PAIR_WORD(out, source); \
+    RW31_PAIR_WORD(out1, source + 2); \
+    RW31_PAIR_WORD(out2, source + 4); \
+    RW31_PAIR_WORD(out3, source + 6); \
+    RW31_PAIR_WORD(out4, source + 8); \
+    RW31_PAIR_WORD(out5, source + 10); \
+    RW31_PAIR_WORD(out6, source + 12); \
+    RW31_PAIR_WORD(out7, source + 14); \
+    out = out7 + stride; \
+    source += 16; \
+} while (0)
+#define RW31_PAIR_WORD_CONVERT() do { \
+    u8 *out = dest; \
+    if (vertices > 0) { \
+        s32 i = 0; \
+        s32 remaining = vertices - 8; \
+        if (vertices > 8) { \
+            for (; i < remaining; i += 8) { \
+                RW31_PAIR_WORD_UNROLL(); \
+            } \
+        } \
+        for (; i < vertices; i++) { \
+            RW31_PAIR_ONE(RW31_PAIR_WORD); \
+        } \
+    } \
 } while (0)
 #define RW31_PAIR_CONVERT(PACK) do { \
     u8 *out = dest; \
@@ -461,17 +534,17 @@ s32 fn_8046A270(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride,
         break;
     case 2:
         if (stride == 0) stride = 4;
-        RW31_PAIR_CONVERT(RW31_PAIR_SHORT);
+        RW31_PAIR_SHORT_CONVERT();
         bytes = vertices * 4;
         break;
     case 3:
         if (stride == 0) stride = 4;
-        RW31_PAIR_CONVERT(RW31_PAIR_SHORT);
+        RW31_PAIR_SHORT_CONVERT();
         bytes = vertices * 4;
         break;
     case 4:
         if (stride == 0) stride = 8;
-        RW31_PAIR_CONVERT(RW31_PAIR_WORD);
+        RW31_PAIR_WORD_CONVERT();
         bytes = vertices * 8;
         break;
     }
