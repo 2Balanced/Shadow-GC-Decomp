@@ -85,6 +85,19 @@ u32 fn_8045ACD4(u32 *object) {
     return 1;
 }
 
+extern u32 lbl_805F14E8;
+void fn_8047FCDC(u32 *table);
+
+u32 *fn_8045B0D8(u32 *object) {
+    u32 *table = *(u32 **)(lbl_805F15B4 + lbl_805F14E8);
+    if (table != NULL) {
+        fn_8047FCDC(table);
+        *(u32 **)(lbl_805F15B4 + lbl_805F14E8) = NULL;
+    }
+    (&lbl_805F14E8)[1]--;
+    return object;
+}
+
 extern u8 lbl_8056D840[];
 void fn_804815F0(u8 *, u32, u32, u32, u32);
 
