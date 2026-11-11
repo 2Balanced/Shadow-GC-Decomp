@@ -4,12 +4,14 @@
 extern u32 lbl_805F14F8;
 
 extern "C" {
-void fn_8045F2A0(void) {
+u32 fn_8045F2A0(u32 object) {
     (&lbl_805F14F8)[1]++;
+    return object;
 }
 
-void fn_8045F2B4(void) {
+u32 fn_8045F2B4(u32 object) {
     (&lbl_805F14F8)[1]--;
+    return object;
 }
 
 u32 fn_8045F374(u32 value, u32 *object) {
