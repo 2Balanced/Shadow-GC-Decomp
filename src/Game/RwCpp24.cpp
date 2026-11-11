@@ -237,4 +237,54 @@ u32 *fn_80460974(u32 *object, u32 offset) {
     (&lbl_805F1518)[1]++;
     return object;
 }
+
+void fn_8045FCFC(u32 first, u32 second) {
+    u32 *node = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        *(u32 **)(lbl_805F15B4 + lbl_805F1500), 0x40507);
+    if (node != NULL) {
+        node[0] = first;
+        node[1] = second;
+        node[2] = *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+        node[3] = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
+        *(u32 *)(*(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) + 4) = (u32)(node + 2);
+        *(u32 **)(lbl_805F15B4 + lbl_805F1500 + 4) = node + 2;
+    }
+}
+
+u32 *fn_8045C144(u32, u32);
+u32 *fn_8045F458(u32 *, u32 *, u32 *, u32 *);
+
+u32 *fn_8045FDB0(u32 *object) {
+    u32 buffer[66];
+    u32 *node = (u32 *)object[7];
+    s32 index = 0;
+    if (node == NULL) {
+        return NULL;
+    }
+    do {
+        if (*(s32 *)node < 0) {
+            u32 *slot = (u32 *)(object[4] + ((u16 *)node)[64] * 4);
+            if (node[30] == 0) {
+                u32 *value = fn_8045C144(((u16 *)node)[66], object[4]);
+                if (value == NULL) {
+                    goto value_failed;
+                }
+                object = fn_8045F458(object, value, node, slot);
+                if (object != NULL) {
+                    goto pop_node;
+                }
+                return NULL;
+value_failed:
+                return NULL;
+            }
+pop_node:
+            node = (u32 *)buffer[index--];
+        } else {
+            u32 child = node[3];
+            node = (u32 *)node[2];
+            buffer[++index] = child;
+        }
+    } while (index >= 0);
+    return object;
+}
 }
