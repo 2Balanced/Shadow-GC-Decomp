@@ -2,11 +2,11 @@
 #include <dolphin/types.h>
 
 extern "C" {
-void fn_8045FB10(void);
+u32 *fn_8045FB10(u32 *object);
 
 void fn_80460120(u32 *object, void (*callback)(void)) {
     if (callback == NULL) {
-        callback = fn_8045FB10;
+        callback = (void (*)(void))fn_8045FB10;
     }
     object[0x1A] = (u32)callback;
 }
@@ -304,7 +304,7 @@ void fn_8045AE98(void);
 void fn_8045AE20(void);
 void fn_8045F2A0(void);
 void fn_8045F2B4(void);
-void fn_8045FA50(void);
+u32 *fn_8045FA50(u32 *, u32);
 void fn_80455CF8(void);
 void fn_80455CE4(void);
 
@@ -315,7 +315,7 @@ u32 fn_8046080C(void) {
     status |= fn_80485D78(8, 1284, fn_80456A50, fn_80456994);
     status |= fn_80485D78(4, 1285, fn_8045AE98, fn_8045AE20);
     status |= fn_80485D78(0, 1290, fn_8045F2A0, fn_8045F2B4);
-    status |= fn_80485D78(12, 1287, fn_8045FA50, (void *)fn_8045F9E8);
+    status |= fn_80485D78(12, 1287, (void *)fn_8045FA50, (void *)fn_8045F9E8);
     status |= fn_80485D78(0, 1291, fn_80455CF8, fn_80455CE4);
     if (status < 0) {
         return 0;
@@ -384,5 +384,95 @@ u32 fn_8045FFA0(u32 *object) {
         ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
     }
     return 1;
+}
+
+s32 fn_80462798(void);
+extern u8 lbl_805E1618[];
+
+u32 *fn_8045FA50(u32 *object, u32 offset) {
+    lbl_805F1500 = offset;
+    if (fn_80462798() == 0) {
+        return NULL;
+    }
+    *(u32 **)(lbl_805F15B4 + lbl_805F1500) =
+        (u32 *)fn_8047FC04(16, 8, 4, 1, (u32)lbl_805E1618, 0x4000B);
+    u32 *table = (u32 *)(lbl_805F15B4 + lbl_805F1500);
+    if (table[0] == 0) {
+        return NULL;
+    }
+    *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
+    *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 8) = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
+    (&lbl_805F1500)[1]++;
+    return object;
+}
+
+extern u32 lbl_805F1690;
+u32 *fn_8049B674(u32 *, u32 *, u32);
+
+u32 *fn_8045FB10(u32 *object) {
+    if (((u16 *)object)[66] == 0) {
+        return object;
+    }
+    u32 *callback;
+    if (object[31] != 0) {
+        callback = (u32 *)object[31];
+    } else {
+        u32 *engine = *(u32 **)(lbl_805F15B4 + 4);
+        if (engine[27] != 0) {
+            callback = (u32 *)engine[27];
+        } else {
+            callback = *(u32 **)(lbl_805F15B4 + lbl_805F1690 + 64);
+        }
+    }
+    if (fn_8049B674(callback, object, 1) != 0) {
+        return object;
+    }
+    return NULL;
+}
+
+void fn_8048071C(u32 *);
+extern u8 lbl_8056D880[];
+
+void fn_8045F6E0(u32 *object) {
+    switch (*(s32 *)object) {
+    case -1:
+        if (object[13] != 0) {
+            fn_8048071C((u32 *)object[13]);
+        }
+        {
+            u32 *sentinel = object + 14;
+            u32 *current = (u32 *)object[14];
+            while (current != sentinel) {
+                u32 *item = current;
+                current = (u32 *)current[0];
+                fn_80460DF0(item);
+            }
+        }
+        {
+            u32 *sentinel = object + 16;
+            u32 *current = (u32 *)object[16];
+            while (current != sentinel) {
+                u32 *item = current;
+                current = (u32 *)current[0];
+                fn_80460D80(item);
+            }
+        }
+        fn_80482144(lbl_8056D880, object);
+        if (object[30] != 0) {
+            fn_8045C2D4((u32 *)object[30]);
+            object[30] = 0;
+        }
+        break;
+    case -2:
+        break;
+    default:
+        if (object[2] != 0) {
+            fn_8045F6E0((u32 *)object[2]);
+        }
+        if (object[3] != 0) {
+            fn_8045F6E0((u32 *)object[3]);
+        }
+        break;
+    }
 }
 }
