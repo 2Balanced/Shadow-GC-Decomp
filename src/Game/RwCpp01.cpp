@@ -264,8 +264,9 @@ int fn_8043B1AC(int bank, u32 size) {
     int result = -1;
     if (bank >= 0 && bank < 0x10 && aligned <= *(u32 *)((u8 *)lbl_805F1404 + 0x52A8)) {
         result = 0;
-        *(u32 *)((u8 *)lbl_805F1404 + bank * 8 + 0x52F8) = *(u32 *)((u8 *)lbl_805F1404 + 0x52AC);
-        *(u32 *)((u8 *)lbl_805F1404 + bank * 8 + 0x52FC) = aligned;
+        u32 *entry = (u32 *)((u8 *)lbl_805F1404 + bank * 8 + 0x52F8);
+        entry[0] = *(u32 *)((u8 *)lbl_805F1404 + 0x52AC);
+        entry[1] = aligned;
         *(u32 *)((u8 *)lbl_805F1404 + 0x52AC) += aligned;
         *(u32 *)((u8 *)lbl_805F1404 + 0x52A8) -= aligned;
     }
