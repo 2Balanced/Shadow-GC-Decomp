@@ -273,6 +273,138 @@ void fn_80451618(float *out, u32 *format, u32 *data) {
     }
 }
 
+void fn_804517C8(float *out, u32 *format, u32 *data) {
+    s32 count = (s32)data[7];
+    if (count <= 0) return;
+
+    u32 strideA = data[4];
+    u32 strideB = data[5];
+    u32 inputA = data[2] - strideA;
+    u32 inputB = data[3] - strideB;
+    u32 outputA = data[0] - strideA;
+    u32 outputB = data[1] - strideB;
+    u32 extra = data[6];
+    const u16 *indices = (const u16 *)format[0x28];
+    const s16 *weights = (const s16 *)format[0x24];
+    RwCpp15Pair f8 = *(const RwCpp15Pair *)(inputA + strideA);
+    inputA += strideA;
+    RwCpp15Pair f9 = *(const RwCpp15Pair *)(inputA + strideA * 2);
+    inputA += strideA * 2;
+    RwCpp15Pair f10 = *(const RwCpp15Pair *)(inputB + strideB);
+    inputB += strideB;
+    RwCpp15Pair f11 = *(const RwCpp15Pair *)(inputB + strideB * 2);
+    inputB += strideB * 2;
+
+    for (s32 i = 0; i < count; i++) {
+        inputB += extra;
+        u16 index = indices[i];
+        RwCpp15Pair w0 = {(float)weights[i * 2] / 32768.0f, (float)weights[i * 2 + 1] / 32768.0f};
+        RwCpp15Pair w1 = {(float)weights[i * 2 + 2] / 32768.0f,
+                          (float)weights[i * 2 + 3] / 32768.0f};
+        const RwCpp15Pair *m = (const RwCpp15Pair *)((u8 *)out + ((index >> 14) & 0x3FC));
+        RwCpp15Pair f24, f25, f26, f27;
+        RWCPP15_MADD0(f26, m[0], f10, m[6]);
+        RWCPP15_MADD0(f27, m[1], f10, m[7]);
+        RWCPP15_MADD0(f24, m[0], f8, m[6]);
+        RWCPP15_MADD0(f25, m[1], f8, m[7]);
+        RWCPP15_MADD1(f26, m[2], f10, f26);
+        RWCPP15_MADD1(f27, m[3], f10, f27);
+        RWCPP15_MADD1(f24, m[2], f8, f24);
+        RWCPP15_MADD1(f25, m[3], f8, f25);
+        RWCPP15_MADD0(f26, m[4], f11, f26);
+        RWCPP15_MADD0(f27, m[5], f11, f27);
+        RWCPP15_MADD0(f24, m[4], f9, f24);
+        RWCPP15_MADD0(f25, m[5], f9, f25);
+        f26.x *= w0.x;
+        f26.y *= w0.y;
+        f27.x *= w0.x;
+        f27.y *= w0.y;
+        f24.x *= w0.x;
+        f24.y *= w0.y;
+        f25.x *= w0.x;
+        f25.y *= w0.y;
+
+        if (w0.y > 0.0f) {
+            m = (const RwCpp15Pair *)((u8 *)out + ((index >> 10) & 0x3FC));
+            RwCpp15Pair f28, f29, f30, f31;
+            RWCPP15_MADD0(f30, m[0], f10, m[6]);
+            RWCPP15_MADD0(f31, m[1], f10, m[7]);
+            RWCPP15_MADD0(f28, m[0], f8, m[6]);
+            RWCPP15_MADD0(f29, m[1], f8, m[7]);
+            RWCPP15_MADD1(f30, m[2], f10, f30);
+            RWCPP15_MADD1(f31, m[3], f10, f31);
+            RWCPP15_MADD1(f28, m[2], f8, f28);
+            RWCPP15_MADD1(f29, m[3], f8, f29);
+            RWCPP15_MADD0(f30, m[4], f11, f30);
+            RWCPP15_MADD0(f31, m[5], f11, f31);
+            RWCPP15_MADD0(f28, m[4], f9, f28);
+            RWCPP15_MADD0(f29, m[5], f9, f29);
+            RWCPP15_MADD1(f26, f30, w0, f26);
+            RWCPP15_MADD1(f27, f31, w0, f27);
+            RWCPP15_MADD1(f24, f28, w0, f24);
+            RWCPP15_MADD1(f25, f29, w0, f25);
+        }
+        if (w1.x > 0.0f) {
+            m = (const RwCpp15Pair *)((u8 *)out + ((index >> 30) & 0x3FC));
+            RwCpp15Pair f28, f29, f30, f31;
+            RWCPP15_MADD0(f30, m[0], f10, m[6]);
+            RWCPP15_MADD0(f31, m[1], f10, m[7]);
+            RWCPP15_MADD0(f28, m[0], f8, m[6]);
+            RWCPP15_MADD0(f29, m[1], f8, m[7]);
+            RWCPP15_MADD1(f30, m[2], f10, f30);
+            RWCPP15_MADD1(f31, m[3], f10, f31);
+            RWCPP15_MADD1(f28, m[2], f8, f28);
+            RWCPP15_MADD1(f29, m[3], f8, f29);
+            RWCPP15_MADD0(f30, m[4], f11, f30);
+            RWCPP15_MADD0(f31, m[5], f11, f31);
+            RWCPP15_MADD0(f28, m[4], f9, f28);
+            RWCPP15_MADD0(f29, m[5], f9, f29);
+            RWCPP15_MADD0(f26, f30, w1, f26);
+            RWCPP15_MADD0(f27, f31, w1, f27);
+            RWCPP15_MADD0(f24, f28, w1, f24);
+            RWCPP15_MADD0(f25, f29, w1, f25);
+        }
+        if (w1.y > 0.0f) {
+            m = (const RwCpp15Pair *)((u8 *)out + ((index & 0xFF) << 6));
+            RwCpp15Pair f28, f29, f30, f31;
+            RWCPP15_MADD0(f30, m[0], f10, m[6]);
+            RWCPP15_MADD0(f31, m[1], f10, m[7]);
+            RWCPP15_MADD0(f28, m[0], f8, m[6]);
+            RWCPP15_MADD0(f29, m[1], f8, m[7]);
+            RWCPP15_MADD1(f30, m[2], f10, f30);
+            RWCPP15_MADD1(f31, m[3], f10, f31);
+            RWCPP15_MADD1(f28, m[2], f8, f28);
+            RWCPP15_MADD1(f29, m[3], f8, f29);
+            RWCPP15_MADD0(f30, m[4], f11, f30);
+            RWCPP15_MADD0(f31, m[5], f11, f31);
+            RWCPP15_MADD0(f28, m[4], f9, f28);
+            RWCPP15_MADD0(f29, m[5], f9, f29);
+            RWCPP15_MADD1(f26, f30, w1, f26);
+            RWCPP15_MADD1(f27, f31, w1, f27);
+            RWCPP15_MADD1(f24, f28, w1, f24);
+            RWCPP15_MADD1(f25, f29, w1, f25);
+        }
+
+        *(RwCpp15Pair *)(outputB + strideB) = f26;
+        outputB += strideB;
+        *(RwCpp15Pair *)(outputB + strideB * 2) = f27;
+        outputB += strideB * 2 + extra;
+        *(RwCpp15Pair *)(outputA + strideA) = f24;
+        outputA += strideA;
+        *(RwCpp15Pair *)(outputA + strideA * 2) = f25;
+        outputA += strideA * 2;
+
+        f8 = *(const RwCpp15Pair *)(inputA + strideA);
+        inputA += strideA;
+        f9 = *(const RwCpp15Pair *)(inputA + strideA * 2);
+        inputA += strideA * 2;
+        f10 = *(const RwCpp15Pair *)(inputB + strideB);
+        inputB += strideB;
+        f11 = *(const RwCpp15Pair *)(inputB + strideB * 2);
+        inputB += strideB * 2;
+    }
+}
+
 void fn_804513C4(float *out, u32 *format, u32 *data) {
     s32 count = (s32)data[7];
     if (count <= 0) return;
