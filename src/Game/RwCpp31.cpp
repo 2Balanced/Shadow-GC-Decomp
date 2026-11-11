@@ -160,7 +160,9 @@ u32 fn_8046ACBC(u32 *format) {
 }
 
 u32 fn_8046B094(u32 *format, u32 first, u32 second) {
-    return (first * 3 + second * fn_8046ACBC(format) + 0x1F) & ~0x1F;
+    u32 total = second * fn_8046ACBC(format);
+    total += first * 3;
+    return (total + 0x1F) & ~0x1F;
 }
 
 extern u8 *lbl_805F15B4;
@@ -273,8 +275,92 @@ int fn_8046B110(u32 *object, u32 **out1, u32 ***out2) {
             }
         }
     }
-    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
     return 1;
 }
+
+#define RW31_PAIR_BYTE(dst, src) do { \
+    (dst)[0] = (u8)(s32)((src)[0] * scale); \
+    (dst)[1] = (u8)(s32)((src)[1] * scale); \
+} while (0)
+#define RW31_PAIR_SHORT(dst, src) do { \
+    *(u16 *)(dst) = (u16)(s32)((src)[0] * scale); \
+    *(u16 *)((dst) + 2) = (u16)(s32)((src)[1] * scale); \
+} while (0)
+#define RW31_PAIR_WORD(dst, src) do { \
+    *(u32 *)(dst) = ((const u32 *)(src))[0]; \
+    *(u32 *)((dst) + 4) = ((const u32 *)(src))[1]; \
+} while (0)
+#define RW31_PAIR_UNROLL(PACK) do { \
+    u8 *out1 = out + stride; \
+    u8 *out2 = out1 + stride; \
+    u8 *out3 = out2 + stride; \
+    u8 *out4 = out3 + stride; \
+    u8 *out5 = out4 + stride; \
+    u8 *out6 = out5 + stride; \
+    u8 *out7 = out6 + stride; \
+    PACK(out, source); \
+    PACK(out1, source + 2); \
+    PACK(out2, source + 4); \
+    PACK(out3, source + 6); \
+    PACK(out4, source + 8); \
+    PACK(out5, source + 10); \
+    PACK(out6, source + 12); \
+    PACK(out7, source + 14); \
+    out = out7 + stride; \
+    source += 16; \
+} while (0)
+#define RW31_PAIR_ONE(PACK) do { \
+    PACK(out, source); \
+    out += stride; \
+    source += 2; \
+} while (0)
+#define RW31_PAIR_CONVERT(PACK) do { \
+    u8 *out = dest; \
+    if (vertices > 0) { \
+        s32 i = 0; \
+        s32 remaining = vertices - 8; \
+        if (vertices > 8) { \
+            for (; i < remaining; i += 8) { \
+                RW31_PAIR_UNROLL(PACK); \
+            } \
+        } \
+        for (; i < vertices; i++) { \
+            RW31_PAIR_ONE(PACK); \
+        } \
+    } \
+} while (0)
+
+#pragma scheduling off
+s32 fn_8046A270(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride, f32 scale) {
+    s32 bytes = 0;
+    switch (type) {
+    case 0:
+        if (stride == 0) stride = 2;
+        RW31_PAIR_CONVERT(RW31_PAIR_BYTE);
+        bytes = vertices * 2;
+        break;
+    case 1:
+        if (stride == 0) stride = 2;
+        RW31_PAIR_CONVERT(RW31_PAIR_BYTE);
+        bytes = vertices * 2;
+        break;
+    case 2:
+        if (stride == 0) stride = 4;
+        RW31_PAIR_CONVERT(RW31_PAIR_SHORT);
+        bytes = vertices * 4;
+        break;
+    case 3:
+        if (stride == 0) stride = 4;
+        RW31_PAIR_CONVERT(RW31_PAIR_SHORT);
+        bytes = vertices * 4;
+        break;
+    case 4:
+        if (stride == 0) stride = 8;
+        RW31_PAIR_CONVERT(RW31_PAIR_WORD);
+        bytes = vertices * 8;
+        break;
+    }
+    return bytes;
+}
+#pragma scheduling reset
 }
