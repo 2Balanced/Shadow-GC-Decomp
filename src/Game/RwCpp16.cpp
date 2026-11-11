@@ -624,12 +624,14 @@ void fn_80453350(float *out, const float *from, const float *to, float time)
 #pragma scheduling reset
 
 /* The same blend for a caller that has already worked out the ratio. */
+#pragma scheduling off
 void fn_804533E0(float *out, const float *from, const float *to, float ratio)
 {
     for (u32 i = 2; i < 8; i++) {
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
+#pragma scheduling reset
 
 /* Undo the 2x2 block of a record on out, then take its translation back off. */
 void fn_8045345C(float *out, const float *from)
