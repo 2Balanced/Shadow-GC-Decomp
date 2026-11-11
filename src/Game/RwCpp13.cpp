@@ -245,6 +245,8 @@ extern "C" void *fn_8044DA3C(u32 *object, u32 *arg2) {
     return object;
 }
 
+#pragma use_lmw_stmw off
+#pragma scheduling off
 extern "C" u32 fn_8044DC4C(const float *input, void *out, int transform) {
     float matrix[12];
     matrix[0] = -input[0];
@@ -263,6 +265,8 @@ extern "C" u32 fn_8044DC4C(const float *input, void *out, int transform) {
     if (transform != 0) return fn_80399238(matrix, out);
     return result;
 }
+#pragma scheduling reset
+#pragma use_lmw_stmw on
 
 extern "C" void fn_8044DD1C(u32 *object, u32 index, int transform) {
     u8 *table = (u8 *)object[0x10];
