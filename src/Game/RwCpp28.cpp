@@ -12,16 +12,16 @@ static inline u32 rwElementSize(u32 type) {
     case 2: return 2;
     case 3: return 3;
     case 4: return 4;
+    case 6: return 4;
     case 7: return 8;
     case 8: return 12;
     case 9: return 16;
-    case 6: return 4;
     case 10: return 4;
     default: return 0;
     }
 }
 
-static inline bool rwElementEqual(u32 type, const u8 *a, const u8 *b) {
+static inline s32 rwElementEqual(u32 type, const u8 *a, const u8 *b) {
     switch (type) {
     case 1: return *a == *b;
     case 2: return *(const u16 *)a == *(const u16 *)b;
@@ -41,7 +41,7 @@ static inline bool rwElementEqual(u32 type, const u8 *a, const u8 *b) {
                *(const u32 *)(a + 8) == *(const u32 *)(b + 8) &&
                *(const u32 *)(a + 12) == *(const u32 *)(b + 12);
     case 10: return *(const u32 *)a == *(const u32 *)b;
-    default: return false;
+    default: return 0;
     }
 }
 
@@ -66,9 +66,8 @@ u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices) {
         u32 size = rwElementSize(*(u32 *)(inputs + i * 0x18 + 4));
         u8 *dest = (u8 *)result[i * 2];
         u8 *source = *(u8 **)(inputs + i * 0x18);
-        u32 *indices = (u32 *)descriptors[i * 2];
         for (u32 j = 0; j < vertices; j++) {
-            if ((s32)indices[j] == -1) {
+            if (((s32 *)descriptors[i * 2])[j] == -1) {
                 memcpy(dest, source, size);
                 dest += size;
             }
@@ -95,9 +94,11 @@ u32 *fn_80466194(u32 *descriptors, u32 streams, u32 vertices) {
     u32 *indices = (u32 *)((u8 *)result + headerBytes);
     for (u32 i = 0; i < total; i++) indices[i] = 0xFFFFFFFF;
     u32 *header = result;
+    u32 offset = 0;
     for (u32 i = 0; i < streams; i++) {
-        header[i * 2] = (u32)(indices + i * vertices);
+        header[i * 2] = (u32)((u8 *)indices + offset);
         header[i * 2 + 1] = vertices;
+        offset += vertices * 4;
     }
     u8 *descriptor = (u8 *)descriptors;
     for (u32 stream = 0; stream < streams; stream++) {
