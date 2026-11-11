@@ -525,4 +525,82 @@ void fn_8045FBA4(u32 *object) {
         }
     } while (index >= 0);
 }
+
+void fn_8045F7D0(u32 *input) {
+    switch (*(s32 *)input) {
+    case -1:
+        u32 *object = input;
+        if (object[13] != 0) {
+            fn_8048071C((u32 *)object[13]);
+        }
+        {
+            u32 *sentinel = object + 14;
+            u32 *current = (u32 *)object[14];
+            while (current != sentinel) {
+                u32 *item = current;
+                current = (u32 *)current[0];
+                fn_80460DF0(item);
+            }
+        }
+        {
+            u32 *current = (u32 *)object[16];
+            u32 *sentinel = object + 16;
+            while (current != sentinel) {
+                u32 *item = current;
+                current = (u32 *)current[0];
+                fn_80460D80(item);
+            }
+        }
+        fn_80482144(lbl_8056D880, object);
+        if (object[2] != 0) {
+            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[2]);
+            object[2] = 0;
+        }
+        if (object[3] != 0) {
+            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[3]);
+            object[3] = 0;
+        }
+        if (object[12] != 0) {
+            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[12]);
+            object[12] = 0;
+        }
+        if (object[1] != 0) {
+            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[1]);
+            object[1] = 0;
+        }
+        {
+            u32 *field = object;
+            u32 zero = 0;
+            for (s32 i = 0; i < 8; i++) {
+                if (field[4] != 0) {
+                    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)field[4]);
+                    field[4] = zero;
+                }
+                field++;
+            }
+        }
+        if (object[30] != 0) {
+            fn_8045C2D4((u32 *)object[30]);
+            object[30] = 0;
+        }
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+        break;
+    case -2:
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(input);
+        break;
+    default: {
+        u32 *target = input;
+        if (target[2] != 0) {
+            fn_8045F7D0((u32 *)target[2]);
+        }
+        target[2] = 0;
+        if (target[3] != 0) {
+            fn_8045F7D0((u32 *)target[3]);
+        }
+        target[3] = 0;
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(target);
+        break;
+    }
+    }
+}
 }
