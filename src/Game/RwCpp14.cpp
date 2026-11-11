@@ -109,7 +109,11 @@ extern "C" u32 fn_8044F740(u32 *object, u16 *tableA, u32 *tableB, s32 count, u32
             u8 *entry = (u8 *)object[17] + outer * 2 + tableOffset;
             u32 base = entry[0];
             u32 innerCount = entry[1];
-            for (u32 i = 0; i < innerCount; i++) local[written++] = (u8)(base + i);
+            u8 *cursor = local + written;
+            for (u32 i = 0; i < innerCount; i++) {
+                *cursor++ = (u8)(base + i);
+            }
+            written += innerCount;
         }
 
         output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
@@ -200,7 +204,11 @@ extern "C" u32 fn_8045066C(u32 *object, u32 *descriptor, u32 index) {
             u8 *entry = (u8 *)object[17] + outer * 2 + tableOffset;
             u32 base = entry[0];
             u32 innerCount = entry[1];
-            for (u32 i = 0; i < innerCount; i++) local[written++] = (u8)(base + i);
+            u8 *cursor = local + written;
+            for (u32 i = 0; i < innerCount; i++) {
+                *cursor++ = (u8)(base + i);
+            }
+            written += innerCount;
         }
 
         output = (u16 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 2, 0x30116);
