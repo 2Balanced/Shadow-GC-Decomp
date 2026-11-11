@@ -61,71 +61,65 @@ void fn_80399000(void *, void *);
 }
 
 extern "C" {
-static asm u32 RwCpp13ReadGqr5(void) {
-    nofralloc
-    mfspr r3, 917
-    blr
+static inline u32 RwCpp13ReadGqr5(void) {
+    register u32 result;
+    asm { mfspr result, 917 }
+    return result;
 }
 
-static asm void RwCpp13WriteGqr5(register u32 value) {
-    nofralloc
-    mtspr 917, value
-    blr
+static inline void RwCpp13WriteGqr5(register u32 value) {
+    asm { mtspr 917, value }
 }
 
-static asm void RwCpp13WriteGqr6(register u32 value) {
-    nofralloc
-    mtspr 918, value
-    blr
+static inline void RwCpp13WriteGqr6(register u32 value) {
+    asm { mtspr 918, value }
 }
 
-static asm void RwCpp13WriteGqr7(register u32 value) {
-    nofralloc
-    mtspr 919, value
-    blr
+static inline void RwCpp13WriteGqr7(register u32 value) {
+    asm { mtspr 919, value }
 }
 }
 
 extern "C" void fn_8044D6E8(u32 *object, u8 *matrices, void *arg3, void *arg4, u8 *outA,
                             u8 *outB, u8 *format, u32 count) {
-    u8 local[0x80];
-    *(u32 *)(local + 0x24) = (u32)outA;
-    *(u32 *)(local + 0x28) = (u32)outB;
-    *(u32 *)(local + 0x2C) = (u32)arg3;
-    *(u32 *)(local + 0x30) = (u32)arg4;
-    *(u32 *)(local + 0x40) = count;
+    u8 local[0x44];
+    *(u32 *)(local + 0x1C) = (u32)outA;
+    *(u32 *)(local + 0x20) = (u32)outB;
+    *(u32 *)(local + 0x24) = (u32)arg3;
+    *(u32 *)(local + 0x28) = (u32)arg4;
+    *(u32 *)(local + 0x38) = count;
 
-    u32 gqr6 = 0;
-    u32 gqr7 = 0;
+    register u32 gqr6 = 0;
+    register u32 gqr7 = 0;
     if (format != NULL) {
-        *(u32 *)(local + 0x14) = lbl_805FB0C0;
-        *(u8 *)(local + 0x18) = lbl_805FB0C4;
-        *(u32 *)(local + 0xC) = lbl_805FB0C8;
-        *(u8 *)(local + 0x10) = lbl_805FB0CC;
-        *(u32 *)(local + 0x1C) = lbl_805FB0B8;
-        *(u8 *)(local + 0x20) = lbl_805FB0BC;
+        *(u32 *)(local + 0xC) = lbl_805FB0C0;
+        *(u8 *)(local + 0x10) = lbl_805FB0C4;
+        *(u32 *)(local + 0x4) = lbl_805FB0C8;
+        *(u8 *)(local + 0x8) = lbl_805FB0CC;
+        *(u32 *)(local + 0x14) = lbl_805FB0B8;
+        *(u8 *)(local + 0x18) = lbl_805FB0BC;
 
         u32 indexA = format[0];
         u32 indexB = format[1];
-        u32 valueA = format[0xC];
-        u32 valueB = format[0xD];
-        *(u32 *)(local + 0x34) = *(u8 *)(local + 0x14 + indexA);
-        *(u32 *)(local + 0x38) = *(u8 *)(local + 0x14 + indexB);
+        register u32 valueA = format[0xC];
+        register u32 valueB = format[0xD];
+        *(u32 *)(local + 0x2C) = *(u8 *)(local + 0xC + indexA);
+        *(u32 *)(local + 0x30) = *(u8 *)(local + 0xC + indexB);
 
-        gqr6 = *(u8 *)(local + 0x1C + indexA);
-        gqr6 = (gqr6 & ~0xFF00) | ((valueA & 0xFF) << 8);
-        gqr6 = ((gqr6 & 0xFFFF) << 16) | (gqr6 & 0xFFFF);
-        gqr7 = *(u8 *)(local + 0x1C + indexB);
-        gqr7 = (gqr7 & ~0xFF00) | ((valueB & 0xFF) << 8);
-        gqr7 = ((gqr7 & 0xFFFF) << 16) | (gqr7 & 0xFFFF);
-        *(u32 *)(local + 0x3C) = valueB != 0 ? *(u32 *)(local + 0x38) * 6 : 0;
+        gqr6 = *(u8 *)(local + 0x14 + indexA);
+        asm { rlwimi gqr6, valueA, 8, 16, 23 }
+        asm { rlwimi gqr6, gqr6, 16, 0, 15 }
+        gqr7 = *(u8 *)(local + 0x14 + indexB);
+        asm { rlwimi gqr7, valueB, 8, 16, 23 }
+        asm { rlwimi gqr7, gqr7, 16, 0, 15 }
+        *(u32 *)(local + 0x34) = valueB != 0 ? *(u32 *)(local + 0x30) * 6 : 0;
     } else {
-        *(u32 *)(local + 0x34) = 4;
-        *(u32 *)(local + 0x38) = 4;
-        *(u32 *)(local + 0x3C) = 0;
+        *(u32 *)(local + 0x2C) = 4;
+        *(u32 *)(local + 0x30) = 4;
+        *(u32 *)(local + 0x34) = 0;
     }
 
-    u32 savedGqr5 = RwCpp13ReadGqr5();
+    *(volatile u32 *)local = RwCpp13ReadGqr5();
     RwCpp13WriteGqr5(0x07040000);
     RwCpp13WriteGqr6(gqr6);
     RwCpp13WriteGqr7(gqr7);
@@ -140,22 +134,22 @@ extern "C" void fn_8044D6E8(u32 *object, u8 *matrices, void *arg3, void *arg4, u
         }
         break;
     case 2:
-        fn_80451080(matrices, object, local + 0x24);
+        fn_80451080(matrices, object, local + 0x1C);
         break;
     case 3:
-        fn_804513C4(matrices, object, local + 0x24);
+        fn_804513C4(matrices, object, local + 0x1C);
         break;
     case 4:
-        fn_804517C8(matrices, object, local + 0x24);
+        fn_804517C8(matrices, object, local + 0x1C);
         break;
     default:
         break;
     }
 
-    RwCpp13WriteGqr5(savedGqr5);
-    u32 strideA = *(u32 *)(local + 0x34);
-    u32 strideB = *(u32 *)(local + 0x38);
-    u32 extra = *(u32 *)(local + 0x3C);
+    RwCpp13WriteGqr5(*(volatile u32 *)local);
+    u32 strideA = *(u32 *)(local + 0x2C);
+    u32 strideB = *(u32 *)(local + 0x30);
+    u32 extra = *(u32 *)(local + 0x34);
     u32 bytes = ((count * (strideA * 3) + 0x1F) & ~0x1F) + count * (extra + strideB * 3);
     DCFlushRange(outA, bytes);
     fn_80394F2C();
