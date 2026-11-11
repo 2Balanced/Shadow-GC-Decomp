@@ -313,14 +313,15 @@ void fn_8043DB08(u8 *object, u32 index, u8 command, u32 value) {
 
 void fn_8043DD14(u32 *object) {
     while ((s32)object[0x54B] != 0) {
-        OSDisableInterrupts();
+        u32 interrupt = OSDisableInterrupts();
         object[0x54B]--;
         u32 command = object[object[0x549] + 0x149];
         object[0x549]++;
         u32 sign = object[0x549] >> 31;
-        u32 wrapped = (object[0x549] << 22) - sign;
-        object[0x549] = (wrapped << 10 | wrapped >> 22) + sign;
-        OSRestoreInterrupts(0);
+        register u32 wrapped = (object[0x549] << 22) - sign;
+        asm { rotlwi wrapped, wrapped, 10 }
+        object[0x549] = wrapped + sign;
+        OSRestoreInterrupts(interrupt);
         s32 high = (command >> 0x18) & 0xF0;
         u32 index = (command >> 0x18) & 0xF;
         u32 sub = (command >> 0x10) & 0xFF;
