@@ -389,9 +389,24 @@ extern "C" u32 fn_8044F9E4(u32 *object, u32 arg2, u32 *out) {
         streams++;
     }
     if ((object[2] & 0x84) != 0) {
-        for (u32 i = 0; i < object[7]; i++) {
-            second[13 + i] = packed[(4 + i) * 2 + 1];
-            second[39 + i] = packed[(4 + i) * 2];
+        u32 i = 0;
+        u32 *packedPair = packed + 8;
+        u32 *secondA = second + 13;
+        u32 *secondB = second + 39;
+        for (; i + 8 <= object[7]; i += 8) {
+            for (u32 j = 0; j < 8; j++) {
+                secondA[j] = packedPair[j * 2 + 1];
+                secondB[j] = packedPair[j * 2];
+            }
+            secondA += 8;
+            secondB += 8;
+            packedPair += 16;
+            streams += 8;
+        }
+        for (; i < object[7]; i++) {
+            *secondA++ = packedPair[1];
+            *secondB++ = packedPair[0];
+            packedPair += 2;
             streams++;
         }
     }
@@ -486,8 +501,18 @@ extern "C" u32 fn_8044F9E4(u32 *object, u32 arg2, u32 *out) {
             second[11] = vertexValues[2];
         }
         if ((object[2] & 0x84) != 0) {
-            for (u32 i = 0; i < (u8)object[7]; i++) {
-                second[13 + i] = vertexValues[4 + i];
+            u32 i = 0;
+            u32 *valuesPair = vertexValues + 4;
+            u32 *secondValues = second + 13;
+            for (; i + 8 <= (u8)object[7]; i += 8) {
+                for (u32 j = 0; j < 8; j++) {
+                    secondValues[j] = valuesPair[j];
+                }
+                secondValues += 8;
+                valuesPair += 8;
+            }
+            for (; i < (u8)object[7]; i++) {
+                *secondValues++ = *valuesPair++;
             }
         }
         void *acbc = fn_8046ACBC(context);
