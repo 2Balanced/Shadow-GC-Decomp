@@ -1,7 +1,8 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior.
  * fn_8045B8EC returns the found index or -1 with retail's size; GC/2.7 folds its pointer decrement
  * into lwzu where retail uses a separate addi. fn_8045A7C4 and fn_8045AA44 also match size;
- * their remaining differences are copy-register and first-comparison scheduling choices. */
+ * their remaining differences are copy-register and first-comparison scheduling choices.
+ * fn_8045AFA4 matches size and returns; its first data-pointer setup is scheduled after the saves. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -114,6 +115,31 @@ u32 *fn_8045B0D8(u32 *object) {
     }
     (&lbl_805F14E8)[1]--;
     return object;
+}
+
+extern u32 lbl_805F14E4;
+extern u32 lbl_805F14E0;
+u32 fn_8047D868(u8 *stream, void *data, u32 size);
+u32 fn_8047D458(u8 *stream, void *data, u32 size);
+
+u8 *fn_8045AF28(u8 *stream, s32 type) {
+    if (fn_8047D868(stream, &lbl_805F14E4, 4) == 0) {
+        return NULL;
+    }
+    if (type == 8 && fn_8047D868(stream, &lbl_805F14E0, 4) == 0) {
+        return NULL;
+    }
+    return stream;
+}
+
+u8 *fn_8045AFA4(u8 *stream, const u32 *object) {
+    if (fn_8047D458(stream, (u8 *)object[2] + 44, 4) == 0) {
+        return NULL;
+    }
+    if (fn_8047D458(stream, (u8 *)object[2] + 48, 4) != 0) {
+        return stream;
+    }
+    return NULL;
 }
 
 void fn_804815F0(u8 *, u32, u32, u32, u32);
