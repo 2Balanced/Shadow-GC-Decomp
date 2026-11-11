@@ -475,4 +475,54 @@ void fn_8045F6E0(u32 *object) {
         break;
     }
 }
+
+void fn_8045FBA4(u32 *object) {
+    u32 current[6];
+    u32 links[64];
+    u32 states[64][6];
+    s32 index = 0;
+    s32 offset;
+    u32 *node;
+    current[0] = object[20];
+    current[1] = object[21];
+    current[2] = object[22];
+    current[3] = object[23];
+    current[4] = object[24];
+    current[5] = object[25];
+    node = (u32 *)object[7];
+    do {
+        offset = *(s32 *)node;
+        if (offset < 0) {
+            node[18] = current[0];
+            node[19] = current[1];
+            node[20] = current[2];
+            node[21] = current[3];
+            node[22] = current[4];
+            node[23] = current[5];
+            current[0] = states[index][0];
+            current[1] = states[index][1];
+            current[2] = states[index][2];
+            current[3] = states[index][3];
+            current[4] = states[index][4];
+            current[5] = states[index][5];
+            node = (u32 *)links[index--];
+        } else {
+            index++;
+            states[index][0] = current[0];
+            states[index][1] = current[1];
+            states[index][2] = current[2];
+            states[index][3] = current[3];
+            states[index][4] = current[4];
+            states[index][5] = current[5];
+            u32 child = node[3];
+            u8 *saved = (u8 *)states[index] + offset;
+            f32 first = ((f32 *)node)[4];
+            f32 second = ((f32 *)node)[5];
+            node = (u32 *)node[2];
+            links[index] = child;
+            *(f32 *)(saved + 12) = second;
+            *(f32 *)((u8 *)current + offset) = first;
+        }
+    } while (index >= 0);
+}
 }
