@@ -26,9 +26,8 @@ static inline bool rwElementEqual(u32 type, const u8 *a, const u8 *b) {
     case 1: return *a == *b;
     case 2: return *(const u16 *)a == *(const u16 *)b;
     case 3: return a[0] == b[0] && a[1] == b[1] && a[2] == b[2];
-    case 4:
-    case 6:
-    case 10: return *(const u32 *)a == *(const u32 *)b;
+    case 4: return *(const u32 *)a == *(const u32 *)b;
+    case 6: return *(const u32 *)a == *(const u32 *)b;
     case 7:
         return *(const u32 *)a == *(const u32 *)b &&
                *(const u32 *)(a + 4) == *(const u32 *)(b + 4);
@@ -41,6 +40,7 @@ static inline bool rwElementEqual(u32 type, const u8 *a, const u8 *b) {
                *(const u32 *)(a + 4) == *(const u32 *)(b + 4) &&
                *(const u32 *)(a + 8) == *(const u32 *)(b + 8) &&
                *(const u32 *)(a + 12) == *(const u32 *)(b + 12);
+    case 10: return *(const u32 *)a == *(const u32 *)b;
     default: return false;
     }
 }

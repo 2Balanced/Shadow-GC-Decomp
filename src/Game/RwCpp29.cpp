@@ -10,106 +10,269 @@ extern f32 lbl_805FB1F4; /* 0.0f */
 extern f32 lbl_805FB1F8; /* 64.0f */
 extern f32 lbl_805FB1FC; /* 16384.0f */
 
+/* The runtime's plain double fmod: the float arguments reach it already widened
+ * in the FP registers, and the double result is narrowed back to float. */
 double fmod(double, double);
+
+#define RW_PACK_BYTE(dst, src) do { \
+    (dst)[0] = (u8)(s32)(scale * ((src)[0] - shiftX)); \
+    (dst)[1] = (u8)(s32)(scale * ((src)[1] - shiftY)); \
+    (dst)[2] = (u8)(s32)(scale * ((src)[2] - shiftZ)); \
+} while (0)
+#define RW_PACK_SHORT(dst, src) do { \
+    *(u16 *)((dst) + 0) = (u16)(s32)(scale * ((src)[0] - shiftX)); \
+    *(u16 *)((dst) + 2) = (u16)(s32)(scale * ((src)[1] - shiftY)); \
+    *(u16 *)((dst) + 4) = (u16)(s32)(scale * ((src)[2] - shiftZ)); \
+} while (0)
+#define RW_PACK_WORD(dst, src) do { \
+    *(u32 *)((dst) + 0) = ((const u32 *)(src))[0]; \
+    *(u32 *)((dst) + 4) = ((const u32 *)(src))[1]; \
+    *(u32 *)((dst) + 8) = ((const u32 *)(src))[2]; \
+} while (0)
+#define RW_PACK_BYTE_FIXED(dst, src) do { \
+    (dst)[0] = (u8)(s32)(scale * (src)[0]); \
+    (dst)[1] = (u8)(s32)(scale * (src)[1]); \
+    (dst)[2] = (u8)(s32)(scale * (src)[2]); \
+} while (0)
+#define RW_PACK_SHORT_FIXED(dst, src) do { \
+    *(u16 *)((dst) + 0) = (u16)(s32)(scale * (src)[0]); \
+    *(u16 *)((dst) + 2) = (u16)(s32)(scale * (src)[1]); \
+    *(u16 *)((dst) + 4) = (u16)(s32)(scale * (src)[2]); \
+} while (0)
+#define RW_PACK8(PACK) do { \
+    u8 *out1 = out + stride; \
+    u8 *out2 = out1 + stride; \
+    u8 *out3 = out2 + stride; \
+    u8 *out4 = out3 + stride; \
+    u8 *out5 = out4 + stride; \
+    u8 *out6 = out5 + stride; \
+    u8 *out7 = out6 + stride; \
+    PACK(out, source); \
+    PACK(out1, source + 3); \
+    PACK(out2, source + 6); \
+    PACK(out3, source + 9); \
+    PACK(out4, source + 12); \
+    PACK(out5, source + 15); \
+    PACK(out6, source + 18); \
+    PACK(out7, source + 21); \
+    out = out7 + stride; \
+    source += 24; \
+} while (0)
+#define RW_PACK_ONE(PACK) do { \
+    PACK(out, source); \
+    out += stride; \
+    source += 3; \
+} while (0)
 
 /* Packs `vertices` three-component float records from `source` into `dest`, one
  * record every `stride` bytes: a zero stride selects the packed record size (3
  * bytes, 6 shorts-worth, or 12 floats-worth). `type` selects the component
  * storage -- 0 and 1 store bytes, 2 and 3 store shorts, 4 copies the floats
- * unchanged; any other value does nothing. `scale` quantizes each component and
- * `offset`, when present, phase-shifts it after being wrapped to one destination
- * quantum (1 / scale), which makes the wrapped shift exact after scaling.
+ * unchanged; negative values and anything above 4 store nothing. `scale`
+ * quantizes each component and `offset`, when present, phase-shifts it after
+ * being wrapped to one destination quantum (1 / scale), which makes the wrapped
+ * shift exact after scaling.
  * Returns the destination bytes produced, i.e. vertices times the record size. */
+#pragma scheduling off
 s32 fn_80466B58(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride,
                 const f32 *offset, f32 scale) {
-    f32 shift[3];
+    s32 bytes = 0;
+    f32 shiftX;
+    f32 shiftY;
+    f32 shiftZ;
+
     if (offset != NULL) {
         f32 period = lbl_805FB1F0 / scale;
-        shift[0] = offset[0] - (f32)fmod((double)offset[0], (double)period);
-        shift[1] = offset[1] - (f32)fmod((double)offset[1], (double)period);
-        shift[2] = offset[2] - (f32)fmod((double)offset[2], (double)period);
+        shiftX = offset[0] - (f32)fmod((double)offset[0], (double)period);
+        shiftY = offset[1] - (f32)fmod((double)offset[1], (double)period);
+        shiftZ = offset[2] - (f32)fmod((double)offset[2], (double)period);
     } else {
-        shift[0] = shift[1] = shift[2] = lbl_805FB1F4;
+        shiftX = lbl_805FB1F4;
+        shiftY = shiftX;
+        shiftZ = shiftX;
     }
 
-    s32 bytes = 0;
     switch (type) {
     case 0:
+        if (stride == 0) stride = 3;
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_BYTE);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_BYTE);
+                }
+            }
+        }
+        bytes = vertices * 3;
+        break;
     case 1:
         if (stride == 0) stride = 3;
-        for (s32 i = 0; i < vertices; i++) {
-            u8 *out = dest + (u32)i * stride;
-            const f32 *in = source + i * 3;
-            out[0] = (u8)(s32)(scale * (in[0] - shift[0]));
-            out[1] = (u8)(s32)(scale * (in[1] - shift[1]));
-            out[2] = (u8)(s32)(scale * (in[2] - shift[2]));
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_BYTE);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_BYTE);
+                }
+            }
         }
         bytes = vertices * 3;
         break;
     case 2:
+        if (stride == 0) stride = 6;
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_SHORT);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_SHORT);
+                }
+            }
+        }
+        bytes = vertices * 6;
+        break;
     case 3:
         if (stride == 0) stride = 6;
-        for (s32 i = 0; i < vertices; i++) {
-            u16 *out = (u16 *)(dest + (u32)i * stride);
-            const f32 *in = source + i * 3;
-            out[0] = (u16)(s32)(scale * (in[0] - shift[0]));
-            out[1] = (u16)(s32)(scale * (in[1] - shift[1]));
-            out[2] = (u16)(s32)(scale * (in[2] - shift[2]));
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_SHORT);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_SHORT);
+                }
+            }
         }
         bytes = vertices * 6;
         break;
     case 4:
         if (stride == 0) stride = 0xC;
-        for (s32 i = 0; i < vertices; i++) {
-            u32 *out = (u32 *)(dest + (u32)i * stride);
-            const u32 *in = (const u32 *)source + i * 3;
-            out[0] = in[0];
-            out[1] = in[1];
-            out[2] = in[2];
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_WORD);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_WORD);
+                }
+            }
         }
         bytes = vertices * 0xC;
         break;
     }
     return bytes;
 }
+#pragma scheduling reset
 
 /* The same packing with the quantizer fixed per storage width instead of taken
  * from the caller: `type` 1 scales by 64 into bytes, 3 scales by 16384 (2^14)
- * into shorts, and 4 copies floats; 0, 2 and any larger value do nothing. No
- * offset is applied. */
+ * into shorts, and 4 copies floats; 0, 2, negative values and anything above 4
+ * store nothing. No phase shift is applied -- the components are scaled alone.
+ * The returned byte count is the destination size, as above. */
+#pragma scheduling off
 s32 fn_80467BC8(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride) {
+    s32 bytes = 0;
+
     switch (type) {
     case 1:
         if (stride == 0) stride = 3;
-        for (s32 i = 0; i < vertices; i++) {
-            u8 *out = dest + (u32)i * stride;
-            const f32 *in = source + i * 3;
-            out[0] = (u8)(s32)(lbl_805FB1F8 * in[0]);
-            out[1] = (u8)(s32)(lbl_805FB1F8 * in[1]);
-            out[2] = (u8)(s32)(lbl_805FB1F8 * in[2]);
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    const f32 scale = lbl_805FB1F8;
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_BYTE_FIXED);
+                    }
+                }
+                {
+                    const f32 scale = lbl_805FB1F8;
+                    for (; i < vertices; i++) {
+                        RW_PACK_ONE(RW_PACK_BYTE_FIXED);
+                    }
+                }
+            }
         }
-        return vertices * 3;
+        bytes = vertices * 3;
+        break;
     case 3:
         if (stride == 0) stride = 6;
-        for (s32 i = 0; i < vertices; i++) {
-            u16 *out = (u16 *)(dest + (u32)i * stride);
-            const f32 *in = source + i * 3;
-            out[0] = (u16)(s32)(lbl_805FB1FC * in[0]);
-            out[1] = (u16)(s32)(lbl_805FB1FC * in[1]);
-            out[2] = (u16)(s32)(lbl_805FB1FC * in[2]);
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    const f32 scale = lbl_805FB1FC;
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_SHORT_FIXED);
+                    }
+                }
+                {
+                    const f32 scale = lbl_805FB1FC;
+                    for (; i < vertices; i++) {
+                        RW_PACK_ONE(RW_PACK_SHORT_FIXED);
+                    }
+                }
+            }
         }
-        return vertices * 6;
+        bytes = vertices * 6;
+        break;
     case 4:
         if (stride == 0) stride = 0xC;
-        for (s32 i = 0; i < vertices; i++) {
-            u32 *out = (u32 *)(dest + (u32)i * stride);
-            const u32 *in = (const u32 *)source + i * 3;
-            out[0] = in[0];
-            out[1] = in[1];
-            out[2] = in[2];
+        {
+            u8 *out = dest;
+            if (vertices > 0) {
+                s32 i = 0;
+                s32 remaining = vertices - 8;
+                if (vertices > 8) {
+                    for (; i < remaining; i += 8) {
+                        RW_PACK8(RW_PACK_WORD);
+                    }
+                }
+                for (; i < vertices; i++) {
+                    RW_PACK_ONE(RW_PACK_WORD);
+                }
+            }
         }
-        return vertices * 0xC;
+        bytes = vertices * 0xC;
+        break;
+    case 0:
+    case 2:
+        break;
     }
-    return 0;
+    return bytes;
 }
+#pragma scheduling reset
 }
