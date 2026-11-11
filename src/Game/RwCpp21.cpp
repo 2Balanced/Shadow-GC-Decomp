@@ -86,6 +86,24 @@ u32 fn_8045ACD4(u32 *object) {
 }
 
 extern u32 lbl_805F14E8;
+extern u8 lbl_8056D840[];
+extern u32 lbl_805EDDB8;
+extern u32 lbl_805EDDBC;
+extern u32 lbl_805E15F0[];
+u32 *fn_8047FC04(u32, u32, u32, u32, u32 *, u32);
+
+u32 *fn_8045B048(u32 *object, u32 value) {
+    lbl_805F14E8 = value;
+    u32 *table = fn_8047FC04(*(u32 *)lbl_8056D840, lbl_805EDDB8, 4, lbl_805EDDBC,
+                             lbl_805E15F0, 0x00040007);
+    *(u32 **)(lbl_805F15B4 + lbl_805F14E8) = table;
+    if (*(u32 **)(lbl_805F15B4 + lbl_805F14E8) == NULL) {
+        return NULL;
+    }
+    (&lbl_805F14E8)[1]++;
+    return object;
+}
+
 void fn_8047FCDC(u32 *table);
 
 u32 *fn_8045B0D8(u32 *object) {
@@ -98,7 +116,6 @@ u32 *fn_8045B0D8(u32 *object) {
     return object;
 }
 
-extern u8 lbl_8056D840[];
 void fn_804815F0(u8 *, u32, u32, u32, u32);
 
 void fn_8045AAE0(u32 first, u32 second, u32 third, u32 fourth) {
