@@ -287,7 +287,7 @@ u32 fn_80486204(void *context) {
 }
 
 u32 fn_804864AC(void) {
-    u32 empty = lbl_805F15B0 == 0;
+    u32 empty = (u32)__cntlzw((u32)lbl_805F15B0) >> 5;
     if (empty) {
         fn_80481C58();
         fn_8048038C();
@@ -399,7 +399,7 @@ u8 *fn_80486AA4(u8 *source, u8 *root) {
 }
 
 void *fn_80486C5C(u8 *source, u8 *root) {
-    u8 *object = fn_80486AA4(source, root);
+    u8 *object = fn_80486AA4(source, 0);
     if (object != NULL) {
         object[3] &= 0xFC;
         extern void fn_8048722C(u8 *);
@@ -410,7 +410,11 @@ void *fn_80486C5C(u8 *source, u8 *root) {
 
 void *fn_80486CA4(u8 *object) {
     u8 *parent = *(u8 **)(object + 4);
-    fn_80486990(object, parent != NULL ? *(u8 **)(parent + 0xA0) : object);
+    if (parent != NULL) {
+        fn_80486990(object, *(u8 **)(parent + 0xA0));
+    } else {
+        fn_80486990(object, object);
+    }
     return object;
 }
 
