@@ -10,8 +10,10 @@ extern u8 lbl_8056D7F8[];
 
 extern "C" {
 u32 *fn_804573A8(u32 *);
-void fn_80457468(u32 *);
+u32 fn_80457468(u32 *);
 void fn_80457608(u32 *, u32 *);
+void fn_80457630(u8 *);
+void fn_80457664(u8 *);
 u32 fn_80486C5C(u32);
 u32 fn_80486CA4(u32);
 u32 *fn_80456DD8(void);
@@ -26,6 +28,94 @@ void fn_8048071C(u32);
 void fn_8048D834(u32 *);
 u32 fn_8047DC28(u32);
 void fn_8047DB84(u32 *);
+void fn_8048209C(u8 *, u32 *);
+void fn_80456230(void);
+void fn_80487208(u32);
+void fn_8045ACD4(u32 *);
+void fn_804859F8(u32 *);
+
+u32 *fn_804573A8(u32 *object) {
+    u8 *table = lbl_805F15B4 + lbl_805F14C8 + 4;
+    u32 *created = (u32 *)((void *(*)(u8 *, u32))*(u32 *)(table + 0x118))(table, 0x30010);
+    if (created == NULL) {
+        return created;
+    }
+    u32 *linkA = created + 2;
+    u32 *linkB = created + 4;
+    u32 *linkC = created + 6;
+    ((u8 *)created)[0] = 2;
+    ((u8 *)created)[1] = 0;
+    ((u8 *)created)[2] = 0;
+    ((u8 *)created)[3] = 0;
+    created[1] = 0;
+    created[1] = 0;
+    created[2] = (u32)linkA;
+    created[3] = (u32)linkA;
+    created[4] = (u32)linkB;
+    created[5] = (u32)linkB;
+    created[6] = (u32)linkC;
+    created[7] = (u32)linkC;
+    created[9] = 0;
+    created[8] = 0;
+    created[0xA] = (u32)fn_80456230;
+    fn_8048209C(lbl_8056D7F8, created);
+    return created;
+}
+
+u32 fn_80457468(u32 *node) {
+    fn_80482144(lbl_8056D7F8, node);
+    u32 *sentinel = node + 2;
+    u32 *link = (u32 *)node[2];
+    while (link != sentinel) {
+        u32 next = *link;
+        u32 *current = link - 0x10;
+        fn_80482144(lbl_8056D7E0, current);
+        if (current[5] != 0) {
+            fn_8048071C(current[5]);
+        }
+        if (current[6] != 0) {
+            fn_8045985C(current[6]);
+            current[6] = 0;
+            if (current[1] != 0 && fn_804622F0(current) != 0) {
+                fn_8048722C(current[1]);
+            }
+        }
+        fn_8048D834(current);
+        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + lbl_805F14C8 + 0x11C))(current);
+        link = (u32 *)next;
+    }
+
+    sentinel = node + 4;
+    link = (u32 *)node[4];
+    while (link != sentinel) {
+        u32 next = *link;
+        u32 *current = link - 1;
+        u32 *adjusted = (u32 *)((u8 *)current - lbl_805F14BC);
+        u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14BC);
+        fn_80457630((u8 *)callback);
+        fn_8045ACD4(adjusted);
+        link = (u32 *)next;
+    }
+
+    sentinel = node + 6;
+    link = (u32 *)node[6];
+    while (link != sentinel) {
+        u32 next = *link;
+        u32 *current = link - 1;
+        u32 *adjusted = (u32 *)((u8 *)current - lbl_805F14B8);
+        u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14B8);
+        fn_80457664((u8 *)callback);
+        fn_804859F8(adjusted);
+        link = (u32 *)next;
+    }
+
+    if (node[1] != 0) {
+        fn_80487208(node[1]);
+    }
+    u8 *table = lbl_805F15B4 + lbl_805F14C8 + 4;
+    ((void (*)(u32 *))*(u32 *)(table + 0x11C))(node);
+    return 1;
+}
 
 u32 fn_80457090(u32 *object) {
     u32 *node = fn_804573A8(object);
