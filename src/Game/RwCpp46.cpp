@@ -36,9 +36,9 @@ char *fn_80482DBC(char *text, char value) {
     return found;
 }
 
-void fn_80482D3C(char *text) {
+char *fn_80482D3C(char *text) {
     if (text == NULL) {
-        return;
+        return text;
     }
     char *cursor = text;
     while (*cursor != 0) {
@@ -48,11 +48,12 @@ void fn_80482D3C(char *text) {
         }
         cursor++;
     }
+    return text;
 }
 
-void fn_80482D7C(char *text) {
+char *fn_80482D7C(char *text) {
     if (text == NULL) {
-        return;
+        return text;
     }
     char *cursor = text;
     while (*cursor != 0) {
@@ -62,6 +63,7 @@ void fn_80482D7C(char *text) {
         }
         cursor++;
     }
+    return text;
 }
 
 extern u32 lbl_805FB2D0;

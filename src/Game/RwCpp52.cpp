@@ -151,10 +151,10 @@ void *fn_8048C038(char *name, char *suffix) {
 }
 
 void *fn_8048C5F4(char *name, char *suffix) {
-    if (*(u32 *)(lbl_805F15B4 + lbl_805F15D4 + 0x1C) == 0) {
-        return fn_8048BD84(name, suffix);
+    if (*(s32 *)(lbl_805F15B4 + lbl_805F15D4 + 0x1C) != 0) {
+        return fn_8048C038(name, suffix);
     }
-    return fn_8048C038(name, suffix);
+    return fn_8048BD84(name, suffix);
 }
 
 void *fn_8048C634(u8 *object, void *existing) {
