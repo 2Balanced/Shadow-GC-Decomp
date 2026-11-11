@@ -818,7 +818,7 @@ u8 *fn_8045AF28(u8 *stream, s32 type) {
     return stream;
 }
 
-u8 *fn_8045AFA4(u8 *stream, const u32 *object) {
+u8 *fn_8045AFA4(u8 *stream, u8 *entry, const u32 *object) {
     if (fn_8047D458(stream, (u8 *)object[2] + 44, 4) == 0) {
         return NULL;
     }
