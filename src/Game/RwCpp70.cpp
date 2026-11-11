@@ -528,7 +528,7 @@ void *fn_804A8B08(void *stream, void *source, void *destination, void *context) 
     u32 *slot;
     u32 *entry = (u32 *)lbl_805E32D8 + local8[0] * 4;
     size = entry[3] + 0x38;
-    u32 *result = (u32 *)lbl_805F15B4->m_allocate(size, 0x103012C, lbl_805F15B4);
+    u32 *result = (u32 *)((void *(*)(u32, u32))lbl_805F15B4->m_allocate)(size, 0x103012C);
     if (result == NULL) {
         struct {
             u32 field_0x0;
