@@ -156,6 +156,67 @@ u32 *fn_8045AE20(u32 *object) {
     return object;
 }
 
+u32 fn_8047DC28(u32 code, ...);
+void fn_8047DB84(u32 *error);
+u32 fn_8047CF50(u8 *, u32, u32 *, u32 *);
+u32 fn_80480D4C(u8 *, u8 *, u32);
+void fn_8047D254(u8 *, u32);
+u32 fn_804816AC(u8 *, u8 *, u32 *);
+f32 fn_80482340(f32);
+void *memset(void *, s32, u32);
+
+u32 *fn_8045AB1C(u8 *stream) {
+    u32 second;
+    u32 first;
+    u8 buffer[24];
+    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
+        return NULL;
+    }
+    if (first < 0x00035000 || first > 0x00037002) {
+        goto invalid;
+    }
+    memset(buffer, 0, 24);
+    if (fn_80480D4C(stream, buffer, second) != second) {
+        return NULL;
+    }
+    fn_8047D254(buffer, 24);
+    u32 *object = fn_8045AD34((*(u32 *)(buffer + 20) >> 16) & 0xFF);
+    if (object == NULL) {
+        return NULL;
+    }
+    *(f32 *)((u8 *)object + 20) = *(f32 *)(buffer);
+    *(f32 *)((u8 *)object + 24) = *(f32 *)(buffer + 4);
+    *(f32 *)((u8 *)object + 28) = *(f32 *)(buffer + 8);
+    *(f32 *)((u8 *)object + 32) = *(f32 *)(buffer + 12);
+    if (first < 0x00030300) {
+        f32 value = *(f32 *)(buffer + 16);
+        value = value * value;
+        f32 denominator = lbl_805FB14C + value;
+        *(f32 *)((u8 *)object + 40) = -fn_80482340(lbl_805FB14C / denominator);
+    } else {
+        *(f32 *)((u8 *)object + 40) = *(f32 *)(buffer + 16);
+    }
+    if (*(f32 *)((u8 *)object + 24) == *(f32 *)((u8 *)object + 28) &&
+        *(f32 *)((u8 *)object + 24) == *(f32 *)((u8 *)object + 32)) {
+        ((u8 *)object)[3] = 1;
+    } else {
+        ((u8 *)object)[3] = 0;
+    }
+    ((u8 *)object)[2] = *(u32 *)(buffer + 20);
+    if (fn_804816AC(lbl_8056D828, stream, object) == 0) {
+        return NULL;
+    }
+    return object;
+invalid:
+    {
+        u32 error[2];
+        error[0] = 2;
+        error[1] = fn_8047DC28(0x80000004);
+        fn_8047DB84(error);
+        return NULL;
+    }
+}
+
 extern u32 lbl_805EDDB8;
 extern u32 lbl_805EDDBC;
 extern u32 lbl_805E15F0[];
@@ -234,9 +295,6 @@ u32 fn_8045B1F4(u32 *object) {
     }
     return 1;
 }
-
-u32 fn_8047DC28(u32 code, u32 size, ...);
-void fn_8047DB84(u32 *error);
 
 s32 fn_8045B7AC(u32 *object, u32 *value) {
     if ((s32)object[2] > (s32)object[1]) {
