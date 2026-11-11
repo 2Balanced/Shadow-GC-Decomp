@@ -12,8 +12,8 @@ extern "C" {
 u32 *fn_804573A8(u32 *);
 u32 fn_80457468(u32 *);
 void fn_80457608(u32 *, u32 *);
-void fn_80457630(u8 *);
-void fn_80457664(u8 *);
+u8 *fn_80457630(u8 *, u8 *);
+u8 *fn_80457664(u8 *, u8 *);
 u32 fn_80486C5C(u32);
 u32 fn_80486CA4(u32);
 u32 *fn_80456DD8(void);
@@ -92,7 +92,7 @@ u32 fn_80457468(u32 *node) {
         u32 *current = link - 1;
         u32 *adjusted = (u32 *)((u8 *)current - lbl_805F14BC);
         u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14BC);
-        fn_80457630((u8 *)callback);
+        fn_80457630((u8 *)callback, (u8 *)adjusted);
         fn_8045ACD4(adjusted);
         link = (u32 *)next;
     }
@@ -104,7 +104,7 @@ u32 fn_80457468(u32 *node) {
         u32 *current = link - 1;
         u32 *adjusted = (u32 *)((u8 *)current - lbl_805F14B8);
         u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14B8);
-        fn_80457664((u8 *)callback);
+        fn_80457664((u8 *)callback, (u8 *)adjusted);
         fn_804859F8(adjusted);
         link = (u32 *)next;
     }
@@ -239,22 +239,24 @@ void fn_80457608(u32 *object, u32 *other) {
     other[0x0F] = (u32)object;
 }
 
-void fn_80457630(u8 *other) {
+u8 *fn_80457630(u8 *callback, u8 *other) {
     u32 *target = (u32 *)(other + lbl_805F14BC);
     *(u32 *)target[2] = target[1];
     *(u32 *)(target[1] + 4) = target[2];
     target[2] = 0;
     target[1] = 0;
     target[0] = 0;
+    return callback;
 }
 
-void fn_80457664(u8 *other) {
+u8 *fn_80457664(u8 *callback, u8 *other) {
     u32 *target = (u32 *)(other + lbl_805F14B8);
     *(u32 *)target[2] = target[1];
     *(u32 *)(target[1] + 4) = target[2];
     target[2] = 0;
     target[1] = 0;
     target[0] = 0;
+    return callback;
 }
 
 void fn_804815F0(u8 *, u32, u32, u32, u32);

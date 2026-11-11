@@ -469,8 +469,8 @@ u32 *fn_80488B94(char *name, char *suffix) {
     return resource;
 }
 
-void *fn_80489118(void *object, void *arg) {
-    RW_API(void (*)(void *, void *), 0x54)(object, &arg);
+void *fn_80489118(void *object, void *arg, void *arg2) {
+    RW_API(void (*)(void *, void *, void *), 0x54)(object, &arg, arg2);
     return object;
 }
 }

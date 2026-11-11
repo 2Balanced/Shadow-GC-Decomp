@@ -92,11 +92,12 @@ u32 fn_80464188(u32 *object) {
     return 1;
 }
 
-void fn_804630C0(void);
+void fn_804630C0(u32 child);
 
 void *fn_80462E34(u8 *object, u32 offset) {
-    if (*(u32 *)(object + offset) != 0) {
-        fn_804630C0();
+    u32 child = *(u32 *)(object + offset);
+    if (child != 0) {
+        fn_804630C0(child);
     }
     return object;
 }

@@ -13,7 +13,7 @@ void *fn_80443A74(u32 *);
 u32 fn_80443A54(u8 *);
 u32 fn_8047DC28(u32, ...);
 void fn_8047DB84(void *);
-void fn_80445CE0(void);
+void fn_80445CE0(u32 *, u32);
 void fn_80444284(u32 *);
 void fn_8045916C(u32 *, u32);
 void fn_804591C4(u32 *);
@@ -227,7 +227,7 @@ void fn_804442A4(u32 *object, u32 value) {
         object[0x12] = target[2];
         target[2] = 0;
     }
-    fn_80445CE0();
+    fn_80445CE0(object, value);
 }
 
 void *fn_804442E4(u32 *object) {

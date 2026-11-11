@@ -62,13 +62,13 @@ void fn_8045994C(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
     fn_80481DC8(lbl_8056D810, first, second, third, fourth, fifth);
 }
 
-void fn_8048722C(void);
+void fn_8048722C(u32 count);
 
 u32 fn_8045A784(volatile u32 *object, float value) {
     u32 count = object[1];
     ((float *)object)[5] = value;
     if (count != 0) {
-        fn_8048722C();
+        fn_8048722C(count);
     }
     return (u32)object;
 }
