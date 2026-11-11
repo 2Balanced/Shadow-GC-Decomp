@@ -73,6 +73,18 @@ s32 fn_8045B8EC(u32 *object, u32 value) {
 }
 
 extern u8 lbl_8056D828[];
+extern u32 lbl_805F14D8;
+void fn_80482144(u8 *, u32 *);
+void fn_8048D834(u32 *);
+
+u32 fn_8045ACD4(u32 *object) {
+    fn_80482144(lbl_8056D828, object);
+    fn_8048D834(object);
+    ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
+        *(u8 **)(lbl_805F15B4 + lbl_805F14D8), object);
+    return 1;
+}
+
 extern u8 lbl_8056D840[];
 void fn_804815F0(u8 *, u32, u32, u32, u32);
 
