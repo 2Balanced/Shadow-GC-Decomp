@@ -3,7 +3,8 @@
  * to the final field temporaries. Direct, cached, and scoped comparison forms were measured.
  * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift.
  * fn_8045C56C matches size and the expansion loops; only setup scheduling/register choices differ.
- * fn_8045C770 matches size and all conversion code; its entry-type load is scheduled one store later. */
+ * fn_8045C770 matches size and all conversion code; its entry-type load is scheduled one store later.
+ * fn_8045D3A8 implements the full graph walk; validity temporaries and output scheduling differ. */
 #include <dolphin/types.h>
 
 extern u8 *lbl_805F15B4;
@@ -428,6 +429,141 @@ void fn_8045D20C(u32 *object, u32 **array, s32 index) {
             candidate[5] = 0;
         }
     }
+}
+
+u32 fn_8045D3A8(u32 *object, u32 *current, u32 **array, s32 mode) {
+    u32 processed = 0;
+    u32 *alternate = NULL;
+    while (current != NULL) {
+        u32 *candidate = NULL;
+        s32 index = -1;
+        if (mode < 4) {
+            if (current[1] != 0 && (s32)((u32 *)current[1])[7] == 0) {
+                candidate = (u32 *)current[1];
+            } else if (current[2] != 0 && (s32)((u32 *)current[2])[7] == 0) {
+                candidate = (u32 *)current[2];
+            }
+        } else {
+            if (current[1] != 0 && (s32)((u32 *)current[1])[6] == 0) {
+                candidate = (u32 *)current[1];
+            } else if (current[2] != 0 && (s32)((u32 *)current[2])[6] == 0) {
+                candidate = (u32 *)current[2];
+            }
+        }
+        if (candidate == NULL) {
+            return processed;
+        }
+        processed++;
+        fn_8045D20C(candidate, array, mode);
+        if ((u32 *)candidate[1] == current) {
+            index = 0;
+        } else if ((u32 *)candidate[2] == current) {
+            index = 1;
+        } else if ((u32 *)candidate[3] == current) {
+            index = 2;
+        }
+        s32 next_index = (index + 1) % 3;
+        u32 *link = (u32 *)candidate[next_index + 1];
+        u16 key = (u32 *)link[1] == candidate ? *(u16 *)((u8 *)link + 2) : *(u16 *)link;
+        u16 *output = (u16 *)object[0] + object[1];
+        u16 last = output[-1];
+        u32 *next = NULL;
+        if ((*(u16 *)candidate[1] == last && *(u16 *)((u8 *)candidate[1] + 2) == key) ||
+            (*(u16 *)candidate[1] == key && *(u16 *)((u8 *)candidate[1] + 2) == last)) {
+            next = (u32 *)candidate[1];
+        } else if ((*(u16 *)candidate[2] == last && *(u16 *)((u8 *)candidate[2] + 2) == key) ||
+                   (*(u16 *)candidate[2] == key && *(u16 *)((u8 *)candidate[2] + 2) == last)) {
+            next = (u32 *)candidate[2];
+        } else if ((*(u16 *)candidate[3] == last && *(u16 *)((u8 *)candidate[3] + 2) == key) ||
+                   (*(u16 *)candidate[3] == key && *(u16 *)((u8 *)candidate[3] + 2) == last)) {
+            next = (u32 *)candidate[3];
+        }
+        s32 no_valid = 1;
+        s32 other = no_valid;
+        if (next != NULL) {
+            s32 second_valid = 0;
+            s32 first_valid = 0;
+            if (mode < 4) {
+                if (next[2] != 0 && (s32)((u32 *)next[2])[7] == 0) {
+                    second_valid = 1;
+                }
+                if (next[1] != 0 && (s32)((u32 *)next[1])[7] == 0) {
+                    first_valid = 1;
+                }
+            } else {
+                if (next[2] != 0 && (s32)((u32 *)next[2])[6] == 0) {
+                    second_valid = 1;
+                }
+                if (next[1] != 0 && (s32)((u32 *)next[1])[6] == 0) {
+                    first_valid = 1;
+                }
+            }
+            if (first_valid + second_valid != 0) {
+                other = 0;
+            }
+        }
+        if (other == 0) {
+            no_valid = 0;
+        }
+        if (!no_valid) {
+            output[0] = key;
+            object[1]++;
+            current = next;
+            continue;
+        }
+        if ((u32 *)candidate[1] != current && (u32 *)candidate[1] != next) {
+            alternate = (u32 *)candidate[1];
+        } else if ((u32 *)candidate[2] != current && (u32 *)candidate[2] != next) {
+            alternate = (u32 *)candidate[2];
+        } else if ((u32 *)candidate[3] != current && (u32 *)candidate[3] != next) {
+            alternate = (u32 *)candidate[3];
+        }
+        s32 any_valid = 0;
+        other = any_valid;
+        if (alternate != NULL) {
+            s32 second_valid = 0;
+            s32 first_valid = 0;
+            if (mode < 4) {
+                if (alternate[2] != 0 && (s32)((u32 *)alternate[2])[7] == 0) {
+                    second_valid = 1;
+                }
+                if (alternate[1] != 0 && (s32)((u32 *)alternate[1])[7] == 0) {
+                    first_valid = 1;
+                }
+            } else {
+                if (alternate[2] != 0 && (s32)((u32 *)alternate[2])[6] == 0) {
+                    second_valid = 1;
+                }
+                if (alternate[1] != 0 && (s32)((u32 *)alternate[1])[6] == 0) {
+                    first_valid = 1;
+                }
+            }
+            if (first_valid + second_valid != 0) {
+                other = 1;
+            }
+        }
+        if (other != 0) {
+            any_valid = 1;
+        }
+        if (any_valid) {
+            if (next_index != 0) {
+                output[0] = key;
+                current = NULL;
+                object[1]++;
+            } else {
+                output[0] = output[-1];
+                current = alternate;
+                object[1]++;
+                output[1] = key;
+                object[1]++;
+            }
+        } else {
+            output[0] = key;
+            current = NULL;
+            object[1]++;
+        }
+    }
+    return processed;
 }
 
 u32 fn_8045C9C8(u32 *object, u8 *entry) {
