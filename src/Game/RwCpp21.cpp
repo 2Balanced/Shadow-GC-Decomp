@@ -1,9 +1,39 @@
 /* RenderWare small callbacks and accessors. Names are inferred from behavior.
  * fn_8045B8EC returns the found index or -1 with retail's size; GC/2.7 folds its pointer decrement
- * into lwzu where retail uses a separate addi. */
+ * into lwzu where retail uses a separate addi. fn_8045A7C4 and fn_8045AA44 also match size;
+ * their remaining differences are copy-register and first-comparison scheduling choices. */
 #include <dolphin/types.h>
 
 extern "C" {
+void fn_8045A7C4(u8 *object, f32 *values) {
+    u32 first = ((u32 *)values)[0];
+    u32 second = ((u32 *)values)[1];
+    *(u32 *)(object + 24) = first;
+    u32 third = ((u32 *)values)[2];
+    *(u32 *)(object + 28) = second;
+    u32 fourth = ((u32 *)values)[3];
+    *(u32 *)(object + 32) = third;
+    *(u32 *)(object + 36) = fourth;
+    if (*(f32 *)(object + 24) == *(f32 *)(object + 28) &&
+        *(f32 *)(object + 24) == *(f32 *)(object + 32)) {
+        object[3] = 1;
+    } else {
+        object[3] = 0;
+    }
+}
+
+extern f32 lbl_805FB120;
+extern f32 lbl_805FB128;
+double cos(double);
+
+u8 *fn_8045AA44(u8 *object, f32 value) {
+    if (value < lbl_805FB120 || value > lbl_805FB128) {
+        return NULL;
+    }
+    *(f32 *)(object + 40) = -(f32)cos(value);
+    return object;
+}
+
 u32 fn_8045B79C(u32 *object, u32 index) {
     return ((u32 *)object[0])[index];
 }
