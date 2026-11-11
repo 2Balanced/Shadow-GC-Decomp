@@ -117,6 +117,19 @@ u32 *fn_8045B0D8(u32 *object) {
     return object;
 }
 
+void fn_8048CD8C(u32 *value);
+
+u32 *fn_8045B270(u32 *object, u32 *value) {
+    if (value != NULL) {
+        value[21]++;
+    }
+    if (object[0] != 0) {
+        fn_8048CD8C((u32 *)object[0]);
+    }
+    object[0] = (u32)value;
+    return object;
+}
+
 extern u32 lbl_805F14E4;
 extern u32 lbl_805F14E0;
 u32 fn_8047D868(u8 *stream, void *data, u32 size);
