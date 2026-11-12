@@ -516,7 +516,12 @@ RpAtomic *fn_80015698(RpAtomic *atomic, void *data) {
     return atomic;
 }
 
-/* Lists the frames of the skin hierarchy that the motion has nodes for. */
+/* Lists the frames of the skin hierarchy that the motion has nodes for.
+ *
+ * NonMatching (one instruction): retail copies the zeroed loop counter into the byte offset with
+ * `mr r27,r30`; GC/2.7 emits an independent `li r27,0`. Explicit byte offsets and cached node
+ * pointers change the saved-register set; chained initialization, declaration order, and the
+ * opt_propagation/opt_strength_reduction pragmas leave the same residual. */
 RwFrame *fn_80015570(RwFrame *frame, void *data) {
     UnkClumpUpdater_80015A7C *updater = static_cast<UnkClumpUpdater_80015A7C *>(data);
     if (updater->m_motion != 0) {
