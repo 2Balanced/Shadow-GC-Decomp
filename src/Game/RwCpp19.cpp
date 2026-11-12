@@ -82,6 +82,7 @@ u32 fn_80457468(u32 *node) {
         }
         fn_8048D834(current);
         ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + lbl_805F14C8 + 0x11C))(current);
+        if (current == NULL) break;
         link = (u32 *)next;
     }
 
@@ -94,6 +95,7 @@ u32 fn_80457468(u32 *node) {
         u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14BC);
         fn_80457630((u8 *)callback, (u8 *)adjusted);
         fn_8045ACD4(adjusted);
+        if (adjusted == NULL) break;
         link = (u32 *)next;
     }
 
@@ -106,6 +108,7 @@ u32 fn_80457468(u32 *node) {
         u32 *callback = *(u32 **)((u8 *)adjusted + lbl_805F14B8);
         fn_80457664((u8 *)callback, (u8 *)adjusted);
         fn_804859F8(adjusted);
+        if (adjusted == NULL) break;
         link = (u32 *)next;
     }
 
