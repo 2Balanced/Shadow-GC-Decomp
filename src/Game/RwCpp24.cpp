@@ -37,7 +37,7 @@ void fn_80460B68(u8 *object) {
 
 u32 *fn_8045F390(u32 *object);
 void fn_804624E8(u8 *, u32, u32 *, u32);
-void fn_80462130(u32 *, u32 *, u32);
+void fn_80462130(u32 *, u32 *);
 void fn_8047FCDC(u32 *table);
 void fn_80462770(void);
 extern u32 lbl_805F1500;
@@ -76,15 +76,14 @@ void fn_80460C48(u32 *object) {
 }
 
 u32 *fn_80460CA4(u32 *object, u32 *engine) {
-    u32 zero = 0;
     u32 offset = lbl_805F1508;
     u32 *table = (u32 *)((u8 *)object + offset);
-    table[0] = zero;
+    table[0] = 0;
     u32 condition = *(u32 *)((u8 *)engine + offset + 12);
-    table[1] = zero;
-    table[2] = zero;
+    table[1] = 0;
+    table[2] = 0;
     if (condition != 0) {
-        fn_80462130((u32 *)condition, object, zero);
+        fn_80462130((u32 *)condition, object);
     }
     return object;
 }
