@@ -102,7 +102,7 @@ void fn_80461B60(u32 first, u32 second, u32 *third) {
     fn_8045C56C(third[0x15], first, second + 0x20);
 }
 
-void fn_80461030(void);
+void *fn_80461030(u8 *);
 void fn_804621C0(u32, u32);
 void fn_80462578(u32, u32);
 void fn_80462130(u32, u32);
@@ -155,5 +155,71 @@ void fn_80462734(u32 value) {
         value = 0;
     }
     *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x3C) = value;
+}
+
+u32 fn_80460E74(void *, void *);
+
+/* Validate object, release its linked nodes, then call fn_80460E74.
+ * NonMatching: the unlink loop and calls match; retail uses four individual register saves and
+ * assigns r29/r28/r29/r30 to callbacks, result, link and sentinel instead of this build's r30/r30/
+ * r28/r29. */
+void *fn_80461030(u8 *object) {
+    u32 *callbacks = (u32 *)(object + lbl_805F150C);
+    u32 (*validate)(u8 *) = (u32 (*)(u8 *))callbacks[1];
+    if (validate(object) != 0) {
+        u8 *result = (u8 *)callbacks[0];
+        if (result != NULL) {
+            u32 *sentinel = (u32 *)(object + 0x64);
+            u32 *link = ((u32 **)object)[0x19];
+            while (link != sentinel) {
+                u32 *node = link - 3;
+                link = (u32 *)*link;
+                if (node[2] == 0 || node[5] == 0) {
+                    break;
+                }
+                u32 value = node[3];
+                *(u32 *)node[4] = value;
+                value = node[4];
+                *(u32 *)(node[3] + 4) = value;
+                value = node[0];
+                *(u32 *)node[1] = value;
+                value = node[1];
+                *(u32 *)(node[0] + 4) = value;
+                ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+                    *(u32 *)(lbl_805F15B4 + lbl_805F1518));
+            }
+            fn_80460E74(result, object);
+            return object;
+        }
+    }
+    return NULL;
+}
+
+/* Release object's linked nodes and install callback[1].
+ * NonMatching: the entire loop and final store match; only the four individual saves at entry and
+ * exit differ from this build's stmw/lmw pair. */
+void *fn_80461168(u8 *object) {
+    u32 *sentinel = (u32 *)(object + 0x64);
+    u32 *link = ((u32 **)object)[0x19];
+    u32 *callback = (u32 *)(object + lbl_805F150C);
+    while (link != sentinel) {
+        u32 *node = link - 3;
+        link = (u32 *)*link;
+        if (node[2] == 0 || node[5] == 0) {
+            break;
+        }
+        u32 value = node[3];
+        *(u32 *)node[4] = value;
+        value = node[4];
+        *(u32 *)(node[3] + 4) = value;
+        value = node[0];
+        *(u32 *)node[1] = value;
+        value = node[1];
+        *(u32 *)(node[0] + 4) = value;
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 *)(lbl_805F15B4 + lbl_805F1518));
+    }
+    ((u32 *)object)[4] = callback[1];
+    return object;
 }
 }
