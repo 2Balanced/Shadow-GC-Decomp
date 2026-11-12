@@ -57,7 +57,7 @@ void fn_80461CA0(u32 first, u32 second, u32 third) {
     fn_80465200(first, third);
 }
 
-void fn_804612A8(void);
+void *fn_804612A8(u8 *);
 u32 fn_8045C9C8(u32, u32);
 void fn_80463244(void);
 void fn_80463308(void);
@@ -103,9 +103,9 @@ void fn_80461B60(u32 first, u32 second, u32 *third) {
 }
 
 void *fn_80461030(u8 *);
-void fn_804621C0(u32, u32);
-void fn_80462578(u32, u32);
-void fn_80462130(u32, u32);
+void *fn_804621C0(u32, u32);
+void *fn_80462578(u32, u32);
+void *fn_80462130(u32, u32);
 u32 fn_8045FEA0(u32 *);
 
 void fn_8046112C(u8 *object) {
@@ -223,7 +223,7 @@ void *fn_80461168(u8 *object) {
     return object;
 }
 
-void fn_804622FC(void *, void *);
+void *fn_804622FC(void *, void *);
 
 void *fn_80461260(void *object, void *entry) {
     void *resource = *(void **)((u8 *)entry + lbl_805F1510);
@@ -311,7 +311,7 @@ void fn_80460E74(u32 *tree, u8 *object) {
     }
 }
 
-void fn_8046221C(void *, void *);
+void *fn_8046221C(void *, void *);
 
 void *fn_80461A00(u8 *object, void *entry) {
     void *candidate = object + lbl_805F150C;
@@ -321,7 +321,7 @@ void *fn_80461A00(u8 *object, void *entry) {
     return object;
 }
 
-void fn_80462618(void *, void *);
+void *fn_80462618(void *, void *);
 
 void *fn_80461A88(u8 *object, void *entry) {
     void *candidate = object + lbl_805F1514;
@@ -382,4 +382,316 @@ void *fn_80461D7C(void *stream, void *entry, u32 *object) {
     return NULL;
 }
 #pragma use_lmw_stmw reset
+
+void *RwFrameGetLTM(void *);
+u32 fn_8047DC28(u32, ...);
+void fn_8047DB84(void *);
+
+void *fn_804612A8(u8 *object) {
+    struct InsertLocals {
+        float upper[3];
+        float lower[3];
+        u32 *parents[64];
+    } locals;
+    u32 *callbacks = (u32 *)(object + lbl_805F1514);
+    u32 (*validate)(u8 *) = (u32 (*)(u8 *))callbacks[1];
+    if (validate(object) == 0) {
+        u32 args[2];
+        args[0] = 2;
+        args[1] = fn_8047DC28(0x80000016);
+        fn_8047DB84(args);
+        return object;
+    }
+    if ((s32)object[1] < 0x80) {
+        return object;
+    }
+    u32 *tree = (u32 *)callbacks[0];
+    u32 *frame = (u32 *)((u32 *)object)[1];
+    if (tree == NULL || frame == NULL) {
+        return object;
+    }
+    float offset = ((float *)object)[5];
+    u32 *link = ((u32 **)object)[0x0B];
+    u32 *sentinel = (u32 *)(object + 0x2C);
+    while (link != sentinel) {
+        u32 *node = link - 3;
+        link = (u32 *)*link;
+        u32 value = node[3];
+        *(u32 *)node[4] = value;
+        value = node[4];
+        *(u32 *)(node[3] + 4) = value;
+        value = node[0];
+        *(u32 *)node[1] = value;
+        value = node[1];
+        *(u32 *)(node[0] + 4) = value;
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 4));
+    }
+    float *matrix = (float *)RwFrameGetLTM(frame);
+    locals.lower[0] = matrix[0] - offset;
+    locals.lower[1] = matrix[1] - offset;
+    locals.lower[2] = matrix[2] - offset;
+    locals.upper[0] = matrix[0] + offset;
+    locals.upper[1] = matrix[1] + offset;
+    locals.upper[2] = matrix[2] + offset;
+    u32 *current = (u32 *)tree[7];
+    s32 depth = 0;
+    while (depth >= 0) {
+        u32 kind = current[0];
+        if ((s32)kind < 0) {
+            u32 *created = ((u32 *(*)(void *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+                *(void **)(lbl_805F15B4 + lbl_805F1518), 0x507);
+            created[5] = (u32)current;
+            created[2] = (u32)object;
+            u32 *link = current + 16;
+            current = locals.parents[depth];
+            created[0] = link[0];
+            created[1] = (u32)link;
+            ((u32 *)link[0])[1] = (u32)created;
+            link[0] = (u32)created;
+            created[3] = ((u32 *)object)[0x0B];
+            created[4] = (u32)(object + 0x2C);
+            ((u32 *)created[3])[1] = (u32)(created + 3);
+            ((u32 *)object)[0x0B] = (u32)(created + 3);
+        } else if (((float *)current)[4] > locals.lower[kind]) {
+            if (((float *)current)[5] < locals.upper[kind]) {
+                depth++;
+                locals.parents[depth] = (u32 *)current[3];
+            } else {
+                current = (u32 *)current[2];
+            }
+        } else if (((float *)current)[5] >= locals.upper[kind]) {
+            current = locals.parents[depth];
+            depth--;
+        } else {
+            current = (u32 *)current[3];
+        }
+    }
+    return object;
+}
+
+void fn_8048722C(u32);
+
+#pragma use_lmw_stmw off
+void *fn_80462130(u32 stream, u32 object) {
+    u32 value = *(u32 *)(object + 4);
+    u32 *target = (u32 *)(object + lbl_805F1508);
+    if (value != 0) {
+        fn_8048722C(value);
+        target[3] = (u32)stream;
+    }
+    return (void *)stream;
+}
+
+#pragma use_lmw_stmw on
+void *fn_804621C0(u32 stream, u32 object) {
+    u32 value = *(u32 *)(object + 4);
+    u32 *target = (u32 *)(object + lbl_805F150C);
+    if (value != 0) {
+        fn_8048722C(value);
+        *(u32 *)target = stream;
+    }
+    return (void *)stream;
+}
+
+void fn_8048071C(u32);
+
+#pragma use_lmw_stmw off
+void *fn_8046221C(void *stream, void *object_) {
+    u32 *object = (u32 *)object_;
+    u32 *target = (u32 *)((u8 *)object + lbl_805F150C);
+    u32 value = object[5];
+    if (value != 0) {
+        fn_8048071C(value);
+    }
+    u32 *link = ((u32 **)object)[0x19];
+    u32 *sentinel = (u32 *)((u8 *)object + 0x64);
+    while (link != sentinel) {
+        u32 *node = link - 3;
+        link = (u32 *)*link;
+        if (node[2] == 0 || node[5] == 0) {
+            break;
+        }
+        u32 value = node[3];
+        *(u32 *)node[4] = value;
+        value = node[4];
+        *(u32 *)(node[3] + 4) = value;
+        value = node[0];
+        *(u32 *)node[1] = value;
+        value = node[1];
+        *(u32 *)(node[0] + 4) = value;
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 *)(lbl_805F15B4 + lbl_805F1518));
+    }
+    *target = 0;
+    return stream;
+}
+#pragma use_lmw_stmw reset
+
+void fn_80456C54(void *, void *, void *);
+void fn_80456D54(void *, void *, void *);
+void fn_80456CD0(void *, void *, void *);
+void fn_8047E990(u32, u32);
+
+void *fn_804622FC(void *stream, void *object_) {
+    u32 *object = (u32 *)object_;
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1510);
+    u32 value = object[1];
+    u32 *link = (u32 *)((u8 *)stream + 0x2C);
+    object[8] = ((u32 *)stream)[0x0B];
+    object[9] = (u32)link;
+    link[1] = (u32)(object + 8);
+    ((u32 *)stream)[0x0B] = (u32)(object + 8);
+    ((u32 *)stream)[9] = ((u32 *)stream)[9] + 1;
+    target[0] = (u32)stream;
+    fn_80456C54(object, (void *)fn_804619C8, stream);
+    fn_80456D54(object, (void *)fn_80461A50, stream);
+    fn_80456CD0(object, (void *)fn_80461AD8, stream);
+    if (value != 0) {
+        fn_8047E990(value + 0x10, 0);
+        fn_8048722C(value);
+    }
+    target[1] = *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 8);
+    return stream;
+}
+
+void *fn_804623EC(void *stream, void *object_) {
+    u32 *object = (u32 *)object_;
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1510);
+    u32 *entry = *(u32 **)target;
+    if (entry != NULL) {
+        entry[9] = entry[9] - 1;
+        entry = *(u32 **)target;
+        if ((u32)(object + 8) == entry[0x0A]) {
+            entry[0x0A] = object[8];
+        }
+        u32 *link = (u32 *)object[9];
+        link[0] = object[8];
+        link = (u32 *)object[8];
+        link[1] = object[9];
+        fn_80456C54(object, (void *)fn_80461A00, stream);
+        fn_80456D54(object, (void *)fn_80461A88, stream);
+        fn_80456CD0(object, (void *)fn_80461B10, stream);
+        *target = 0;
+        return stream;
+    } else {
+        u32 args[2];
+        args[0] = 2;
+        args[1] = fn_8047DC28(4);
+        fn_8047DB84(args);
+        return NULL;
+    }
+}
+
+#pragma use_lmw_stmw off
+void *fn_804624E8(void *stream, void *callback, void *data) {
+    u32 *entry = (u32 *)((u8 *)stream + lbl_805F1508);
+    u32 *current = (u32 *)entry[0];
+    s32 count = entry[2];
+    while (count != 0) {
+        if (((u32 (*)(u32, void *))callback)(current[0], data) != 0) {
+            return stream;
+        }
+        current++;
+        count--;
+    }
+    return stream;
+}
+
+void *fn_80462578(u32 stream, u32 object) {
+    u32 *target = (u32 *)(object + lbl_805F1514);
+    *target = stream;
+    if (*(u8 *)(object + 1) < 0x80) {
+        u32 value = *(u32 *)(stream + 0x3C);
+        u32 *link = (u32 *)(stream + 0x3C);
+        ((u32 *)object)[0x0D] = value;
+        ((u32 *)object)[0x0E] = (u32)link;
+        link[1] = object + 0x34;
+        *(u32 *)(stream + 0x3C) = object + 0x34;
+    } else {
+        u32 value = *(u32 *)(object + 4);
+        if (value != 0) {
+            fn_8048722C(value);
+        }
+        value = *(u32 *)(stream + 0x34);
+        u32 *link = (u32 *)(stream + 0x34);
+        ((u32 *)object)[0x0D] = value;
+        ((u32 *)object)[0x0E] = (u32)link;
+        link[1] = object + 0x34;
+        *(u32 *)(stream + 0x34) = object + 0x34;
+    }
+    return (void *)stream;
+}
+
+#pragma use_lmw_stmw on
+void *fn_80462618(void *stream, void *object_) {
+    u32 *object = (u32 *)object_;
+    u32 *target = (u32 *)((u8 *)object + lbl_805F1514);
+    *target = 0;
+    u32 *sentinel = (u32 *)((u8 *)object + 0x2C);
+    u32 *link = ((u32 **)object)[0x0B];
+    while (link != sentinel) {
+        u32 *node = link - 3;
+        link = (u32 *)*link;
+        u32 value = node[3];
+        *(u32 *)node[4] = value;
+        value = node[4];
+        *(u32 *)(node[3] + 4) = value;
+        value = node[0];
+        *(u32 *)node[1] = value;
+        value = node[1];
+        *(u32 *)(node[0] + 4) = value;
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 4));
+    }
+    u32 value = object[0x0D];
+    *(u32 *)object[0x0E] = value;
+    value = object[0x0E];
+    *(u32 *)(object[0x0D] + 4) = value;
+    return stream;
+}
+#pragma use_lmw_stmw reset
+
+u32 fn_804631CC(void);
+u32 fn_80463298(void);
+u32 fn_804631D8(void);
+void fn_80463244(void);
+void fn_80463308(void);
+void fn_804631D4(void);
+
+u32 fn_80462798(void) {
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x3C) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x40) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x44) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x48) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x4C) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x50) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x54) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x58) = 0;
+    *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x5C) = 0;
+    fn_804631CC();
+    fn_80463298();
+    if (fn_804631D8() == 0) {
+        return 1;
+    }
+    fn_80463244();
+    fn_80463308();
+    fn_804631D4();
+    return 0;
+}
+
+void fn_8039561C(void);
+s32 fn_8049A78C(u32);
+extern u16 lbl_805EDF40;
+
+u32 fn_8046288C(u32 *object) {
+    u32 value = ((u16 *)object)[0x0C];
+    if (value == lbl_805EDF40) {
+        fn_8039561C();
+        s32 next = (s32)lbl_805EDF40 + 1;
+        lbl_805EDF40 = next % 0x2000;
+        fn_8049A78C(value);
+    }
+    return value;
+}
 }
