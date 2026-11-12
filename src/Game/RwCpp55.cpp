@@ -136,20 +136,41 @@ u32 fn_80491AF4(const u8 *color) {
 }
 
 u32 fn_80491B14(const u8 *color) {
-    if (color[3] != 0xFF) {
-        return (u32)(color[2] >> 4) | (color[1] & 0xF0) |
-               ((u32)(color[3] & 0xE0) << 7) | ((u32)(color[0] & 0xF0) << 4);
+    u32 green;
+    u32 blue;
+    u32 red;
+    u32 alpha = color[3];
+    if (alpha != 0xFF) {
+        u32 packed = (u32)(color[0] & 0xF0) << 4;
+        green = color[1];
+        blue = color[2];
+        packed = __rlwimi(packed, alpha, 7, 17, 19);
+        packed = __rlwimi(packed, green, 0, 24, 27);
+        return __rlwimi(packed, blue, 28, 28, 31);
     }
-    return (u32)(color[2] >> 3) | ((u32)(color[1] & 0xF8) << 2) |
-           ((u32)(color[0] & 0xF8) << 7) | 0x8000;
+    red = color[0];
+    green = color[1];
+    blue = color[2];
+    u32 packed = ((red & 0xF8) << 7) | 0x8000;
+    packed = __rlwimi(packed, green, 2, 22, 26);
+    return __rlwimi(packed, blue, 29, 27, 31);
 }
 
 u32 fn_80491B64(const u8 *color) {
-    return (u32)color[2] | ((u32)color[0] << 16) | 0xFF000000 | ((u32)color[1] << 8);
+    u32 red = color[0];
+    u32 green = color[1];
+    u32 blue = color[2];
+    return blue | ((red << 16) | 0xFF000000 | (green << 8));
 }
 
 u32 fn_80491B88(const u8 *color) {
-    return (u32)color[2] | ((u32)color[1] << 8) | ((u32)color[3] << 24) | ((u32)color[0] << 16);
+    u32 packed = (u32)color[0] << 16;
+    u32 alpha = color[3];
+    u32 green = color[1];
+    packed = __rlwimi(packed, alpha, 24, 0, 7);
+    u32 blue = color[2];
+    packed = __rlwimi(packed, green, 8, 16, 23);
+    return blue | packed;
 }
 
 u32 fn_80491BAC(u32 *out, const u8 *color, u32 format) {
