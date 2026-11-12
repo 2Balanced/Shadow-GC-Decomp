@@ -378,6 +378,10 @@ float fn_80015D68(float x) {
     return (float)fn_803B1BFC(x);
 }
 
+/* NonMatching (three instructions): retail computes -angle once into the now-dead f26 and reuses
+ * it for both matrix calls; GC/2.7 overwrites angle in f28. Named negations and reusing dead locals
+ * either do not change that choice or disturb the whole float allocation, while the opt_lifetimes
+ * and opt_deadassignments pragmas have no effect. */
 float fn_80015B60(Mtx34f *a, Mtx34f *b, Mtx34f *c, const Vec3f *target, const Mtx34f *base,
                   float length0, float length1, float length2) {
     float distance = fn_80016104(a, target, base, true);

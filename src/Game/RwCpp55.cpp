@@ -121,12 +121,18 @@ s32 fn_80491AB4(s32 value) {
 }
 
 u32 fn_80491AD4(const u8 *color) {
-    return (u32)(color[2] >> 3) | ((u32)(color[1] & 0xF8) << 2) |
-           ((u32)(color[0] & 0xF8) << 7) | 0x8000;
+    u32 red = color[0];
+    u32 green = color[1];
+    u32 blue = color[2];
+    u32 packed = ((red & 0xF8) << 7) | 0x8000;
+    packed = __rlwimi(packed, green, 2, 22, 26);
+    return __rlwimi(packed, blue, 29, 27, 31);
 }
 
 u32 fn_80491AF4(const u8 *color) {
-    return (u32)(color[2] >> 3) | ((u32)(color[0] & 0xF8) << 8) | ((u32)(color[1] & 0xFC) << 3);
+    return __rlwimi(
+        __rlwimi((u32)(color[1] & 0xFC) << 3, color[0], 8, 16, 20),
+        color[2], 29, 27, 31);
 }
 
 u32 fn_80491B14(const u8 *color) {
