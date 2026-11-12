@@ -130,28 +130,35 @@ u32 fn_80491AD4(const u8 *color) {
 }
 
 u32 fn_80491AF4(const u8 *color) {
-    return __rlwimi(
-        __rlwimi((u32)(color[1] & 0xFC) << 3, color[0], 8, 16, 20),
-        color[2], 29, 27, 31);
+    u32 packed = *(volatile u8 *)(color + 1);
+    u32 red = *(volatile u8 *)color;
+    packed = (packed & 0xFC) << 3;
+    u32 blue = color[2];
+    packed = __rlwimi(packed, red, 8, 16, 20);
+    u32 result = __rlwimi(packed, blue, 29, 27, 31);
+    return result;
 }
 
 u32 fn_80491B14(const u8 *color) {
     u32 green;
-    u32 blue;
+    u32 packed;
     u32 red;
+    u32 blue;
     u32 alpha = color[3];
     if (alpha != 0xFF) {
-        u32 packed = (u32)(color[0] & 0xF0) << 4;
-        green = color[1];
+        packed = *(volatile u8 *)color;
+        green = *(volatile u8 *)(color + 1);
+        packed = (packed & 0xF0) << 4;
         blue = color[2];
         packed = __rlwimi(packed, alpha, 7, 17, 19);
         packed = __rlwimi(packed, green, 0, 24, 27);
-        return __rlwimi(packed, blue, 28, 28, 31);
+        u32 result = __rlwimi(packed, blue, 28, 28, 31);
+        return result;
     }
     red = color[0];
     green = color[1];
     blue = color[2];
-    u32 packed = ((red & 0xF8) << 7) | 0x8000;
+    packed = ((red & 0xF8) << 7) | 0x8000;
     packed = __rlwimi(packed, green, 2, 22, 26);
     return __rlwimi(packed, blue, 29, 27, 31);
 }
