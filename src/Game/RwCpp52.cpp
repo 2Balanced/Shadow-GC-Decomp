@@ -55,7 +55,7 @@ void fn_804893B8(void *, void *);
 void *fn_8048A96C(void *, u32, u32);
 u32 fn_8048CD8C(u32 *);
 void *fn_8048CFFC(u8 *, char *);
-void fn_8048CBE0(u8 *, u32 (*)(u8 *, u32), u32);
+void *fn_8048CBE0(u8 *, u32 (*)(u8 *, u32), u32);
 void *fn_8048CFAC(u8 *, u8 *);
 u32 fn_8048B6AC(void *, char *, u8);
 
@@ -284,12 +284,16 @@ u32 fn_8048CB38(u8 *object) {
     return 1;
 }
 
-void fn_8048CBE0(u8 *object, u32 (*callback)(u8 *, u32), u32 data) {
+#pragma use_lmw_stmw off
+void *fn_8048CBE0(u8 *object, u32 (*callback)(u8 *, u32), u32 data) {
     u32 **list = (u32 **)(object + 8);
-    for (u32 *link = *list; link != (u32 *)list; link = (u32 *)*link) {
+    u32 *sentinel = (u32 *)list;
+    for (u32 *link = *list; link != sentinel; link = (u32 *)*link) {
         if (callback((u8 *)(link - 2), data) == 0) break;
     }
+    return object;
 }
+#pragma use_lmw_stmw reset
 
 u32 fn_8048CC54(u32 (*callback)(u8 *, u32), u32 data) {
     u32 *base = (u32 *)(lbl_805F15B4 + lbl_805F15D4);
