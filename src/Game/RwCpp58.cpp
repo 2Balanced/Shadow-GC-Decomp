@@ -57,7 +57,7 @@ void *fn_80489E74(u32, u32, void *, void *);
 u32 fn_80489F70(void *, u8, s32);
 void fn_80489B40(void *);
 void fn_80489BDC(void *);
-void fn_8048CA00(u32 *, s32);
+void *fn_8048CA00(u32 *, u32);
 void fn_8048D2C0(u32 *, u32);
 u32 fn_8048CD8C(u32 *);
 u32 fn_80496A20(u32 *, s8);

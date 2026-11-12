@@ -242,12 +242,15 @@ u32 fn_8048C9EC(void) {
     return *(u32 *)(lbl_805F15B4 + lbl_805F15D4 + 0x20);
 }
 
-void fn_8048CA00(u32 *object, s32 mode) {
-    if (mode == 0) {
-        object[0] = 0;
-    } else {
-        RW_API(void (*)(u32 *, s32), 0x68)(object, mode);
+void *fn_8048CA00(u32 *object, u32 mode) {
+    if (mode != 0) {
+        if (RW_API(s32 (*)(u32 *, u32, u32), 0x68)(object, mode, 0) != 0) {
+            return object;
+        }
+        return NULL;
     }
+    object[0] = 0;
+    return object;
 }
 
 void *fn_8048CA64(void) {
