@@ -261,6 +261,115 @@ void *fn_804615B4(u8 *object) {
     return object;
 }
 
+void *RwFrameGetLTM(void *);
+u32 fn_8047DC28(u32, ...);
+void fn_8047DB84(void *);
+
+/* Collect the tree nodes whose box the object's own box overlaps, appending every accepted
+ * leaf to the growth pool of the stream entry block: entry[0] = pool, entry[1] = capacity in
+ * nodes, entry[2] = collected count, entry[3] = tree. argument[3] == 2 selects the opposite
+ * child of a node whose box contains the query box. A leaf tests six planes; each transforms
+ * the node's 3x3 matrix at +0x48 with the plane record's three byte row selectors.
+ * NonMatching: MWCC runs the plane loop through CTR/BDNZ, spills the two box differences to
+ * the stack for their integer sign tests and selects the child with MFCTR/RLWINM on the CR0
+ * flag of the split compare; the retail frame is 0x170 bytes. */
+void *fn_80461658(void *argument, u8 *object) {
+    struct InsertLocals {
+        float bounds[9];
+        u32 *parents[64];
+    } locals;
+    u32 *entry = (u32 *)(object + lbl_805F1508);
+    float *matrix = (float *)RwFrameGetLTM(*(void **)(object + 4));
+    locals.bounds[0] = *(float *)(object + 0x10C);
+    locals.bounds[1] = *(float *)(object + 0x110);
+    locals.bounds[2] = *(float *)(object + 0x114);
+    locals.bounds[3] = *(float *)(object + 0x118);
+    locals.bounds[4] = *(float *)(object + 0x120 - 4);
+    locals.bounds[5] = *(float *)(object + 0x120);
+    locals.bounds[6] = matrix[0x30 / 4];
+    locals.bounds[7] = matrix[0x34 / 4];
+    locals.bounds[8] = matrix[0x38 / 4];
+    u32 inverted = ((s32)((u32 *)argument)[3] == 2);
+    u32 *current = (u32 *)((u32 *)entry[3])[7];
+    s32 depth = 0;
+    s32 count = 0;
+    u32 slot = 0;
+    for (;;) {
+        s32 axis = (s32)current[0];
+        if (axis < 0) {
+            const float *rows = (const float *)current + 0x48 / 4;
+            u32 failed;
+            for (u32 section = 0; section < 3; section++) {
+                const u8 *record = object + 0x94 + section * 0x28;
+                const float *plane = (const float *)record;
+                failed = (rows[record[0x11] * 3 + 1] * plane[1] +
+                          rows[record[0x10] * 3] * plane[0] +
+                          rows[record[0x12] * 3 + 2] * plane[2] - plane[3]) < 0.0f;
+                if (failed != 0) {
+                    break;
+                }
+                failed = (rows[record[0x25] * 3 + 1] * plane[6] +
+                          rows[record[0x24] * 3] * plane[5] +
+                          rows[record[0x26] * 3 + 2] * plane[7] - plane[8]) < 0.0f;
+                if (failed != 0) {
+                    break;
+                }
+            }
+            if (failed == 0) {
+                if (count >= (s32)entry[1]) {
+                    u32 size = (entry[1] + 50) * 4;
+                    u32 *grown;
+                    if (entry[0] == 0) {
+                        grown = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(
+                            size, 0x01030507);
+                    } else {
+                        grown = ((u32 *(*)(void *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
+                            (void *)entry[0], size, 0x01030507);
+                    }
+                    if (grown == NULL) {
+                        u32 args[2];
+                        args[0] = 2;
+                        args[1] = fn_8047DC28(0x80000013, size);
+                        fn_8047DB84(args);
+                        entry[2] = (u32)count;
+                        return argument;
+                    }
+                    entry[0] = (u32)grown;
+                    entry[1] = entry[1] + 50;
+                }
+                count++;
+                *(u32 *)((u8 *)entry[0] + slot) = (u32)current;
+                slot += 4;
+            }
+            current = locals.parents[depth];
+            depth--;
+        } else {
+            float upper = *(float *)((u8 *)locals.bounds + axis + 0x0C) - ((float *)current)[4];
+            if (upper < 0.0f &&
+                ((float *)current)[5] - *(float *)((u8 *)locals.bounds + axis) < 0.0f) {
+                if (inverted == (((float *)current)[1] <
+                                 *(float *)((u8 *)locals.bounds + axis + 0x18))) {
+                    depth++;
+                    locals.parents[depth] = (u32 *)current[3];
+                    current = (u32 *)current[3 - 1];
+                } else {
+                    depth++;
+                    locals.parents[depth] = (u32 *)current[2];
+                    current = (u32 *)current[3];
+                }
+            } else if (upper < 0.0f) {
+                current = (u32 *)current[2];
+            } else {
+                current = (u32 *)current[3];
+            }
+        }
+        if (depth < 0) {
+            entry[2] = (u32)count;
+            return argument;
+        }
+    }
+}
+
 u32 *fn_804566D0(u32);
 
 void fn_80460E74(u32 *tree, u8 *object) {
