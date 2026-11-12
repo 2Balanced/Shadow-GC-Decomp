@@ -96,17 +96,17 @@ u32 fn_80462184(u32 unused, u8 *object) {
     return 0;
 }
 
-void fn_8045C56C(u32, u32, u32);
+void fn_8045C56C(u32, u32, u32, u32);
 
 void fn_80461B60(u32 first, u32 second, u32 *third) {
-    fn_8045C56C(third[0x15], first, second + 0x20);
+    fn_8045C56C(third[0x15], (u32)third, first, second + 0x20);
 }
 
 void *fn_80461030(u8 *);
 void fn_804621C0(u32, u32);
 void fn_80462578(u32, u32);
 void fn_80462130(u32, u32);
-u32 fn_8045FEA0(void);
+u32 fn_8045FEA0(u32 *);
 
 void fn_8046112C(u8 *object) {
     u32 *target = (u32 *)(object + lbl_805F150C);
@@ -132,7 +132,7 @@ u32 fn_80461AD8(u32 first, u32 second) {
 }
 
 u32 fn_80461DE8(u32 *object) {
-    return fn_8045C9C8(object[0x1E], fn_8045FEA0());
+    return fn_8045C9C8(object[0x1E], fn_8045FEA0(object));
 }
 
 extern u32 lbl_805F1690;
@@ -157,7 +157,7 @@ void fn_80462734(u32 value) {
     *(u32 *)(lbl_805F15B4 + lbl_805F1690 + 0x3C) = value;
 }
 
-u32 fn_80460E74(void *, void *);
+void fn_80460E74(u32 *, u8 *);
 
 /* Validate object, release its linked nodes, then call fn_80460E74.
  * NonMatching: the unlink loop and calls match; retail uses four individual register saves and
@@ -188,7 +188,7 @@ void *fn_80461030(u8 *object) {
                 ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
                     *(u32 *)(lbl_805F15B4 + lbl_805F1518));
             }
-            fn_80460E74(result, object);
+            fn_80460E74((u32 *)result, object);
             return object;
         }
     }
@@ -260,4 +260,126 @@ void *fn_804615B4(u8 *object) {
     }
     return object;
 }
+
+u32 *fn_804566D0(u32);
+
+void fn_80460E74(u32 *tree, u8 *object) {
+    struct InsertLocals {
+        float upper[3];
+        float lower[3];
+        u32 *parents[64];
+    } locals;
+    float *matrix = (float *)fn_804566D0((u32)object);
+    locals.lower[0] = matrix[0] - matrix[3];
+    locals.lower[1] = matrix[1] - matrix[3];
+    locals.lower[2] = matrix[2] - matrix[3];
+    locals.upper[0] = matrix[0] + matrix[3];
+    locals.upper[1] = matrix[1] + matrix[3];
+    locals.upper[2] = matrix[2] + matrix[3];
+    u32 *current = (u32 *)tree[7];
+    s32 depth = 0;
+    while (depth >= 0) {
+        u32 kind = current[0];
+        if ((s32)kind < 0) {
+            u32 *created = ((u32 *(*)(void *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+                *(void **)(lbl_805F15B4 + lbl_805F1518), 0x507);
+            created[5] = (u32)current;
+            created[2] = (u32)object;
+            u32 *link = current + 14;
+            current = locals.parents[depth];
+            created[0] = link[0];
+            created[1] = (u32)link;
+            ((u32 *)link[0])[1] = (u32)created;
+            link[0] = (u32)created;
+            created[3] = ((u32 *)object)[0x19];
+            created[4] = (u32)(object + 0x64);
+            ((u32 *)created[3])[1] = (u32)(created + 3);
+            ((u32 *)object)[0x19] = (u32)(created + 3);
+        } else if (((float *)current)[4] > locals.lower[kind]) {
+            if (((float *)current)[5] < locals.upper[kind]) {
+                depth++;
+                locals.parents[depth] = (u32 *)current[3];
+            } else {
+                current = (u32 *)current[2];
+            }
+        } else if (((float *)current)[5] >= locals.upper[kind]) {
+            current = locals.parents[depth];
+            depth--;
+        } else {
+            current = (u32 *)current[3];
+        }
+    }
+}
+
+void fn_8046221C(void *, void *);
+
+void *fn_80461A00(u8 *object, void *entry) {
+    void *candidate = object + lbl_805F150C;
+    if (candidate != NULL && entry == *(void **)candidate) {
+        fn_8046221C(entry, object);
+    }
+    return object;
+}
+
+void fn_80462618(void *, void *);
+
+void *fn_80461A88(u8 *object, void *entry) {
+    void *candidate = object + lbl_805F1514;
+    if (candidate != NULL && entry == *(void **)candidate) {
+        fn_80462618(entry, object);
+    }
+    return object;
+}
+
+void *fn_80461B10(u8 *object, void *entry) {
+    void *candidate = object + lbl_805F1508;
+    if (candidate != NULL && entry == *(void **)((u8 *)candidate + 0x0C)) {
+        fn_80462184((u32)entry, object);
+    }
+    return object;
+}
+
+u32 *fn_8045C770(u8 *, u8 *, u32 *);
+
+#pragma use_lmw_stmw off
+void *fn_80461B94(void *stream, void *entry, u32 *object) {
+    object[0x15] = (u32)fn_8045C770((u8 *)stream, (u8 *)object, object + 8);
+    if (object[0x15] != 0) {
+        return stream;
+    }
+    return NULL;
+}
+
+u32 fn_80465180(void *, void *, void *);
+
+void *fn_80461C3C(void *stream, void *entry, void *object) {
+    if (fn_80465180(stream, object, object) != 0) {
+        return stream;
+    }
+    return NULL;
+}
+
+u32 fn_80465260(void *, void *, void *);
+
+void *fn_80461CC4(void *stream, void *entry, void *object) {
+    if (fn_80465260(stream, object, object) != 0) {
+        return stream;
+    }
+    return NULL;
+}
+
+void fn_80461D28(void *stream, void *entry, u32 *object) {
+    u32 value = fn_8045FEA0(object);
+    fn_8045C56C(object[0x1E], value, (u32)stream, value + 0x10);
+}
+
+void *fn_80461D7C(void *stream, void *entry, u32 *object) {
+    u32 value = fn_8045FEA0(object);
+    object[0x1E] = (u32)fn_8045C770((u8 *)stream, (u8 *)value, (u32 *)(value + 0x10));
+    if (object[0x1E] != 0) {
+        return stream;
+    }
+    return NULL;
+}
+#pragma use_lmw_stmw reset
 }
