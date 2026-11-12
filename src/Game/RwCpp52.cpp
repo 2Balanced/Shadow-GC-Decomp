@@ -421,7 +421,8 @@ void fn_8048D280(void *a, void *b, void *c, void *d, void *e) {
 }
 
 u32 fn_8048D2C0(void) {
-    return RW_API(u32 (*)(void), 0x2C)() != 0;
+    u32 value = ((u32 (*)(void))*(u32 *)(lbl_805F15B4 + lbl_805F15D4 + 0x2C))();
+    return ((u32)-value | value) >> 31;
 }
 
 void *fn_8048D300(void *object) {
