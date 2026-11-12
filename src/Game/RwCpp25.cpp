@@ -222,4 +222,42 @@ void *fn_80461168(u8 *object) {
     ((u32 *)object)[4] = callback[1];
     return object;
 }
+
+void fn_804622FC(void *, void *);
+
+void *fn_80461260(void *object, void *entry) {
+    void *resource = *(void **)((u8 *)entry + lbl_805F1510);
+    if (resource != NULL) {
+        fn_804622FC(resource, object);
+    }
+    return object;
+}
+
+void *fn_80461570(void *object, void *entry) {
+    void *resource = *(void **)((u8 *)entry + lbl_805F1514);
+    if (resource != NULL) {
+        fn_80462578((u32)resource, (u32)object);
+    }
+    return object;
+}
+
+void *fn_804615B4(u8 *object) {
+    u32 *sentinel = (u32 *)(object + 0x2C);
+    u32 *link = ((u32 **)object)[0x0B];
+    while (link != sentinel) {
+        u32 *node = link - 3;
+        link = (u32 *)*link;
+        u32 value = node[3];
+        *(u32 *)node[4] = value;
+        value = node[4];
+        *(u32 *)(node[3] + 4) = value;
+        value = node[0];
+        *(u32 *)node[1] = value;
+        value = node[1];
+        *(u32 *)(node[0] + 4) = value;
+        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x11C))(
+            *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 4));
+    }
+    return object;
+}
 }
