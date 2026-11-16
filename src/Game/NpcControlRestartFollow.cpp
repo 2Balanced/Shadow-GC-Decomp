@@ -7,10 +7,13 @@
  * File name from the RTTI name; function and member names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: every function body matches. The three macros below remove bad_weak_ptr and the
- * shared_ptr/base bodies and records, reducing our .text from 4648 to 3888 bytes against retail's
- * 3020. What remains is emission order: the constructor and the weak shared_ptr copies land in a
- * different order from retail's, so the flipped DOL's branch displacements differ. */
+ * The three macros below remove bad_weak_ptr and the shared_ptr/base bodies and records, reducing
+ * our .text from 4648 to 3888 bytes against retail's 3020 (the linker folds the rest). What made
+ * the unit link (wave 39): the destructor of shared_ptr<Npc>, which the macros had removed with the
+ * others, is this unit's and is defined between the control's constructor and destructor;
+ * IsBlocking takes a pointer to const, which lets GC/2.7 read the flags above the register save
+ * as retail does; and the task name is defined after GetFollowPoint, whose table of offsets
+ * precedes the name's string in .rodata. */
 #define BOOST_SP_EXTERN_BASE_DESTRUCTOR
 #define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
 #define BOOST_SP_NO_BAD_WEAK_PTR
@@ -25,6 +28,13 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
+
+/* The macros above leave shared_ptr's destructor to the units that have it; the one of
+ * shared_ptr<Npc> is this unit's (0x8006D930), defined below between the control's constructor
+ * and destructor, where the game has it. */
+namespace boost {
+template <> shared_ptr<Player::Npc::Npc>::~shared_ptr();
+} // namespace boost
 
 using boost::shared_ptr;
 using boost::weak_ptr;
@@ -64,7 +74,7 @@ struct UnkCollision_80021E24 {
     /* 0x0C */ u32 m_flags;
 };
 
-typedef bool (*UnkCollisionFilter)(UnkCollision_80021E24 *collision);
+typedef bool (*UnkCollisionFilter)(const UnkCollision_80021E24 *collision);
 
 extern "C" {
 /* NPC helpers (behaviour unknown; fn_80073908 returns a time or ratio the control waits on,
@@ -152,12 +162,10 @@ class NpcRestartFollow : public ControlBase {
 };
 SIZE_ASSERT(NpcRestartFollow, 0x1C);
 
-const char *NpcRestartFollow::s_taskName = "NpcRestartFollow";
-
 } // namespace
 
 /* Whether a line check stops at collision: not at players' or their partners' (name inferred). */
-static bool IsBlocking(UnkCollision_80021E24 *collision) {
+static bool IsBlocking(const UnkCollision_80021E24 *collision) {
     if (collision->m_flags & 0x40000) {
         return false;
     }
@@ -222,10 +230,20 @@ typedef Vec3f (*FollowPointFn)(const weak_ptr<PlayerBase> &self, int index);
 
 namespace {
 
+/* Defined here, after GetFollowPoint: the game has the name's string behind that function's table
+ * of offsets in .rodata. */
+const char *NpcRestartFollow::s_taskName = "NpcRestartFollow";
+
 NpcRestartFollow::NpcRestartFollow(const shared_ptr<PlayerBase> &player)
     : ControlBase(player, s_taskName, 4) {
     m_npc = boost::dynamic_pointer_cast<Npc>(m_player);
 }
+
+} // namespace
+
+template <> boost::shared_ptr<Npc>::~shared_ptr() {}
+
+namespace {
 
 NpcRestartFollow::~NpcRestartFollow() {}
 

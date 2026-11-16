@@ -43,6 +43,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <string.h>
+#include "Game/AttackHitList.h"
 #include "Game/TNumEdit.h"
 #include "Game/MathTypes.h"
 
@@ -397,8 +398,6 @@ boost::shared_ptr<CharaColliBase> fn_800C7C34(void *manager, boost::weak_ptr<Cha
                                               const Vec3f *rotation, int arg8);
 
 /* The list of attacks that hit the car (see Game/PlayerBarrierHeatEffect.cpp). */
-void fn_803555CC(void *list);
-void fn_80355478(void *list, int flag);
 bool fn_803553E8(void *list, const void *target);
 void fn_803552DC(void *list, const void *target);
 void fn_80355260(void *list, int count);
@@ -757,7 +756,7 @@ class TVehicleCarMove {
     /* 0x2A4 */ s32 m_motionWait;
     /* 0x2A8 */ Target m_target;
     /* 0x2C4 */ boost::shared_ptr<CollisionEffect> m_effects[4];
-    /* 0x2E4 */ u8 m_hits[0xC];
+    /* 0x2E4 */ UnkAttackHitList_803555CC m_hits; /* the attacks that hit recently (Game/AttackHitList.h) */
 };
 SIZE_ASSERT(TVehicleCarMove, 0x2F0);
 
@@ -788,7 +787,6 @@ struct CarAttackParam {
 void TVehicleCarMove::Initialize(int kind) {}
 
 TVehicleCarMove::TVehicleCarMove(TVehicleCar *car, int type) : m_type(type), m_car(car) {
-    fn_803555CC(m_hits);
     memset(m_states, 0, sizeof(m_states));
     memset(&m_drive, 0, sizeof(m_drive));
     m_motionWait = 0;
@@ -797,7 +795,6 @@ TVehicleCarMove::TVehicleCarMove(TVehicleCar *car, int type) : m_type(type), m_c
 
 TVehicleCarMove::~TVehicleCarMove() {
     ReleaseAttack();
-    fn_80355478(m_hits, -1);
 }
 
 void TVehicleCarMove::Start() {
@@ -1764,10 +1761,10 @@ void TVehicleCarMove::OnDamaged(AttackCallbackParam &param) {
 
 void TVehicleCarMove::OnAttackHit(AttackCallbackParam &param) {
     if (!fn_80053538(reinterpret_cast<boost::weak_ptr<CharaColliAttack> *>(param.field_0x8))) {
-        if (fn_803553E8(m_hits, param.field_0x8)) {
+        if (fn_803553E8(&m_hits, param.field_0x8)) {
             CarParam_(param).m_ignored = 1;
         }
-        fn_803552DC(m_hits, param.field_0x8);
+        fn_803552DC(&m_hits, param.field_0x8);
         if (CarParam_(param).m_ignored) {
             return;
         }
@@ -1806,8 +1803,8 @@ void TVehicleCarMove::UpdateStuck(float dt) {
 
 void TVehicleCarMove::BeginFrame() {
     m_states[1] = m_states[0];
-    fn_80355260(m_hits, 1);
-    fn_8035511C(m_hits);
+    fn_80355260(&m_hits, 1);
+    fn_8035511C(&m_hits);
 }
 
 void TVehicleCarMove::UpdateGround() {

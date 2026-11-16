@@ -10,7 +10,12 @@
  * fn_80334480 of Game/VehiclePathMove.cpp; GC/2.7 does that with a const object parameter, so the
  * four are declared that way here (callers in other units may declare them either way). fn_8009339C
  * (89%) keeps the player pointer in r31 and reaches the tilt quaternion through a copy of it in
- * r4; GC/2.7 allocates the registers differently. */
+ * r4; GC/2.7 allocates the registers differently. Retail makes that copy once per statement where
+ * the statement uses the pointer twice (mr r4,r31 before the dot product and before the slerp, after
+ * which r31 is reused for the tilt's address), as if each statement read the pointer through
+ * something that returns it. Tried in wave 39 without effect: inline helpers for the dot product
+ * and the slerp (pointer and named-local forms), an inline function that returns its argument, a
+ * cast through the address of the member at offset 0. */
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
 #include "Game/Player.h"

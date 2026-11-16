@@ -7,11 +7,12 @@
  * Method names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * Not yet matching (36/37 functions; all data matches, and the DOL differs only there): in
- * IsBlocking retail loads hit->m_collider before zeroing info ("lwz r3,8(r3); li r31,0"); GC/2.7
- * (and 3.0a3/3.0a5 on the preprocessed unit) emit the two in the other order for every source
- * shape tried (declaration orders, an inline accessor or AsCharInfoColli, a void* or reference
- * parameter, if/else, ternary, goto, comma expressions, optimisation pragmas). */
+ * In IsBlocking retail loads hit->m_collider before zeroing info ("lwz r3,8(r3); li r31,0"). GC/2.7
+ * emits the two in the other order for every shape of the body (declaration orders, an inline
+ * accessor, a void* or reference parameter, if/else, ternary, goto, comma expressions,
+ * optimisation pragmas); what gives retail's order is a parameter that points to const (wave 39),
+ * which lets the load of a member move up, as in Game/PlayerUtil.cpp and
+ * Game/NpcControlRestartFollow.cpp. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -143,7 +144,7 @@ void fn_804103E8(Vec3f *position, Vec3f *velocity,
 /* Moves position from previous towards where velocity takes it, stopping at the colliders filter
  * accepts (behaviour inferred from its body; user is handed to the filter). */
 bool fn_8026EE9C(Vec3f *position, const Vec3f *previous, Vec3f *velocity,
-                 bool (*filter)(UnkSweepHit_8026EE9C *hit), void *user, float radius);
+                 bool (*filter)(const UnkSweepHit_8026EE9C *hit), void *user, float radius);
 /* The character a character collider belongs to (behaviour inferred). */
 boost::weak_ptr<CharInfo> fn_800586EC(CharaColliBaseCharInfo *collider);
 /* Vector helpers (behaviour inferred from their bodies; see Meteor.cpp). */
@@ -342,7 +343,7 @@ bool ElecSecurityCode::Tick(float dt) {
 /* The sweep filter of Move: true for the colliders a code stops at, which are those of the other
  * characters that are not players (name inferred; the meanings of the flag and of the kinds 1, 2
  * and 6 are unknown). */
-static bool IsBlocking(UnkSweepHit_8026EE9C *hit) {
+static bool IsBlocking(const UnkSweepHit_8026EE9C *hit) {
     CharaColliBase *base = hit->m_collider;
     CharInfo *info = 0;
 

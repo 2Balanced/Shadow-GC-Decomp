@@ -79,10 +79,17 @@ TGiHissatu::TGiHissatu(Task *parent) : Task(parent) {
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&TGiHissatu::Draw, this, _1));
 }
 
-TGiHissatu::~TGiHissatu() {
+/* The destructor's loop, as an inline function: only then does GC/2.7 copy the loop's zero into
+ * the offset register (mr r31,r30), as retail does, instead of loading it again (name inferred;
+ * the same holds for Game/TGiHdGage.cpp). */
+inline void ReleaseSides(TGiHissatu *hissatu) {
     for (int i = 0; i < 2; i++) {
-        fn_8003E490(m_sides[i].m_csd);
+        fn_8003E490(hissatu->m_sides[i].m_csd);
     }
+}
+
+TGiHissatu::~TGiHissatu() {
+    ReleaseSides(this);
 }
 
 void TGiHissatu::Tick(float dt) {

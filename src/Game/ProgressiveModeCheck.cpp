@@ -214,11 +214,11 @@ static BOOL GetPadState(UnkPadState_8040DD24 *state) {
     return found;
 }
 
-/* Asks for progressive mode if the display supports it (name inferred). NonMatching: everything
- * matches up to the call of Run; after it retail checks the dialog for null again before deleting it
- * and stores s_progressive with two branches, while GC/2.7 drops the second check (the dialog is
- * known to be non-null there) and stores (progressive != 0) without branches. Neither a second
- * explicit check, inline helpers for the delete or the store, a ternary nor auto_ptr changes that. */
+/* Asks for progressive mode if the display supports it (name inferred). After the call of Run
+ * retail checks the dialog for null again before deleting it, and stores s_progressive with two
+ * branches. GC/2.7 keeps the second check only for a "safe delete" inside the first check's block
+ * (test, delete, clear the pointer), and keeps the two stores apart only when the first one
+ * returns; an if/else there becomes a branchless (progressive != 0). */
 extern "C" void fn_80332E7C(UnkVideoSetup_80332E7C *setup) {
     if (fn_8037F358() == 0) {
         return;
@@ -252,13 +252,16 @@ extern "C" void fn_80332E7C(UnkVideoSetup_80332E7C *setup) {
     UnkProgressiveDialog_80332BEC *dialog = new UnkProgressiveDialog_80332BEC(setup, skip);
     if (dialog != 0) {
         progressive = dialog->Run();
+        if (dialog != 0) {
+            delete dialog;
+            dialog = 0;
+        }
     }
-    delete dialog;
     if (progressive) {
         s_progressive = 1;
-    } else {
-        s_progressive = 0;
+        return;
     }
+    s_progressive = 0;
 }
 
 BOOL UnkProgressiveDialog_80332BEC::Run() {

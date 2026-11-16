@@ -5,17 +5,16 @@
  * Names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: the unit does not even link: retail's unit holds one virtual function of its own
- * that this source never defines, vfAI_0x28__13BkWingLargeAIFv (0x801815BC, 0x84), and both of the
- * vtables that name it, Game/BkWingLarge.o's and EnemyTemplate<BkWingLargeBase, BkWingLargeAI>'s,
- * reference it, so the relink stops at "undefined: 'BkWingLargeAI::vfAI_0x28()'". Its .bss matches
- * retail's at 72 bytes; .sbss is 80 where retail's is 72, the extra pair being the guard of
- * EnemyStatFunc's inline vfStat_0xA8, which retail materialises in Game/EggPawn.o. The three
+ * The message handler, slot 0x28, is defined under the slot's argument-less symbol
+ * (vfAI_0x28__13BkWingLargeAIFv, 0x801815BC), which the vtables of Game/BkWingLarge.cpp name; as it
+ * is then no member definition, Game/BkWingLarge.h declares vfAI_0x3C before it, so that this
+ * unit still gets the class's vtable (wave 39). .sbss is 80 bytes where retail's is 72 (the guard
+ * of EnemyStatFunc's inline vfStat_0xA8, which retail materialises in Game/EggPawn.o), and three
  * helpers retail imports are also emitted here (EnemyStatFunc's vfStat_0x20 and vfStat_0x2C, which
- * retail defines in Game/EggPawnAI.o, and the shared_ptr<EnemyRender> destructor). */
+ * retail defines in Game/EggPawnAI.o, and the shared_ptr<EnemyRender> destructor); the linker
+ * folds them, and the unit links byte-identically. */
 /* See FlyerCommonAI (Game/EnemyFlyer.h) and EnemyBaseAI (Game/EnemyAI.h). */
 #define FLYER_COMMON_AI_STATES
-#define ENEMY_AI_MESSAGE_ARG
 #define ENEMY_BASE_AI_HELPERS
 
 #include "Game/BkWingLarge.h"
@@ -168,16 +167,23 @@ BkWingLargeAI::BkWingLargeAI() {
     m_body = dynamic_cast<BkWingLargeBase *>(m_enemy->m_disp);
 }
 
-void BkWingLargeAI::vfAI_0x28(UnkEnemyMessage_8019DC9C *message) {
+/* Slot 0x28, the handler of the messages sent to the enemy. It takes the message, which
+ * Game/EnemyAI.h does not declare without ENEMY_AI_MESSAGE_ARG (that macro gives the slot another
+ * symbol, and the vtables of Game/BkWingLarge.cpp name this one), so it is defined under the
+ * slot's symbol, as Game/BkChaosAI.cpp and Game/EggShadowAndroidAI.cpp do: message 0x14, the vacuum
+ * gun, makes the wing resist unless its body lets itself be taken. */
+extern "C" void vfAI_0x28__11EnemyBaseAIFv(EnemyBaseAI *ai, UnkEnemyMessage_8019DC9C *message);
+
+extern "C" void vfAI_0x28__13BkWingLargeAIFv(BkWingLargeAI *ai, UnkEnemyMessage_8019DC9C *message) {
     switch (message->m_id) {
     case 0x14:
-        if (!m_body->vf_0x238()) {
-            ChangeState(GetResistVacuumState());
+        if (!ai->m_body->vf_0x238()) {
+            ai->ChangeState(GetResistVacuumState());
             message->m_flags |= 2;
             break;
         }
     default:
-        EnemyBaseAI::vfAI_0x28(message);
+        vfAI_0x28__11EnemyBaseAIFv(ai, message);
         break;
     }
 }

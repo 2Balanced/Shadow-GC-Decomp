@@ -8,14 +8,17 @@
  * other names are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * NonMatching (53 of 54 functions match; every data section matches in objdiff):
+ * Matching since wave 39. What it took:
  * - list<void *>::insert (0x8001E528) is the list's real template instance, so it and its deleter
  *   temporary, string and RTTI come out in the game's order. Its storage accessors are the list's
  *   members, which the game calls out of line: Game/PathData.cpp has sz and node_alloc under C
  *   names that other units call (fn_8001BDE8, fn_8001BDEC), so those two are written here as
  *   inline specializations that call them; alloc is the real member (0x8001BDF4).
  * - fn_8001DB08: the game loads source->m_count ahead of the register saves and copies the path's
- *   header through two registers; GC/2.7 does neither for any source shape tried (95.5%).
+ *   header through two registers. GC/2.7 does both when source is a pointer to const (wave 39):
+ *   the load can then move above the saves, and the header is copied as one block.
+ * - The order of the RTTI records and their name strings (.sdata, .rodata): see
+ *   PathControlBlockType below.
  * Two functions the game's linker dropped are written to reproduce the order of the shared code
  * that follows them (UnkPathManagerUnused_8001C4F8, UpdatePathLinks). */
 #define PATHDATA_CODE
@@ -191,10 +194,13 @@ namespace PtrListEnd {
 extern "C" PtrListIterator fn_8001B674(PtrList *list);
 }
 
+/* The deleter's type, defined further down (see there). */
+inline const std::type_info &PathDeleterType();
+
 /* The path's control block's virtual functions (see above). */
 void *boost::detail::sp_counted_base_impl<PathData *, boost::checked_deleter<PathData> >::get_deleter(
     std::type_info const &ti) {
-    return ti == typeid(boost::checked_deleter<PathData>) ? &del : 0;
+    return ti == PathDeleterType() ? &del : 0;
 }
 
 void boost::detail::sp_counted_base_impl<PathData *, boost::checked_deleter<PathData> >::dispose() {
@@ -449,9 +455,24 @@ extern "C" inline Vec3f *fn_8001DFCC(Vec3f *v, const Vec3f *from) {
     return v;
 }
 
+/* The order of the unit's RTTI data. The game has the control block's record, its base's and
+ * their name strings before the deleter's, and all of them after the zero vector of fn_8001DFE8
+ * above: what a control block left to boost's template gives, whose get_deleter is instantiated at
+ * the end of the unit. Here the control block's virtual functions are defined early (so that they
+ * are emitted where the game has them), which would name the deleter's type first; so get_deleter
+ * takes it from PathDeleterType, defined here, after PathControlBlockType, which nothing calls,
+ * has named the control block's. */
+inline const std::type_info &PathControlBlockType() {
+    return typeid(boost::detail::sp_counted_base_impl<PathData *, boost::checked_deleter<PathData> >);
+}
+
+inline const std::type_info &PathDeleterType() {
+    return typeid(boost::checked_deleter<PathData>);
+}
+
 /* Adds a copy of a path placed at position, turned by rotation (in the axis order given) and to the
- * axes given. NonMatching: see the top of the file. */
-extern "C" void fn_8001DB08(UnkPathManager_8001B494 *manager, PathPoints *source, const Vec3f *position,
+ * axes given. source is a pointer to const: see the top of the file. */
+extern "C" void fn_8001DB08(UnkPathManager_8001B494 *manager, const PathPoints *source, const Vec3f *position,
                             Vec3f rotation, int order, PathCtrl *path, const UnkVecPair_8001C4B8 *axes) {
     Mtx34f turn;
     Mtx34f flip;

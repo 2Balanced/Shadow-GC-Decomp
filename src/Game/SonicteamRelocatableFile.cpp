@@ -8,10 +8,12 @@
  * The file, class and member names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 2 of 4 functions match. In the constructor GC/2.7 picks other volatile registers
- * for the two table sizes (10 rows of 127); in fn_8040E4BC retail schedules the copy of name after
- * the first load (1 row of 48). Both survived about 15 spellings each (local order, separate
- * declarations and assignments, the sizes as locals or an array, member and free functions). */
+ * NonMatching: 3 of 4 functions match. In the constructor GC/2.7 picks other volatile registers
+ * for the two table sizes (10 rows of 127), which survived about 20 spellings (local order,
+ * separate declarations and assignments, the sizes as locals or an array, member and free
+ * functions, shifts, sizeof). fn_8040E4BC matches since wave 39: its file is a pointer to const,
+ * which lets the first load move above the copy of name, and it reads the byte order from the
+ * file in the loop instead of keeping it in a local. */
 #include <dolphin/types.h>
 #include "size_assert.h"
 
@@ -56,7 +58,7 @@ SIZE_ASSERT(UnkPath_8040E61C, 0x28);
 
 extern "C" {
 void fn_8040E818(u8 *data, const void *stream, u32 size, bool bigEndian);
-void *fn_8040E4BC(UnkPath_8040E61C *file, const char *name);
+void *fn_8040E4BC(const UnkPath_8040E61C *file, const char *name);
 }
 
 /* Applies a packed relocation stream to data: each code skips a number of words (in one, two or
@@ -150,17 +152,15 @@ UnkPath_8040E61C::~UnkPath_8040E61C() {
 }
 
 /* The data of the entry called name, or 0 (name inferred). */
-void *fn_8040E4BC(UnkPath_8040E61C *file, const char *name) {
-    u8 bigEndian;
+void *fn_8040E4BC(const UnkPath_8040E61C *file, const char *name) {
     char *names;
     UnkRelocatableEntry_8040E4BC *entry;
     u32 count;
     entry = file->m_entries;
     count = file->m_entryCount;
     names = file->m_names;
-    bigEndian = file->m_bigEndian;
     while (count != 0) {
-        if (strcmp(name, names + FileWord(entry->m_name, bigEndian)) == 0) {
+        if (strcmp(name, names + FileWord(entry->m_name, file->m_bigEndian)) == 0) {
             return file->m_data + FileWord(entry->m_offset, file->m_bigEndian);
         }
         count--;

@@ -7,6 +7,7 @@
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
+#include "Game/AttackHitList.h"
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/CharaColliAttack.h"
@@ -52,8 +53,6 @@ bool fn_80053538(const void *target);
 /* The hit list (class unknown, 0x10 bytes): constructor and destructor, whether it holds target,
  * counting target in, ageing the entries by count and dropping the stale ones (behaviour inferred
  * from their bodies). */
-void *fn_803555CC(void *list);
-void fn_80355478(void *list, int);
 bool fn_803553E8(void *list, const void *target);
 void fn_803552DC(void *list, const void *target);
 void fn_80355260(void *list, int count);
@@ -86,13 +85,13 @@ class HeatEffect : public Task {
     /* 0x28 */ boost::shared_ptr<Player::PlayerBase> m_player;
     /* 0x30 */ boost::shared_ptr<CharaColliBase> m_collider;
     /* 0x38 */ boost::weak_ptr<CharaColliAttack> m_attack;
-    /* 0x40 */ u8 m_hits[0x10]; /* the hit list (see fn_803555CC) */
+    /* 0x40 */ UnkAttackHitList_803555CC m_hits; /* the attacks that hit recently (Game/AttackHitList.h) */
+    /* 0x4C */ u32 field_0x4C;
 };
 SIZE_ASSERT(HeatEffect, 0x50);
 
 HeatEffect::HeatEffect(Task *parent, Player::BarrierImpl *barrier)
     : Task(parent), m_player(barrier->m_player) {
-    fn_803555CC(m_hits);
     m_name = "HeatEffect";
     Setup();
     fn_80076CA8(m_player->m_stateBits, 0x21);
@@ -101,21 +100,20 @@ HeatEffect::HeatEffect(Task *parent, Player::BarrierImpl *barrier)
 HeatEffect::~HeatEffect() {
     fn_80076CC8(m_player->m_stateBits, 0x21);
     RemoveCollider();
-    fn_80355478(m_hits, -1);
 }
 
 void HeatEffect::Tick(float dt) {
     UpdatePosition();
-    fn_80355260(m_hits, 1);
-    fn_8035511C(m_hits);
+    fn_80355260(&m_hits, 1);
+    fn_8035511C(&m_hits);
 }
 
 void HeatEffect::OnAttack(AttackCallbackParam &param) {
     if (!fn_80053538(param.field_0x8)) {
-        if (fn_803553E8(m_hits, param.field_0x8)) {
+        if (fn_803553E8(&m_hits, param.field_0x8)) {
             param.field_0x8[0x30 - 0x8] = 1;
         }
-        fn_803552DC(m_hits, param.field_0x8);
+        fn_803552DC(&m_hits, param.field_0x8);
     }
 }
 

@@ -538,12 +538,14 @@ inline void AddJoint(UnkJointList_80016BB4 *list, const boost::weak_ptr<PathData
     list->push_back(joint);
 }
 
-/* NonMatching: the game copies the bounds through the vector's out-of-line copy constructor
- * (fn_800091EC), reading the path through an inlined operator-> for each; with the inline copy
- * constructor of Fn8040CopyVector3, GC/2.7 calls operator-> out of line instead (its result feeds an
- * inline call), and no source form found reloads the path pointer as the game does. */
-UnkPathLink_80017DBC::UnkPathLink_80017DBC(const PathPtr &path)
-    : m_length(path->m_points->m_length), m_max(path->m_max), m_min(path->m_min), m_first(path),
+/* The game copies the bounds through the vector's out-of-line copy constructor (fn_800091EC) and
+ * reads the path's pointer again for each. Two things give that (wave 39): the path is passed by
+ * value, as Join's are (through a reference to const GC/2.7 keeps the pointer in a register, and
+ * reads it above the copy of this); and the bounds read the pointer itself, because operator-> is
+ * called out of line where its result feeds an inline call (Fn8040CopyVector3's copy
+ * constructor). */
+UnkPathLink_80017DBC::UnkPathLink_80017DBC(PathPtr path)
+    : m_length(path->m_points->m_length), m_max(path.px->m_max), m_min(path.px->m_min), m_first(path),
       m_last(path) {
     m_branched = false;
     path->m_link = this;
@@ -623,8 +625,10 @@ bool UnkPathLink_80017DBC::Connect(PathPtr path) {
 
 /* Joins path to other (at other's start or end; flip when the paths run against each other):
  * adds the joints, then takes in path's link, or path itself, and widens the bounds.
- * NonMatching: in the three tests of the largest coordinates the game holds the link's value in
- * f1 and the path's in f0; GC/2.7 swaps them (every other instruction matches). */
+ * In the three tests of the largest coordinates the game holds the link's value in f1 and the
+ * path's in f0. GC/2.7 gives that when the value stored is not spelled like the value compared
+ * (here it reads the pointer itself, the comparison goes through operator->); spelled alike, the
+ * two share one node and the registers come out swapped (wave 39). */
 void UnkPathLink_80017DBC::Join(PathPtr other, PathPtr path, bool atStart, bool flip) {
     if (atStart) {
         if (fn_80016A34(&other->m_startJoints) != 0) {
@@ -715,13 +719,13 @@ void UnkPathLink_80017DBC::Join(PathPtr other, PathPtr path, bool atStart, bool 
         m_min.z = path->m_min.z;
     }
     if (m_max.x < path->m_max.x) {
-        m_max.x = path->m_max.x;
+        m_max.x = path.px->m_max.x;
     }
     if (m_max.y < path->m_max.y) {
-        m_max.y = path->m_max.y;
+        m_max.y = path.px->m_max.y;
     }
     if (m_max.z < path->m_max.z) {
-        m_max.z = path->m_max.z;
+        m_max.z = path.px->m_max.z;
     }
 }
 
@@ -936,10 +940,11 @@ void *UnkPathLink_80017DBC::operator new(size_t size) {
 
 /* NonMatching: the game loads both flag words before storing them (into r4 and r0); GC/2.7 loads
  * and stores them one after the other. */
-PathData::PathData(PathPoints *points, bool ownsPoints)
+PathData::PathData(const PathPoints *points, bool ownsPoints)
     : m_flags(points->m_flags), field_0x4(points->field_0x1C),
       m_max(ret::fn_800169F8(&points->m_max)), m_min(ret::fn_800169F8(&points->m_min)),
-      m_points(points), m_link(0), m_ownsPoints(ownsPoints), field_0x51(0), field_0x52(0) {}
+      m_points(const_cast<PathPoints *>(points)), m_link(0), m_ownsPoints(ownsPoints), field_0x51(0),
+      field_0x52(0) {}
 
 /* The path's destructor (a C function for the reason given at fn_8001B280). */
 extern "C" PathData *fn_8001977C(PathData *data, short flag) {

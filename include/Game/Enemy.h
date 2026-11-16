@@ -213,15 +213,13 @@ class EnemyStatFunc {
     virtual void vfStat_0x84(int kind) {}
     virtual void vfStat_0x88(u32 value) {}
     virtual void vfStat_0x8C(bool value) {}
-#ifdef ENEMY_STAT_0x90_ARG
-    /* The slot takes a flag (BkWormAI passes 0 or 1). Behind a macro because the symbols of this
-     * slot carry the argument-less signature; only units that need the argument define it. */
-    virtual void vfStat_0x90(bool value) {}
-#elif defined(ENEMY_STAT_SLOT_ARGS)
-    /* The same, declared only (see ENEMY_STAT_SLOT_ARGS below). */
+    /* The slot takes a flag: every caller passes 0 or 1, and the weak instance all units share
+     * (0x8018283C) lies in Game/BkWormAI.cpp, whose calls pass it. */
+#if defined(ENEMY_STAT_SLOT_ARGS) && !defined(ENEMY_STAT_0x90_ARG)
+    /* Declared only (see ENEMY_STAT_SLOT_ARGS below). */
     virtual void vfStat_0x90(bool value);
 #else
-    virtual void vfStat_0x90() {}
+    virtual void vfStat_0x90(bool value) {}
 #endif
     virtual void vfStat_0x94(int flags) {}
 #ifdef ENEMY_STAT_SLOT_ARGS
@@ -797,11 +795,7 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x88(u32 value);         /* 0x8017B7B4 */
     virtual void vfStat_0x7C(bool arg0, bool arg1); /* 0x8017B7D8 */
     virtual void vfStat_0x8C(bool value);        /* 0x8017B7FC */
-#if defined(ENEMY_STAT_0x90_ARG) || defined(ENEMY_STAT_SLOT_ARGS)
     virtual void vfStat_0x90(bool value);        /* 0x801A7F64 */
-#else
-    virtual void vfStat_0x90();                  /* 0x801A7F64 */
-#endif
     virtual void vfStat_0x94(int flags);         /* 0x801A8608 */
 #ifdef ENEMY_STAT_SLOT_ARGS
     virtual void vfStat_0x98(const boost::shared_ptr<CharInfo> &attacker); /* 0x801A85B4 */

@@ -157,7 +157,7 @@ typedef std::list<boost::shared_ptr<PathData> > PathList;
  * the link in the middle of another one, and the name of its first path. */
 struct UnkPathLink_80017DBC {
 #ifdef PATHDATA_CODE
-    UnkPathLink_80017DBC(const boost::shared_ptr<PathData> &path);
+    UnkPathLink_80017DBC(boost::shared_ptr<PathData> path);
     static void *operator new(size_t size);
 
     void Join(boost::shared_ptr<PathData> other, boost::shared_ptr<PathData> path, bool atStart,
@@ -193,7 +193,7 @@ struct UnkPathLink_80017DBC {
 class PathData {
   public:
 #ifdef PATHDATA_CODE
-    PathData(PathPoints *points, bool ownsPoints);
+    PathData(const PathPoints *points, bool ownsPoints);
     static void *operator new(size_t size);
 
     void UpdateDistances();

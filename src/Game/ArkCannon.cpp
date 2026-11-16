@@ -25,6 +25,7 @@
 #include "Game/Player.h"
 #include "Game/MathConstants.h"
 #include "Game/UnkTargetList_80224850.h"
+#include "Game/WeaponBullet.h"
 #include "Game/WeaponLockonTarget.h"
 #include "Game/FileQueue.h"
 #include "boost/bind.hpp"
@@ -79,42 +80,12 @@ struct UnkDebrisParam_8015F0B8 {
 };
 SIZE_ASSERT(UnkDebrisParam_8015F0B8, 0x5C);
 
-/* The launch parameters of a shot (class name unknown; layout from its constructor at 0x80051D10
- * and destructor at 0x8005C410; names inferred). */
-struct UnkBulletParam_80051D10;
-
-extern "C" {
-UnkBulletParam_80051D10 *fn_80051D10(UnkBulletParam_80051D10 *param,
-                                     const boost::weak_ptr<CharInfo> &owner,
-                                     const boost::shared_ptr<Weapon::LockonTarget> &lockon, int arg3,
-                                     const Mtx34f *muzzle, const Vec3f *velocity);
-UnkBulletParam_80051D10 *fn_8005C410(UnkBulletParam_80051D10 *param, short deleteFlag);
-}
-
-struct UnkBulletParam_80051D10 {
-    UnkBulletParam_80051D10() {}
-    UnkBulletParam_80051D10(const boost::weak_ptr<CharInfo> &owner,
-                            const boost::shared_ptr<Weapon::LockonTarget> &lockon, int arg3,
-                            const Mtx34f *muzzle, const Vec3f *velocity) {
-        fn_80051D10(this, owner, lockon, arg3, muzzle, velocity);
-    }
-    ~UnkBulletParam_80051D10() {
-        fn_8005C410(this, -1);
-    }
-
-    /* The constructor and destructor are the out-of-line functions above, so the members (a
-     * weak_ptr<CharInfo> owner, a shared_ptr<Weapon::LockonTarget>, the position, direction and
-     * velocity at 0x10, 0x1C and 0x28, and the integer argument at 0x34) are left as bytes. */
-    /* 0x00 */ u8 field_0x0[0x4C];
-};
-SIZE_ASSERT(UnkBulletParam_80051D10, 0x4C);
-
 /* A kind of shot (struct name unknown; the records lie in .data around 0x8051DD14): the function at
  * 0x8 fires one (names inferred). */
 struct UnkBulletType_8051DDC8 {
     /* 0x00 */ u32 field_0x0;
     /* 0x04 */ u32 field_0x4;
-    /* 0x08 */ void (*fire)(UnkBulletParam_80051D10 *param);
+    /* 0x08 */ void (*fire)(Weapon::ShotInfo *param);
     /* 0x0C */ u32 field_0xC;
     /* 0x10 */ float field_0x10;
 };
@@ -524,7 +495,7 @@ void ArkCannon::Fire(u32 index, boost::shared_ptr<CharInfo> enemy) {
         if (GetPlayerTarget(player.get()) != 0) {
             lockon->SetTarget(fn_80206574(GetPlayerTarget(player.get())));
             lockon->fn_80060F70();
-            UnkBulletParam_80051D10 param(m_chara, lockon, 1, &muzzle, &lbl_805E07A0);
+            Weapon::ShotInfo param(m_chara, lockon, 1, &muzzle, lbl_805E07A0);
             UnkBulletType_8051DDC8 *type = &lbl_8051DDC8;
             type->fire(&param);
         }

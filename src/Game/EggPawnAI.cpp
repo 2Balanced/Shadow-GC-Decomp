@@ -6,6 +6,8 @@
  * (deferred inlining emits functions last-defined first). */
 /* See EnemyBaseAI (Game/EnemyAI.h). */
 #define ENEMY_BASE_AI_STATES
+/* The six unknown statics of the unit's .bss (see Game/EnemyWalkerAI.h). */
+#define ENEMY_WALKER_AI_UNKNOWN_STATICS
 
 #include "Game/EggPawn.h"
 #include "Game/EnemyAIState.h"

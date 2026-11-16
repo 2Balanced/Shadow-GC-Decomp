@@ -182,7 +182,7 @@ class EnemyStatFuncCalls {
     virtual void vfStat_0x84();
     virtual void vfStat_0x88();
     virtual void vfStat_0x8C();
-    virtual void vfStat_0x90();
+    virtual void vfStat_0x90(bool on);
     virtual void vfStat_0x94();
     virtual void vfStat_0x98(const boost::shared_ptr<CharInfo> &attacker);
 };
@@ -699,12 +699,12 @@ void EnemyStatusCommon::vfStat_0x38() {
 }
 
 /* Slot 0x90 switches the targets on or off; it takes the switch (see slot 0x10). */
-extern "C" void vfStat_0x90__17EnemyStatusCommonFv(EnemyStatusCommon *status, bool on) {
-    if (status->m_target.get() != 0) {
+void EnemyStatusCommon::vfStat_0x90(bool on) {
+    if (m_target.get() != 0) {
         if (on) {
-            status->m_target->TurnOn();
+            m_target->TurnOn();
         } else {
-            status->m_target->TurnOff();
+            m_target->TurnOff();
         }
     }
 }

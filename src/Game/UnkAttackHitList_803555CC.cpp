@@ -7,7 +7,8 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first); the list's members defined out of line come out at the end of the unit.
  *
- * NonMatching (47/48 functions, every section 100% but .text): fn_803555CC, see there. */
+ * The list is a class of its own (Game/AttackHitList.h) since wave 39: its constructor was the
+ * one function that did not match while it was an extern "C" wrapper (see there). */
 #include "Game/AttackIgnoreList.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -29,8 +30,11 @@ struct UnkAttackHit_803556FC {
 };
 SIZE_ASSERT(UnkAttackHit_803556FC, 0xC);
 
-typedef std::list<UnkAttackHit_803556FC> UnkAttackHitList_803555CC;
-SIZE_ASSERT(UnkAttackHitList_803555CC, 0xC);
+/* The list class itself (Game/AttackHitList.h), with its member. */
+#define ATTACK_HIT_LIST_MEMBERS
+#include "Game/AttackHitList.h"
+
+typedef std::list<UnkAttackHit_803556FC> HitList;
 
 UnkAttackHit_803556FC::UnkAttackHit_803556FC(const boost::weak_ptr<CharaColliAttack> &attack, int frames)
     : m_attack(attack), m_frames(frames) {}
@@ -41,31 +45,16 @@ bool UnkAttackHit_803556FC::Is(const boost::weak_ptr<CharaColliAttack> &attack) 
     return m_attack.lock() == attack.lock();
 }
 
-/* Constructs and destroys a list. NonMatching: the game constructs the list without a null check
- * (as a constructor of a class holding it would), which a placement new always has under GC/2.7;
- * other units call this by its extern "C" name, so it cannot be that constructor. Twelve retail
- * objects reference that name (twelve `to_03_*' units, Game/PlayerBarrierHeatEffect.cpp,
- * Game/TVehicleCarMove.cpp and Game/VehicleWalker.cpp), so the wrapper has to keep it, and the
- * constructor it calls (0x803555FC) cannot be declared by name either: its symbol is
- * `__ct__Q23std29list<21UnkAttackHit_803556FC>Fv', which is not an identifier. */
-extern "C" UnkAttackHitList_803555CC *fn_803555CC(UnkAttackHitList_803555CC *hits) {
-    new (hits) UnkAttackHitList_803555CC;
-    return hits;
-}
+/* The list's constructor and destructor (0x803555CC, 0x80355478). The classes that hold a list
+ * construct it as a member; an extern "C" wrapper around a placement new cannot match here,
+ * because GC/2.7 null-checks the placement new's result and the game's code has no such test. */
+UnkAttackHitList_803555CC::UnkAttackHitList_803555CC() {}
 
-extern "C" UnkAttackHitList_803555CC *fn_80355478(UnkAttackHitList_803555CC *hits, short flag) {
-    if (hits != 0) {
-        hits->~UnkAttackHitList_803555CC();
-        if (flag > 0) {
-            operator delete(hits);
-        }
-    }
-    return hits;
-}
+UnkAttackHitList_803555CC::~UnkAttackHitList_803555CC() {}
 
 /* Whether attack is in the list. */
 extern "C" bool fn_803553E8(UnkAttackHitList_803555CC *hits, const boost::weak_ptr<CharaColliAttack> &attack) {
-    for (UnkAttackHitList_803555CC::iterator it = hits->begin(); it != hits->end(); it++) {
+    for (HitList::iterator it = hits->m_list.begin(); it != hits->m_list.end(); it++) {
         if (it->Is(attack)) {
             return true;
         }
@@ -75,29 +64,29 @@ extern "C" bool fn_803553E8(UnkAttackHitList_803555CC *hits, const boost::weak_p
 
 /* Remembers attack: counts another frame for it, or adds it for 5 frames. */
 extern "C" void fn_803552DC(UnkAttackHitList_803555CC *hits, const boost::weak_ptr<CharaColliAttack> &attack) {
-    for (UnkAttackHitList_803555CC::iterator it = hits->begin(); it != hits->end(); it++) {
+    for (HitList::iterator it = hits->m_list.begin(); it != hits->m_list.end(); it++) {
         if (it->Is(attack)) {
             it->m_frames++;
             return;
         }
     }
     UnkAttackHit_803556FC hit(attack, 5);
-    hits->push_back(hit);
+    hits->m_list.push_back(hit);
 }
 
 /* Counts frames down. */
 extern "C" void fn_80355260(UnkAttackHitList_803555CC *hits, int frames) {
-    for (UnkAttackHitList_803555CC::iterator it = hits->begin(); it != hits->end(); it++) {
+    for (HitList::iterator it = hits->m_list.begin(); it != hits->m_list.end(); it++) {
         it->m_frames -= frames;
     }
 }
 
 /* Forgets the attacks whose frames have run out or that no longer exist. */
 extern "C" void fn_8035511C(UnkAttackHitList_803555CC *hits) {
-    UnkAttackHitList_803555CC::iterator it = hits->begin();
-    while (it != hits->end()) {
+    HitList::iterator it = hits->m_list.begin();
+    while (it != hits->m_list.end()) {
         if (it->m_frames <= 0 || fn_80053538(&it->m_attack)) {
-            it = hits->erase(it);
+            it = hits->m_list.erase(it);
         } else {
             it++;
         }

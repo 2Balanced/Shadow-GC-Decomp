@@ -8,8 +8,9 @@
  * int to a float; retail shares one stack slot between the two conversions, which GC/2.7 does not
  * do (see docs/research-notes.md); it also addresses the gauge as the array's offset plus the
  * index, then this, where GC/2.7 adds the index to this. In the destructor retail copies the loop's
- * zero into the offset register (mr) where GC/2.7 loads it again (li); loop shapes and declaration
- * orders did not change it (folderTargetWindow's constructor shows the same). The unit's .rodata
+ * zero into the offset register (mr) where GC/2.7 loads it again (li) for a loop written in the
+ * destructor itself; the loop in an inline helper matches (wave 39; folderTargetWindow's
+ * constructor shows the same difference and may want the same). The unit's .rodata
  * also gets the RTTI name of boost::detail::sp_counted_base, which retail's does not have
  * (GC/2.7 instantiates the shared_ptr<Render> helpers here). */
 #define TGI_NO_NUMBER_COLORS
@@ -87,10 +88,17 @@ TGiHdGage::TGiHdGage(Task *parent) : Task(parent) {
     fn_80062CD0(&m_render->m_drawCallbacks, boost::bind(&TGiHdGage::Draw, this, _1));
 }
 
-TGiHdGage::~TGiHdGage() {
+/* The destructor's loop, as an inline function: only then does GC/2.7 copy the loop's zero into
+ * the offset register (mr r31,r30), as retail does, instead of loading it again (name
+ * inferred). */
+inline void DeleteGaugeProjects(TGiHdGage *gage) {
     for (int i = 0; i < 2; i++) {
-        delete m_gauges[i].m_project;
+        delete gage->m_gauges[i].m_project;
     }
+}
+
+TGiHdGage::~TGiHdGage() {
+    DeleteGaugeProjects(this);
 }
 
 void TGiHdGage::Tick(float dt) {

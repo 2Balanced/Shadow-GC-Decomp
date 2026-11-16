@@ -717,7 +717,7 @@ void EggLastMech::Fire(int type, int index) {
             fn_8040FAA0(&position, bone);
             Vec3f direction(0.0f, 0.0f, 1.0f);
             fn_800091D0(&direction, &(const Vec3f &)fn_8040B618(bone, &direction));
-            Weapon::ShotInfo info(owner, lockon, type == 1, position, direction, lbl_805E07A0);
+            Weapon::ShotInfo info(owner, lockon, type == 1 ? 1 : 0, position, direction, lbl_805E07A0);
             lbl_8051DDDC.fire(&info);
             fn_80336B58(m_sound, 0x201E);
             fn_801D560C(fn_80053164(), 0x201D, 0, 0);

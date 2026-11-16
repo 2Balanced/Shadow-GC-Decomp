@@ -85,30 +85,34 @@ SIZE_ASSERT(LaserReflectEventArgs, 0x84);
 /* The callback a bullet calls when it hits something; it returns the bullet's new state (struct name
  * unknown). A struct around the boost::function: its implicit default and copy constructors,
  * assignment and destructor are out of line (0x80051EB4, 0x80221808, 0x80221160 and 0x80051DBC). */
-struct HitCallback : public boost::function1<BulletPosition, LaserReflectEventArgs &> {
+struct HitCallback {
 #ifdef WEAPON_LASER_SET_HIT_CALLBACK
     /* Assignment from the plain function (a weak copy of its own; compiled only where
      * WEAPON_LASER_SET_HIT_CALLBACK is defined, see WeaponLaserBase::SetHitCallback). */
     HitCallback &operator=(const boost::function1<BulletPosition, LaserReflectEventArgs &> &function) {
-        boost::function1<BulletPosition, LaserReflectEventArgs &>::operator=(function);
+        m_function = function;
         return *this;
     }
 #endif
     /* Whether a function is set (names inferred). Each calls an inline function, so both stay out
      * of line, emitted where they are used. */
     bool HasFunction() const {
-        return !empty();
+        return !m_function.empty();
     }
     bool IsSet() const {
         return HasFunction();
     }
     /* Calls the function, or returns a default state when none is set (name inferred). */
     BulletPosition Call(LaserReflectEventArgs &context) const {
-        if (empty()) {
+        if (m_function.empty()) {
             return BulletPosition();
         }
-        return (*this)(context);
+        return m_function(context);
     }
+
+    /* The function is a member, not a base: the struct's destructor (0x80051DBC) destroys it with
+     * -1, as a member is. */
+    /* 0x0 */ boost::function1<BulletPosition, LaserReflectEventArgs &> m_function;
 };
 SIZE_ASSERT(HitCallback, 0xC);
 
@@ -119,12 +123,13 @@ SIZE_ASSERT(HitCallback, 0xC);
  * first emitted by Game/WeaponLaserRifle.cpp (0x80221790). */
 struct ShotInfo {
     /* The shot from position toward direction (0x80069218; parameter names inferred from
-     * EggLastMech, which passes a comparison as the side). */
+     * EggLastMech, which passes a comparison as the side). The side is an int in all four
+     * constructors: they store it in m_side as it comes (see Game/WeaponUtil.cpp). */
     ShotInfo(const boost::weak_ptr<CharInfo> &owner, const boost::shared_ptr<LockonTarget> &target,
-             bool side, const Vec3f &position, const Vec3f &direction,
+             int side, const Vec3f &position, const Vec3f &direction,
              const Vec3f &aim);
     /* The same shot without a target (0x800693AC; BA GUNSHIP passes true as the side). */
-    ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,
+    ShotInfo(const boost::weak_ptr<CharInfo> &owner, int side, const Vec3f &position,
              const Vec3f &direction, const Vec3f &aim);
     /* The shot from a muzzle matrix's translation, forwards along the matrix (0x80051D10;
      * Game/BulletTypeTable.cpp). */
@@ -132,7 +137,7 @@ struct ShotInfo {
              int side, const Mtx34f *matrix, const Vec3f &aim);
     /* The same shot aimed along the owner's velocity, or with a zero aim when the owner is gone
      * (0x80051FC8; EGG_BALLOON passes true as the side). */
-    ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,
+    ShotInfo(const boost::weak_ptr<CharInfo> &owner, int side, const Vec3f &position,
              const Vec3f &direction);
     /* Written out: an implicit copy constructor calls the members' inline copy constructors out
      * of line. */

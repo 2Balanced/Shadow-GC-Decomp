@@ -298,6 +298,33 @@ inline UnkRenderLink_80037D04 *GetLink(RpAtomic *atomic) {
 }
 
 
+/* The inline forms of the setters the stream callback uses (names inferred; see fn_80037F4C). */
+inline s32 SetField4(RpAtomic *atomic, u32 value, s32 offset) {
+    if (offset > 0) {
+        ((UnkAtomicExt_80037E0C *)((u8 *)atomic + offset))->field_0x4 = value;
+        return 1;
+    }
+    return 0;
+}
+
+inline s32 SetField8(RpAtomic *atomic, u32 value, s32 offset) {
+    if (offset > 0) {
+        ((UnkAtomicExt_80037E0C *)((u8 *)atomic + offset))->field_0x8 = value;
+        return 1;
+    }
+    return 0;
+}
+
+inline s32 SetWords(RpAtomic *atomic, const void *data, s32 size) {
+    if (lbl_805E3738 > 0) {
+        for (int i = 0; i < size / 4; i++) {
+            ATOMIC_EXT(atomic)->field_0xC[i] = ((const u32 *)data)[i];
+        }
+        return 1;
+    }
+    return 0;
+}
+
 /* The plugin's constructor, destructor, copy and stream callbacks. */
 extern "C" void *fn_8003809C(void *object, s32 offset, s32 size) {
     if (lbl_805E3738 > 0) {
@@ -326,8 +353,12 @@ extern "C" void *fn_80038020(void *dst, const void *src, s32 offset, s32 size) {
     return dst;
 }
 
-/* NonMatching (9 instructions): retail loads the two stream words before their offset checks and
- * allocates the (empty) copy loop's registers in another order; ~20 shapes tried. */
+/* Retail loads each of the two stream words before its offset check, with the offset in r4 and
+ * the word in r3: the inline setters take the word and then the offset (inline arguments are
+ * evaluated right to left, so the offset is read first and the word second). The copy of the three
+ * words is the inline form of fn_80037D80 given a count where it expects a size in bytes, so its
+ * loop runs 3 / 4 = 0 times; it takes the words as const void *, which keeps their address
+ * (r1 + 0x14) in a register of its own. */
 extern "C" RwStream *fn_80037F4C(RwStream *stream, s32 length, void *object, s32 offset, s32 size) {
     UnkAtomicExt_80037E0C ext;
     if (fn_80480D4C(stream, &ext, sizeof(ext)) != sizeof(ext)) {
@@ -335,15 +366,9 @@ extern "C" RwStream *fn_80037F4C(RwStream *stream, s32 length, void *object, s32
     }
     fn_8047D254(&ext, sizeof(ext));
     fn_80037DCC((RpAtomic *)object, &ext.m_color);
-    lbl_805E3738 > 0 ? (ATOMIC_EXT(object)->field_0x4 = ext.field_0x4, 1) : 0;
-    lbl_805E3738 > 0 ? (ATOMIC_EXT(object)->field_0x8 = ext.field_0x8, 1) : 0;
-    if (lbl_805E3738 > 0) {
-        int i = 0;
-        const u32 *words = ext.field_0xC;
-        for (; i < 0; i++) {
-            ATOMIC_EXT(object)->field_0xC[i] = words[i];
-        }
-    }
+    SetField4((RpAtomic *)object, ext.field_0x4, lbl_805E3738);
+    SetField8((RpAtomic *)object, ext.field_0x8, lbl_805E3738);
+    SetWords((RpAtomic *)object, ext.field_0xC, 3);
     return stream;
 }
 

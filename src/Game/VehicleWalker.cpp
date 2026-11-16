@@ -15,6 +15,7 @@
 
 /* Slot 0x48 with the rider (see Game/TVehicleBase.h). */
 #define VEHICLE_GET_ON_RIDER
+#include "Game/AttackHitList.h"
 #include "Game/TNumEdit.h"
 /* After TNumEdit.h: the order of the casts sets the order of the RTTI base lists in .data. */
 #include "Game/CharaColliBaseCharInfo.h"
@@ -236,8 +237,6 @@ void fn_801B4CF4(UnkBirdCollision_801B4EBC *collision);
 void fn_801B4D60(UnkBirdCollision_801B4EBC *collision);
 
 /* The hit list at 0x10C (see Game/PlayerBarrierHeatEffect.cpp). */
-void *fn_803555CC(void *list);
-void fn_80355478(void *list, int);
 bool fn_803553E8(void *list, const void *target);
 void fn_803552DC(void *list, const void *target);
 void fn_80355260(void *list, int count);
@@ -416,7 +415,7 @@ class Walker : public TVehicleBase {
     /* 0x0F8 */ Vec3f m_steer;
     /* 0x104 */ WalkerFlags m_flags;
     /* 0x108 */ float m_flinchTime;
-    /* 0x10C */ u8 m_hits[0xC]; /* the hit list (constructor 0x803555CC, destructor 0x80355478) */
+    /* 0x10C */ UnkAttackHitList_803555CC m_hits; /* the attacks that hit recently (Game/AttackHitList.h) */
 };
 SIZE_ASSERT(Walker, 0x118);
 
@@ -430,7 +429,6 @@ static const float s_attackRadius = Span(10.0f);
 
 
 Walker::Walker(void *arg) : TVehicleBase(arg), m_gun(0), m_model(0) {
-    fn_803555CC(m_hits);
     fn_801B4DD0(&m_collision, this);
     fn_8040CE60(&m_steer);
     fn_800091D0(&m_up, &Vec3f(0.0f, 1.0f, 0.0f));
@@ -450,7 +448,6 @@ Walker::~Walker() {
     if (m_colliMove != 0) {
         delete m_colliMove;
     }
-    fn_80355478(m_hits, -1);
 }
 
 void Walker::GetSeat(Vec3f *position, Vec3f *rotation) {

@@ -246,11 +246,9 @@ void fn_800163F4(void *frame, const Mtx34f *matrix);
 void fn_80415808(_stMtnPlayWork *work, int id, void (*callback)(void *, void *), void *data);
 void fn_80335844(void *, void *);
 
-/* Shots: a rocket (see ArkCannon.cpp), fired with fn_80051C34; fn_8005B84C shows the muzzle
- * flash (behaviour inferred); fn_80221BA8 throws a falling part (see Game/Debris). */
-void fn_80051D10(void *shot, const boost::weak_ptr<CharInfo> &owner,
-                 const boost::shared_ptr<Weapon::LockonTarget> &lockon, int arg3,
-                 const Mtx34f *muzzle, const Vec3f *direction);
+/* Shots: a rocket (a Weapon::ShotInfo built from the muzzle's matrix, as in ArkCannon.cpp), fired
+ * with fn_80051C34; fn_8005B84C shows the muzzle flash (behaviour inferred); fn_80221BA8 throws a
+ * falling part (see Game/Debris). */
 void fn_80051C34(int type, const Weapon::ShotInfo *info);
 void fn_8005B84C(int type, const Mtx34f *matrix);
 void fn_80221BA8(const Vec3f *position, const Vec3f *rotation, const Vec3f *velocity, int arg3,
@@ -267,16 +265,6 @@ Vec3f fn_8040CDA8(const Vec3f *vector, float scale);
 Vec3f fn_8040CDD0(const Vec3f *a, const Vec3f *b);
 Vec3f fn_8040CEE8(const Vec3f *vector);
 }
-
-/* Room for the rocket's Weapon::ShotInfo, which fn_80051D10 constructs (a constructor the shot's
- * header does not declare). */
-struct UnkShot_80051D10 {
-    Weapon::ShotInfo *Get() {
-        return reinterpret_cast<Weapon::ShotInfo *>(this);
-    }
-
-    u32 m_data[sizeof(Weapon::ShotInfo) / 4];
-};
 
 /* fn_8040CD74 called as returning a - b by value (see BlackBullCtrlUnit.cpp). */
 typedef Vec3f (*VectorSubtractFn)(const Vec3f *a, const Vec3f *b);
@@ -617,10 +605,9 @@ int HeavyDogCtrlUnit_RocketLauncher::Tick(float dt) {
         fn_8040B884(&muzzle, lbl_805FAD38);
         Vec3f direction(0.0f, 0.0f, 0.0f);
         fn_800091D0(&direction, &Ref(fn_8040B67C(&muzzle, &direction)));
-        UnkShot_80051D10 shot;
-        fn_80051D10(&shot, boost::weak_ptr<CharInfo>(m_owner->m_charaPtr), m_owner->m_lockon, 1,
-                    &muzzle, &direction);
-        fn_80051C34(0x13, shot.Get());
+        Weapon::ShotInfo shot(boost::weak_ptr<CharInfo>(m_owner->m_charaPtr), m_owner->m_lockon, 1,
+                              &muzzle, direction);
+        fn_80051C34(0x13, &shot);
         fn_8040B884(&muzzle, lbl_805FAD38);
         fn_8005B84C(0x13, &muzzle);
         m_loaded = 0;
@@ -628,7 +615,6 @@ int HeavyDogCtrlUnit_RocketLauncher::Tick(float dt) {
         m_aiming = 0;
         m_reload = 0.0f;
         NextLauncher();
-        shot.Get()->~ShotInfo();
     } else if (m_owner->m_launchers[m_index].m_fired && !m_aiming &&
                std::fabs(m_owner->m_turnRate) < 0.0001) {
         m_aiming = 1;

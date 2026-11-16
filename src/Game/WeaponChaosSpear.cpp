@@ -151,11 +151,11 @@ float ChaosSpear::vf_0x38(const Vec3f *aim) {
     AssignVector(direction, fn_8040D118(direction, rotation.x));
     AssignVector(direction, fn_8040D0AC(direction, rotation.y));
     boost::shared_ptr<CharInfo> owner = fn_80065034(this).lock();
-    bool side;
+    int side;
     if (owner.get() != 0 && owner->field_0x5C == 1) {
-        side = false;
+        side = 0;
     } else {
-        side = true;
+        side = 1;
     }
     float charge = m_charge / 3.0f;
     Bullet::ChaosSpear::Fire(ShotInfo(boost::weak_ptr<CharInfo>(owner), side, position, direction, *aim),

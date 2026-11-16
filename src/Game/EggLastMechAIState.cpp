@@ -6,7 +6,15 @@
  * player, the Fever states play the slot results, Event and EventStart play the boss's scripted
  * events (s_events) and End finishes it. File name inferred from the namespace. Names marked
  * "(name inferred)" are not original; the state ids are those GetId returns. Definitions are in
- * reverse address order (deferred inlining emits functions last-defined first). */
+ * reverse address order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: one function is left, Event::Tick (8 rows). For the camera's rotation retail
+ * stores the angle straight from the double fn_80016260 returns (stfs f1) and rounds a second copy
+ * (frsp) for the subtraction; GC/2.7 rounds once and stores the rounded value, the difference
+ * Game/ArkCannon.cpp's Aim has (a float declaration, casts and a separate double local do not
+ * change it). Wave 39 matched Pursuit::Tick (see the comment there) and StartPlayerEffect2: its
+ * player is a reference to const and the radius a const float behind a static initializer
+ * (DynamicFloat), which lets both loads move above the store of the link register. */
 
 #include "Game/CharInfo.h"
 #include "Game/EggLastMech.h"
@@ -168,8 +176,11 @@ static const EventInfo s_events[8] = {
 static Vec3f s_eventPosition(0.0f, 0.0f, 0.0f);
 static Vec3f s_eventRotation(0.0f, 0.0f, 0.0f);
 /* Distances (meaning inferred; the first is not used here). */
-static const UnkFloat s_distance(300.0f);
-static const UnkFloat s_effectRadius(100.0f);
+inline float DynamicFloat(float value) {
+    return value;
+}
+static const float s_distance = DynamicFloat(300.0f);
+static const float s_effectRadius = DynamicFloat(100.0f);
 
 namespace AIState {
 
@@ -376,8 +387,8 @@ static void StartPlayerEffect(boost::shared_ptr<CharInfo> &player) {
 }
 
 /* Starts the effect at the player (name inferred). */
-static void StartPlayerEffect2(boost::shared_ptr<CharInfo> &player) {
-    fn_801ED4B0(100, player.get(), s_effectRadius.value * s_effectRadius.value);
+static void StartPlayerEffect2(const boost::shared_ptr<CharInfo> &player) {
+    fn_801ED4B0(100, player.get(), s_effectRadius * s_effectRadius);
 }
 
 using namespace AIState;
@@ -724,7 +735,13 @@ void Pursuit::Tick(EggLastMech *mech) {
     Vec3f target;
     Vec3f offset;
     fn_8032D518(mech->m_partF0, &target, &offset);
-    float speed = mech->field_0xAC;
+    /* Retail reads the speed before the calls below and keeps it in f31. GC/2.7 moves the read of
+     * a local that is set once and used once down to its use, after the calls; a second
+     * assignment (here to itself) keeps it where it is written, as the two-way assignment in
+     * Flee::Tick does. */
+    float speed;
+    speed = mech->field_0xAC;
+    speed = speed;
     AssignVector(mech->field_0x24,
                  fn_8040CDA8(&fn_8040CEE8(&((VectorSubtractFn)fn_8040CD74)(&target, &mech->m_position)),
                              speed));

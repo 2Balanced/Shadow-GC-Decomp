@@ -93,6 +93,24 @@ inline TEnemyAIState *StateOf(TEnemyAIState *state) {
 
 #endif
 
+#ifdef ENEMY_WALKER_AI_UNKNOWN_STATICS
+/* Stand-ins for six function-local statics of the original headers that this project does not
+ * know (not original). Game/EggPawnAI.cpp's .bss is kept whole (its vfAI_0x38 reaches the states'
+ * destructor records through one base register), and the game's has six more of those 12-byte
+ * records than the known states give it: five between EnemyBaseAI's twelve and the walker's five,
+ * one after those. So the original headers had six more statics with destructors there; what
+ * they were is unknown, and nothing references them. Declared as statics of EnemyWalkerAI's
+ * inline functions, these keep the walker's records at the game's offsets (a static needs a
+ * destructor to get a record, and 8 bytes or less to stay out of .bss itself). Only that unit
+ * defines the macro. */
+struct UnkWalkerAIStatic {
+    UnkWalkerAIStatic();
+    ~UnkWalkerAIStatic();
+
+    u32 m_words[2];
+};
+#endif
+
 class EnemyWalkerAI : public EnemyBaseAI {
   public:
     EnemyWalkerAI();            /* 0x8019A5E0 */
@@ -107,6 +125,13 @@ class EnemyWalkerAI : public EnemyBaseAI {
 #ifdef ENEMY_BASE_AI_STATES
     /* The states' objects. MWCC lays out the statics of a class's inline functions in reverse
      * order, so these are declared last state first. */
+#ifdef ENEMY_WALKER_AI_UNKNOWN_STATICS
+    /* See UnkWalkerAIStatic below. */
+    static void *GetUnknownStatic5() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+#endif
     static TEnemyAIState *GetCautionState() {
         static EnemyAIState_EnemyWalkerAI_Caution s_state;
         return StateOf(&s_state);
@@ -127,6 +152,28 @@ class EnemyWalkerAI : public EnemyBaseAI {
         static EnemyAIState_EnemyWalkerAI_ReturnHome s_state;
         return &s_state;
     }
+#ifdef ENEMY_WALKER_AI_UNKNOWN_STATICS
+    static void *GetUnknownStatic4() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic3() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic2() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic1() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic0() {
+        static UnkWalkerAIStatic s_state;
+        return &s_state;
+    }
+#endif
 #endif
 
     /* 0x74 */ EnemyWalker *m_body; /* the body, from m_disp (constructor) */

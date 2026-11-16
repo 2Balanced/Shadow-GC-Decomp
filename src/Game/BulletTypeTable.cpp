@@ -5,15 +5,14 @@
  * file name and the other names are inferred. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first).
  *
- * NonMatching (22/25 by name; every section's data matches):
- * - ShotInfo(owner, side, position, direction) (96.6%): Game/WeaponBullet.h declares side as bool,
- *   which GC/2.7 zero-extends (clrlwi) before storing it in the 32-bit m_side; retail stores the
- *   register as it is (the compiler-version issue Game/WeaponUtil.cpp documents).
- * - HitCallback's destructor (99.95%): retail passes -1 to the boost::function1 destructor, as for
- *   a member; Game/WeaponBullet.h derives HitCallback from it, which passes 0.
- * - 0x80051D10 matches as ShotInfo's matrix constructor, but keeps the name fn_80051D10, which
- *   Game/ArkCannon.cpp and Game/HeavyDogCtrlUnit.cpp call (their extern "C" declarations cannot
- *   spell the constructor's mangled name). */
+ * Matching since wave 39, which settled three things:
+ * - ShotInfo's side parameter is an int (Game/WeaponBullet.h declared it bool, which GC/2.7
+ *   zero-extends before storing it in the 32-bit m_side; see Game/WeaponUtil.cpp).
+ * - HitCallback holds its boost::function1 as a member: retail's destructor passes -1 to the
+ *   function's destructor, as for a member (a base gets 0).
+ * - 0x80051D10 is ShotInfo's matrix constructor and carries its name (it was
+ * fn_80051D10; Game/ArkCannon.cpp and Game/HeavyDogCtrlUnit.cpp, which called it by that name,
+ * now construct a ShotInfo). */
 #include "Game/CharInfo.h"
 #include "Game/MathTypes.h"
 #include "Game/WeaponBullet.h"
@@ -111,7 +110,7 @@ UnkTargetManager_80060058 *lbl_805EE200;
 
 namespace Weapon {
 
-ShotInfo::ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,
+ShotInfo::ShotInfo(const boost::weak_ptr<CharInfo> &owner, int side, const Vec3f &position,
                    const Vec3f &direction)
     : m_owner(owner), m_position(position), m_direction(direction), m_side(side) {
     boost::shared_ptr<CharInfo> chara = m_owner.lock();

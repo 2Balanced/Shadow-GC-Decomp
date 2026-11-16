@@ -8,10 +8,14 @@
  * names are inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * Not matching yet: Update (0x8034997C) is 99.8%. Retail updates the repeat counters without a
- * branch (subfic/subfe and a mask) with other registers than GC/2.7 gives the masked form written
- * here; a conditional expression compiles to branches under GC/2.7. Everything else, including the
- * data and the link order, matches. */
+ * Not matching yet: Update (0x8034997C) is 99.9%, 5 rows. Retail updates the repeat counters
+ * without a branch (subfic/subfe and a mask). GC/2.7 gives that for an if/else on a counter read
+ * into a local first (as written here), and for `held ? (s16)(count + 1) : 0`; with the load or
+ * the increment inside the conditional it branches. What is left is register colouring: retail
+ * keeps the counter in r7 (and the masked result with it) and the row's address in r8, GC/2.7 the
+ * counter in r8, the result in r0 and the address in r7. About 35 spellings tried in wave 39 (the
+ * explicit mask, a second local for the result, a row pointer, a bool for the test, int/s16
+ * locals). Everything else, including the data and the link order, matches. */
 #include <cmath>
 #include <cstdlib>
 #include <memory>
@@ -334,7 +338,13 @@ void UnkPads_80051734::Update() {
                 m_states[i].m_released |= 0x100000;
             }
             for (int j = 0; j < 8; j++) {
-                m_repeat[i][j] = (s16)(m_repeat[i][j] + 1) & -((m_states[i].m_down & s_repeatMasks[j]) != 0);
+                s16 count = m_repeat[i][j];
+                if (m_states[i].m_down & s_repeatMasks[j]) {
+                    count++;
+                } else {
+                    count = 0;
+                }
+                m_repeat[i][j] = count;
             }
         }
     }

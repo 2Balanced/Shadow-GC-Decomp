@@ -7,12 +7,13 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: everything matches but the two ShotInfo constructors. The macros below remove the
- * local shared_ptr/base and bad_weak_ptr bodies and records, reducing our .text from 3400 to 2612
- * bytes against retail's 1404. Game/WeaponBullet.h declares their side parameter as bool, and
- * GC/2.7 zero-extends a bool (clrlwi) before storing it in the 32-bit m_side; retail stores the
- * register as it is, as for a 32-bit parameter (as does the third constructor at 0x80051FC8).
- * Declaring it so would rename the constructors that about eight matched units call. */
+ * The macros below remove the local shared_ptr/base and bad_weak_ptr bodies and records, reducing
+ * our .text from 3400 to 2612 bytes against retail's 1404 (the linker folds the rest). The side
+ * the ShotInfo constructors take is an int since wave 39: declared bool, GC/2.7 zero-extends it
+ * (clrlwi) before storing it in the 32-bit m_side, and retail stores the register as it is. The
+ * callers keep their side in an int too (a bool local is zero-extended at the call), and
+ * Game/EggLastMech.cpp passes `type == 1 ? 1 : 0', which GC/2.7 compiles without the mask a
+ * bool-to-int conversion gets. */
 #define BOOST_SP_EXTERN_BASE_DESTRUCTOR
 #define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
 #define BOOST_SP_NO_BAD_WEAK_PTR
@@ -49,11 +50,11 @@ extern "C" ShotInfo fn_80069540(WeaponBase *weapon, const Mtx34f *muzzle) {
     Vec3f direction;
     fn_800091EC(&direction, &(const Vec3f &)fn_8040B618(muzzle, &(const Vec3f &)Vec3f(0.0f, 0.0f, 1.0f)));
     boost::shared_ptr<CharInfo> owner = fn_80065034(weapon).lock();
-    bool side;
+    int side;
     if (owner.get() != 0 && owner->field_0x5C == 1) {
-        side = false;
+        side = 0;
     } else {
-        side = true;
+        side = 1;
     }
     return ShotInfo(fn_80065034(weapon), side, position, direction);
 }
@@ -65,18 +66,18 @@ extern "C" ShotInfo fn_80069424(WeaponBase *weapon, const Mtx34f *muzzle, const 
     Vec3f direction;
     fn_800091EC(&direction, &(const Vec3f &)fn_8040B618(muzzle, &(const Vec3f &)Vec3f(0.0f, 0.0f, 1.0f)));
     boost::shared_ptr<CharInfo> owner = fn_80065034(weapon).lock();
-    bool side;
+    int side;
     if (owner.get() != 0 && owner->field_0x5C == 1) {
-        side = false;
+        side = 0;
     } else {
-        side = true;
+        side = 1;
     }
     return ShotInfo(fn_80065034(weapon), side, position, direction, *aim);
 }
 
 namespace Weapon {
 
-ShotInfo::ShotInfo(const boost::weak_ptr<CharInfo> &owner, bool side, const Vec3f &position,
+ShotInfo::ShotInfo(const boost::weak_ptr<CharInfo> &owner, int side, const Vec3f &position,
                    const Vec3f &direction, const Vec3f &aim)
     : m_owner(owner), m_position(position), m_direction(direction), m_aim(aim), m_side(side) {}
 
@@ -90,11 +91,11 @@ extern "C" ShotInfo fn_80069298(WeaponBase *weapon, const Mtx34f *muzzle, const 
     Vec3f direction;
     fn_800091EC(&direction, &(const Vec3f &)fn_8040CEE8(((VectorSubtractFn)fn_8040CD74)(target, &position)));
     boost::shared_ptr<CharInfo> owner = fn_80065034(weapon).lock();
-    bool side;
+    int side;
     if (owner.get() != 0 && owner->field_0x5C == 1) {
-        side = false;
+        side = 0;
     } else {
-        side = true;
+        side = 1;
     }
     return ShotInfo(fn_80065034(weapon), side, position, direction, *aim);
 }
@@ -102,7 +103,7 @@ extern "C" ShotInfo fn_80069298(WeaponBase *weapon, const Mtx34f *muzzle, const 
 namespace Weapon {
 
 ShotInfo::ShotInfo(const boost::weak_ptr<CharInfo> &owner, const boost::shared_ptr<LockonTarget> &target,
-                   bool side, const Vec3f &position, const Vec3f &direction, const Vec3f &aim)
+                   int side, const Vec3f &position, const Vec3f &direction, const Vec3f &aim)
     : m_owner(owner), m_target(target), m_position(position), m_direction(direction), m_aim(aim),
       m_side(side) {}
 
@@ -118,12 +119,12 @@ extern "C" ShotInfo fn_800690E4(WeaponBase *weapon, const Mtx34f *muzzle,
     Vec3f direction;
     fn_800091EC(&direction, &(const Vec3f &)fn_8040B618(muzzle, &(const Vec3f &)Vec3f(0.0f, 0.0f, 1.0f)));
     boost::shared_ptr<CharInfo> owner = fn_80065034(weapon).lock();
-    bool side;
+    int side;
     if (owner.get() != 0 && owner->field_0x5C == 1) {
-        side = false;
+        side = 0;
         fn_800091D0(&aim, &owner->field_0x18);
     } else {
-        side = true;
+        side = 1;
         fn_8040CE60(&aim);
     }
     return ShotInfo(fn_80065034(weapon), target, side, position, direction, aim);

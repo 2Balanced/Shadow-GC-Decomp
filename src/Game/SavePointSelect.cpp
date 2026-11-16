@@ -102,6 +102,12 @@ RCPtr<CScene> fn_8036D890(Chao::CSD::CProject *project, const char *name, int mo
 RCPtr<CNode> fn_803666B4(CScene *scene, const char *name);
 UnkCsdPosition_8036AE98 fn_8036AE98(CNode *node);
 void fn_80365B18(CScene *scene, const UnkCsdPosition_8036AE98 *position);
+/* Places a scene at a node's position (name inferred). The constructor needs this as an inline
+ * helper with RCPtr::Get spelled out; see the comment there. */
+inline void SetScenePosition(RCPtr<CScene> &scene, RCPtr<CNode> &node) {
+    UnkCsdPosition_8036AE98 position = fn_8036AE98(node.m_object != 0 ? node.m_object->m_object : 0);
+    fn_80365B18(scene.m_object != 0 ? scene.m_object->m_object : 0, &position);
+}
 void fn_803659DC(CScene *scene, int arg1);
 
 /* Whether button of pad was pressed (behaviour inferred). */
@@ -286,13 +292,14 @@ SIZE_ASSERT(SavePointSelect::SavePointSelectTask, 0x48);
 
 namespace SavePointSelect {
 
-/* NonMatching: every instruction matches except the stack slots of the Render temporary and the
- * three positions. Retail puts the temporary above the positions (0x68, then 0x60/0x58/0x50); GC/2.7
- * places named locals before temporaries of the same size, so the positions come first. Passing the
- * positions as temporaries (&fn_8036AE98(...), a const reference, a by-value parameter) orders the
- * slots like retail but computes their address before scene.Get() (an extra mr); binding the
- * Render to a const reference orders them too but loads its address before `this`. Neither
- * matches; UpdateSelect, which has no competing temporary, matches with named positions. */
+/* Retail puts the Render temporary above the three positions on the stack (0x68, then
+ * 0x60/0x58/0x50). GC/2.7 places a function's named locals before its temporaries, so positions
+ * declared in the constructor itself come first; passing them as temporaries (&fn_8036AE98(...), a
+ * const reference, a by-value parameter) orders the slots but computes their address before
+ * scene.Get(). What matches is the position as the named local of an inline helper
+ * (SetScenePosition): the locals of an inlined function are allocated after the caller's
+ * temporaries. The helper spells RCPtr::Get out, because a helper that calls another inline
+ * function is not inlined. UpdateSelect, which has no competing temporary, matches either way. */
 SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
     m_state = 0;
     m_cursor = 0;
@@ -355,8 +362,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
             char text[32];
             sprintf(text, "%d", i + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
             if (m_cursor == i) {
                 fn_803659DC(scene.Get(), 0);
             }
@@ -366,8 +372,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
             char text[32];
             sprintf(text, "%d", i + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
         }
     }
 
@@ -379,8 +384,7 @@ SavePointSelectImpl::SavePointSelectImpl(s32 count, s32 current) {
             char text[32];
             sprintf(text, "%d", i + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
         }
     }
     fn_801D560C(fn_80053164(), 0xE000, 0, 0);
@@ -462,8 +466,7 @@ void SavePointSelectImpl::UpdateSelect(float dt) {
             char text[32];
             sprintf(text, "%d", m_cursor + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
             fn_803659DC(scene.Get(), 0);
         }
         fn_8036C248(m_icons[previous]);
@@ -472,8 +475,7 @@ void SavePointSelectImpl::UpdateSelect(float dt) {
             char text[32];
             sprintf(text, "%d", previous + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
         }
         fn_801D560C(fn_80053164(), 0xE002, 0, 0);
     }
@@ -494,8 +496,7 @@ void SavePointSelectImpl::UpdateSelect(float dt) {
             char text[32];
             sprintf(text, "%d", i + 1);
             RCPtr<CNode> node = fn_803666B4(scene.Get(), text);
-            UnkCsdPosition_8036AE98 position = fn_8036AE98(node.Get());
-            fn_80365B18(scene.Get(), &position);
+            SetScenePosition(scene, node);
             fn_803659DC(scene.Get(), 0);
         }
         if (m_box != 0) {

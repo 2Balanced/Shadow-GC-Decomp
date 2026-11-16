@@ -7,10 +7,9 @@
  * templates come last). All names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 22 of 24 functions match. fn_800B7D48 and fn_800B7BCC differ by two swapped
- * instructions: retail loads the player pointer (lwz rN, 0(r3)) above the copy of the second
- * argument or the address of the call's result, which GC/2.7 does not do for any form tried (as
- * in Game/PlayerUtil.cpp). */
+ * In fn_800B7D48 and fn_800B7BCC retail loads the player pointer (lwz rN, 0(r3)) above the copy of
+ * the second argument or the address of the call's result. GC/2.7 does that when the player is a
+ * reference to a const shared_ptr (wave 39; as in Game/PlayerUtil.cpp). */
 #define CHARCOMMAND_SET_ANGLE_INLINE
 #define PLAYER_OBJECT_MEMBERS
 #define PLAYER_PICKUP_SLOT
@@ -167,7 +166,7 @@ extern "C" void fn_800B7E44(int id) {
     }
 }
 
-extern "C" void fn_800B7D48(shared_ptr<PlayerBase> &player, int count) {
+extern "C" void fn_800B7D48(const shared_ptr<PlayerBase> &player, int count) {
     int number = Fields(player.get())->m_number;
     if (number >= 0) {
         if (fn_8006CD78(player.get()->m_stateBits, 0x20)) {
@@ -191,7 +190,7 @@ extern "C" void fn_800B7D48(shared_ptr<PlayerBase> &player, int count) {
     }
 }
 
-extern "C" void fn_800B7BCC(shared_ptr<PlayerBase> &player) {
+extern "C" void fn_800B7BCC(const shared_ptr<PlayerBase> &player) {
     shared_ptr<PickupCharInfo> object = player.get()->vf_0x4C().lock();
     if (object) {
         object->PushCommand(new ThrowCommand(weak_ptr<CharInfo>(player.get()->m_self),

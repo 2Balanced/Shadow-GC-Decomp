@@ -9,8 +9,11 @@
  * NonMatching: 24 of 25 functions match. In vf_0x50 (98.9%) retail keeps the group's player
  * pointer in r31 and the voice in r30, GC/2.7 the other way round. Declaring the voice s8 (in
  * IAudio and in the caller, UnkSound_80053164::fn_801D5D10) matches it, which suggests it is an s8
- * in the game; the caller's mangled name (with u8) is already in symbols.txt, so the declaration
- * stays as it is. */
+ * in the game. But then the Matching caller of fn_801D5D10, UnkSoundChannel_801D98FC::fn_801D898C
+ * (Game/AudioChannel.cpp), sign-extends its u8 voice at the call (extsb r5,r30 for retail's
+ * mr r5,r30; checked in wave 39 with tools/doldiff.py), and the other voice parameters it feeds
+ * from the same local are u8, so the declaration stays as it is. Named s8/int locals for the voice
+ * and the group in vf_0x50 do not change the register order. */
 #define AUDIOGCN_MEMBERS
 #include "Game/IAudio.h"
 #include <dolphin/types.h>
@@ -389,7 +392,9 @@ void AudioGCN::vf_0x50(s8 group, u8 voice, s8 bank, s8 program) {
     fn_8043F35C(m_groups[group], &message, 0);
     fn_8043F41C(m_groups[group], &message, (s8)voice | 0xC0, program);
     fn_8043F35C(m_groups[group], &message, 0);
-}void AudioGCN::vf_0x58(int mode) {
+}
+
+void AudioGCN::vf_0x58(int mode) {
     if (fn_80376F58() == 0) {
         mode = 1;
     }

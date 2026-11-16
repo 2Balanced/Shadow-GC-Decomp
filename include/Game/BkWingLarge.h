@@ -78,12 +78,15 @@ class BkWingLargeAI : public FlyerCommonAI {
   public:
     BkWingLargeAI();
     virtual ~BkWingLargeAI() {} /* weak, first at 0x80180A34 */
+    /* vfAI_0x3C is declared first so that it, not slot 0x28, is the function whose definition
+     * places the class's vtable: Game/BkWingLargeAI.cpp has to define slot 0x28 under its symbol
+     * (see there), not as a member. The slots themselves are EnemyBaseAI's. */
+    virtual void vfAI_0x3C();   /* 0x80181430 */
 #ifdef ENEMY_AI_MESSAGE_ARG
     virtual void vfAI_0x28(UnkEnemyMessage_8019DC9C *message); /* 0x801815BC */
 #else
     virtual void vfAI_0x28();   /* 0x801815BC */
 #endif
-    virtual void vfAI_0x3C();   /* 0x80181430 */
     virtual void vfAI_0x44();   /* 0x801813C8 */
     virtual void vfAI_0x58();   /* 0x801812CC */
 
