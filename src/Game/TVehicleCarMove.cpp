@@ -18,17 +18,16 @@
  * and Game/VehicleColliMove.cpp):
  * - Sweep (0x801B9CA8): the register blocker of Game/VehicleColliMove.cpp's Sweep (retail gives
  *   the locals the high saved registers).
- * - UpdateModel, Move, SetPlacement, UpdateBoost, UpdateMotion: register allocation only (Move
- *   also keeps &rear in a register, two instructions more).
- * - GetForce, Run: retail loads the input level before the inner vector call and keeps it in a
- *   saved FPR; GC/2.7 loads it after the call (six instructions).
+ * - UpdateModel, Move, SetPlacement, UpdateBoost, UpdateMotion: register allocation only (retail
+ *   ranks the handling-table pointer differently among the saved registers; the order of the
+ *   declarations does not change it). Retail keeps the address of a local vector in a saved
+ *   register where the source assigns it to a pointer inside the expression (Run's rearAddress,
+ *   Move's rearAddress and rearEnd); Move still differs in the registers after that.
  * - GetNode, SetLamp, GetDamage, UpdateSpring: loads scheduled above stores (the AcceptHit
  *   pattern of Game/VehicleColliMove.cpp).
- * - ReadInput: the operands of the smoothing's fadds/fmuls are swapped.
+ * - ReadInput: the operands of the smoothing's fadds are swapped.
  * - SetCamera: retail indexes the handling table with add/lwz where GC/2.7 uses lwzx (one
  *   load).
- * - UpdateGround: retail copies the line from the temporary fn_80020A20 constructs (the line's
- *   constructor, which other units call by that name), not from its return value.
  * .data, .bss, .sbss and .sdata2 match. .rodata differs only in the place of VariableBasic<float>'s
  * RTTI names (before, not after, the checked_deleter names); .sdata has the same order problem
  * and also holds RTTI records the linker drops. CreateTuningVariable and GetStep (at the end and
@@ -414,6 +413,11 @@ void fn_801D53C4(void *manager, int id, void *source, void *owner, int arg4, s8 
 /* Vector helpers (see Game/VehicleSweep.cpp). */
 Vec3f fn_800091A4(const Vec3f *vector, float scale);
 Vec3f fn_8040CDA8(const Vec3f *vector, float scale);
+/* The vector's scaling as the inline wrapper retail has (name inferred): its arguments are
+ * evaluated right to left, so a scale read from memory is loaded before the vector is built. */
+inline Vec3f ScaleBy(const Vec3f &v, float s) {
+    return fn_8040CDA8(&v, s);
+}
 Vec3f fn_8040CDD0(const Vec3f *a, const Vec3f *b);
 void fn_8040CE04(Vec3f *vector, const Vec3f *value); /* -= */
 void fn_8040CE60(Vec3f *vector);
@@ -711,7 +715,8 @@ class TVehicleCarMove {
     }
     /* Smooths value towards target (name inferred). */
     static void Smooth(float &value, float target, float rate) {
-        value = target + ((value - target) * rate) / (rate + 1.0f);
+        float d = value - target;
+        value = target + (d * rate) / (rate + 1.0f);
     }
     /* Fills and drains the boost gauge (names inferred). */
     void ChargeGauge(float dt) {
@@ -1245,9 +1250,9 @@ void TVehicleCarMove::UpdateBoost(float dt) {
 }
 
 CarVector TVehicleCarMove::GetForce(Wheel &wheel, const Mtx34f *matrix) {
-    State &state = m_states[0];
     float speed = m_states[1].m_speed;
     const CarParam &param = Param();
+    State &state = m_states[0];
     Vec3f forward;
     fn_800091EC(&forward, &(const Vec3f &)fn_8040B618(matrix, &Vec3f(0.0f, 0.0f, -1.0f)));
     Vec3f up;
@@ -1258,12 +1263,10 @@ CarVector TVehicleCarMove::GetForce(Wheel &wheel, const Mtx34f *matrix) {
     CopyVector(V(force), lbl_805E07A0);
     if (IsOnGround(state, wheel)) {
         if (state.m_input.m_brake && speed < s_slowSpeed) {
-            fn_800091D0(&V(force), &(const Vec3f &)fn_8040CDA8(&(const Vec3f &)fn_8040CDA8(&forward, -param.field_0x24),
-                                              state.m_input.m_brakeLevel));
+            fn_800091D0(&V(force), &(const Vec3f &)ScaleBy(fn_8040CDA8(&forward, -param.field_0x24), state.m_input.m_brakeLevel));
         }
         if (state.m_input.m_accel && speed > -s_slowSpeed && speed < param.field_0x18) {
-            fn_800091D0(&V(force), &(const Vec3f &)fn_8040CDA8(&(const Vec3f &)fn_8040CDA8(&forward, param.field_0x20),
-                                              state.m_input.m_accelLevel));
+            fn_800091D0(&V(force), &(const Vec3f &)ScaleBy(fn_8040CDA8(&forward, param.field_0x20), state.m_input.m_accelLevel));
         }
     }
     if (IsOnGround(state, wheel)) {
@@ -1358,9 +1361,11 @@ float TVehicleCarMove::GetSteerAngle() {
 }
 
 void TVehicleCarMove::Run(float dt) {
+    CarVector rearForce;
+    CarVector frontForce;
     State &state = m_states[0];
     const CarParam &param = Param();
-    if (m_states[0].m_input.m_getOff) {
+    if (state.m_input.m_getOff) {
         GetOff();
     }
     CarMatrix matrix = ((RotationFn)fn_8040B0C0)(state.m_rotation.z);
@@ -1385,9 +1390,9 @@ void TVehicleCarMove::Run(float dt) {
         UpdateWheelOffsets();
         m_drive.m_steer = GetSteerAngle();
         if (state.m_input.m_accel) {
-            fn_800091D0(&force, &(const Vec3f &)fn_8040CDD0(&(const Vec3f &)fn_8040CDA8(&(const Vec3f &)fn_8040CDA8(&forward, param.field_0x5C),
+            fn_800091D0(&force, &(const Vec3f &)fn_8040CDD0(&(const Vec3f &)ScaleBy(ScaleBy(forward, param.field_0x5C),
                                                                          state.m_input.m_accelLevel),
-                                             &(const Vec3f &)fn_8040CDA8(&up, param.field_0x34)));
+                                             &(const Vec3f &)ScaleBy(up, param.field_0x34)));
         }
         TurnWheel(dt, state.m_wheels[0], force, right);
         TurnWheel(dt, state.m_wheels[1], force, right);
@@ -1406,27 +1411,27 @@ void TVehicleCarMove::Run(float dt) {
         if (m_target.m_lampOff && std::fabs(state.m_boost.m_push.x) < 0.1f) {
             m_target.m_lampOff = 0;
         }
-        CarVector rearForce;
-        rearForce = GetForce(state.m_wheels[1], &M(matrix));
+        /* Retail takes the rear force's address after the call and keeps it in a register. */
+        CarVector *rearAddress;
+        CarVector &rear = *(rearAddress = &rearForce) = GetForce(state.m_wheels[1], &M(matrix));
         float speed = std::fabs(state.m_speed);
-        m_drive.m_steer = GetSteerAngle();
-        CarMatrix turn = ((MultiplyFn)fn_8001E044)(&M(matrix), &(const Mtx34f &)((RotationFn)fn_8040B138)(m_drive.m_steer));
-        CarVector frontForce;
+        CarMatrix turn = ((MultiplyFn)fn_8001E044)(
+            &M(matrix), &(const Mtx34f &)((RotationFn)fn_8040B138)(m_drive.m_steer = GetSteerAngle()));
         frontForce = GetForce(state.m_wheels[0], &M(turn));
         if (!IsOnGround(state, state.m_wheels[1]) && IsOnGround(state, state.m_wheels[0])) {
-            fn_8040CFF8(&V(rearForce), &V(frontForce));
+            fn_8040CFF8(&V(rear), &V(frontForce));
         } else if (!IsOnGround(state, state.m_wheels[0]) && IsOnGround(state, state.m_wheels[1])) {
-            fn_8040CFF8(&V(frontForce), &V(rearForce));
+            fn_8040CFF8(&V(frontForce), &V(rear));
         }
         SlideWheel(dt, state.m_wheels[0], V(frontForce), right);
-        SlideWheel(dt, state.m_wheels[1], V(rearForce), right);
+        SlideWheel(dt, state.m_wheels[1], V(rear), right);
         state.m_speed = fn_8040CF50(&V(state.m_velocity));
         if (fn_8040CF90(&V(state.m_velocity), &forward) < 0.0f) {
             state.m_speed *= -1.0f;
         }
         if (state.m_speed < -60.0f) {
             SetMotion(2);
-        } else if (state.m_speed > param.field_0x18 * 0.25f) {
+        } else if (state.m_speed > param.field_0x18 / 4.0f) {
             SetMotion(1);
         } else {
             SetMotion(6);
@@ -1571,7 +1576,7 @@ void TVehicleCarMove::Move(float dt) {
     State &state = m_states[0];
     State &previous = m_states[1];
     const CarParam &param = Param();
-    if (m_states[0].m_wait != 0) {
+    if (state.m_wait != 0) {
         state.m_wait--;
     }
     float radius;
@@ -1581,6 +1586,8 @@ void TVehicleCarMove::Move(float dt) {
         radius = param.m_radius;
     }
     Vec3f rear;
+    /* Retail keeps the rear position's address in a saved register (see the file comment). */
+    Vec3f *rearAddress;
     Vec3f front;
     if (state.m_speed > 0.0f) {
         AssignVector(front, V(previous.m_wheels[0].m_offset));
@@ -1593,13 +1600,13 @@ void TVehicleCarMove::Move(float dt) {
         fn_800091EC(&V(delta), &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&V(state.m_wheels[1].m_offset), &V(previous.m_wheels[1].m_offset)));
         PushWheel(rearSphere, delta, frontSphere);
         AssignVector(V(state.m_wheels[1].m_offset), *reinterpret_cast<Vec3f *>(rearSphere.center));
-        AssignVector(rear, V(previous.m_wheels[1].m_offset));
-        MoveWheel(dt, state.m_wheels[1], &rear);
+        AssignVector(*(rearAddress = &rear), V(previous.m_wheels[1].m_offset));
+        MoveWheel(dt, state.m_wheels[1], rearAddress);
     } else {
-        AssignVector(rear, V(previous.m_wheels[1].m_offset));
-        MoveWheel(dt, state.m_wheels[1], &rear);
+        AssignVector(*(rearAddress = &rear), V(previous.m_wheels[1].m_offset));
+        MoveWheel(dt, state.m_wheels[1], rearAddress);
         UnkSphere_80021C04 rearSphere;
-        fn_80021C04(&rearSphere, &rear, radius);
+        fn_80021C04(&rearSphere, rearAddress, radius);
         UnkSphere_80021C04 frontSphere;
         fn_80021C04(&frontSphere, &V(previous.m_wheels[0].m_offset), radius);
         CarVector delta;
@@ -1609,9 +1616,10 @@ void TVehicleCarMove::Move(float dt) {
         AssignVector(front, V(previous.m_wheels[0].m_offset));
         MoveWheel(dt, state.m_wheels[0], &front);
     }
+    Vec3f *rearEnd = &rear;
     Vec3f angles(0.0f, 0.0f, 0.0f);
     Vec3f direction;
-    fn_800091EC(&direction, &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&front, &rear));
+    fn_800091EC(&direction, &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&front, rearEnd));
     fn_8003B9E8(&(const Vec3f &)fn_80016284(&direction), &angles.x, &angles.y);
     Vec3f up;
     CopyVector(up, lbl_805E07A0);
@@ -1640,7 +1648,7 @@ void TVehicleCarMove::Move(float dt) {
     fn_800091D0(&V(state.m_up), &(const Vec3f &)fn_8040B618(&M(matrix), &Vec3f(0.0f, 1.0f, 0.0f)));
     Vec3f back;
     fn_800091EC(&back, &(const Vec3f &)fn_8040B618(&M(matrix), &Vec3f(0.0f, 0.0f, -1.0f)));
-    fn_800091D0(&V(state.m_position), &(const Vec3f &)fn_8040CDA8(&(const Vec3f &)fn_8040CDD0(&front, &rear), 0.5f));
+    fn_800091D0(&V(state.m_position), &(const Vec3f &)fn_8040CDA8(&(const Vec3f &)fn_8040CDD0(&front, rearEnd), 0.5f));
     fn_8040CFF8(&V(state.m_position), &(const Vec3f &)fn_800091A4(&(const Vec3f &)fn_80016284(&V(state.m_up)), param.m_radius));
     UpdateWheelOffsets();
     if (0.0f != dt) {
@@ -1861,12 +1869,11 @@ void TVehicleCarMove::UpdateGround() {
     fn_800091EC(&start, &(const Vec3f &)fn_8040B67C(&M(matrix), &offset));
     u32 kind;
     float line[6];
-    m_target.m_grounded = LineTest(
-        *fn_80020A20(
+    fn_80020A20(
             line,
             &(const Vec3f &)fn_8040CDD0(&start, &(const Vec3f &)fn_8040CDA8(&V(m_states[0].m_up), param.m_size->y)),
-            &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&start, &Vec3f(0.0f, 1.0f, 0.0f))),
-        &V(m_target.m_ground), &kind);
+            &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&start, &Vec3f(0.0f, 1.0f, 0.0f)));
+    m_target.m_grounded = LineTest(*(UnkDebugLine_80020A20 *)line, &V(m_target.m_ground), &kind);
     if (m_effects[corner].get() != 0) {
         if (m_target.m_grounded && std::fabs(m_states[0].m_speed) > s_slowSpeed) {
             fn_803444E0(m_effects[corner].get(), &V(m_target.m_ground), &V(m_states[0].m_up), 0, kind);

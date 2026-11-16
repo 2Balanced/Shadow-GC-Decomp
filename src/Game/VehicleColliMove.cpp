@@ -10,8 +10,11 @@
  * the same code):
  * - Sweep (0x80333B1C): retail gives the locals the high saved registers and the parameters
  *   r15-r21; GC/2.7 gives the parameters the high ones.
- * - Settle (0x803337EC): retail keeps &filter in a register across both loops (and colours the
- *   locals as in Sweep); GC/2.7 recomputes it.
+ * - Settle (0x803337EC): passing the filter through the pointer local keeps &filter in a register
+ *   as retail does, and declaring the counter, object and hit list at the top of the function
+ *   moves the registers towards retail's (where a local is declared changes its register); the
+ *   colouring of the locals still differs as in Sweep, and retail adds distance + 1.0f with the
+ *   operands the other way round.
  * - AcceptHit (0x80334314): retail schedules two loads above stack stores (above the stmw, and
  *   above the iterator copy); GC/2.7 keeps them below. The same load-above-store pattern blocks
  *   fn_80334480 in Game/VehiclePathMove.cpp. */
@@ -605,6 +608,7 @@ static bool Sweep(Vec3f *normal, TVehicleBase *vehicle, Vec3f *position, Vec3f *
 static UnkCopyVector3_800091EC Settle(const Vec3f &position, const Vec3f &direction,
                                       float distance) {
     void *world = fn_80020D40();
+    int i;
     UnkColliMoveFilter_80333AE4 filter;
     filter.m_mask = 0x3A93;
     UnkCopyVector3_800091EC point;
@@ -612,13 +616,15 @@ static UnkCopyVector3_800091EC Settle(const Vec3f &position, const Vec3f &direct
     float reach = distance + 1.0f;
     float lift = distance + s_skin;
     const UnkColliMoveFilter_80333AE4 *self = &filter;
-    for (int i = 3; i > 0; i--) {
+    void *object;
+    CollisionResultList *hits;
+    for (i = 3; i > 0; i--) {
         UnkHitList_800270CC list;
         UnkSphere_80021C04 sphere;
         fn_80021C04(&sphere, reinterpret_cast<Vec3f *>(&point), reach);
-        CollisionResultList *hits = fn_80021CA4(world, &sphere, 1, 2, AcceptHit, &filter, &list);
+        hits = fn_80021CA4(world, &sphere, 1, 2, AcceptHit, self, &list);
         if (hits != 0) {
-            void *object = fn_8002735C(hits)->m_object;
+            object = fn_8002735C(hits)->m_object;
             if (fn_80097D0C(object) < distance) {
                 AssignVector(reinterpret_cast<Vec3f &>(point), fn_8040CDD0(fn_8001E9BC(object),
                                                 &fn_8040CDA8(fn_800266D4(object), lift)));
@@ -636,7 +642,7 @@ static UnkCopyVector3_800091EC Settle(const Vec3f &position, const Vec3f &direct
             Line line;
             AssignVector(line.m_start, reinterpret_cast<Vec3f &>(point));
             AssignVector(line.m_end, *fn_8001E9BC(object));
-            CollisionResultList *blocked = fn_80021E24(world, &line, 1, 2, AcceptHit, &filter);
+            CollisionResultList *blocked = fn_80021E24(world, &line, 1, 2, AcceptHit, self);
             if (blocked != 0) {
                 fn_800265A4(blocked, 1);
             } else {
