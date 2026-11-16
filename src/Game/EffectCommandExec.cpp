@@ -9,7 +9,9 @@
  * EffCmdMatColorExec (98%) and EffCmdPtnAnimExec (99%) add a random whole number to a member
  * right after the random call; retail loads the member into r0 and the converted number into r3,
  * GC/2.7 the other way round (about ten spellings tried: compound and plain adds, a named
- * temporary, an inline helper, casts). The unit's data also carries boost's bad_weak_ptr and
+ * temporary, an inline helper, casts; wave 39 added the operands swapped, two named locals in
+ * both orders, a named random float, (u8), (s32) and (u32) casts and a reference helper, none of
+ * which moves the 4 rows of the pattern constructor). The unit's data also carries boost's bad_weak_ptr and
  * std::exception RTTI and vtables from weak_ptr::lock, which retail's unit does not have, and
  * GC/2.7 emits GetSpeed's out-of-line copy after Exec of the launch command where retail has it
  * after EffCmdSingleExec's constructor. */

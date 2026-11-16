@@ -9,17 +9,25 @@
  * with pool_data off; the functions that address the unit's RTTI records through one base
  * register are compiled with it on.
  *
- * NonMatching: 17 of 21 functions match.
- * - EffectShimmerRW3::Draw (914 instructions): GC/2.7 gives the element's 14 floats and the loop
- *   counters other registers than retail's and schedules the uv set-up differently.
- * - The screen shimmer's Draw (0x8043597C): retail reloads rect.w from the stack for the store
- *   after the size check where GC/2.7 keeps it in a register, and the rest of the function's
- *   registers follow from that.
- * - The screen shimmer's Update (0x80436128, 14 words): the phase and frequency of the two wave
- *   tables take f28/f29 the other way round (all 24 declaration orders tried), and the point's
- *   weight and the column's wave trade f2/f3.
- * - EffectShimmerRW3's constructor (1 word): retail starts the vertex loop's byte offset with
- *   mr r3,r9 (a copy of the zeroed counter), GC/2.7 with li r3,0. */
+ * NonMatching: 20 of 21 functions match.
+ * - EffectShimmerRW3::Draw (914 instructions, 471 rows): GC/2.7 gives the element's 14 floats and
+ *   the loop counters other registers than retail's (`this` is r28 in retail, r31 here) and
+ *   schedules the uv set-up differently. The levers below have not been run over it yet.
+ *
+ * What matched the other three in wave 39:
+ * - The constructor: the loop that gives the strip its depth and colour is an inline function
+ *   (InitStrip). A loop inlined from a function starts its strength-reduced byte offset with a
+ *   copy of the zeroed counter (mr r3,r9), a loop written in place with li r3,0.
+ * - The screen shimmer's Update: the volatile registers of the last loop nest follow the
+ *   declaration order of its locals (earlier declaration, lower register; values the compiler
+ *   hoists or shares itself come first). The row counter is declared before the vertex pointer,
+ *   the point's weight before the column's wave, and the row's parity is not a local: `row % 2`
+ *   stays in the column loop and the compiler hoists it.
+ * - The screen shimmer's Draw: the same, with every local of the last loop nest declared ahead of
+ *   it in retail's order (point, row, vertex, alpha, column counter, column, i, count: the last
+ *   two overflow into r29 and r0). The size check reads rect through a pointer (`size->w`), which
+ *   is what makes retail reload rect.w for the store, and the quad loop takes `i % 2` after the
+ *   x store, not before it. */
 #include "Game/EffectFilterRW3.h"
 #include "Game/MathConstants.h"
 
@@ -375,13 +383,14 @@ void UnkScreenShimmer_80436D48::Update(float dt) {
     for (int i = 0; i < m_params.m_x.m_count + 1; i++) {
         m_waveX[i] = m_params.m_x.m_amplitude * std::sin((float)i * freqX + phaseY);
     }
+    int y;
     UnkIm2DVertex_804342CC *vertex = m_vertices;
     int count = m_params.m_x.m_count + 1;
-    for (int y = 0; y < m_params.m_y.m_count; y++) {
-        int odd = y % 2;
+    for (y = 0; y < m_params.m_y.m_count; y++) {
         for (int x = 0; x < count; x++) {
             int column;
-            if (odd != 0) {
+            float weight;
+            if (y % 2 != 0) {
                 column = m_params.m_x.m_count - x;
             } else {
                 column = x;
@@ -389,7 +398,7 @@ void UnkScreenShimmer_80436D48::Update(float dt) {
             float waveX = m_waveX[column];
             for (int i = 0; i < 2; i++) {
                 RwV3d *point = &m_points[column + count * (y + i)];
-                float weight = point->z;
+                weight = point->z;
                 vertex->x = weight * m_waveY[y + i] + point->x;
                 vertex->y = waveX * weight + point->y;
                 vertex++;
@@ -443,34 +452,41 @@ void UnkScreenShimmer_80436D48::Draw() {
     float v0[2] = {(0.5f + y) / height, (0.5f + (y + rect.h)) / height};
     for (int i = 0; i < 4; i++) {
         int column = i / 2;
-        int row = i % 2;
         m_quad[i].x = column * rect.w;
+        int row = i % 2;
         m_quad[i].y = row * rect.h;
         m_quad[i].u = u0[column];
         m_quad[i].v = v0[row];
     }
+    RwRect *size = &rect;
     if (rect.w != m_width || rect.h != m_height) {
-        m_width = rect.w;
-        m_height = rect.h;
+        m_width = size->w;
+        m_height = size->h;
         BuildGrid();
         Update(0.0f);
     }
     float uRange = u0[1] - u0[0];
     float vRange = v0[1] - v0[0];
-    UnkIm2DVertex_804342CC *vertex = m_vertices;
-    u8 alpha = m_params.m_alpha;
-    int count = m_params.m_x.m_count + 1;
-    for (int row = 0; row < m_params.m_y.m_count; row++) {
-        int odd = row % 2;
-        for (int x = 0; x < count; x++) {
-            int column;
-            if (odd != 0) {
-                column = m_params.m_x.m_count - x;
+    RwV3d *point;
+    int row;
+    UnkIm2DVertex_804342CC *vertex;
+    u8 alpha;
+    int col;
+    int column;
+    int i;
+    int count;
+    vertex = m_vertices;
+    alpha = m_params.m_alpha;
+    count = m_params.m_x.m_count + 1;
+    for (row = 0; row < m_params.m_y.m_count; row++) {
+        for (col = 0; col < count; col++) {
+            if (row % 2 != 0) {
+                column = m_params.m_x.m_count - col;
             } else {
-                column = x;
+                column = col;
             }
-            for (int i = 0; i < 2; i++) {
-                RwV3d *point = &m_points[column + count * (row + i)];
+            for (i = 0; i < 2; i++) {
+                point = &m_points[column + count * (row + i)];
                 vertex->u = uRange * (point->x / m_width) + u0[0];
                 vertex->v = vRange * (point->y / m_height) + v0[0];
                 vertex->r = 0xFF;
@@ -518,6 +534,17 @@ void UnkScreenShimmer_80436D48::Draw() {
 
 namespace Effect {
 namespace RW3 {
+
+/* Gives the strip's vertices their depth and colour. */
+inline void InitStrip(EffectShimmerRW3 *self, float z) {
+    for (int i = 0; i < self->m_vertexCount; i++) {
+        self->m_vertices[i].z = z;
+        self->m_vertices[i].r = 0xFF;
+        self->m_vertices[i].g = 0xFF;
+        self->m_vertices[i].b = 0xFF;
+        self->m_vertices[i].a = 0xFF;
+    }
+}
 
 #pragma pool_data on
 EffectShimmerRW3::EffectShimmerRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
@@ -589,13 +616,7 @@ EffectShimmerRW3::EffectShimmerRW3(const UnkEffectDesc_801D0AFC *desc, EffectLau
         return;
     }
     m_size += m_vertexCount * sizeof(UnkIm2DVertex_804342CC);
-    for (int i = 0; i < m_vertexCount; i++) {
-        m_vertices[i].z = z;
-        m_vertices[i].r = 0xFF;
-        m_vertices[i].g = 0xFF;
-        m_vertices[i].b = 0xFF;
-        m_vertices[i].a = 0xFF;
-    }
+    InitStrip(this, z);
     switch (*static_cast<const s32 *>(m_params)) {
     case 0:
         m_waveX = static_cast<float *>(system->Allocate(m_counts[0] * sizeof(float) + 1));

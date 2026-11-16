@@ -6,12 +6,13 @@
  * out here). File name from the class; member names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 13 of 15 functions match. Generate (88%) has the float/int conversion stack-slot
+ * NonMatching: 14 of 15 functions match. Generate (88%) has the float/int conversion stack-slot
  * difference of docs/research-notes.md (retail shares one slot, GC/2.7 gives each conversion its
  * own and the frame grows by 0x10), and GC/2.7 also keeps the float constants' base address in a
- * register where retail loads each constant with its own lis. Move (99%) differs only in the
- * register of its last loop's particle (r30 for retail's r29; about 20 declaration shapes
- * tried). */
+ * register where retail loads each constant with its own lis. Move matched in wave 39: its last
+ * loop walks the list with a pointer of its own, declared third (after next and exec, before
+ * current); saved registers go down from r30 in declaration order, so that is what gives it r29.
+ * Reusing `particle`, or a new pointer declared anywhere else, gives r30. */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -652,6 +653,7 @@ void EffectParticle::Move(float dt) {
     }
     EffectCommandExec *next;
     EffectCommandExec *exec;
+    EffectParticleExecUnit *moving;
     EffectParticleExecUnit *current;
     EffectParticleExecUnit *particle = m_particles;
     fn_8042A5D0()->SetPool(m_commandPool);
@@ -707,22 +709,22 @@ void EffectParticle::Move(float dt) {
         }
         current = following;
     }
-    for (particle = m_particles; particle != 0; particle = particle->m_next) {
-        fn_8040CFF8(&particle->m_position,
-                    &(const Vec3f &)fn_800091A4(&particle->m_velocity, dt));
+    for (moving = m_particles; moving != 0; moving = moving->m_next) {
+        fn_8040CFF8(&moving->m_position,
+                    &(const Vec3f &)fn_800091A4(&moving->m_velocity, dt));
         if (m_friction != 0.0f) {
-            float length = fn_8040CF50(&particle->m_velocity);
+            float length = fn_8040CF50(&moving->m_velocity);
             if (length > 0.0001f) {
                 float loss = length * m_friction;
                 if (loss > length) {
-                    fn_8040CE38(&particle->m_velocity, 0.0f);
+                    fn_8040CE38(&moving->m_velocity, 0.0f);
                 } else {
-                    fn_8040CE38(&particle->m_velocity, (length - loss) / length);
+                    fn_8040CE38(&moving->m_velocity, (length - loss) / length);
                 }
             }
         }
         if (m_gravity != 0.0f) {
-            particle->m_velocity.y -= dt * m_gravity;
+            moving->m_velocity.y -= dt * m_gravity;
         }
     }
 }

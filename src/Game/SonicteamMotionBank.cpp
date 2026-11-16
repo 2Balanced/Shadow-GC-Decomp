@@ -11,18 +11,32 @@
  * everything here is named from what the code does. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 11 of 18 functions match. fn_80413318 (80%): retail keeps a branch for the event
- * offset (desc->m_eventAddr ? addr & 0x1F : 0) where GC/2.7 always turns it into a subfic/subfe
- * mask (if/else, ternary, "init then if" and an inline helper all tried); that shifts its saved
- * registers too. fn_80412BFC (97%): GC/2.7 folds 4 + 0x20 of the name size into one subfic where
- * retail adds them separately (five spellings tried), and allocates the bare name below the
- * parameters. The rest differ only in register choice: fn_80411818 (99.4%) and fn_80411DEC
- * (98.3%) keep the range start in the event's own float register instead of a copy (ternary,
- * if/else, inline helpers by value and by pointer, a shared variable tried), and fn_80411DEC also
- * gives the hoisted (u16)type the top saved register; fn_80413058 (98.6%) loads the list head
- * through r0 and starts the record offset with li instead of a copy of the counter; fn_804124DC
- * (99%) swaps the bank and base registers of the inlined lookup; fn_80413538 (99%) computes the
- * owned bank's name size in r5 where retail uses r0. */
+ * NonMatching: 15 of 18 functions match.
+ * - fn_80413318 (72 rows of 136): retail keeps a branch for the event offset
+ *   (desc->m_eventAddr ? addr & 0x1F : 0) where GC/2.7 always turns it into a subfic/subfe mask
+ *   (if/else, ternary, "init then if", an inline helper and `% 32` all tried). Retail's saved
+ *   registers follow the declaration list below exactly (entry r31 ... eventLength r22); ours do
+ *   too, except that entry falls to r21 and the rest move up one.
+ * - fn_80412BFC (29 rows of 96): only the saved register of the bare name is left (r31 in retail,
+ *   above the parameters; r27 here, below them; declaring it first, `register`, a for loop and
+ *   using it as the first strstr argument do not move it). The allocation size matched once the
+ *   0x20 was added in its own statement: any single expression folds 4 + 0x20 into one subfic.
+ * - fn_80411DEC (17 rows of 380): the three values hoisted out of the loop ((u16)type, type &
+ *   0x8000, type & 0x4000) and PassesPoint's result take r24, r23, r22 and r26 where retail has
+ *   r23, r24, r26 and r22. Comparing as `(u32)event->m_type == (u32)type` is what puts the
+ *   hoisted type below the parameters (84 rows before); naming the three as locals in any order
+ *   (15 shapes) is worse.
+ *
+ * What matched the others in wave 39, as it may help elsewhere in this library:
+ * - fn_804124DC: FindRecord names the bank's base id (`int base = bank->m_base;`).
+ * - fn_80413058: the list head is assigned inside the condition (`if ((last = lbl) != 0)`), which
+ *   keeps the load in `last`'s own register instead of a forwarded copy, and the skeleton loop is
+ *   an inline function (EnterSkeletons): a loop inlined from a function starts its strength-
+ *   reduced offset with `mr rOffset,rCounter`, a loop written in place with `li rOffset,0`.
+ * - fn_80413538: ROUND_UP_32 repeats `size % 32` instead of naming the remainder; with a named
+ *   remainder the size being rounded takes r5 instead of r0.
+ * - fn_80411818 (and the same lines of fn_80411DEC): `float end; float start;` in that order and
+ *   an if/else for the start; the earlier declaration takes the lower float register. */
 #include <dolphin/types.h>
 #include <string.h>
 #include "Game/MotionHalfKeyTrack.h"
@@ -198,8 +212,9 @@ inline MotionBankRecord *FindRecord(u16 id) {
         return 0;
     }
     for (MotionBank *bank = lbl_805F13B0; bank != 0; bank = bank->m_next) {
-        if (bank->m_base <= (int)id && bank->m_base + bank->m_count > (int)id) {
-            int index = id - bank->m_base;
+        int base = bank->m_base;
+        if (base <= (int)id && base + bank->m_count > (int)id) {
+            int index = id - base;
             if (bank->m_inAram) {
                 for (MotionBankEntry *entry = bank->m_entries; entry != 0; entry = entry->m_next) {
                     if (entry->m_id == id) {
@@ -262,13 +277,7 @@ inline void ForgetHeld(MotionBank *bank) {
 }
 
 /* Rounds a size up to a multiple of 32. */
-#define ROUND_UP_32(size)                                                                          \
-    {                                                                                              \
-        s32 rem = (size) % 32;                                                                     \
-        if (rem != 0) {                                                                            \
-            (size) += 32 - rem;                                                                    \
-        }                                                                                          \
-    }
+#define ROUND_UP_32(size)                                                                              if ((size) % 32) {                                                                                     (size) = (size) + (32 - (size) % 32);                                                          }
 
 /* Checks a motion's data (converting it to the host's byte order); it must have all three
  * channels. */
@@ -497,12 +506,18 @@ void fn_80413240(u16 id) {
     ReleaseRecord(id);
 }
 
+/* Enters the skeleton of every motion of a bank through the registry. */
+inline void EnterSkeletons(MotionBank *bank) {
+    for (int i = 0; i < bank->m_count; i++) {
+        bank->m_records[i].m_data->m_skeleton = fn_804106C0(bank->m_records[i].m_data->m_name);
+    }
+}
+
 /* Registers a bank (giving it the first free run of ids when its base is 0) and moves it to
  * ARAM; returns its base id, or 0. */
 u16 fn_80413058(MotionBank *bank) {
-    int i;
-    MotionBank *last = lbl_805F13B0;
-    if (last != 0) {
+    MotionBank *last;
+    if ((last = lbl_805F13B0) != 0) {
         for (MotionBank *other = last; other != 0; other = other->m_next) {
             if (other == bank) {
                 return 0;
@@ -553,9 +568,7 @@ u16 fn_80413058(MotionBank *bank) {
         bank->m_base = 1;
         lbl_805F13B0 = bank;
     }
-    for (i = 0; i < bank->m_count; i++) {
-        bank->m_records[i].m_data->m_skeleton = fn_804106C0(bank->m_records[i].m_data->m_name);
-    }
+    EnterSkeletons(bank);
     return fn_80413538(bank)->m_base;
 }
 
@@ -622,7 +635,11 @@ u16 fn_80412BFC(void *data, const char *path, void (*release)(void *data), int a
     } else {
         length = strlen(name) + 1;
     }
-    MotionBank *bank = (MotionBank *)fn_80411134(1, length + (0x20 + (4 - length % 4)));
+    /* The header and its one record, the name and its padding. */
+    int size = 4 - length % 4;
+    size += 0x20;
+    size += length;
+    MotionBank *bank = (MotionBank *)fn_80411134(1, size);
     bank->m_count = 1;
     bank->m_owned = 1;
     bank->m_release = release;
@@ -868,13 +885,19 @@ int fn_80411DEC(u16 id, u16 type, MotionFrames *frames, void *params, int stoppe
     }
     for (event = (MotionBankEvent *)s_cursor; (s16)event->m_size != -1;
          event = (MotionBankEvent *)(s_cursor += event->m_size)) {
-        if (event->m_type == type) {
+        if ((u32)event->m_type == (u32)type) {
             if (type & 0x8000) {
                 if (frames == 0) {
                     break;
                 }
-                float start = FrameOr(event->m_start, &lbl_805E12A0.m_start);
-                float end = event->m_end;
+                float end;
+                float start;
+                if (event->m_start < 0.0f) {
+                    start = lbl_805E12A0.m_start;
+                } else {
+                    start = event->m_start;
+                }
+                end = event->m_end;
                 if (end < 0.0f) {
                     end = lbl_805E12A0.m_end;
                 }
@@ -947,8 +970,14 @@ int fn_80411818(u16 id, u16 *type, MotionFrames *frames, void **params, int stop
             if (frames == 0) {
                 break;
             }
-            float start = FrameOr(event->m_start, &lbl_805E12B0.m_start);
-            float end = event->m_end;
+            float end;
+            float start;
+            if (event->m_start < 0.0f) {
+                start = lbl_805E12B0.m_start;
+            } else {
+                start = event->m_start;
+            }
+            end = event->m_end;
             if (end < 0.0f) {
                 end = lbl_805E12B0.m_end;
             }

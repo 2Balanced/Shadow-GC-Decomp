@@ -8,7 +8,25 @@
  * addressed on their own (#pragma pool_data off), while statics are reached from one base register
  * where a function uses three of them (pool_data on around GetRenderState). The library's compiler
  * did not inline calls made inside loops, nor Invalidate into Begin; #pragma dont_inline marks
- * those callers, as GC/2.7 would inline them. */
+ * those callers, as GC/2.7 would inline them.
+ *
+ * Wave 39 finding, measured but not kept: the five interpolators and EvaluateTrack very probably
+ * return CValue by value, and CValue has a constructor. A class with a user-declared constructor
+ * is returned through a result pointer in r3 (a plain 4-byte union comes back in r3 itself), and
+ * that is the only shape that gives retail's Interpolate, which saves the result pointer in r31
+ * and reloads it for the return after the switch only. With `struct CValue { CValue() {} union
+ * { s32 m_int; f32 m_float; }; };` in Game/CsdLib.h, `CValue Interpolate(float, const SKey *,
+ * const SKey *)` with `case N: return InterpolateX(frame, k0, k1);` and a trailing `return
+ * InterpolateConst(...)`, Interpolate matches, EvaluateTrack has retail's size, and
+ * InterpolateColor matches with `*(s32 *)&v = *(s32 *)c;`. It was reverted because EvaluateTrack
+ * and EvaluateCast, which match as written here, then each keep 4 rows: retail puts the result
+ * temporary of the call between the named locals in the frame (v 16, temporary 12, r 8), GC/2.7
+ * after them, and EvaluateCast needs GetAttribute (Game/csdAccess.cpp, outside this unit) to
+ * return by value too. The constructor also renumbers the @N locals of every unit that includes
+ * the header. InterpolateHermite (24 rows) is a scheduling difference either way: retail squares
+ * t late and loads the conversion constant through an addi (d, dv, t2 and t3 as locals or inline,
+ * six combinations). SwapEndian (4 rows) loads the value into r4 where GC/2.7 uses r0 (named
+ * locals, typed pointers, the size parameter reused, inline helpers; probes/Game_csdLoader.py). */
 #include <string.h>
 
 #include <dolphin/types.h>

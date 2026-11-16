@@ -992,7 +992,7 @@ config.libs = [
             Object(Matching, "Game/EffectArrangerUSA.cpp"),
             Object(NonMatching, "Game/EffectCommandExec.cpp", cflags=cflags_effect_nopool),
             Object(Matching, "Game/EffectFogRW3.cpp", cflags=cflags_effect),
-            Object(NonMatching, "Game/EffectGlareRW3.cpp", cflags=cflags_effect_lib),
+            Object(Matching, "Game/EffectGlareRW3.cpp", cflags=cflags_effect_lib),
             Object(NonMatching, "Game/EffectGlobalParam.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectGlobalParamRW3.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectGlobalParamUSA.cpp"),

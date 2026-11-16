@@ -6,12 +6,17 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 13 of 16 functions match. Generate (89%) has the float/int conversion stack-slot
+ * NonMatching: 14 of 16 functions match. Generate (89%) has the float/int conversion stack-slot
  * difference of docs/research-notes.md and the float-constant base register that
  * Game/EffectParticle.cpp's Generate has; the constructor (90%) loads the description fields in
  * another order, the scheduling difference of Game/EffectShimmer.cpp's and
- * Game/EffectLensFlare.cpp's constructors; Move (99.8%) has the register difference of
- * Game/EffectParticle.cpp's Move. The unit's .data also holds the GenQuantity and Friction
+ * Game/EffectLensFlare.cpp's constructors: retail keeps every load of a description field after
+ * the store before it, GC/2.7 moves the loads up (the fourth compiler difference of
+ * docs/research-notes.md). A non-const or volatile description pointer, raw scalar reads, a
+ * named shape, a reference to m_config and the optimizer pragmas do not change that, and
+ * `#pragma scheduling off` fixes those rows while breaking the prologue and the pool set-up (34
+ * rows for 20). Move matched in wave 39 as Game/EffectParticle.cpp's did: the last loop has a
+ * pointer of its own, declared third. The unit's .data also holds the GenQuantity and Friction
  * command vtables (weak copies; retail links the particle unit's). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
@@ -569,6 +574,7 @@ void EffectRay::Move(float dt) {
     }
     EffectCommandExec *next;
     EffectCommandExec *exec;
+    EffectRayExecUnit *moving;
     EffectRayExecUnit *current;
     EffectRayExecUnit *ray = m_head;
     fn_8042A5D0()->SetPool(m_commandPool);
@@ -624,16 +630,16 @@ void EffectRay::Move(float dt) {
         }
         current = following;
     }
-    for (ray = m_head; ray != 0; ray = ray->m_next) {
-        fn_8040CFF8(&ray->m_start, &(const Vec3f &)fn_800091A4(&ray->m_velocity, dt));
+    for (moving = m_head; moving != 0; moving = moving->m_next) {
+        fn_8040CFF8(&moving->m_start, &(const Vec3f &)fn_800091A4(&moving->m_velocity, dt));
         if (m_friction != 0.0f) {
-            float length = fn_8040CF50(&ray->m_velocity);
+            float length = fn_8040CF50(&moving->m_velocity);
             if (length > 0.0001f) {
                 float loss = length * m_friction;
                 if (loss > length) {
-                    fn_8040CE38(&ray->m_velocity, 0.0f);
+                    fn_8040CE38(&moving->m_velocity, 0.0f);
                 } else {
-                    fn_8040CE38(&ray->m_velocity, (length - loss) / length);
+                    fn_8040CE38(&moving->m_velocity, (length - loss) / length);
                 }
             }
         }

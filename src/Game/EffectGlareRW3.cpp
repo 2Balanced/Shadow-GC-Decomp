@@ -4,7 +4,11 @@
  * PostGlare shrinks the frame into two smaller copies (128 and 64 pixels), blurs them by drawing
  * them over themselves at growing offsets, and adds them back over the screen. Member and
  * function names are inferred. Definitions are in reverse address order (deferred inlining emits
- * functions last-defined first). */
+ * functions last-defined first).
+ *
+ * Draw matched once the shrink step became an inline member taking (dst, src, color), called with
+ * the expressions as arguments; about 110 spellings of the same statements written out in Draw
+ * (probes/Game_EffectGlareRW3.py lists the families) all kept an 18 to 23 row register trade. */
 #include "Effect/System/EffectSystem.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -176,6 +180,29 @@ class UnkGlare_80430524 {
         }
     }
 
+    /* Draws src shrunk into dst's size at the given brightness, and copies the frame into dst.
+     * The parameter order is what the register allocation follows: with the target first, the
+     * brightness byte gets r4 and the vertex pointer r5 in the colour loop, as in retail; as
+     * statements of Draw (named locals and a SetColor call) the two trade places, and the first
+     * Add of the "separate" branch then holds its rasters in r31/r29 instead of r29/r31. */
+    inline void Shrink(RwRaster_8042E208 *dst, RwRaster_8042E208 *src, u8 color) {
+        for (int i = 0; i < 4; i++) {
+            m_quad[i].red = color;
+            m_quad[i].green = color;
+            m_quad[i].blue = color;
+            m_quad[i].alpha = 0xFF;
+        }
+        if (src && fn_804854DC(m_camera)) {
+            RwRenderStateSet(rwRENDERSTATETEXTURERASTER_8042E208, src->parent);
+            RwRenderStateSet(rwRENDERSTATESRCBLEND_8042E208, 2);
+            RwRenderStateSet(rwRENDERSTATEDESTBLEND_8042E208, 1);
+            SetQuad(-0.5f, -0.5f, dst->width, dst->height, m_u[m_index[0]][0],
+                    m_v[m_index[0]][0], m_u[m_index[0]][1], m_v[m_index[0]][1]);
+            RwIm2DRenderPrimitive(4, m_quad, 4);
+            fn_804854B4(m_camera);
+        }
+        fn_804951B8(dst, 0);
+    }
     inline void SetColor(u8 r, u8 g, u8 b, u8 a) {
         for (int i = 0; i < 4; i++) {
             m_quad[i].red = r;
@@ -594,30 +621,10 @@ void UnkGlare_80430524::Blur(RwRaster_8042E208 **rasters, s32 *index, s32 countX
     }
 }
 
-/* Draws src shrunk into dst's size, and copies the frame into dst. */
-#define SHRINK(src, dst)                                                                           \
-    if ((src) && fn_804854DC(m_camera)) {                                                          \
-        RwRenderStateSet(rwRENDERSTATETEXTURERASTER_8042E208, (src)->parent);                     \
-        RwRenderStateSet(rwRENDERSTATESRCBLEND_8042E208, 2);                                      \
-        RwRenderStateSet(rwRENDERSTATEDESTBLEND_8042E208, 1);                                     \
-        SetQuad(-0.5f, -0.5f, (dst)->width, (dst)->height, m_u[m_index[0]][0],                    \
-                m_v[m_index[0]][0], m_u[m_index[0]][1], m_v[m_index[0]][1]);                      \
-        RwIm2DRenderPrimitive(4, m_quad, 4);                                                      \
-        fn_804854B4(m_camera);                                                                    \
-    }                                                                                              \
-    fn_804951B8((dst), 0);
-
 void UnkGlare_80430524::Draw() {
-    RwRaster_8042E208 *src;
-    RwRaster_8042E208 *dst;
-    u8 color;
     if (m_param.large) {
         m_index[0] = 0;
-        color = m_param.largeColor * lbl_8056AC30;
-        src = m_rasters[0][0];
-        dst = m_rasters[1][m_index[1]];
-        SetColor(color, color, color, 0xFF);
-        SHRINK(src, dst);
+        Shrink(m_rasters[1][m_index[1]], m_rasters[0][0], m_param.largeColor * lbl_8056AC30);
         SetColor(0xFF, 0xFF, 0xFF, 0xFF);
         m_index[0] = 1;
         Blur(m_rasters[1], &m_index[1], m_param.largeCountX, m_param.largeCountY,
@@ -626,26 +633,15 @@ void UnkGlare_80430524::Draw() {
     if (m_param.small) {
         if (m_param.smallFromScreen) {
             m_index[0] = 0;
-            color = m_param.smallColor * lbl_8056AC30;
-            src = m_rasters[0][0];
-            dst = m_rasters[2][m_index[2]];
-            SetColor(color, color, color, 0xFF);
-            SHRINK(src, dst);
+            Shrink(m_rasters[2][m_index[2]], m_rasters[0][0], m_param.smallColor * lbl_8056AC30);
             SetColor(0xFF, 0xFF, 0xFF, 0xFF);
         } else if (m_param.large) {
             m_index[0] = 1;
-            src = m_rasters[1][m_index[1]];
-            dst = m_rasters[2][m_index[2]];
-            SetColor(m_param.smallColor, m_param.smallColor, m_param.smallColor, 0xFF);
-            SHRINK(src, dst);
+            Shrink(m_rasters[2][m_index[2]], m_rasters[1][m_index[1]], m_param.smallColor);
             SetColor(0xFF, 0xFF, 0xFF, 0xFF);
         } else {
             m_index[0] = 0;
-            color = m_param.smallColor * lbl_8056AC30;
-            src = m_rasters[0][0];
-            dst = m_rasters[2][m_index[2]];
-            SetColor(color, color, color, 0xFF);
-            SHRINK(src, dst);
+            Shrink(m_rasters[2][m_index[2]], m_rasters[0][0], m_param.smallColor * lbl_8056AC30);
             SetColor(0xFF, 0xFF, 0xFF, 0xFF);
         }
         m_index[0] = 2;
