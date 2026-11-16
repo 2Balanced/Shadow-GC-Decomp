@@ -247,6 +247,20 @@ cflags_msl = [
     "-inline deferred",
 ]
 
+# The C++ part of the Metrowerks runtime (NMWException.cp, MWRTTI.cp, Gecko_ExceptionPPC.cp):
+# the runtime flags with exception tables and RTTI (their functions have extab entries, and
+# std::bad_cast and std::bad_exception have type records), deferred inlining (the functions of
+# each file come out in reverse definition order, e.g. __destroy_new_array first and
+# __construct_new_array last) and unpooled strings (MWRTTI.cp's "bad_cast" is addressed on its
+# own, after the type names, not at an offset from the file's first string).
+cflags_runtime_cpp = [
+    *cflags_runtime,
+    "-Cpp_exceptions on",
+    "-RTTI on",
+    "-inline deferred",
+    "-str nopool",
+]
+
 # Game C++ flags (see docs/research-notes.md). main() at 0x80050FD4 matches only with -O4,s and
 # stmw/lmw. The gadget code needs RTTI (its classes have RTTI records), read-only pooled strings, and
 # deferred inlining one level deep: functions come out in reverse definition order, and an inline
@@ -362,6 +376,30 @@ cflags_rel = [
 
 config.linker_version = "GC/2.7"
 
+# Sets unused, uninitialized padding bytes of an object's exception tables to retail's, in place
+# (tools/extabpad.py). The template's own `extab_padding` option rewrites the object with
+# `dtk extab clean`, which loses the flag that makes the linker keep a pooled data section whole
+# (Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp's strings), so that unit uses this step instead. The
+# step runs after the compile and before the link ("post-compile").
+config.custom_build_rules = [
+    {
+        "name": "extab_pad",
+        "command": "$python tools/extabpad.py $in $out $pads",
+        "description": "EXTABPAD $in",
+    },
+]
+config.custom_build_steps = {
+    "post-compile": [
+        {
+            "rule": "extab_pad",
+            "inputs": Path("build") / config.version / "src" / "Runtime.PPCEABI.H" / "Gecko_ExceptionPPC.o",
+            "outputs": Path("build") / config.version / "Gecko_ExceptionPPC.extabpad",
+            "implicit": Path("tools") / "extabpad.py",
+            "variables": {"pads": "__unexpected:0x1A=0255"},
+        },
+    ],
+}
+
 
 # Helper function for Dolphin libraries
 def DolphinLib(lib_name: str, objects: List[Object]) -> Dict[str, Any]:
@@ -408,9 +446,14 @@ config.libs = [
             Object(Matching, "Runtime.PPCEABI.H/__va_arg.c"),
             Object(Matching, "Runtime.PPCEABI.H/global_destructor_chain.c"),
             Object(Matching, "Runtime.PPCEABI.H/CPlusLibPPC.cp"),
+            Object(Matching, "Runtime.PPCEABI.H/NMWException.cp", cflags=cflags_runtime_cpp),
             Object(Matching, "Runtime.PPCEABI.H/ptmf.c"),
+            Object(Matching, "Runtime.PPCEABI.H/MWRTTI.cp", cflags=cflags_runtime_cpp),
             Object(Matching, "Runtime.PPCEABI.H/runtime.c"),
             Object(Matching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
+            # The two unused bytes of __unexpected's catch (...) action are uninitialized in the
+            # compiler's output; the extab_pad step (custom_build_steps, above) sets them to retail's.
+            Object(Matching, "Runtime.PPCEABI.H/Gecko_ExceptionPPC.cp", cflags=cflags_runtime_cpp),
             # Its two messages are separate objects in .rodata, not one pooled string table.
             Object(Matching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", cflags=[*cflags_runtime, "-str nopool"]),
         ],
@@ -650,6 +693,7 @@ config.libs = [
             Object(Matching, "dolphin/os/OSSync.c"),
             Object(Matching, "dolphin/os/OSThread.c"),
             Object(Matching, "dolphin/os/OSTime.c"),
+            Object(Matching, "dolphin/os/__start.c"),
             Object(Matching, "dolphin/os/__ppc_eabi_init.cpp"),
         ],
     ),
@@ -1629,6 +1673,7 @@ config.libs = [
             Object(NonMatching, "Game/UnkAxisRotation_80049778.cpp"),
             Object(NonMatching, "Game/UnkClumpFade_80038120.cpp"),
             Object(Matching, "Game/UnkClumpLight_80039B94.cpp"),
+            Object(Matching, "Game/UnkClumpManager_800144C8.cpp"),
             Object(NonMatching, "Game/UnkCollisionQuery_80020D40.cpp"),
             Object(Matching, "Game/UnkEulerAngles_80049290.cpp"),
             Object(Matching, "Game/UnkFileSystem_800371D8.cpp"),
@@ -1649,7 +1694,9 @@ config.libs = [
             Object(Matching, "Game/UnkSnnFile_802289B0.cpp"),
             Object(NonMatching, "Game/UnkSphereSweep_800221A8.cpp"),
             Object(NonMatching, "Game/UnkSphereTriangle_8002483C.cpp"),
+            Object(Matching, "Game/UnkStageCallbacks_8016A9E0.cpp"),
             Object(Matching, "Game/UnkStageCallbacks_80286D4C.cpp"),
+            Object(Matching, "Game/UnkStageCallbacks_80328048.cpp"),
             Object(Matching, "Game/UnkSystemManager_801E2128.cpp"),
             Object(Matching, "Game/UnkTaskLayers_801EB424.cpp"),
             Object(Matching, "Game/UnkTime_801E46E4.cpp"),

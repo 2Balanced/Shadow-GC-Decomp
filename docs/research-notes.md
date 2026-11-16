@@ -374,3 +374,34 @@ build described above):
 - a switch whose arms were still separate blocks when it was lowered and were joined afterwards
   (`MemoryCard::PollOpen`), and two constant returns kept as branches (`fn_801E7094` in
   `Game/Target.cpp`).
+
+## The C++ runtime library (Runtime.PPCEABI.H)
+
+`NMWException.cp`, `MWRTTI.cp` and `Gecko_ExceptionPPC.cp` match under GC/2.7 with the runtime flags
+plus `-Cpp_exceptions on -RTTI on -inline deferred -str nopool` (`cflags_runtime_cpp`): their
+functions stand in reverse definition order, and every one with a frame has an `extab` entry.
+
+- **Dead-stripped functions still shape the data.** `MWRTTI.cp` needs the unreferenced `__get_typeid`
+  (and its `std::bad_typeid`) for `std::exception`'s type name to precede `std::bad_cast`'s in
+  `.rodata`; the linker drops the function, its strings and its vtable.
+- **A struct that stays in memory.** `ExPPC_FindExceptionRecord` reads its `FragmentInfo` local back
+  from the stack after an inlined call filled it in. GC/2.7 keeps it there only when the caller
+  reaches it through a pointer variable (`FragmentInfo *frag = &fragment;`); used by name, the
+  fields are promoted to registers and the frame disappears.
+- **Register order follows declaration order, loads follow assignment order.** The two array
+  cases of `ExPPC_UnwindStack` match with `long size, n; char *ptr;` declared without initializers
+  and assigned in the order retail loads them; initialized declarations in any order do not.
+- **`#pragma exception_terminate`** in a function body gives the `0x8E` terminate action retail has
+  in `ExPPC_UnwindStack` and in the inlined part of `ExPPC_ThrowHandler`; `#pragma exception_magic`
+  gives `__unexpected` access to the current catch block (`__exception_magic`).
+- **`extab_padding` and pooled data do not mix.** The catch-all action of `__unexpected` has two
+  unused bytes that MWCC leaves uninitialized (they differ on every compile; retail has `0x0255`).
+  `dtk extab clean` (the `extab_padding` option) fixes such bytes but rewrites the object, and the
+  rewrite clears the flag byte (`0x10`) MWCC sets in `.comment` for a section's data-pool base
+  symbol (`...rodata.0`). Without the flag mwldeppc no longer keeps that section whole, and strips
+  the strings the code reaches through the base register (0x60 bytes of `.rodata` here).
+  `tools/extabpad.py` sets the bytes in place instead, as a `post-compile` step in `configure.py`.
+- **Assembly functions switch the peephole pass off for the rest of a file** (GC/1.2.5n): with
+  `__init_hardware` and `__flush_cache` at the top of `dolphin/os/__ppc_eabi_init.cpp`, and
+  `__start`/`__init_registers` ahead of `__init_data` in `dolphin/os/__start.c`, the C functions
+  after them come out with retail's unscheduled prologues and redundant branches, with no pragma.

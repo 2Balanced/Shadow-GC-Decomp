@@ -94,7 +94,9 @@ void __dt__16UnkPath_8040E61CFv(UnkPath_8040E61C *path, int free);
 RwTexDictionary *fn_8048D0C4(RwTexDictionary *dict);
 void fn_80039618(UnkTexDictManager_80014534 *manager, RwTexDictionary *dict, int arg2);
 void fn_802E0600(void *dict);
-void fn_802E2A60(UnkClumpManager_800144C8 *manager, void *clump, int arg2);
+/* The clump manager's members (Game/UnkClumpManager_800144C8.cpp), by their mangled names. */
+void SetSettings__24UnkClumpManager_800144C8FP7RpClumpi(UnkClumpManager_800144C8 *manager,
+                                                        void *clump, int arg2);
 void fn_8003815C(void *clump);
 void *fn_8046256C(void *clump);
 void fn_804623EC(void *world, void *clump);
@@ -126,8 +128,8 @@ UnkTaskRegistry_80014B90 *fn_80014B90(void);
 void *__register_global_object(void *object, void *destructor, void *record);
 /* The singletons' constructors and destructors. */
 UnkTaskRegistry_80014B90 *fn_8025D240(UnkTaskRegistry_80014B90 *registry);
-UnkClumpManager_800144C8 *fn_802E2ADC(UnkClumpManager_800144C8 *manager);
-void fn_802E2AA0(UnkClumpManager_800144C8 *manager, int flags);
+UnkClumpManager_800144C8 *__ct__24UnkClumpManager_800144C8Fv(UnkClumpManager_800144C8 *manager);
+void __dt__24UnkClumpManager_800144C8Fv(UnkClumpManager_800144C8 *manager, int flags);
 /* The .ADB manager's constructor and destructor (Game/AdbManager.cpp). */
 UnkAdbManager_80013BC4 *__ct__22UnkAdbManager_80013BC4Fv(UnkAdbManager_80013BC4 *manager);
 void __dt__22UnkAdbManager_80013BC4Fv(UnkAdbManager_80013BC4 *manager, int flags);
@@ -414,8 +416,8 @@ extern "C" UnkTexDictManager_80014534 *fn_80014534(void) {
 extern "C" UnkClumpManager_800144C8 *fn_800144C8(void) {
     if (s_clumpManagerInstance == 0) {
         if (!s_clumpManagerInitialized) {
-            __register_global_object(fn_802E2ADC(&s_clumpManager), fn_802E2AA0,
-                                     s_clumpManagerRecord);
+            __register_global_object(__ct__24UnkClumpManager_800144C8Fv(&s_clumpManager),
+                                     __dt__24UnkClumpManager_800144C8Fv, s_clumpManagerRecord);
             s_clumpManagerInitialized = 1;
         }
         s_clumpManagerInstance = &s_clumpManager;
@@ -469,7 +471,7 @@ bool ResourceOneFile::LoadFiles(UnkOneFile_8004CFB0 *file) {
             m_entries[j].m_data = fn_8004BB24(file, index, 0, 0);
             m_entries[j].m_type = 3;
             m_entries[j].m_size = info->m_size;
-            fn_802E2A60(fn_800144C8(), m_entries[j].m_data, 0);
+            SetSettings__24UnkClumpManager_800144C8FP7RpClumpi(fn_800144C8(), m_entries[j].m_data, 0);
             fn_8003815C(m_entries[j].m_data);
         } else if (HasExtension(info->m_name, ".BON")) {
             m_entries[j].m_data = fn_8004C358(file, index, 0, 0);

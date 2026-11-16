@@ -179,7 +179,7 @@ void fn_802E0600(void *dict);
 void fn_802E05CC(RwTexture *texture);
 RpClump *fn_80456C54(RpClump *clump, RpAtomic *(*callback)(RpAtomic *, void *), void *data);
 void *fn_800144C8(void);
-void fn_802E2A60(void *world, void *clump, int arg2);
+void SetSettings__24UnkClumpManager_800144C8FP7RpClumpi(void *world, void *clump, int arg2);
 void fn_8003815C(void *clump);
 void *fn_8046256C(void *clump);
 void fn_804623EC(void *world, void *clump);
@@ -542,7 +542,7 @@ bool ResourceOneFileReq::LoadFiles(UnkOneFile_8004CFB0 *file) {
             if (textures != 0) {
                 fn_80456C54(static_cast<RpClump *>(m_entries[slot].m_data), fn_8006B638, textures);
             }
-            fn_802E2A60(fn_800144C8(), m_entries[slot].m_data, 0);
+            SetSettings__24UnkClumpManager_800144C8FP7RpClumpi(fn_800144C8(), m_entries[slot].m_data, 0);
             fn_8003815C(m_entries[slot].m_data);
         } else if (HasExtension(info->m_name, ".RP2")) {
             m_entries[slot].m_data = fn_8004BB24(file, index, 0, 0);
