@@ -14,7 +14,8 @@ namespace System {
 class EffectLensFlare : public EffectElement {
   public:
 #ifdef EFFECT_ELEMENT_FULL
-    EffectLensFlare(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+    /* The description is a pointer to non-const, as EffectGlobalParam's is (see there). */
+    EffectLensFlare(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                     EffectManager *manager);
 #endif
     virtual ~EffectLensFlare();

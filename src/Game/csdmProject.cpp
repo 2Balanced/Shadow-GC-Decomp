@@ -8,10 +8,8 @@
  * in (by name and by frame count); MSL_MAKE_PAIR_BY_VALUE makes make_pair copy its arguments, as the
  * multimaps' equal_range has it; the others are as in Game/csdmScene.cpp.
  *
- * The unit stays NonMatching (159 of 161 functions match):
- * - CProject::iterator::operator* (0x8036C318): GC/2.7 schedules its first load above the
- *   prologue's stores; retail keeps it after them (the later 2.7-era compiler of
- *   docs/research-notes.md, fourth difference).
+ * The unit stays NonMatching (160 of 161 functions match; CProject::iterator::operator* matches
+ * since wave 39, when it stopped being const, see Game/CsdProject.h):
  * - fn_8036F470: retail gives the key a stack slot above the end() temporary, GC/2.7 below it.
  * - Order: retail places fn_8036F470, CSceneList::Add and the name map's end() between two batches
  *   of tree code (the second with its own copies of two strings), which GC/2.7 does not reproduce;

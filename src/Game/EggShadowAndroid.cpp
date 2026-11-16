@@ -265,7 +265,12 @@ void EggShadowAndroid::vfStat_0x38() {
 /* NonMatching: retail gives this r31, the loader r30 and the model r29; GC/2.7 gives this the
  * last register (as in BkGiant.cpp, where retail does too), and no source shape tried (about 20:
  * locals, copies of this, inline helpers, a plain table) changes that. The AI's two turn helpers
- * show the same pattern with a float parameter (Game/EggShadowAndroidAI.cpp). */
+ * show the same pattern with a float parameter (Game/EggShadowAndroidAI.cpp).
+ * Wave 39 (probes/Game_EggShadowAndroid*.py, 20 more shapes): GC/2.7 hands the saved registers to
+ * the declared locals in declaration order (loader, model: r31, r30; declared the other way round:
+ * r30, r31) and to this after them, whatever is called first; an inline wrapper for the loader, a
+ * call before the declarations, the file name through a local or a comma expression and inline
+ * helpers for the two loads do not put this first. */
 void EggShadowAndroid::vfDisp_0x64() {
     void *loader = fn_800122D4();
     void *model = fn_80012684(loader, m_enemy->m_motionBase, 5);

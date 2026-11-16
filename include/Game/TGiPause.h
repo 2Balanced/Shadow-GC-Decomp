@@ -47,8 +47,9 @@ class folderPause {
     bool Update();
     /* Draws the mission's text (name inferred). */
     void Draw();
-    /* Finds the scenes and hides the missing missions' icons (name inferred). */
-    void InitScenes(Chao::CSD::CProject *project);
+    /* Finds the scenes and hides the missing missions' icons (name inferred). The constructor
+     * passes the manager's player in r5 and nothing reads it: an unused parameter. */
+    void InitScenes(Chao::CSD::CProject *project, s32 player);
     /* Opens the menu (name inferred). */
     void Open();
     /* Follows the manager's cursor and player (names inferred). */

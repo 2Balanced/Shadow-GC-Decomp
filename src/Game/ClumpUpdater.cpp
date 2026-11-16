@@ -381,7 +381,9 @@ float fn_80015D68(float x) {
 /* NonMatching (three instructions): retail computes -angle once into the now-dead f26 and reuses
  * it for both matrix calls; GC/2.7 overwrites angle in f28. Named negations and reusing dead locals
  * either do not change that choice or disturb the whole float allocation, while the opt_lifetimes
- * and opt_deadassignments pragmas have no effect. */
+ * and opt_deadassignments pragmas have no effect. Wave 39 (probes/Game_ClumpUpdater_B60.py): with
+ * the angle kept alive past the negation GC/2.7 takes f29, the highest free register, not f26, so
+ * retail's choice is not a matter of what is live. */
 float fn_80015B60(Mtx34f *a, Mtx34f *b, Mtx34f *c, const Vec3f *target, const Mtx34f *base,
                   float length0, float length1, float length2) {
     float distance = fn_80016104(a, target, base, true);
@@ -525,7 +527,9 @@ RpAtomic *fn_80015698(RpAtomic *atomic, void *data) {
  * NonMatching (one instruction): retail copies the zeroed loop counter into the byte offset with
  * `mr r27,r30`; GC/2.7 emits an independent `li r27,0`. Explicit byte offsets and cached node
  * pointers change the saved-register set; chained initialization, declaration order, and the
- * opt_propagation/opt_strength_reduction pragmas leave the same residual. */
+ * opt_propagation/opt_strength_reduction pragmas leave the same residual. So do a counter declared
+ * outside the loop, a long counter, a while loop, pre-increment and inline accessors for the node
+ * table and the count (wave 39, probes/Game_ClumpUpdater.py). */
 RwFrame *fn_80015570(RwFrame *frame, void *data) {
     UnkClumpUpdater_80015A7C *updater = static_cast<UnkClumpUpdater_80015A7C *>(data);
     if (updater->m_motion != 0) {

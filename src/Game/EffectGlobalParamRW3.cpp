@@ -71,7 +71,8 @@ namespace RW3 {
 
 EffectGlobalParamRW3::EffectGlobalParamRW3(const UnkEffectDesc_801D0AFC *desc,
                                            EffectLaunchInfo *info, EffectManager *manager)
-    : EffectGlobalParam(desc, info, manager), m_fromFog(0, 0, 0), m_toFog(0, 0, 0),
+    : EffectGlobalParam(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager), m_fromFog(0, 0, 0),
+      m_toFog(0, 0, 0),
       m_fromShimmer(false, 0xFF, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f),
       m_toShimmer(false, 0xFF, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f) {
     m_size -= sizeof(EffectGlobalParam);

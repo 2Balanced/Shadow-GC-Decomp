@@ -19,7 +19,8 @@ class UnkEffectPool_8042A344;
 class EffectShimmer : public EffectElement {
   public:
 #ifdef EFFECT_ELEMENT_FULL
-    EffectShimmer(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+    /* The description is a pointer to non-const, as EffectGlobalParam's is (see there). */
+    EffectShimmer(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                   EffectManager *manager);
 #endif
     virtual ~EffectShimmer();
@@ -41,7 +42,7 @@ class EffectShimmer : public EffectElement {
     /* 0x130 */ Vec2f m_waveLength;
     /* 0x138 */ u8 field_0x138[0x13C - 0x138];
     /* 0x13C */ u32 field_0x13C;
-    /* 0x140 */ u32 m_alpha;  /* 8 bits, from bit 10 */
+    /* 0x140 */ u32 m_alpha;  /* 8 bits, from bit 22 */
     /* 0x144 */ const void *m_params;
     /* 0x148 */ const u8 *m_cursor; /* the next command */
     /* 0x14C */ EffectCommandExec *m_head;

@@ -6,8 +6,10 @@
  * original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 8 of 9 functions and all data match. fn_80193790: retail loads m_enemy into r5 for
- * the path set-up call (then r4 = +0x48, r5 = +0x60); GC/2.7 uses r4 under every form tried. */
+ * fn_80193790 passes the enemy's home rotation through the inline Enemy::GetHomeRotation(): an
+ * inline call inside the argument list is evaluated before the others, which is why retail forms
+ * the third argument (+0x60) before the second (+0x48) with the enemy in r4. Written as
+ * &m_enemy->field_0x60 the enemy goes to r5 (wave 39; probes/Game_FlyerCommonBase.py). */
 
 #include "Game/EnemyFlyer.h"
 #include "Game/MathTypes.h"
@@ -72,7 +74,7 @@ void FlyerCommonBase::vfStat_0x38() {
  * and GunBeetle call it by this name). */
 extern "C" void fn_80193790(FlyerCommonBase *flyer, FlyerParam *param) {
     if (flyer->vf_0x238()) {
-        fn_801A6688(&flyer->m_path, &flyer->m_enemy->field_0x48, &flyer->m_enemy->field_0x60,
+        fn_801A6688(&flyer->m_path, &flyer->m_enemy->field_0x48, flyer->m_enemy->GetHomeRotation(),
                     param->m_path, param->PathMirror != 0, 0);
         flyer->field_0x2E0 = param->MoveSpeedRatio * flyer->m_enemy->m_para->vfPara_0x20();
         flyer->field_0x2E4 = 0.0f;
@@ -95,6 +97,7 @@ extern "C" void fn_80193790(FlyerCommonBase *flyer, FlyerParam *param) {
     }
     flyer->field_0x2F4 = 0;
 }
+
 
 bool FlyerCommonBase::IsInAttackRange() {
     return InAttackRange(this);

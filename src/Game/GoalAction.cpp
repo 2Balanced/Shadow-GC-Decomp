@@ -623,10 +623,19 @@ void GoalAction::Begin() {
     lbl_8057D6A0.m_stageRecord.m_result = m_result;
 }
 
-/* NonMatching (99.8%): two register swaps that about 20 source shapes did not change. Retail
- * loads the mission's rank into r3 and the result's rank into r0 (GC/2.7: the other way round),
- * and keeps the table entry in r5 and the save stage in r6 in the all-best loop (GC/2.7: r6 and
- * r5). Everything else in the unit matches. */
+/* The stage table's entry at index (name inferred): an inline lookup on the object fn_800B74B4
+ * returns, which it ignores. Read through it, the entry is a compiler temporary and takes r5 in
+ * the all-best loop below as retail has it; a named `&lbl_804C4A18[i]` takes r6 (wave 39). */
+inline const UnkStageInfo_804C4A18 *StageInfoAt(UnkObject_800B74B4 *, int index) {
+    return &lbl_804C4A18[index];
+}
+
+/* NonMatching (99.9%, 4 rows): one register swap is left. Retail loads the mission's saved rank
+ * into r3 and the result's rank into r0 (GC/2.7: the other way round, whichever is loaded first).
+ * About 55 source shapes did not change it: locals in either order, const and block-scoped
+ * locals, the compare reversed or negated, a ternary, min helpers by value and by reference,
+ * inline getters and setters on either side, a pointer to the mission or to the record
+ * (probes/Game_GoalAction*.py). Everything else in the unit matches. */
 void GoalAction::SaveResult() {
     UnkSaveData_800BB74C *save = fn_800BB74C();
     if (save == 0) {
@@ -680,8 +689,7 @@ void GoalAction::SaveResult() {
                 if (i == 27) {
                     continue;
                 }
-                fn_800B74B4();
-                const UnkStageInfo_804C4A18 *info = &lbl_804C4A18[i];
+                const UnkStageInfo_804C4A18 *info = StageInfoAt(fn_800B74B4(), i);
                 if (info->m_flags & 1) {
                     if (save->m_stages[i].m_missions[1].m_rank == 0) {
                         count++;

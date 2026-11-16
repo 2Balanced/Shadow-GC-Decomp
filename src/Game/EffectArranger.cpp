@@ -5,9 +5,10 @@
  * the element is paused. File name from the class; member names are inferred. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 2 of 4 functions match. The constructor (98%) computes the second pool's size in
- * other registers; ParseCommands (99.96%) calls the executor constructors of the previous unit,
- * which have no names there yet. */
+ * The constructor takes the description as a pointer to non-const, as Game/EffectGlobalParam.cpp's
+ * does (see there): that keeps the load of the command list after the store of the size. A paused
+ * element (flag 0x10) starts a launch command only when its configuration has bit 0x40000 (wave
+ * 39: the test was written the other way round, which objdiff's fuzzy match hid). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -102,7 +103,7 @@ inline void RunOtherCommands(Effect::System::EffectArranger *arranger, float dt)
 namespace Effect {
 namespace System {
 
-EffectArranger::EffectArranger(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectArranger::EffectArranger(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                EffectManager *manager)
     : EffectElement(desc, info, manager), m_state(0), m_config(0), m_launchInfo(0), m_cursor(0),
       m_head(0), m_tail(0), m_commandPool(0), m_launchPool(0) {
@@ -111,8 +112,7 @@ EffectArranger::EffectArranger(const UnkEffectDesc_801D0AFC *desc, EffectLaunchI
     if (!(m_flags & 1)) {
         return;
     }
-    const UnkArrangerDesc_80426C08 *params =
-        reinterpret_cast<const UnkArrangerDesc_80426C08 *>(desc);
+    UnkArrangerDesc_80426C08 *params = reinterpret_cast<UnkArrangerDesc_80426C08 *>(desc);
     m_config = params->m_config;
     m_commandPool = new UnkEffectPool_8042A344(0x30, params->m_commandCount);
     if (m_commandPool == 0 ||
@@ -211,7 +211,7 @@ void EffectArranger::ParseCommands() {
             length = 8;
             break;
         case 0x11:
-            if (!(m_flags & 0x10) || !(m_config & 0x40000)) {
+            if (!(m_flags & 0x10) || (m_config & 0x40000)) {
                 fn_8042A5D0()->SetPool(m_launchPool);
                 exec = new EffCmdLaunchExec(m_cursor, &m_state, m_manager, m_launchInfo, this);
                 fn_8042A5D0()->SetPool(m_commandPool);
@@ -219,7 +219,7 @@ void EffectArranger::ParseCommands() {
             length = 0x58;
             break;
         case 0x12:
-            if (!(m_flags & 0x10) || !(m_config & 0x40000)) {
+            if (!(m_flags & 0x10) || (m_config & 0x40000)) {
                 fn_8042A5D0()->SetPool(m_launchPool);
                 exec = new EffCmdLaunchExec(m_cursor, &m_state, m_manager, m_launchInfo, this);
                 fn_8042A5D0()->SetPool(m_commandPool);

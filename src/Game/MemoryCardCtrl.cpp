@@ -16,7 +16,13 @@
  * label grouping that keeps retail's tree (case 2 as its own group, case 3/6/default merged, tried
  * with the switch expression as s32, u32, an enum and a local copy, and with every order of the
  * groups) clones the failure block instead of sharing it, and every grouping that shares the block
- * folds the ranges; 50+ shapes land on 52-73 instructions against retail's 58. */
+ * folds the ranges; 50+ shapes land on 52-73 instructions against retail's 58.  Wave 39
+ * (probes/Game_MemoryCardCtrl*.py, about 150 more): retail's two pairs of branches to one target
+ * (`bge`/`b` below 3, `beq`/`bge` at 6) show that its 2, 3, 6 and default arms were still separate
+ * blocks when the switch was lowered and became one afterwards.  GC/2.7 joins labels on one block
+ * before it lowers the switch whatever stands between them (every order of the labels, an empty
+ * statement, an empty block, (void)0, an empty inline call, do {} while (0), if (0), gotos to one
+ * label): all give 53 instructions. */
 #include "Game/MemoryCardCtrl.h"
 #include "Game/MemoryCardCrypt.h"
 #include "Game/Task.h"

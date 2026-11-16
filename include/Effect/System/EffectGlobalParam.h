@@ -36,7 +36,10 @@ namespace System {
 class EffectGlobalParam : public EffectElement {
   public:
     /* 0x8042A6E4 (Game/EffectGlobalParam.cpp). */
-    EffectGlobalParam(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+    /* The description is a pointer to non-const here (wave 39): the constructor copies its fields
+     * load, store, load, store, as retail does; through a pointer to const GC/2.7 moves each load
+     * above the store before it, and no cast in the body hides the parameter's const from it. */
+    EffectGlobalParam(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                       EffectManager *manager);
     virtual ~EffectGlobalParam();
     /* Advances the blend factor by dt (0x8042A5EC). */

@@ -3,7 +3,7 @@
  * lives from rings, the weapon in hand), keep the checkpoints SavePoint stores, and count the
  * hero/dark points. Other units call them by address, so they keep their fn_ names. Member and
  * struct names are inferred. Definitions are in reverse address order (deferred inlining emits
- * functions last-defined first). The unit is NonMatching only because of fn_8016F4E8 (see there). */
+ * functions last-defined first). */
 #include "Game/MathTypes.h"
 #include "Game/StageTable.h"
 #include <dolphin/types.h>
@@ -162,15 +162,17 @@ extern "C" void fn_8016F5B8(UnkCounters *counters, int kind, int count) {
     counters->m_frames[kind] = lbl_8057D6A0.m_frame;
 }
 
-/* Resets the checkpoints to the stage's start positions. NonMatching (one register): retail keeps
- * the stage id in r30, the register the entry offset takes next; GC/2.7 puts it in r28. About 25
- * shapes were tried (declaration order, blocks, inline helpers, a chained store). */
+/* The stage being played. fn_8016F4E8 has to read it through an inline function: the compiler then
+ * holds the id in its own temporary, which takes r30 (the register the entry offset uses next) as
+ * retail does. A named local `int id` gets r28 instead (wave 39; probes/Game_SaveRecord*.py). */
+inline int CurrentStageId() { return lbl_8057D6A0.m_stageId; }
+
+/* Resets the checkpoints to the stage's start positions. */
 extern "C" void fn_8016F4E8(UnkCheckpoints *points) {
     points->m_last = 0;
     points->m_frame = 0;
     points->m_time = 0.0f;
-    int id = lbl_8057D6A0.m_stageId;
-    UnkStageInfo_800CBAA4 *stage = &fn_800CBAA4()->m_stages[fn_80176C04(fn_800B74B4(), id)];
+    UnkStageInfo_800CBAA4 *stage = &fn_800CBAA4()->m_stages[fn_80176C04(fn_800B74B4(), CurrentStageId())];
     for (int i = 0; i < 2; i++) {
         fn_800091D0(&points->m_points[i][0].m_position, &stage->m_starts[i].m_position);
         points->m_points[i][0].m_rotation.x = stage->m_starts[i].m_rotation.x;
@@ -181,6 +183,7 @@ extern "C" void fn_8016F4E8(UnkCheckpoints *points) {
         }
     }
 }
+
 
 extern "C" int fn_8016F3D4(UnkCheckpoints *points, const Vec3f *position, Vec3f *rotation, int index) {
     if (index >= 32) {

@@ -559,7 +559,7 @@ namespace RW3 {
 #pragma pool_data on
 EffectLensFlareRW3::EffectLensFlareRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                        EffectManager *manager)
-    : EffectLensFlare(desc, info, manager) {
+    : EffectLensFlare(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_size -= sizeof(EffectLensFlare);
     m_size += sizeof(EffectLensFlareRW3);
     if (!(m_flags & 1)) {

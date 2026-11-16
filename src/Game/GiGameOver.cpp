@@ -155,7 +155,16 @@ extern "C" void fn_802E3AEC(void) {
 /* NonMatching: every instruction matches except the swap of r30 and r31. Retail keeps this in r31
  * and the .rodata base in r30; GC/2.7 gives the base r31 (as in Game/TGiCommandWindow.cpp).
  * Member initializers, statement order, a local copy of this or of the project, and this->
- * did not change it. */
+ * did not change it.
+ *
+ * Wave 39 (probes/Game_GiGameOver*.py, about 60 shapes): what flips the pair is one of the pooled
+ * strings going through a value of its own instead of straight into its store or argument: the
+ * name, "ContinueOpen" or "GameoverOpen" through a local, a comma expression `(0, "...")` or an
+ * inline function with a local (not "GameOver", not the allocator's file name, and not without
+ * the name: that also flips it, so it looks like a weight, not the string). Every such shape
+ * gives retail's r31/r30 and then differs in the scratch registers instead, because that value is
+ * numbered before the constants: the name takes r4 from the zero (7 rows left), the motion name
+ * takes r4 from the scene pointer (9 rows). Nothing found gives both. */
 GiGameOver::GiGameOver(Task *parent) : Task(parent) {
     m_timer = 0.0f;
     m_yes = 0;

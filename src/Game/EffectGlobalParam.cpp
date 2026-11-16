@@ -3,10 +3,9 @@
  * keeps the blend factor, which runs from 0 to 1 over the description's duration. File name from
  * the class; member names are inferred. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
- *
- * NonMatching: 2 of 3 functions match. The constructor (89%) keeps each description field's load
- * after the previous store in retail; GC/2.7 hoists the loads (no source spelling tried changed it;
- * Game/EffectLensFlare.cpp has the same). */
+ * The constructor takes the description as a pointer to non-const: retail keeps each field's load
+ * after the store before it, and GC/2.7 moves the loads up when the parameter points to const
+ * (wave 39; probes/Game_EffectGlobalParam*.py; Game/EffectLensFlare.cpp has the same). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 
@@ -24,7 +23,7 @@ struct UnkGlobalParamDesc_8042A6E4 {
 namespace Effect {
 namespace System {
 
-EffectGlobalParam::EffectGlobalParam(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectGlobalParam::EffectGlobalParam(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                      EffectManager *manager)
     : EffectElement(desc, info, manager), field_0xFC(0) {
     m_size -= sizeof(EffectElement);
@@ -32,8 +31,7 @@ EffectGlobalParam::EffectGlobalParam(const UnkEffectDesc_801D0AFC *desc, EffectL
     if (!(m_flags & 1)) {
         return;
     }
-    const UnkGlobalParamDesc_8042A6E4 *params =
-        reinterpret_cast<const UnkGlobalParamDesc_8042A6E4 *>(desc);
+    UnkGlobalParamDesc_8042A6E4 *params = reinterpret_cast<UnkGlobalParamDesc_8042A6E4 *>(desc);
     m_data = params->m_data;
     field_0x104 = params->m_duration;
     field_0xFC = params->m_flags;

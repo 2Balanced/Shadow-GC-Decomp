@@ -244,7 +244,9 @@ class CProject : public CResourceBase<SProject>, public CBase {
             m_it = other.m_it;
             return *this;
         }
-        CScene &operator*() const {
+        /* Not const (wave 39): retail keeps its first load after the prologue's stores, and
+         * GC/2.7 moves a load through a pointer to const above them. */
+        CScene &operator*() {
             return *(*m_it).second;
         }
         iterator &operator++() {

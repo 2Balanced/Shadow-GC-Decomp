@@ -380,6 +380,9 @@ void PathImpl::SetFrame(const Vec3f &position, const Vec3f &rotation) {
 JointPathData *PathImpl::ChooseBranch(JointPathData *joint) {
     float best = -100.0f;
     Vec3f direction;
+    /* Declared before the result: GC/2.7 hands the saved registers to the locals in declaration
+     * order, and retail keeps the branch in r31 (after this) and the result in r30 (wave 39). */
+    JointPathData *branch;
     JointPathData *result = 0;
     fn_800091EC(&direction, &Fields(m_player.get())->m_velocity);
     if (direction.x * direction.x + direction.y * direction.y + direction.z * direction.z < 0.0001f) {
@@ -392,7 +395,7 @@ JointPathData *PathImpl::ChooseBranch(JointPathData *joint) {
     }
     for (UnkJointIterator_80016E18 it = fn_80016E18(joint); it != fn_80016D84(joint);
          fn_80016DB8(&it, 0)) {
-        JointPathData *branch = reinterpret_cast<JointPathData *>(it.m_node + 8);
+        branch = reinterpret_cast<JointPathData *>(it.m_node + 8);
         float y = branch->m_rotation.y;
         float x = branch->m_rotation.x;
         float z = branch->m_rotation.z;
@@ -443,7 +446,8 @@ JointPathData *PathImpl::OnBranch(BranchCallBackParam &param) {
 int PathImpl::Search(const UnkPathSearch_800ABE4C &search) {
     if (fn_8001CDA0(fn_8001B494(), &m_path, &AS_VEC(search.m_position), &AS_VEC(search.m_direction), &m_direction,
                     IsSearchPath, 0, search.m_radius)) {
-        if (search.m_anyEnd || !(fn_80017E2C(&m_path) | fn_80018030(&m_path))) {
+        /* (GC/2.7 calls the right operand of `|` first; retail calls fn_80017E2C first.) */
+        if (search.m_anyEnd || !(fn_80018030(&m_path) | fn_80017E2C(&m_path))) {
             Advance(0.0f);
             SetBranchCallBack(&m_path, boost::bind(&PathImpl::OnBranch, this, _1));
             u32 flags = GetPointFlags(&m_path);
@@ -495,7 +499,10 @@ namespace Player {
 
 UnkPathSearch_800ABE4C PathImpl::MakeSearch(const boost::shared_ptr<PlayerBase> &player) {
     PlayerBase *chara = player.get();
-    return UnkPathSearch_800ABE4C(chara->m_position, fn_800796DC(chara), 40.0f + chara->field_0x274);
+    /* The margin is a named local: with the literal in the sum GC/2.7 loads it before the
+     * player's reach, whatever the operand order (wave 39; as in Game/VehicleGun.cpp). */
+    float margin = 40.0f;
+    return UnkPathSearch_800ABE4C(chara->m_position, fn_800796DC(chara), chara->field_0x274 + margin);
 }
 
 } // namespace Player

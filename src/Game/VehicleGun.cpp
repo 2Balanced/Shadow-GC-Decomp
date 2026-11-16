@@ -5,11 +5,9 @@
  * rumbling the rider's pad. All names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: all functions but MoveSlide match, and all data matches. MoveSlide (0x80348404)
- * differs in two loads: retail loads the slide's dt before the constant it multiplies (fmadds
- * f3=dt, f2=constant); GC/2.7 loads the constant first whatever the operand order. The .sdata2
- * pool also differs at link: retail places 0.5 (0x805FA324) before MoveSlide's -50, -2 and 15,
- * GC/2.7 after them, next to FindAim's other constants. */
+ * MoveSlide multiplies the slide's dt by a named speed (`float speed = -50.0f;`): that is what
+ * loads dt before the constant, as retail does; with the literal in the product GC/2.7 loads the
+ * constant first whatever the operand order (wave 39, probes/Game_VehicleGun.py). */
 #define BOOST_SP_RESET_POINTER
 #include "Game/CharInfo.h"
 #include "Game/MathConstants.h"
@@ -367,19 +365,31 @@ static void MoveSlide(_stMtnCallbackParam *param) {
     Mtx34f matrix;
     fn_80016370(&matrix, param->m_frame);
     if (slide->m_kick != 0) {
-        slide->m_offset.z += -50.0f * slide->m_dt;
+        float speed = -50.0f;
+        slide->m_offset.z += slide->m_dt * speed;
         if (slide->m_offset.z < -2.0f) {
             slide->m_offset.z = -2.0f;
             slide->m_kick = 0;
         }
     } else {
-        slide->m_offset.z += 15.0f * slide->m_dt;
+        float speed = 15.0f;
+        slide->m_offset.z += slide->m_dt * speed;
         if (slide->m_offset.z > 0.0f) {
             slide->m_offset.z = 0.0f;
         }
     }
     fn_8040B59C(&matrix, &slide->m_offset);
     fn_800163F4(param->m_frame, &matrix);
+}
+
+
+/* The half width of FindAim's first search (name inferred). Not called anywhere: the linker strips
+ * it from the game. Retail pools FindAim's 0.5 between ReadBarrel's -1 and MoveSlide's -50, -2 and
+ * 15, and its 0.8660254 after them, which is what a function with that literal compiled at this
+ * point of the file gives (inferred from the order of the literals, as in
+ * Game/ElecSmallCube.cpp; GC/2.7 pools a function's literals when it emits the function). */
+float UnkVehicleGunAimWidth(void) {
+    return 0.5f;
 }
 
 /* The barrels' node callback: keeps the barrel's matrix, muzzle and direction. */

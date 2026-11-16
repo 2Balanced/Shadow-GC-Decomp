@@ -6,11 +6,7 @@
  * stick, grows the model's part 0 to 1.5 times its length while swinging and back to its length
  * after. Other units call the functions without class names by their addresses. File name from
  * the class name; the other names are inferred. Definitions are in reverse address order (deferred
- * inlining emits functions last-defined first).
- *
- * NonMatching: everything matches but fn_80067918, whose two argument instructions after the
- * out-of-line scoped_ptr::operator-> (the flags' address and the bit) GC/2.7 emits in the opposite
- * order; about 25 source shapes (helpers, locals, operator*, pragmas) did not change it. */
+ * inlining emits functions last-defined first). */
 #define WEAPON_STICK_BASE_IMPL_MEMBERS
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -132,6 +128,13 @@ class WeaponStickBaseImpl {
     }
     int HitCount() {
         return m_hits;
+    }
+    /* Whether a swing is held (name inferred). The weapon asks through this inline member, which
+     * calls the out-of-line bit test itself: the flags' address is then formed at that call, after
+     * the bit is loaded, as retail has it. Through UnkFlags_80014E04::Test (an inline calling an
+     * inline) the address is formed first (wave 39; probes/Game_WeaponStickBase*.py). */
+    bool IsHeld() {
+        return fn_80014E34(&m_flags.m_bits, 0);
     }
 
     /* 0x00 */ boost::shared_ptr<CharaColliAttack> m_attack;
@@ -333,7 +336,7 @@ void WeaponStickBase::SwingReleased() {
 }
 
 bool WeaponStickBase::fn_80067918() {
-    return m_swing->m_flags.Test(0);
+    return m_swing->IsHeld();
 }
 
 float WeaponStickBase::fn_8006790C() {

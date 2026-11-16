@@ -37,18 +37,24 @@ int fn_8001188C(float *value, UnkCameraTrack_8000F9E8 *track, float frame);
 float fn_8000F3D4(float x);
 }
 
-/* Evaluates motion at frame into state.
- * NonMatching (30 instructions in two runs): register allocation floor. Retail keeps the loop's
- * registers count in r27, state in r28, i in r29 and the tracks in r30; GC/2.7 gives state r27,
- * i r28, count r29 and the tracks r30 no matter how the loop is written. Fourteen shapes tried
- * (count in the condition, the index form, m_set = 0 before the loop, count after m_set, s32 and
- * u32 loop variables, i declared outside the for, i != count, ++i, the tracks indexed), every one
- * leaves the same two runs or makes the diff larger. */
-extern "C" void fn_8000F9E8(UnkCameraMotionState_8000F9E8 *state, UnkCameraMotion_8000F9E8 *motion, float frame) {
+/* Evaluates motion at frame into the state at out.
+ *
+ * Three things give retail's registers and first loads (wave 39; probes/Game_CameraMotion*.py):
+ * - GC/2.7 hands the saved registers to the locals in declaration order and to the parameters
+ *   after them. Retail keeps the tracks in r30, i in r29, the state in r28 and the count in r27,
+ *   so the state is a local declared between i and count: a typed pointer made from an untyped
+ *   parameter (a copy of a parameter of the same type is merged back into the parameter and
+ *   takes the last register).
+ * - i is set before the count is read.
+ * - motion points to const, which lets the two loads stand where they are written (tracks,
+ *   i = 0, count); through a pointer to non-const they sink below `li` and the hoisted 0x80000. */
+extern "C" void fn_8000F9E8(void *out, const UnkCameraMotion_8000F9E8 *motion, float frame) {
     UnkCameraTrack_8000F9E8 *track = motion->m_tracks;
+    int i = 0;
+    UnkCameraMotionState_8000F9E8 *state = static_cast<UnkCameraMotionState_8000F9E8 *>(out);
     int count = motion->m_trackCount;
     state->m_set = 0;
-    for (int i = 0; i < count; i++, track++) {
+    for (; i < count; i++, track++) {
         switch (track->m_kind & ~0xFF) {
         case 0x100:
             if (fn_80011A34(&state->m_values[0], track, frame) != 0) {

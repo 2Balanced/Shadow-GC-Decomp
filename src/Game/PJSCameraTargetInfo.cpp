@@ -9,7 +9,8 @@
 /* A pair of floats the defaults copy (meaning unknown). */
 extern Vec2f lbl_805F1358;
 
-void UnkWords_8007A4D4::Reset() {
+/* The one copy of the word array's Reset (see Game/UnkWords_8007A4D4.h). */
+template <> void UnkWordArray_8007A4D4<3>::Reset() {
     for (int i = 0; i < 3; i++) {
         m_words[i] = 0;
     }

@@ -5,10 +5,10 @@
  * not original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * Not yet matching (9 of 10 functions and every data section match): the load hook fn_80228348.
- * Retail keeps the chosen path file in r0 and loads the stage number into r3; GC/2.7 swaps the
- * two (r4 and r0) for every form tried (ternary either way round, if/else, a local, a switch, an
- * inline helper, a pointer to the game state), which changes 7 instructions. */
+ * The load hook fn_80228348 names both the path file and the stage: the file is declared first
+ * and defaults to the common one, the stage is read into a local of its own, and stage 13
+ * overrides the file. That gives retail's registers (file r0, stage r3); a ternary, an if/else or
+ * the default without the stage local swap them (wave 39; probes/Game_GrindGadget.py). */
 #include "Game/Gadget.h"
 #include "Game/GadgetCharInfo.h"
 #include "Game/GadgetClassDesc.h"
@@ -123,7 +123,12 @@ GrindGadget::~GrindGadget() {
 }
 
 extern "C" void fn_80228348(void) {
-    s_pathFile = (lbl_8057D6A0.m_stage == 13) ? &lbl_805F6F1C : &lbl_805F6F18;
+    const char *const *file = &lbl_805F6F18;
+    s32 stage = lbl_8057D6A0.m_stage;
+    if (stage == 13) {
+        file = &lbl_805F6F1C;
+    }
+    s_pathFile = file;
     fn_8006B474("GRINDGADGET.BIN", 1);
     fn_8006B474(*s_pathFile, 0);
 }

@@ -135,9 +135,9 @@ extern "C" TPauseManager *fn_800BADE8(void) {
     return lbl_805EF9F4;
 }
 
-/* NonMatching (99.8%): retail loads the manager's player and cursor into two registers before
- * storing either; GC/2.7 stores the player before loading the cursor. Locals for the two values,
- * their order, struct copies and inline helpers did not reproduce it. */
+/* The player is passed on to InitScenes, which does not read it: that unused argument is what
+ * keeps the value in r5 across the cursor's load, as retail has it (wave 39;
+ * probes/Game_folderPause*.py record the shapes that did not give it). */
 folderPause::folderPause(Chao::CSD::CProject *project) {
     TPauseManager *manager = fn_800BADE8();
     m_managerState = manager->m_state;
@@ -145,7 +145,7 @@ folderPause::folderPause(Chao::CSD::CProject *project) {
     s32 cursor = manager->m_cursor;
     m_player = player;
     m_cursor = cursor;
-    InitScenes(project);
+    InitScenes(project, player);
     m_mission.Reset();
     m_heroIcon.Reset();
     m_normalIcon.Reset();
@@ -158,6 +158,7 @@ folderPause::folderPause(Chao::CSD::CProject *project) {
     m_state = 0;
 }
 
+
 folderPause::~folderPause() {}
 
 /* Retail has SetScene here, between the destructor and InitScenes. It was probably an inline of
@@ -168,7 +169,7 @@ void TPjsSceneTour::SetScene(const RCPtr<CScene> &scene) {
     m_scene = scene;
 }
 
-void folderPause::InitScenes(Chao::CSD::CProject *project) {
+void folderPause::InitScenes(Chao::CSD::CProject *project, s32) {
     m_sceneList = fn_8036D2FC(project, "Root/Pause", 0);
     if (m_sceneList != UnkCsdHandle_80042DF0(0)) {
         m_mission.SetScene(fn_8036F470(m_sceneList.Get(), "Mission"));

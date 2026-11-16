@@ -484,8 +484,9 @@ void fn_800A9E48(Player::PlayerMotion *motion) {
     }
 }
 
-/* Whether the player's motion flag 3 is on. */
-bool fn_800A9E1C(boost::shared_ptr<Player::PlayerBase> *player) {
+/* Whether the player's motion flag 3 is on. The pointer is to const: that lets the load of the
+ * player stand above the store of LR, where retail has it (wave 39). */
+bool fn_800A9E1C(const boost::shared_ptr<Player::PlayerBase> *player) {
     return fn_80014E34(&Fields(player->get())->m_motionFlags, 3);
 }
 

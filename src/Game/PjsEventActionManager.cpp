@@ -169,7 +169,7 @@ class UnkEventScript_80170D8C {
   public:
     bool Load();
     bool Unload();
-    int ShowHint(int id);
+    int ShowHint(int id) const;
 
     static void OnLoaded(FogRequest *request);
 
@@ -245,7 +245,7 @@ void fn_80174250(int level, const char *format, ...);
 UnkEventScript_80170D8C *fn_80174228(UnkEventScript_80170D8C *script);
 UnkEventScript_80170D8C *fn_801741E0(UnkEventScript_80170D8C *script, s16 flags);
 void fn_80173ED0(UnkEventScriptData_80173CD4 *data);
-bool fn_80173CD4(UnkEventScript_80170D8C *script, float time, float prevTime);
+bool fn_80173CD4(const UnkEventScript_80170D8C *script, float time, float prevTime);
 void fn_80173834(int arg0, float time);
 void fn_80173878(int arg0, int arg1, float time);
 void fn_80172F48(TPjsEventActionManager *manager, bool play);
@@ -387,9 +387,8 @@ extern "C" void fn_80173ED0(UnkEventScriptData_80173CD4 *data) {
     }
 }
 
-/* Runs the first cue whose frame lies in (prevTime, time]; false while the script is not loaded.
- * NonMatching (2 instructions): retail loads script->m_state before the stmw of the prologue,
- * GC/2.7 after it; about 20 source shapes left the order unchanged. */
+/* fn_80173CD4 below runs the first cue whose frame lies in (prevTime, time]; false while the script
+ * is not loaded. */
 /* Plays sound id, if any (name inferred). */
 inline void PlaySound(int id) {
     if (id >= 0) {
@@ -404,7 +403,9 @@ inline void PlayVoice(int id) {
     }
 }
 
-extern "C" bool fn_80173CD4(UnkEventScript_80170D8C *script, float time, float prevTime) {
+/* The script is a pointer to const: that lets the load of its state stand above the store of the
+ * saved registers, where retail has it (wave 39). */
+extern "C" bool fn_80173CD4(const UnkEventScript_80170D8C *script, float time, float prevTime) {
     if (script->m_state != 2) {
         return false;
     }
@@ -441,7 +442,7 @@ extern "C" bool fn_80173CD4(UnkEventScript_80170D8C *script, float time, float p
 }
 
 /* Shows hint message id. */
-int UnkEventScript_80170D8C::ShowHint(int id) {
+int UnkEventScript_80170D8C::ShowHint(int id) const {
     if (GetHintManager()->field_0x24 != 0) {
         fn_801FAAA4(GetHintManager());
         fn_801FAF00(GetHintManager(), id, 0, 1, 0);
@@ -513,7 +514,11 @@ TPjsEventActionManager::~TPjsEventActionManager() {
 
 /* NonMatching (register allocation only): retail keeps this in r29, the scene number in r30 and
  * the format string in r31; GC/2.7 assigns them the other way round. Writing the letter as
- * (char)i + 'A' gives retail's registers but sign-extends before the add; about 25 shapes tried. */
+ * (char)i + 'A' gives retail's registers but sign-extends before the add; about 25 shapes tried.
+ * Wave 39 (probes/Game_PjsEventActionManager_R*.py, 35 more): the format string as a local
+ * declared anywhere, the letter through a local, a cast, a constructor-style cast or an inline
+ * function, the argument made an int after the add, and a long, unsigned or short counter all keep
+ * GC/2.7's registers; only a conversion applied to the counter itself flips them. */
 void TPjsEventActionManager::FindScenes() {
     char fileName[0x40];
     m_sceneIndex = 0;

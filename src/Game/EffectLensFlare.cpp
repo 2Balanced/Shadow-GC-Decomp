@@ -3,9 +3,8 @@
  * (as Game/EffectGlobalParam.cpp's does). File name from the class; member names are inferred.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
- *
- * NonMatching: 2 of 3 functions match; the constructor (94%) has the load scheduling of
- * Game/EffectGlobalParam.cpp's. */
+ * The constructor takes the description as a pointer to non-const, as
+ * Game/EffectGlobalParam.cpp's does (see there). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 
@@ -23,7 +22,7 @@ struct UnkLensFlareDesc_8042A868 {
 namespace Effect {
 namespace System {
 
-EffectLensFlare::EffectLensFlare(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectLensFlare::EffectLensFlare(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                  EffectManager *manager)
     : EffectElement(desc, info, manager), field_0xFC(0) {
     m_size -= sizeof(EffectElement);
@@ -31,8 +30,7 @@ EffectLensFlare::EffectLensFlare(const UnkEffectDesc_801D0AFC *desc, EffectLaunc
     if (!(m_flags & 1)) {
         return;
     }
-    const UnkLensFlareDesc_8042A868 *params =
-        reinterpret_cast<const UnkLensFlareDesc_8042A868 *>(desc);
+    UnkLensFlareDesc_8042A868 *params = reinterpret_cast<UnkLensFlareDesc_8042A868 *>(desc);
     field_0xFC = params->m_flags;
     m_duration = params->m_duration;
 }

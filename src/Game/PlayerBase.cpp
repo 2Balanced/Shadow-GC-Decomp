@@ -7,14 +7,19 @@
  * PlayerObject's out-of-line destructor and the accessors of the character file manager
  * (fn_80078C88) and of the stage's player data (fn_80079808). File name from the class; function
  * and member names are inferred. Definitions are in reverse address order (deferred inlining emits
- * functions last-defined first). CharInfo's and PlayerBase's slots 0x0C and PlayerBase's slot 0x14
- * take a parameter their symbols lack, so they are defined as C functions under those symbols.
+ * functions last-defined first). PlayerBase's slot 0x14 takes a parameter its symbol lacks, so it
+ * is defined as a C function under that symbol.
  *
- * NonMatching (79 of 80 functions; every data section matches): UnkWords_8007A4D4's constructor
- * (0x8007A4D4) differs in two registers only, and GC/2.7 emits it and CharInfo's slot 0x0C at other
- * places among the unit's last weak copies (retail: ~PlayerObject, the control block's destructor,
- * CharInfo::vf_0x0C, UnkWords_8007A4D4(), dispose, get_deleter), which moves 0x80079F58..0x8007A568
- * in the DOL. */
+ * What the order of the unit's last functions showed (wave 39). After each function GC/2.7 emits
+ * the inline functions it referenced first, last reference first, and after the unit's last
+ * function the out-of-line members of template instances and the inline virtuals a late vtable
+ * needs. Retail ends ~PlayerObject, the control block's destructor, CharInfo::vf_0x0C, the state
+ * bits' constructor, dispose, get_deleter. So CharInfo's slot 0x0C is an inline virtual that takes
+ * the player number (as a C function defined first in this file it came before the control
+ * block's destructor), and the state bits are an instance of a class template with a non-inline
+ * constructor (as an inline constructor it came out with the members PlayerBase's constructor
+ * builds, between shared_ptr<CharCommandUnit>() and the callbacks). See Game/CharInfo.h and
+ * Game/UnkWords_8007A4D4.h; probes/Game_PlayerBase*.py keep the shapes tried. */
 #define PLAYER_OBJECT_MEMBERS
 #define PLAYER_BASE_INLINE_SLOTS
 #define PLAYER_BASE_IMPLEMENTATION
@@ -242,12 +247,6 @@ extern "C" inline void fn_8007A34C(Quatf *q, const Quatf *value) {
     CopyQuat(q, value);
 }
 
-/* CharInfo's slot 0x0C, inline in the game (its symbol has no parameter; the game's copy
- * stores the player number at 0x54). */
-extern "C" void vf_0x0C__8CharInfoFv(CharInfo *info, int pad) {
-    info->field_0x54 = pad;
-}
-
 namespace Player {
 
 PlayerBase::PlayerBase(int type, int kind, const char *name)
@@ -348,18 +347,22 @@ void PlayerBase::PushCommand(CharCommand *command) {
 
 } // namespace Player
 
-/* PlayerBase's slots 0x14 and 0x0C (their symbols have no parameters): tells visitor the
- * character, and sets the player number (also telling the character's parts). */
+/* PlayerBase's slot 0x14 (its symbol has no parameter): tells visitor the character. Slot 0x0C
+ * after it sets the player number, also telling the character's parts. */
 extern "C" void vf_0x14__Q26Player10PlayerBaseFv(PlayerBase *player, UnkCharaVisitor_80079918 *visitor) {
     visitor->Visit(weak_ptr<CharInfo>(player->m_self));
 }
 
-extern "C" void vf_0x0C__Q26Player10PlayerBaseFv(PlayerBase *player, int pad) {
-    player->field_0x54 = pad;
-    if (player->m_charaSlots) {
-        fn_800AAD44(player->m_charaSlots, pad);
+namespace Player {
+
+void PlayerBase::vf_0x0C(int pad) {
+    field_0x54 = pad;
+    if (m_charaSlots) {
+        fn_800AAD44(m_charaSlots, pad);
     }
 }
+
+} // namespace Player
 
 extern "C" {
 

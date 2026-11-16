@@ -8,9 +8,10 @@
  * than the class's are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * NonMatching (13/15): register allocation only in Setup (88.9%: the loop counter and the
- * dictionary swap registers, and the frame address is formed differently) and GetFrame (99.1%: the
- * three volatile registers are numbered differently); about 10 shapes were tried for each.
+ * NonMatching (14/15): register allocation only in Setup (88.9%: the loop counter and the
+ * dictionary swap registers, the frame address is formed differently, and retail copies the zeroed
+ * inner counter into its offset where GC/2.7 emits a second li; about 10 shapes were tried).
+ * GetFrame matches since wave 39 (the declaration order of its locals, see there).
  * lbl_805E39A0 is defined by the next unit (Game/AdbManager.cpp), which starts its .sdata. */
 #define MSL_STRING_DEFAULT_CTOR
 #define MSL_STRING_COPY
@@ -201,19 +202,25 @@ void TTextureChange::Update(s32 index) {
 }
 
 s32 TTextureChange::GetFrame(UnkTextureChangeEntry_8004F0A4 *entry) {
+    /* The frame table is declared after the counter: GC/2.7 hands out the registers in declaration
+     * order, and retail keeps the animation in r5, its length in r6, the counter in r7 and the
+     * table in r8 (wave 39; probes/Game_TTextureChange.py). */
     UnkTextureAnim_8004F0A4 *anim = entry->m_anim;
-    UnkTextureFrame_8004F0A4 *frames = anim->m_frames;
     float time;
+    s32 length;
+    s32 count;
+    s32 loops;
+    s32 i;
+    UnkTextureFrame_8004F0A4 *frames = anim->m_frames;
     if (lbl_805E39A0 >= 0.0f) {
         time = lbl_805E39A0;
     } else {
         time = m_time;
     }
-    s32 length = anim->m_length;
-    s32 count = anim->m_count;
-    s32 loops = time / length;
+    length = anim->m_length;
+    count = anim->m_count;
+    loops = time / length;
     time -= length * loops;
-    s32 i;
     for (i = 0; i < count; i++) {
         if (time < frames[i].m_time) {
             break;
@@ -221,3 +228,4 @@ s32 TTextureChange::GetFrame(UnkTextureChangeEntry_8004F0A4 *entry) {
     }
     return i - 1;
 }
+

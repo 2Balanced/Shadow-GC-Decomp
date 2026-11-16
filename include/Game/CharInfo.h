@@ -28,7 +28,16 @@ class CharInfo {
     CharInfo(int type);
 
     virtual ~CharInfo(); /* the vtable pointer is at 0x38 */
-    virtual void vf_0x0C();
+    /* Slot 0x0C: sets the player number (the word at 0x54). Inline in the game: its one linked
+     * copy (0x8007A4CC) is the one PlayerObject's vtable emits in Game/PlayerBase.cpp, after the
+     * unit's own functions, which is where CHARINFO_INLINE_SLOTS defines it. */
+#ifdef CHARINFO_INLINE_SLOTS
+    virtual void vf_0x0C(int pad) {
+        field_0x54 = pad;
+    }
+#else
+    virtual void vf_0x0C(int pad);
+#endif
     /* Slot 0x10: hands a command to the character. */
     virtual void PushCommand(CharCommand *command);
     virtual void vf_0x14();

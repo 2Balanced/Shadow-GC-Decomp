@@ -549,7 +549,7 @@ inline void InitStrip(EffectShimmerRW3 *self, float z) {
 #pragma pool_data on
 EffectShimmerRW3::EffectShimmerRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                    EffectManager *manager)
-    : EffectShimmer(desc, info, manager) {
+    : EffectShimmer(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_vertices = 0;
     m_points = 0;
     m_waveX = 0;

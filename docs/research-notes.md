@@ -161,6 +161,9 @@ paths containing `&`; a wrapper script can pin those and pass the install's 8.3 
   table, rebuilds only that unit's object and scores the instruction rows left against retail. The
   source is restored unless `--keep NAME` names the winner; `-p TABLE` runs a later round against
   the same unit. Tables also serve as the record of what was tried.
+- `tools/pprobe.py`: `uprobe.py`'s tables compiled side by side from patched copies of the unit (the
+  real source is untouched unless `--keep`); it adds whole-file replacements (`REPL`), header
+  replacements (`HDR`) and renamed symbols (`SCORE` pairs) to the table format.
 - `tools/symfill.py`: annotates the data symbols our object defines inside a unit's split that
   retail left unnamed in `config/GUPE8P/symbols.txt` (small-data accesses carry no relocation, so
   `pair_symbols.py` cannot pair them).
@@ -299,3 +302,75 @@ instructions at the call site.
 `Game/EffectScreenBlurRW3`'s `GetParam` instruction-identical, while regressing the prologue and
 call setup of `Game/RwCpp16`'s `fn_804535C8` and the axis rotation in
 `Game/UnkAxisRotation_80049778`. Keep it scoped to one function and measure each use.
+
+## Source levers measured in wave 39
+
+Each of these took a function from a few rows to zero, and most of them finished a unit. The probe
+tables in `probes/` keep the shapes that were tried; `python tools/pprobe.py -u Game/<Unit>` runs a
+table's variants side by side (it also takes whole-file and header replacements, see its
+docstring).
+
+- **Saved registers go to the locals in declaration order, then to the parameters.** The first
+  local declared gets the highest free register, the next one the next, and `this` and the other
+  parameters come after them. `Game/PlayerPath.cpp` (`ChooseBranch`: the branch pointer declared
+  before the result), `Game/TTextureChange.cpp` (`GetFrame`: the frame table declared after the
+  counter; the same holds for the scratch registers r5 to r8) and `Game/CameraMotion.cpp` match
+  through it. A parameter that retail keeps *between* two locals is a local too: a typed pointer
+  made from a `void *` parameter is one (`fn_8000F9E8`), a copy of a parameter of the same type is
+  merged back into the parameter and does not count.
+- **`const` on the pointee decides whether loads may move above stores.** Through a pointer to
+  const GC/2.7 moves a load above an unrelated store (the prologue's `stw r0`/`stmw`, a member
+  store); through a pointer to non-const it leaves the load where it is written. The const-ness is
+  read from the *parameter's declaration*: no cast or local in the body hides it. Retail has it both
+  ways, so each case names the true signature: `const` added for `fn_800A9E1C`
+  (`Game/PlayerMotion.cpp`), `fn_80173CD4` (`Game/PjsEventActionManager.cpp`) and `fn_8000F9E8`;
+  `const` removed for `Chao::CSD::CProject::iterator::operator*` and for the description parameter
+  of the `EffectGlobalParam`, `EffectLensFlare`, `EffectArranger` and `EffectShimmer` constructors
+  (a constructor's `this` is never const, so the member stores and the description loads only stay
+  in source order when the description is non-const too).
+- **A value read through an inline function is a compiler temporary, and it is coloured apart from
+  a named local.** `fn_8016F4E8` (`Game/SaveRecord.cpp`) needed the stage id from an inline getter
+  to get r30, `GoalAction::SaveResult` the table entry from an inline lookup to get r5.
+- **An inline call among a call's arguments is evaluated first.** `fn_80193790`
+  (`Game/FlyerCommonBase.cpp`) forms its third argument before its second because the third is the
+  inline `Enemy::GetHomeRotation()`. The same shows from the other side in
+  `WeaponStickBase::fn_80067918`: the flags' address is formed after the bit is loaded because the
+  test stands in an inline member that calls the out-of-line bit test directly.
+- **A float constant in a product or sum is loaded first unless it has a name.**
+  `float speed = -50.0f; z += dt * speed;` loads `dt` first, `z += dt * -50.0f` loads the constant
+  first whatever the operand order (`MoveSlide` in `Game/VehicleGun.cpp`, `MakeSearch` in
+  `Game/PlayerPath.cpp`).
+- **A default assigned before a test, with the tested value in a local of its own**
+  (`fn_80228348`, `Game/GrindGadget.cpp`) gives `li` default / load / compare / `li` override where a
+  ternary or an if/else swaps the two registers.
+- **An unused trailing parameter is visible at the call site.** `folderPause`'s constructor keeps
+  the player in r5 across another load because it passes it to `InitScenes`, which never reads it.
+- **Where a function is emitted tells what kind of function it is.** After each function GC/2.7
+  emits the inline functions that function referenced first, last reference first; after the unit's
+  last function come the out-of-line members of class template instances and the inline virtuals
+  that a late vtable needs. `Game/PlayerBase.cpp` would not link until `CharInfo`'s slot 0x0C was an
+  inline virtual taking its parameter and the player's state bits were an instance of a class
+  template with a non-inline constructor (`Game/UnkWords_8007A4D4.h`, probably the library's bit
+  set).
+- **GC/2.7 calls the right operand of `|` first** (`PathImpl::Search`).
+- **objdiff's 100% does not compare relocation targets or branch senses closely enough to trust.**
+  `Game/EffectArranger.cpp` had a condition inverted (`beq` for `bne`), `Game/EffectShimmer.cpp` a
+  shift of 10 for 22 and `Game/PlayerPath.cpp` two calls in the other order while their functions
+  showed as matched. Flipping a unit whose functions all match and running `tools/doldiff.py` names
+  the words that differ.
+
+Residuals that no shape changed, each seen in more than one unit (so probably the later compiler
+build described above):
+
+- a loop's strength-reduced offset initialised by copying the zeroed counter (`li r29,0` ...
+  `mr r31,r29`), where GC/2.7 emits a second `li`: `Game/ClumpUpdater.cpp` (`fn_80015570`),
+  `Game/DiablonExecuter.cpp` (constructor and destructor), `Game/folderTargetWindow.cpp`
+  (constructor), `Game/TTextureChange.cpp` (`Setup`);
+- `this` in r31 and a pooled `.rodata` base in r30 (`Game/GiGameOver.cpp`,
+  `Game/TGiCommandWindow.cpp`): a string that goes through a value of its own flips the pair but
+  then takes a scratch register from a constant;
+- `this` or a float parameter in the first saved register with declared locals after it
+  (`EggShadowAndroid::vfDisp_0x64`, `fn_8029EB5C`);
+- a switch whose arms were still separate blocks when it was lowered and were joined afterwards
+  (`MemoryCard::PollOpen`), and two constant returns kept as branches (`fn_801E7094` in
+  `Game/Target.cpp`).

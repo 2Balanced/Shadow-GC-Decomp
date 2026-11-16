@@ -14,7 +14,7 @@ namespace RW3 {
 
 EffectArrangerRW3::EffectArrangerRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                      EffectManager *manager)
-    : EffectArranger(desc, info, manager) {
+    : EffectArranger(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_size -= sizeof(EffectArranger);
     m_size += sizeof(EffectArrangerRW3);
     if (!(m_flags & 1)) {

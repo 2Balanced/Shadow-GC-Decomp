@@ -19,7 +19,8 @@ class UnkEffectPool_8042A344;
 class EffectArranger : public EffectElement {
   public:
 #ifdef EFFECT_ELEMENT_FULL
-    EffectArranger(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+    /* The description is a pointer to non-const, as EffectGlobalParam's is (see there). */
+    EffectArranger(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                    EffectManager *manager);
 #endif
     virtual ~EffectArranger();

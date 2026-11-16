@@ -73,7 +73,13 @@ extern "C" bool fn_801E7094(const boost::weak_ptr<Target> *target) {
         return false;
     }
     /* Retail tests the flag with a branch; GC/2.7 turns the same source into a branchless
-     * conversion (addic/subfe). Every form tried gives the latter. */
+     * conversion (addic/subfe). Every form tried gives the latter. Wave 39
+     * (probes/Game_Target*.py, about 45 shapes): the test in either sense, a ternary, the lock in
+     * a scope of its own, inline accessors that return the bit or branch themselves, the bit as
+     * u8, u16, bool, a long or a pointer, an int result, and the peephole, propagation,
+     * common-subexpression, dead-code, lifetime and size pragmas (optimization_level 1 and below
+     * and scheduling off change other instructions). The one matched function with these
+     * branches, Chao::CSD::CTexListRW::Load, tests a member it reloads from memory. */
     u32 active = target->lock()->IsActive();
     if (active == 0) {
         return false;

@@ -82,7 +82,7 @@ class PlayerBase : public PlayerObject {
     virtual ~PlayerBase();
     /* CharInfo slots PlayerBase overrides (its vtable 0x80520310: 0x800798E8, 0x800799D0,
      * 0x80079918). */
-    virtual void vf_0x0C();
+    virtual void vf_0x0C(int pad);
     virtual void PushCommand(CharCommand *command);
     virtual void vf_0x14();
     /* Slots after CharInfo's (on the vtable pointer at 0x38; which class declares them is unknown;

@@ -5,10 +5,11 @@
  * the class; member names are inferred. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first).
  *
- * NonMatching: 9 of 10 functions match. The constructor (94%) has the description loads of
- * Game/EffectGlobalParam.cpp's scheduled differently. The unit also emits out-of-line copies of the
- * executors' and the pool's inline operator delete for its exception tables, which retail does not
- * have here. */
+ * The constructor takes the description as a pointer to non-const, as Game/EffectGlobalParam.cpp's
+ * does (see there), and keeps the alpha as 8 bits from bit 22 (wave 39: it was written from bit
+ * 10, which objdiff's fuzzy match hid). The unit also emits out-of-line copies of the executors'
+ * and the pool's inline operator delete for its exception tables, which retail does not have
+ * here; the linker drops them. */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -90,7 +91,7 @@ class EffCmd2DAmplitudeExec : public EffCmdVector2Exec {
         : EffCmdVector2Exec(data, state, target) {}
 };
 
-EffectShimmer::EffectShimmer(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectShimmer::EffectShimmer(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                              EffectManager *manager)
     : EffectElement(desc, info, manager), m_state(0), m_config(0), m_cursor(0), m_head(0),
       m_tail(0), m_pool(0) {
@@ -99,7 +100,7 @@ EffectShimmer::EffectShimmer(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInf
     if (!(m_flags & 1)) {
         return;
     }
-    const UnkShimmerDesc_8042AF58 *params = reinterpret_cast<const UnkShimmerDesc_8042AF58 *>(desc);
+    UnkShimmerDesc_8042AF58 *params = reinterpret_cast<UnkShimmerDesc_8042AF58 *>(desc);
     m_params = params->m_params;
     m_config = params->m_config;
     m_duration = params->m_duration;
@@ -139,7 +140,7 @@ EffectShimmer::EffectShimmer(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInf
         break;
     }
     }
-    m_alpha = (params->m_alpha & 0xFF) << 10;
+    m_alpha = (params->m_alpha & 0xFF) << 22;
     for (int i = 0; i < 2; i++) {
         if (m_counts[i] < 1) {
             m_counts[i] = 1;
