@@ -11,7 +11,9 @@
  * fn_8037F020 VISetNextFrameBuffer, fn_8037E354 VIConfigure, fn_8037EB5C VIConfigurePan,
  * fn_803813E0/fn_8038140C AISetStreamVolLeft/Right, fn_803B31D4 EXISetExiCallback and
  * fn_80395454 GXAbortFrame. OSSwitchFiber is OSSwitchFiber, fn_80374690 OSLoadFont and
- * fn_8037490C OSGetFontTexel. ScreenReport is not matched yet: its register allocation differs. */
+ * fn_8037490C OSGetFontTexel. ScreenReport is not matched yet: its size, frame and instruction
+ * sequence are right (the pixel offset needs its own local, n), but the register allocation still
+ * differs. */
 #include <dolphin/os.h>
 
 /* The colour conversion keeps separate multiplies and adds (no fused multiply-add). */
@@ -153,14 +155,19 @@ static void ScreenClear(void *xfb, u16 xfbW, u16 xfbH, GXColor yuv) {
 /* Draws `string` with the IPL font into a YUY2 frame buffer, starting at (x, y). */
 static void ScreenReport(void *xfb, u16 xfbW, u16 xfbH, GXColor yuv, s32 x, s32 y, s32 leading,
                          char *string) {
-    u8 *ptr;
-    s32 xpos;
+    /* The declaration order steers the register allocation (this order is the closest found). */
     u32 i;
+    s32 xpos;
+    u8 *ptr;
     u32 j;
     u32 k;
     u32 texel;
     s32 width;
+    u32 n;
     u32 image[24 / 8 * 24];
+    /* Never used: each still takes a stack slot below image with this compiler. */
+    s32 unused0;
+    s32 unused1;
 
 next:
     if (xfbH - 24 < y) {
@@ -192,13 +199,14 @@ next:
             for (k = 0; k < 24; ++k) {
                 texel = (image[j + 8 * (k / 8)] >> (4 * (7 - (k % 8)))) & 0xF;
                 if (texel != 0) {
-                    ptr[(i * xfbW + k) * 2] = (u8)(16 + (s32)(yuv.r * (texel * 239)) / 255 / 15);
+                    n = (i * xfbW + k) * 2;
+                    ptr[n] = (u8)(16 + (s32)(yuv.r * (texel * 239)) / 255 / 15);
                     if ((xpos + k) % 2) {
-                        ptr[(i * xfbW + k) * 2 - 1] = yuv.g;
-                        ptr[(i * xfbW + k) * 2 + 1] = yuv.b;
+                        ptr[n - 1] = yuv.g;
+                        ptr[n + 1] = yuv.b;
                     } else {
-                        ptr[(i * xfbW + k) * 2 - 1] = yuv.b;
-                        ptr[(i * xfbW + k) * 2 + 1] = yuv.g;
+                        ptr[n - 1] = yuv.b;
+                        ptr[n + 1] = yuv.g;
                     }
                 }
             }

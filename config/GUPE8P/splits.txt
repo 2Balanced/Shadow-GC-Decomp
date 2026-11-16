@@ -6619,6 +6619,13 @@ dolphin/os/OSFatal.c:
 	.sdata      start:0x805EDB50 end:0x805EDB58
 	.sdata2     start:0x805FA5F8 end:0x805FA638
 
+dolphin/os/OSFont.c:
+	.text       start:0x80374020 end:0x803752D4
+	.data       start:0x805609B0 end:0x805614C0
+	.sdata      start:0x805EDB58 end:0x805EDB60
+	.sbss       start:0x805F0ED8 end:0x805F0EE8
+	.sdata2     start:0x805FA638 end:0x805FA640
+
 dolphin/os/OSInterrupt.c:
 	.text       start:0x803752D4 end:0x80375B40
 	.data       start:0x805614C0 end:0x805614F0

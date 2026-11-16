@@ -474,6 +474,7 @@ config.libs = [
             Object(Matching, "dolphin/os/OSError.c"),
             Object(NonMatching, "dolphin/os/OSExec.c"),
             Object(NonMatching, "dolphin/os/OSFatal.c"),
+            Object(Matching, "dolphin/os/OSFont.c"),
             Object(Matching, "dolphin/os/OSInterrupt.c"),
             Object(Matching, "dolphin/os/OSLink.c"),
             Object(Matching, "dolphin/os/OSMemory.c"),
