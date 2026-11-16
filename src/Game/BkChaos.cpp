@@ -674,6 +674,13 @@ void BkChibiChaos::Update(float dt) {
     m_target->fn_800CCE38(&m_info->m_position);
 }
 
+/* Not called anywhere: the linker strips it. Retail pools 2 ahead of Update's float constants in
+ * .sdata2; this function, emitted just before Update, makes the compiler pool it there (the name
+ * is a placeholder). */
+static float UnkConstantUser2(float x) {
+    return x * 2.0f;
+}
+
 void BkChibiChaos::OnHit(AttackCallbackParam &param) {
     boost::shared_ptr<CharInfo> attacker = param.m_attacker.lock()->m_owner.lock();
     fn_800091D0(&HIT_DIRECTION(param), &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(
@@ -743,13 +750,14 @@ static void StretchCallback(_stMtnCallbackParam *param) {
     Mtx34f matrix;
     fn_80016370(&matrix, param->m_frame);
     float stretch = 1.0f;
-    float scale = 1.0f;
+    float scale;
     float pitch = 0.0f;
     float yaw = pitch;
     Vec3f toTarget;
     fn_800091EC(&toTarget, &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(&chaos->Enemy::field_0x6C,
                                                                           chaos->GetPosition()));
     float distance = fn_8040CF50(&toTarget);
+    scale = 1.0f;
     float reach = 50.0f * chaos->m_size;
     if (distance > reach) {
         scale = distance / reach;
