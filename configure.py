@@ -426,8 +426,9 @@ config.libs = [
     DolphinLib(
         "axfx",
         [
-            Object(NonMatching, "dolphin/axfx/reverb_hi.c", cflags=[*cflags_base, "-opt nopeephole"]),
-            Object(NonMatching, "dolphin/axfx/reverb_std.c", cflags=[*cflags_base, "-opt nopeephole"]),
+            Object(Matching, "dolphin/axfx/chorus.c"),
+            Object(NonMatching, "dolphin/axfx/reverb_hi.c"),
+            Object(NonMatching, "dolphin/axfx/reverb_std.c"),
             Object(NonMatching, "dolphin/axfx/delay.c"),
             Object(Matching, "dolphin/axfx/AXFXHooks.c"),
         ],

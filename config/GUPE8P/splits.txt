@@ -6818,6 +6818,11 @@ dolphin/axfx/reverb_std.c:
 	.data       start:0x80565C80 end:0x80565C90
 	.sdata2     start:0x805FA6A8 end:0x805FA6E0
 
+dolphin/axfx/chorus.c:
+	.text       start:0x803882D4 end:0x80388D50
+	.data       start:0x80565C90 end:0x80566490
+	.sdata2     start:0x805FA6E0 end:0x805FA6E8
+
 dolphin/axfx/delay.c:
 	.text       start:0x80388D50 end:0x803892D0
 
