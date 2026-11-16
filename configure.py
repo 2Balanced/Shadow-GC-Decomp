@@ -388,6 +388,48 @@ config.libs = [
         ],
     },
     DolphinLib(
+        "ai",
+        [
+            Object(Matching, "dolphin/ai/ai.c"),
+        ],
+    ),
+    DolphinLib(
+        "ar",
+        [
+            Object(Matching, "dolphin/ar/ar.c"),
+            Object(Matching, "dolphin/ar/arq.c"),
+        ],
+    ),
+    DolphinLib(
+        "ax",
+        [
+            Object(Matching, "dolphin/ax/AX.c"),
+            Object(Matching, "dolphin/ax/AXAlloc.c"),
+            Object(Matching, "dolphin/ax/AXAux.c"),
+            Object(Matching, "dolphin/ax/AXCL.c"),
+            Object(NonMatching, "dolphin/ax/AXOut.c"),
+            Object(Matching, "dolphin/ax/AXSPB.c"),
+            Object(Matching, "dolphin/ax/AXVPB.c"),
+            Object(Matching, "dolphin/ax/AXProf.c"),
+            Object(Matching, "dolphin/ax/AXComp.c"),
+            Object(Matching, "dolphin/ax/DSPCode.c"),
+        ],
+    ),
+    DolphinLib(
+        "dsp",
+        [
+            Object(Matching, "dolphin/dsp/dsp.c"),
+            Object(Matching, "dolphin/dsp/dsp_debug.c"),
+            Object(Matching, "dolphin/dsp/dsp_task.c"),
+        ],
+    ),
+    DolphinLib(
+        "axfx",
+        [
+            Object(Matching, "dolphin/axfx/AXFXHooks.c"),
+        ],
+    ),
+    DolphinLib(
         "base",
         [
             Object(Matching, "dolphin/base/PPCArch.c"),

@@ -35,15 +35,15 @@ struct UnkAudioMessage_8043F41C {
 
 extern "C" {
 /* The sound library (behaviour inferred). */
-void fn_80381B54(void *config, int count);
-void fn_80383684(void);
-void fn_80381438(int arg);
-void fn_80383850(void);
+void ARInit(void *config, int count);
+void ARQInit(void);
+void AIInit(int arg);
+void AXInit(void);
 void fn_803893E8(void);
-void fn_80385154(void (*callback)(void));
+void AXRegisterCallback(void (*callback)(void));
 void fn_8043E394(void);
 void fn_803894B0(void);
-void fn_803838C0(void);
+void AXQuit(void);
 void fn_8043EBFC(void);
 void fn_803894B4(int arg);
 void fn_8043FAB0(int arg);
@@ -118,12 +118,12 @@ inline void UnkAudioState_801F1E24::Stop() {
 }
 
 AudioGCN::AudioGCN() {
-    fn_80381B54(lbl_8053E1A8, 4);
-    fn_80383684();
-    fn_80381438(0);
-    fn_80383850();
+    ARInit(lbl_8053E1A8, 4);
+    ARQInit();
+    AIInit(0);
+    AXInit();
     fn_803893E8();
-    fn_80385154(fn_8043E394);
+    AXRegisterCallback(fn_8043E394);
     m_heap = fn_80049B90(0xE1000, 2);
     if (fn_8043FB24(m_heap, 0, 0) == 0) {
         for (s8 i = 0; i < 8; i++) {
@@ -146,7 +146,7 @@ AudioGCN::~AudioGCN() {
         m_heap = 0;
     }
     fn_803894B0();
-    fn_803838C0();
+    AXQuit();
 }
 
 bool AudioGCN::vf_0x18(const char *file) {
