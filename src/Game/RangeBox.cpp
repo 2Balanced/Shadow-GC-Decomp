@@ -5,12 +5,17 @@
  * assignment, and of RangeSphere::GetRadius. Member names and meanings are inferred. Definitions
  * are in reverse address order (deferred inlining emits functions last-defined first).
  *
- * Not matching yet (unit NonMatching, 40/44): GetCorner and GetEdge (GC/2.7 builds the inline
- * Vec3f temporaries of a statement before its calls; retail builds the centre after the scale
- * call), UnkBox_8002DBC8's constructor (retail copies both zeroed locals from one initializer, as
- * an inlined helper with an aggregate initializer would; GC/2.7 does not inline such helpers and
- * gives each local its own), and vf_0x3C (20 of 1328 rows: the side registers of its region code
- * and one float register of the inlined clamp). */
+ * Matching. What it took beyond the code itself (see the comments at each place):
+ * - GetCorner and GetEdge: the scale of an axis goes through the inline product `Scaled` (whose
+ *   out-of-line copy is fn_800091A4). An inline call inside a statement is expanded before the
+ *   statement, right to left, so the axis temporary and the scale call come before the centre
+ *   temporary; called directly, fn_8040CDA8 comes after both temporaries.
+ * - UnkBox_8002DBC8's constructor: both zeroed temporaries are copied from one object in .rodata
+ *   (s_zeroTriple).
+ * - vf_0x3C: ClampToHalf takes references, the x clamp's value is an rvalue, and the region is
+ *   computed from the sides before they are copied.
+ * - Order: fn_80029418 is inline (emitted after its first user, GetRotation), and GetHalfSize is
+ *   defined before GetCorner. */
 
 #define RANGE_UNIT
 #include "Game/CharaColliGeneral.h"
@@ -109,22 +114,7 @@ struct RangeFloat4 {
     float v[4];
 };
 
-/* The rotation as Euler angles of a matrix, in the given order. */
-extern "C" Vec3f fn_80029418(const Mtx34f *matrix, s32 order) {
-    Vec3f angles(0.0f, 0.0f, 0.0f);
-    switch (order) {
-    case 0:
-        fn_80049290(&angles, matrix);
-        break;
-    case 1:
-        fn_800493C4(&angles, matrix);
-        break;
-    case 2:
-        fn_800494F8(&angles, matrix);
-        break;
-    }
-    return angles;
-}
+extern "C" Vec3f fn_80029418(const Mtx34f *matrix, s32 order);
 
 /* a . b */
 inline float Dot(const Fn8040CopyVector3 &a, const Vec3f &b) {
@@ -150,16 +140,22 @@ extern "C" bool fn_80029ED0(RangeBase *self, RangeBase *other);
 /* The tests by the other shape's kind (sphere, box). */
 static HitFn s_hitTable[] = {fn_8002A67C, fn_80029ED0};
 
+/* The zeroes both of the constructor's temporaries start from. Retail reads this one object twice,
+ * once per copy, and keeps it in .rodata: a const object would have its loads shared between the
+ * two copies, and two aggregate initializers would be two objects, so it is a plain object placed
+ * in .rodata by hand (the compiler warns that the object is writable; the section stays read-only). */
+__declspec(section ".rodata") static RangeFloat3 s_zeroTriple = {0.0f, 0.0f, 0.0f};
+
 UnkBox_8002DBC8::UnkBox_8002DBC8(const Vec3f &center, const Vec3f &size, const Vec3f &rotation, int arg3) {
     {
-        RangeFloat3 c = {0.0f, 0.0f, 0.0f};
+        RangeFloat3 c = s_zeroTriple;
         c.v[0] = center.x;
         c.v[1] = center.y;
         c.v[2] = center.z;
         *reinterpret_cast<RangeFloat3 *>(&m_center) = c;
     }
     {
-        RangeFloat3 c = {0.0f, 0.0f, 0.0f};
+        RangeFloat3 c = s_zeroTriple;
         c.v[0] = size.x;
         c.v[1] = size.y;
         c.v[2] = size.z;
@@ -402,8 +398,10 @@ extern "C" inline Line *fn_8002CCF0(Line *line, const Line *other) {
     return line;
 }
 
-/* Clamp written out where the moving-sphere test re-clamps its point (retail inlines it there). */
-inline float ClampToHalf(float value, float half, s32 *side) {
+/* Clamp written out where the moving-sphere test re-clamps its point (retail inlines it there).
+ * It takes its operands by reference: by value the last of the three calls gets the other float
+ * registers. */
+inline float ClampToHalf(const float &value, const float &half, s32 *side) {
     if (half < value) {
         *side = 2;
         return half;
@@ -421,7 +419,9 @@ inline s32 CornerOf(const Vec3f &point) {
     return (point.x >= 0.0f ? 4 : 0) + (point.y >= 0.0f ? 2 : 0) + (point.z >= 0.0f ? 1 : 0);
 }
 
+
 bool RangeBox::vf_0x3C(const UnkSphere_8004E6CC *sphere, const Vec3f *move, UnkColliContact_8001FF00 *result) {
+
     float radius = 0.001f + (sphere->m_radius + m_margin);
     RangeLineData path;
     fn_80020A20(reinterpret_cast<UnkDebugLine_80020A20 *>(&path), &sphere->m_center,
@@ -448,16 +448,16 @@ bool RangeBox::vf_0x3C(const UnkSphere_8004E6CC *sphere, const Vec3f *move, UnkC
     Vec3f closest(Clamp(center.x, half.x + sphere->m_radius, &sx), Clamp(center.y, half.y + sphere->m_radius, &sy),
                   Clamp(center.z, half.z + sphere->m_radius, &sz));
     if (sx == 1 && sy == 1 && sz == 1) {
-        fn_800091D0(&closest, &Vec3f(ClampToHalf(center.x, half.x, &sx), ClampToHalf(center.y, half.y, &sy),
+        /* The x clamp alone takes its value as an rvalue (the cast): retail loads center.x before
+         * half.x there, and half first in the other two. */
+        fn_800091D0(&closest, &Vec3f(ClampToHalf((float)center.x, half.x, &sx), ClampToHalf(center.y, half.y, &sy),
                                      ClampToHalf(center.z, half.z, &sz)));
-
-
-
+        /* The region is taken from the sides themselves, before the copies the tests below use:
+         * computed from the copies, y and z trade registers for the rest of the block. */
+        s32 region = sy * 3 + sz * 9 + sx;
         s32 y = sy;
         s32 z = sz;
         s32 x = sx;
-
-        s32 region = x + (z * 9 + y * 3);
         if (region == 0 || region == 2 || region == 6 || region == 8 || region == 18 || region == 20 ||
             region == 24 || region == 26) {
             index = (z == 2 ? 4 : 0) + (y == 2 ? 2 : 0) + (x == 2 ? 1 : 0);
@@ -1166,6 +1166,11 @@ extern "C" void fn_80029DA8(RangeBox *box, const Vec3f *point, s32 *x, s32 *y, s
 
 Line::Line() {}
 
+/* v * scale, as the inline product whose out-of-line copy is fn_800091A4. */
+inline Vec3f Scaled(const Vec3f &v, float scale) {
+    return fn_8040CDA8(&v, scale);
+}
+
 UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
     Line line;
     Vec3f center(m_matrix.values[0][3], m_matrix.values[1][3], m_matrix.values[2][3]);
@@ -1175,11 +1180,11 @@ UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
         s = (index & 2) ? GetHalfSize().y : -GetHalfSize().y;
         fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]), s));
         fn_800091D0(&line.m_start,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
                                                               m_matrix.values[2][2]),
                                                         -GetHalfSize().z)));
         fn_800091D0(&line.m_end,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
                                                               m_matrix.values[2][2]),
                                                         GetHalfSize().z)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
@@ -1189,11 +1194,11 @@ UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
         s = ((index - 4) & 2) ? GetHalfSize().z : -GetHalfSize().z;
         fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
         fn_800091D0(&line.m_start,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
                                                               m_matrix.values[2][1]),
                                                         -GetHalfSize().y)));
         fn_800091D0(&line.m_end,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
                                                               m_matrix.values[2][1]),
                                                         GetHalfSize().y)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
@@ -1203,15 +1208,19 @@ UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
         s = ((index - 8) & 2) ? GetHalfSize().z : -GetHalfSize().z;
         fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
         fn_800091D0(&line.m_start,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
                                                               m_matrix.values[2][0]),
                                                         -GetHalfSize().x)));
         fn_800091D0(&line.m_end,
-                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
+                    &fn_8040CDD0(&center, &Scaled(Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
                                                               m_matrix.values[2][0]),
                                                         GetHalfSize().x)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
     }
+}
+
+Fn8040CopyVector3 RangeBox::GetHalfSize() {
+    return ((VectorCopyFn)fn_800169F8)(reinterpret_cast<const Vec3f *>(&m_box.m_size));
 }
 
 Fn8040CopyVector3 RangeBox::GetCorner(int index) {
@@ -1219,7 +1228,7 @@ Fn8040CopyVector3 RangeBox::GetCorner(int index) {
     float s = (index & 1) ? GetHalfSize().x : -GetHalfSize().x;
     fn_800091EC(reinterpret_cast<Vec3f *>(&corner),
                 &fn_8040CDD0(&Vec3f(m_matrix.values[0][3], m_matrix.values[1][3], m_matrix.values[2][3]),
-                             &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]), s)));
+                             &Scaled(Vec3f(m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]), s)));
     s = (index & 2) ? GetHalfSize().y : -GetHalfSize().y;
     fn_8040CFF8(reinterpret_cast<Vec3f *>(&corner),
                 &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]), s));
@@ -1228,10 +1237,6 @@ Fn8040CopyVector3 RangeBox::GetCorner(int index) {
                 &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
     return corner;
 
-}
-
-Fn8040CopyVector3 RangeBox::GetHalfSize() {
-    return ((VectorCopyFn)fn_800169F8)(reinterpret_cast<const Vec3f *>(&m_box.m_size));
 }
 
 void RangeBox::Reset() {}
@@ -1266,6 +1271,25 @@ const Vec3f *RangeBox::GetBaseRotation() {
 
 Fn8040CopyVector3 RangeBox::GetExtent() {
     return ((VectorCopyFn)fn_800169F8)(reinterpret_cast<const Vec3f *>(&m_box.m_center));
+}
+
+/* The rotation as Euler angles of a matrix, in the given order. An inline function the other
+ * shapes call too (Game/RangeCapsule.cpp, Game/RangeCylinder.cpp): this unit is its first user, so
+ * its copy is emitted here, right after GetRotation. */
+extern "C" inline Vec3f fn_80029418(const Mtx34f *matrix, s32 order) {
+    Vec3f angles(0.0f, 0.0f, 0.0f);
+    switch (order) {
+    case 0:
+        fn_80049290(&angles, matrix);
+        break;
+    case 1:
+        fn_800493C4(&angles, matrix);
+        break;
+    case 2:
+        fn_800494F8(&angles, matrix);
+        break;
+    }
+    return angles;
 }
 
 Vec3f RangeBox::GetRotation() {

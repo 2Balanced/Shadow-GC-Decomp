@@ -17,7 +17,13 @@
  *   operands the other way round.
  * - AcceptHit (0x80334314): retail schedules two loads above stack stores (above the stmw, and
  *   above the iterator copy); GC/2.7 keeps them below. The same load-above-store pattern blocks
- *   fn_80334480 in Game/VehiclePathMove.cpp. */
+ *   fn_80334480 in Game/VehiclePathMove.cpp. Wave 39: with `#pragma scheduling off` the entry
+ *   block is filter load, collider load, compare, branch whatever the source order (collider
+ *   named first, the test kept in a bool, the filter assigned inside the condition, the filter
+ *   read through the candidate at each use); the scheduler then puts the collider load first and
+ *   the filter load before the compare, while retail has collider load, stmw, mr, compare, filter
+ *   load. GC/2.7 does move a single load above the stmw (Game/BulletHitEffect.cpp's fn_802B3FE8
+ *   matches that way), but here the second load fills the load-to-compare gap instead. */
 #define BOOST_SP_NOT_EQUAL
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"

@@ -14,11 +14,15 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * Not matching yet (unit NonMatching, 43/44): the RTTI strings above need the class renamed, and
- * Draw keeps its zeroed copy of the camera position in a named local: retail's is a temporary at
- * the bottom of the frame whose initializer heads .rodata, as an inlined helper with an aggregate
- * initializer would give, and GC/2.7 does not inline such helpers (76 of 176 rows, all stack and
- * .rodata offsets). */
+ * Matching. Draw copies the camera position through a zeroed temporary: retail reads the zeroes
+ * from the head of the unit's .rodata and keeps the temporary at the bottom of the frame, as an
+ * inlined helper would, and GC/2.7 inlines no helper that has a struct local. Here the zeroes are
+ * the first row of lbl_804FDD78 (a plain object placed in .rodata by hand) and the temporary is an
+ * unnamed one bound to a reference. */
+
+/* Keeps the dead copies of std::exception's and std::bad_alloc's names in .rodata, as retail has
+ * them (see <new>): the unit's .rodata is reached through one base address and kept whole. */
+#define MSL_NEW_INLINE_BAD_ALLOC
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -127,6 +131,20 @@ inline s32 PlayerOf(UnkScreenHolder_8000DCC0 *screen) {
 struct GiMissionTargetFloat3 {
     float v[3];
 };
+
+/* The head of the unit's .rodata: the zeroes the camera position's copy starts from, then three
+ * unused rows (the same four rows head the .rodata of Game/CircusPole.cpp, Game/ElecCoreWall.cpp
+ * and Game/DebugDisp.cpp, where none of them is read). Draw reads the first row through the
+ * unit's .rodata base, once per word, so it is a plain object placed in .rodata by hand: a const
+ * one would be folded into the code. */
+__declspec(section ".rodata") static float lbl_804FDD78[4][4] = {
+    {0.0f, 0.0f, 0.0f, 0.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f},
+    {0.0f, 0.0f, 0.0f, 1.0f},
+};
+
+
 
 /* The marker's state (class name from the RTTI of its draw callback's bind_t). */
 class GiMissionTargetImpl {
@@ -317,7 +335,10 @@ void GiMissionTargetImpl::Draw(RednerDrawArgs &args) {
     player = lbl_805F0170;
     fn_800091EC(&camera, fn_80010244(fn_80009548(), player));
     {
-        GiMissionTargetFloat3 c = {0.0f, 0.0f, 0.0f};
+        /* The zeroed copy is a temporary bound to a reference, not a named local: retail keeps it
+         * at the bottom of the frame, below the temporaries of the calls above. */
+        GiMissionTargetFloat3 &c = const_cast<GiMissionTargetFloat3 &>(static_cast<const GiMissionTargetFloat3 &>(
+            GiMissionTargetFloat3(*reinterpret_cast<const GiMissionTargetFloat3 *>(lbl_804FDD78[0]))));
         c.v[0] = camera.x;
         c.v[1] = camera.y;
         c.v[2] = camera.z;

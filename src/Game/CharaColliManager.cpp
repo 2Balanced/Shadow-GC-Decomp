@@ -11,7 +11,14 @@
  * fn_800C5478, fn_800C5938, fn_800C5D74 and fn_800C6C80, which differ only in the choice of
  * callee-saved registers (same instructions and stack layout). Two unused functions
  * (DrawColliders, PoolConstants) place the list's iterator functions and order the .sdata2
- * constants as retail has them; the linker strips them. */
+ * constants as retail has them; the linker strips them.
+ * Wave 39, what was measured: in fn_800C5478 and fn_800C5D74 two variables are ranked differently
+ * and the rest keep their order (retail: i r31, attack r30, manager r29, the list offset r28, the
+ * collider r27, sphere/line r26, kind r25, results r24, collect, filter, filterArg; here i is
+ * fifth, r27, and results sixth, r26); in fn_800C4DE0 only `filter` is (r20 in retail, above the
+ * four block temporaries; r16 here, below them, next to filterArg). Declaring i and the collider
+ * at the top of the function, and copying filter or filterArg into a local declared first or
+ * after `still`, change nothing: the copies are coalesced away. */
 #define CHARACOLLI_BASE_MEMBERS
 #include "Game/AttackIgnoreList.h"
 #include "Game/BitTable.h"

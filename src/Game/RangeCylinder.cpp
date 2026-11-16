@@ -6,10 +6,26 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * Not matching yet (unit NonMatching, 39/43): HitRim (the quartic's coefficients are scheduled
- * differently), vf_0x3C (GC/2.7 calls the Vec3f constructor of the normal's temporary out of line),
- * and the tests against a capsule (fn_800315C4) and a cylinder (fn_80030E08), whose registers are
- * allocated in a different order. */
+ * Not matching yet (unit NonMatching, 40/43; the functions are in retail's order):
+ * - HitRim (18 of 190 rows): the same instructions in the same order, but the float registers of
+ *   the quartic's coefficients differ (the box's lowered z sits in f8 here and f5 in retail, which
+ *   moves five others). What got it this far: the scale of the rim goes through the inline product
+ *   `Scaled` (its by-value scale is read before the vector is built), the coefficients are
+ *   multiplied by the reciprocal in place (`c *= inv`), and the lowered z is a named local.
+ * - fn_80030E08, cylinder against cylinder (15 of 445 rows): one block, where retail loads the
+ *   middle column's x before the other two columns and interleaves the cylinders' sizes with the
+ *   third column's stores. Declaration order of the columns and sizes, one declaration for the
+ *   three columns and plain floats for the middle one all leave it as it is.
+ * - fn_800315C4, cylinder against capsule (about 54 of 584 rows): the square of the middle
+ *   column's x, which the compiler keeps across the square-root calls, takes f28 here and f24 in
+ *   retail (the four sizes are one register higher there), the two distance checks keep the third
+ *   dot product in f22 where retail uses f26, and the first cap's negated half height goes through
+ *   a copy in retail (fmr f0,f28; fneg f1,f0). Declaring `end` first fixed the saved general
+ *   registers, a named dot product the order of the cap's arguments, and `Scaled` the rim.
+ * vf_0x3C matches since the normal's temporary is built in place (fn_800091EC called directly, so
+ * that the Vec3f constructor is no longer an argument of an inline call) and the start's z and the
+ * sphere's radius are named in retail's register order. SinCos and SinCos2 are plain functions
+ * defined between the capsule and the cylinder tests, which is where retail has them. */
 #define RANGE_UNIT
 #include "Game/CharaColliGeneral.h"
 #include "Game/RangeCylinder.h"
@@ -168,14 +184,6 @@ struct RangeSphereTemp {
     float v[4];
 };
 
-/* A vector of three floats, as a value. */
-inline Vec3f MakeVector(float x, float y, float z) {
-    Vec3f v;
-    v.x = x;
-    v.y = y;
-    v.z = z;
-    return v;
-}
 
 /* Three floats (the description's centre is built through one). */
 struct RangeFloat3 {
@@ -195,26 +203,21 @@ extern "C" bool fn_80031EEC(RangeBase *self, RangeBase *other);
 extern "C" bool fn_800315C4(RangeBase *self, RangeBase *other);
 extern "C" bool fn_80030E08(RangeBase *self, RangeBase *other);
 
+/* v * scale, as the inline product whose out-of-line copy is fn_800091A4: its scale is read before
+ * its vector is built. */
+inline Vec3f Scaled(const Vec3f &v, float scale) {
+    return fn_8040CDA8(&v, scale);
+}
+
 /* a . b */
 inline float Dot(const Fn8040CopyVector3 &a, const Vec3f &b) {
     return fn_8040CF90(reinterpret_cast<const Vec3f *>(&a), &b);
 }
 
 /* The sine and cosine of angle, and of the angle of (x, y) (an axis along x, or along nothing, when x is
- * zero). Each calls another inline function, so GC/2.7 keeps them out of line. */
-inline void SinCos(float *s, float *c, float angle) {
-    *s = std::sin(angle);
-    *c = std::cos(angle);
-}
-
-inline void SinCos2(float *s, float *c, float y, float x) {
-    if (x == 0.0f) {
-        *c = 0.0f;
-        *s = y == 0.0f ? 0.0f : 1.0f;
-    } else {
-        SinCos(s, c, fn_80016260(y, x));
-    }
-}
+ * zero); defined just before the cylinder-against-cylinder test, where retail has them. */
+void SinCos(float *s, float *c, float angle);
+void SinCos2(float *s, float *c, float y, float x);
 
 /* Vec2f sums and products (each calls another inline function, so GC/2.7 keeps them out of line). */
 inline Vec2f Vec2Add(const Vec2f &a, const Vec2f &b) {
@@ -580,19 +583,27 @@ bool RangeCylinder::HitRim(const UnkSphere_8004E6CC *sphere, Vec3f *move, const 
     Fn8040CopyVector3 d(fn_8040D044(direction, -angleB));
     Fn8040CopyVector3 p(fn_8040D044(start, -angleB));
     float k = d.y / d.z;
-    p.z -= height;
+    float pz = p.z;
+    pz -= height;
     float k2 = k * k + 1.0f;
-    float py = p.y - k * p.z;
+    float py = p.y - k * pz;
+    p.z = pz;
     float inv = 1.0f / (k2 * k2);
     float q = py * py + p.x * p.x;
     float r2 = m_cylinder.m_radius * m_cylinder.m_radius;
     float e = r2 + q - sphere->m_radius * sphere->m_radius;
     float r4 = 4.0f * r2;
     float b = 2.0f * k * py;
+    float c3 = 2.0f * k2 * b;
+    float c2 = b * b + 2.0f * e * k2 - k * (r4 * k);
+    float c1 = b * (2.0f * e - r4);
+    float c0 = e * e - r4 * q;
+    c3 *= inv;
+    c2 *= inv;
+    c1 *= inv;
+    c0 *= inv;
     float roots[4];
-    if (fn_8003B03C(&roots[0], &roots[1], &roots[2], &roots[3], 2.0f * k2 * b * inv,
-                    (b * b + 2.0f * e * k2 - k * (r4 * k)) * inv, b * (2.0f * e - r4) * inv,
-                    (e * e - r4 * q) * inv)) {
+    if (fn_8003B03C(&roots[0], &roots[1], &roots[2], &roots[3], c3, c2, c1, c0)) {
         float best = 100.0f;
         for (int i = 0; i < 4; i++) {
             float t = (roots[i] - p.z) / d.z;
@@ -603,9 +614,10 @@ bool RangeCylinder::HitRim(const UnkSphere_8004E6CC *sphere, Vec3f *move, const 
         if (0.0f <= best && best <= 1.0f) {
             fn_8040CE38(move, best);
             if (result != 0) {
-                Fn8040CopyVector3 hit(fn_8040CDD0(start, &fn_8040CDA8(direction, best)));
+                Fn8040CopyVector3 hit(fn_8040CDD0(&fn_8040CDA8(direction, best), start));
                 RangeAxis rim(hit.x, hit.y, 0.0f);
-                rim = fn_8040CDA8(&fn_8040CEE8(reinterpret_cast<const Vec3f *>(&rim)), m_cylinder.m_radius);
+                fn_800091D0(reinterpret_cast<Vec3f *>(&rim),
+                            &Scaled(fn_8040CEE8(reinterpret_cast<const Vec3f *>(&rim)), m_cylinder.m_radius));
                 rim.z = height;
                 result->SetPosition(fn_8040B67C(&m_matrix, reinterpret_cast<const Vec3f *>(&rim)));
                 result->SetNormal(fn_8040B618(&m_matrix, &fn_8040CEE8(&((VectorSubtractFn)fn_8040CD74)(
@@ -703,9 +715,14 @@ bool RangeCylinder::vf_0x3C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
     Fn8040CopyVector3 start(fn_8040B67C(&m_inverse, &sphere->m_center));
     Fn8040CopyVector3 direction(fn_8040B618(&m_inverse, move));
     Fn8040CopyVector3 end(fn_8040CDD0(reinterpret_cast<const Vec3f *>(&start), reinterpret_cast<const Vec3f *>(&direction)));
+    /* The radius is declared before the height it is read after: that order gives it the float
+     * register below the start's, and the read order keeps the start's load first. */
+    float radius;
+    float z = start.z;
+    radius = sphere->m_radius;
     float height = m_cylinder.m_halfHeight;
-    if ((0.001f + (start.z + sphere->m_radius) < -height && 0.001f + (end.z + sphere->m_radius) < -height) ||
-        (height < start.z - sphere->m_radius - 0.001f && height < end.z - sphere->m_radius - 0.001f)) {
+    if ((0.001f + (z + radius) < -height && 0.001f + (end.z + radius) < -height) ||
+        (height < z - radius - 0.001f && height < end.z - radius - 0.001f)) {
         return false;
     }
     Vec2f start2(start.x, start.y);
@@ -768,7 +785,8 @@ bool RangeCylinder::vf_0x3C(const UnkSphere_8004E6CC *sphere, const Vec3f *move,
                 if (std::fabs(hit.z) <= HalfHeight()) {
                     fn_8040CE38(const_cast<Vec3f *>(move), t);
                     if (result != 0) {
-                        Fn8040CopyVector3 normal(fn_8040CEE8(&MakeVector(hit.x, hit.y, 0.0f)));
+                        Fn8040CopyVector3 normal;
+                        fn_800091EC(reinterpret_cast<Vec3f *>(&normal), &fn_8040CEE8(&Vec3f(hit.x, hit.y, 0.0f)));
                         Fn8040CopyVector3 rim(fn_8040CDA8(reinterpret_cast<const Vec3f *>(&normal), m_cylinder.m_radius));
                         rim.z = hit.z;
                         result->SetPosition(fn_8040B67C(&m_matrix, reinterpret_cast<const Vec3f *>(&rim)));
@@ -987,6 +1005,9 @@ extern "C" bool fn_80031EEC(RangeBase *self, RangeBase *other) {
 }
 
 extern "C" bool fn_800315C4(RangeBase *self, RangeBase *other) {
+    /* Declared first: that gives the capsule's far end the last saved register and the capsule
+     * itself the one below it, as in retail. */
+    const Vec3f *end;
     RangeCylinder *a = static_cast<RangeCylinder *>(self);
     RangeCapsule *b = static_cast<RangeCapsule *>(other);
     if (fn_80029118(a, b)) {
@@ -1070,15 +1091,15 @@ extern "C" bool fn_800315C4(RangeBase *self, RangeBase *other) {
 
         AssignVector(*reinterpret_cast<Vec3f *>(&t),
                      ((VectorSubtractFn)fn_8040CD74)(&b->m_line.m_start, reinterpret_cast<const Vec3f *>(&a->m_position)));
-        Fn8040CopyVector3 cap(fn_8040CDA8(reinterpret_cast<const Vec3f *>(&a->m_axis),
-                                          fn_8040CF90(reinterpret_cast<const Vec3f *>(&t), reinterpret_cast<const Vec3f *>(&a->m_axis)) > 0.0f ? ha : -ha));
+        float dot = fn_8040CF90(reinterpret_cast<const Vec3f *>(&t), reinterpret_cast<const Vec3f *>(&a->m_axis));
+        Fn8040CopyVector3 cap(fn_8040CDA8(reinterpret_cast<const Vec3f *>(&a->m_axis), dot > 0.0f ? ha : -ha));
         Fn8040CopyVector3 side(fn_8040CFB8(reinterpret_cast<const Vec3f *>(&cap), reinterpret_cast<const Vec3f *>(&t)));
         if (std::fabs(side.x) < 0.001f && std::fabs(side.y) < 0.001f && std::fabs(side.z) < 0.001f) {
         }
-        AssignVector(*reinterpret_cast<Vec3f *>(&side),
-                     fn_8040CDA8(&fn_8040CEE8(&fn_8040CFB8(reinterpret_cast<const Vec3f *>(&side),
-                                                           reinterpret_cast<const Vec3f *>(&cap))),
-                                 a->m_cylinder.m_radius));
+        fn_800091D0(reinterpret_cast<Vec3f *>(&side),
+                    &Scaled(fn_8040CEE8(&fn_8040CFB8(reinterpret_cast<const Vec3f *>(&side),
+                                                     reinterpret_cast<const Vec3f *>(&cap))),
+                            a->m_cylinder.m_radius));
         Fn8040CopyVector3 rim(fn_8040CDD0(&fn_8040CDD0(reinterpret_cast<const Vec3f *>(&a->m_position),
                                                        reinterpret_cast<const Vec3f *>(&cap)),
                                           reinterpret_cast<const Vec3f *>(&side)));
@@ -1093,12 +1114,12 @@ extern "C" bool fn_800315C4(RangeBase *self, RangeBase *other) {
             }
         }
 
-        const Vec3f *end = &b->m_line.m_end;
+        end = &b->m_line.m_end;
         AssignVector(*reinterpret_cast<Vec3f *>(&t),
                      ((VectorSubtractFn)fn_8040CD74)(end, reinterpret_cast<const Vec3f *>(&a->m_position)));
+        dot = fn_8040CF90(reinterpret_cast<const Vec3f *>(&t), reinterpret_cast<const Vec3f *>(&a->m_axis));
         AssignVector(*reinterpret_cast<Vec3f *>(&cap),
-                     fn_8040CDA8(reinterpret_cast<const Vec3f *>(&a->m_axis),
-                                 fn_8040CF90(reinterpret_cast<const Vec3f *>(&t), reinterpret_cast<const Vec3f *>(&a->m_axis)) > 0.0f ? ha : -ha));
+                     fn_8040CDA8(reinterpret_cast<const Vec3f *>(&a->m_axis), dot > 0.0f ? ha : -ha));
         AssignVector(*reinterpret_cast<Vec3f *>(&side),
                      fn_8040CFB8(reinterpret_cast<const Vec3f *>(&cap), reinterpret_cast<const Vec3f *>(&t)));
         if (std::fabs(side.x) < 0.001f && std::fabs(side.y) < 0.001f && std::fabs(side.z) < 0.001f) {
@@ -1125,6 +1146,20 @@ extern "C" bool fn_800315C4(RangeBase *self, RangeBase *other) {
         return true;
     }
     return false;
+}
+
+void SinCos(float *s, float *c, float angle) {
+    *s = std::sin(angle);
+    *c = std::cos(angle);
+}
+
+void SinCos2(float *s, float *c, float y, float x) {
+    if (x == 0.0f) {
+        *c = 0.0f;
+        *s = y == 0.0f ? 0.0f : 1.0f;
+    } else {
+        SinCos(s, c, fn_80016260(y, x));
+    }
 }
 
 extern "C" bool fn_80030E08(RangeBase *self, RangeBase *other) {

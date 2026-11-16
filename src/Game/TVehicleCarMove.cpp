@@ -25,7 +25,9 @@
  *   Move's rearAddress and rearEnd); Move still differs in the registers after that.
  * - GetNode, SetLamp, GetDamage, UpdateSpring: loads scheduled above stores (the AcceptHit
  *   pattern of Game/VehicleColliMove.cpp).
- * - ReadInput: the operands of the smoothing's fadds are swapped.
+ * - ReadInput: the operands of the smoothing's fadds are swapped (retail adds rate + 1.0f in that
+ *   order; a named denominator, 1.0f + rate, the rate taken by const reference or copied to a
+ *   local, and `d *= rate; d /= rate + 1.0f` all leave GC/2.7's 1.0f + rate or cost more rows).
  * - SetCamera: retail indexes the handling table with add/lwz where GC/2.7 uses lwzx (one
  *   load).
  * .data, .bss, .sbss and .sdata2 match. .rodata differs only in the place of VariableBasic<float>'s
