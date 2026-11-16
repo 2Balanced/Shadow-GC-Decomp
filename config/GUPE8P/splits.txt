@@ -6811,6 +6811,33 @@ dolphin/dsp/dsp_task.c:
 	.data       start:0x805670D0 end:0x80567210
 	.sbss       start:0x805F1230 end:0x805F1248
 
+dolphin/card/CARDRdwr.c:
+	.text       start:0x8038E684 end:0x8038E914
+
+dolphin/card/CARDBlock.c:
+	.text       start:0x8038E914 end:0x8038ED18
+
+dolphin/card/CARDDir.c:
+	.text       start:0x8038ED18 end:0x8038EF7C
+
+dolphin/card/CARDOpen.c:
+	.text       start:0x80391158 end:0x80391744
+
+dolphin/card/CARDCreate.c:
+	.text       start:0x80391744 end:0x80391A94
+
+dolphin/card/CARDRead.c:
+	.text       start:0x80391A94 end:0x80391EC0
+
+dolphin/card/CARDWrite.c:
+	.text       start:0x80391EC0 end:0x803921F4
+
+dolphin/card/CARDDelete.c:
+	.text       start:0x803921F4 end:0x803923A8
+
+dolphin/card/CARDStat.c:
+	.text       start:0x803923A8 end:0x80392828
+
 Runtime.PPCEABI.H/__va_arg.c:
 	.text       start:0x803A00B0 end:0x803A0178
 

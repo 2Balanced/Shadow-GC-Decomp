@@ -55,17 +55,17 @@ s32 fn_8038FF84(s32 chan, s32 *memSize, s32 *sectorSize);           /* CARDProbe
 s32 fn_8039068C(s32 chan, void *workArea, CARDCallback detach, CARDCallback attach); /* CARDMountAsync */
 s32 fn_803908C8(s32 chan);                                          /* CARDUnmount */
 s32 fn_80391110(s32 chan, CARDCallback callback);                   /* CARDFormatAsync */
-s32 fn_803915CC(s32 chan, const char *fileName, CARDFileInfo *fileInfo); /* CARDOpen */
-s32 fn_803916E8(CARDFileInfo *fileInfo);                            /* CARDClose */
-s32 fn_80391874(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo,
+s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo); /* CARDOpen */
+s32 CARDClose(CARDFileInfo *fileInfo);                            /* CARDClose */
+s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo,
                 CARDCallback callback);                             /* CARDCreateAsync */
-s32 fn_80391D7C(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset,
+s32 CARDReadAsync(CARDFileInfo *fileInfo, void *buf, s32 length, s32 offset,
                 CARDCallback callback);                             /* CARDReadAsync */
-s32 fn_803920E0(CARDFileInfo *fileInfo, const void *buf, s32 length, s32 offset,
+s32 CARDWriteAsync(CARDFileInfo *fileInfo, const void *buf, s32 length, s32 offset,
                 CARDCallback callback);                             /* CARDWriteAsync */
-s32 fn_80392298(s32 chan, const char *fileName, CARDCallback callback); /* CARDDeleteAsync */
-s32 fn_803925A0(s32 chan, s32 fileNo, CARDStat *stat);              /* CARDGetStatus */
-s32 fn_803926B4(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callback); /* CARDSetStatusAsync */
+s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback); /* CARDDeleteAsync */
+s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat);              /* CARDGetStatus */
+s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callback); /* CARDSetStatusAsync */
 /* MSL string functions (names inferred). */
 int fn_803A8DA8(const void *a, const void *b, unsigned long size);  /* memcmp */
 char *fn_803AC6C0(const char *s, const char *sub);                  /* strstr */
@@ -415,7 +415,7 @@ MemoryCard::~MemoryCard() {
         fn_803908C8(m_channel);
     }
     if (m_flags & 2) {
-        fn_803916E8(&m_work->m_fileInfo);
+        CARDClose(&m_work->m_fileInfo);
     }
     m_flags = 0;
     if (m_work != 0) {
@@ -661,7 +661,7 @@ void MemoryCard::Finish() {
         fn_803908C8(m_channel);
     }
     if (m_flags & 2) {
-        fn_803916E8(&m_work->m_fileInfo);
+        CARDClose(&m_work->m_fileInfo);
     }
     m_flags = 0;
     SetCommand(CMD_READY);
@@ -674,7 +674,7 @@ void MemoryCard::Fail() {
         fn_803908C8(m_channel);
     }
     if (m_flags & 2) {
-        fn_803916E8(&m_work->m_fileInfo);
+        CARDClose(&m_work->m_fileInfo);
     }
     m_flags = 0;
     SetCommand(CMD_ERROR);
@@ -880,7 +880,7 @@ bool MemoryCard::StartOpen() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    result = fn_803915CC(m_channel, m_work->m_fileName, &m_work->m_fileInfo);
+    result = CARDOpen(m_channel, m_work->m_fileName, &m_work->m_fileInfo);
     if (result == CARD_RESULT_READY) {
         m_flags |= 2;
     } else {
@@ -897,7 +897,7 @@ void MemoryCard::PollOpen() {
     if (m_flags & 2) {
         result = fn_8038D238(m_channel);
     } else {
-        result = fn_803915CC(m_channel, m_work->m_fileName, &m_work->m_fileInfo);
+        result = CARDOpen(m_channel, m_work->m_fileName, &m_work->m_fileInfo);
     }
     if (result == CARD_RESULT_BUSY) {
         return;
@@ -933,7 +933,7 @@ bool MemoryCard::StartGetStatus() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    result = fn_803925A0(m_channel, m_work->m_fileNo, &m_work->m_stat);
+    result = CARDGetStatus(m_channel, m_work->m_fileNo, &m_work->m_stat);
     if (result == CARD_RESULT_READY) {
         m_flags |= 4;
     } else {
@@ -950,7 +950,7 @@ void MemoryCard::PollGetStatus() {
     if (m_flags & 4) {
         result = fn_8038D238(m_channel);
     } else {
-        result = fn_803925A0(m_channel, m_work->m_fileNo, &m_work->m_stat);
+        result = CARDGetStatus(m_channel, m_work->m_fileNo, &m_work->m_stat);
     }
     if (result == CARD_RESULT_BUSY) {
         return;
@@ -1020,7 +1020,7 @@ bool MemoryCard::StartCreate() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_80391874(m_channel, m_work->m_fileName, m_size, &m_work->m_fileInfo, 0) !=
+    return CARDCreateAsync(m_channel, m_work->m_fileName, m_size, &m_work->m_fileInfo, 0) !=
            CARD_RESULT_BUSY;
 }
 
@@ -1065,7 +1065,7 @@ bool MemoryCard::StartDelete() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_80392298(m_channel, m_work->m_fileName, 0) != CARD_RESULT_BUSY;
+    return CARDDeleteAsync(m_channel, m_work->m_fileName, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollDelete() {
@@ -1095,7 +1095,7 @@ bool MemoryCard::StartRead() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_80391D7C(&m_work->m_fileInfo, m_data, m_size, 0, 0) != CARD_RESULT_BUSY;
+    return CARDReadAsync(&m_work->m_fileInfo, m_data, m_size, 0, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollRead() {
@@ -1125,7 +1125,7 @@ bool MemoryCard::StartWrite() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_803920E0(&m_work->m_fileInfo, m_data, m_size, 0, 0) != CARD_RESULT_BUSY;
+    return CARDWriteAsync(&m_work->m_fileInfo, m_data, m_size, 0, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollWrite() {
@@ -1203,7 +1203,7 @@ bool MemoryCard::StartSetStatus() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_803926B4(m_channel, m_work->m_fileNo, &m_work->m_stat, 0) != CARD_RESULT_BUSY;
+    return CARDSetStatusAsync(m_channel, m_work->m_fileNo, &m_work->m_stat, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollSetStatus() {
@@ -1239,7 +1239,7 @@ void MemoryCard::PollSearch() {
         return;
     }
     while (m_work->m_searchIndex != 127) {
-        result = fn_803925A0(m_channel, m_work->m_searchIndex, &m_work->m_stat);
+        result = CARDGetStatus(m_channel, m_work->m_searchIndex, &m_work->m_stat);
         if (result == CARD_RESULT_BUSY) {
             return;
         }

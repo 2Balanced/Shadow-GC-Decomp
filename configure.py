@@ -436,6 +436,20 @@ config.libs = [
         ],
     ),
     DolphinLib(
+        "card",
+        [
+            Object(Matching, "dolphin/card/CARDRdwr.c"),
+            Object(Matching, "dolphin/card/CARDBlock.c"),
+            Object(NonMatching, "dolphin/card/CARDDir.c"),
+            Object(Matching, "dolphin/card/CARDOpen.c"),
+            Object(Matching, "dolphin/card/CARDCreate.c"),
+            Object(Matching, "dolphin/card/CARDRead.c"),
+            Object(Matching, "dolphin/card/CARDWrite.c"),
+            Object(Matching, "dolphin/card/CARDDelete.c"),
+            Object(Matching, "dolphin/card/CARDStat.c"),
+        ],
+    ),
+    DolphinLib(
         "base",
         [
             Object(Matching, "dolphin/base/PPCArch.c"),
