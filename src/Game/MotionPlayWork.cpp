@@ -964,8 +964,6 @@ extern "C" void fn_8041F6F0(void *data) {
  * positions. */
 extern "C" void fn_8041F290(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
-    MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
     Mtx34f matrix;
     Vec3f result;
@@ -977,10 +975,12 @@ extern "C" void fn_8041F290(void *data) {
     int index;
     int other;
     int again;
+    MotionNodeWorld *target = args->m_target;
     int parent;
     float weight;
     Vec3f *dst;
     Vec3f *base;
+    MotionLayerList *list = args->m_list;
     Vec3f *src;
 
     for (i = 0; i < list->m_count; i++) {
@@ -1104,10 +1104,10 @@ extern "C" void fn_8041ED8C(void *data) {
     int other;
     int again;
     int parent;
-    int x;
     int y;
     int z;
     Vec3f *angles;
+    int x;
     Mtx34f *dst;
     Mtx34f *base;
     Mtx34f *src;
@@ -1212,9 +1212,9 @@ extern "C" void fn_8041ED8C(void *data) {
 /* Blended scale channel of a root frame: as fn_8041D89C, also applied to the layer matrices. */
 extern "C" void fn_8041E9C4(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f result;
     int i;
     int j;
@@ -1223,9 +1223,9 @@ extern "C" void fn_8041E9C4(void *data) {
     int again;
     int parent;
     float weight;
-    Vec3f *dst;
     Vec3f *base;
     Vec3f *src;
+    Vec3f *dst;
 
     result.z = result.y = result.x = 1.0f;
     for (i = 0; i < list->m_count; i++) {
@@ -1321,9 +1321,9 @@ extern "C" void fn_8041E9C4(void *data) {
 /* Blended pre-scale channel of a root frame: as fn_8041D580, also applied to the layer matrices. */
 extern "C" void fn_8041E618(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f result;
     int i;
     int j;
@@ -1454,9 +1454,9 @@ extern "C" void fn_8041E420(void *data) {
 /* Blended translation channel: blends the positions of the layers and applies them. */
 extern "C" void fn_8041E124(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f result;
     Vec3f position;
     int i;
@@ -1556,19 +1556,19 @@ extern "C" void fn_8041DBD4(void *data) {
     MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
-    Mtx34f result;
     Mtx34f matrix;
+    Mtx34f result;
     int i;
     int j;
     int index;
     int other;
     int again;
     int parent;
-    int x;
     int y;
     int z;
     Vec3f *angles;
     Mtx34f *dst;
+    int x;
     Mtx34f *src;
 
     for (i = 0; i < list->m_count; i++) {
@@ -1658,9 +1658,9 @@ extern "C" void fn_8041DBD4(void *data) {
 /* Blended scale channel: blends the scales of the layers and applies them. */
 extern "C" void fn_8041D89C(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f result;
     int i;
     int j;
@@ -1669,9 +1669,9 @@ extern "C" void fn_8041D89C(void *data) {
     int again;
     int parent;
     float weight;
-    Vec3f *dst;
     Vec3f *base;
     Vec3f *src;
+    Vec3f *dst;
 
     result.z = result.y = result.x = 1.0f;
     for (i = 0; i < list->m_count; i++) {
@@ -1756,9 +1756,9 @@ extern "C" void fn_8041D89C(void *data) {
 /* Blended pre-scale channel: blends the scales of the layers and applies them. */
 extern "C" void fn_8041D580(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    MotionLayerList *list = args->m_list;
     MotionNodeWorld *target = args->m_target;
     MotionChannelLayer *entries = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f result;
     int i;
     int j;
@@ -3197,8 +3197,8 @@ extern "C" void fn_80419F5C(MotionPlayWork *work) {
     int ok;
     int j;
     int k;
-    MotionLayer *layer;
     MotionBlend *blend;
+    MotionLayer *layer;
 
     for (i = 0; i < work->m_layerCount; i++) {
         index = work->m_order[i];
