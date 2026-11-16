@@ -8,13 +8,12 @@ typedef void (*EXICallback)(s32 chan, OSContext *context);
 BOOL EXILock(s32 chan, u32 dev, EXICallback unlocked);
 BOOL EXIUnlock(s32 chan);
 s32 EXIGetID(s32 chan, u32 dev, u32 *id);
-/* EXI calls still under placeholder names. */
-BOOL fn_803B33C4(s32 chan);                          /* probe */
-s32 fn_803B3444(s32 chan);                           /* probe, with "still settling" */
-u32 fn_803B4050(s32 chan);                           /* channel state */
-EXICallback fn_803B31D4(s32 chan, EXICallback cb);   /* set the EXI interrupt callback */
-BOOL fn_803B34F8(s32 chan, EXICallback ext);         /* attach */
-BOOL fn_803B3604(s32 chan);                          /* detach */
+BOOL EXIProbe(s32 chan);
+s32 EXIProbeEx(s32 chan);                            /* probe, with "still settling" */
+u32 EXIGetState(s32 chan);
+EXICallback EXISetExiCallback(s32 chan, EXICallback cb);
+BOOL EXIAttach(s32 chan, EXICallback ext);
+BOOL EXIDetach(s32 chan);
 
 typedef struct OSSramEx {
     u8 flashID[2][12];
@@ -89,7 +88,7 @@ s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize) {
     card = &__CARDBlock[chan];
     enabled = OSDisableInterrupts();
 
-    probe = fn_803B3444(chan);
+    probe = EXIProbeEx(chan);
     if (probe == -1) {
         result = CARD_RESULT_NOCARD;
     } else if (probe == 0) {
@@ -106,7 +105,7 @@ s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize) {
             }
             result = CARD_RESULT_READY;
         }
-    } else if ((fn_803B4050(chan) & EXI_STATE_ATTACHED)) {
+    } else if ((EXIGetState(chan) & EXI_STATE_ATTACHED)) {
         result = CARD_RESULT_WRONGDEVICE;
     } else if (!EXIGetID(chan, 0, &id)) {
         result = CARD_RESULT_BUSY;
@@ -173,7 +172,7 @@ static s32 DoMount(s32 chan) {
         if (result < 0) {
             goto error;
         }
-        if (!fn_803B33C4(chan)) {
+        if (!EXIProbe(chan)) {
             result = CARD_RESULT_NOCARD;
             goto error;
         }
@@ -224,7 +223,7 @@ static s32 DoMount(s32 chan) {
         if (result < 0) {
             goto error;
         }
-        fn_803B31D4(chan, __CARDExiHandler);
+        EXISetExiCallback(chan, __CARDExiHandler);
         EXIUnlock(chan);
         DCInvalidateRange(card->workArea, CARD_NUM_SYSTEM_BLOCK * CARD_SYSTEM_BLOCK_SIZE);
     }
@@ -301,7 +300,7 @@ s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback,
         OSRestoreInterrupts(enabled);
         return CARD_RESULT_BUSY;
     }
-    if (!card->attached && (fn_803B4050(chan) & EXI_STATE_ATTACHED)) {
+    if (!card->attached && (EXIGetState(chan) & EXI_STATE_ATTACHED)) {
         OSRestoreInterrupts(enabled);
         return CARD_RESULT_WRONGDEVICE;
     }
@@ -312,7 +311,7 @@ s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback,
     card->apiCallback = attachCallback ? attachCallback : __CARDDefaultApiCallback;
     card->exiCallback = NULL;
 
-    if (!card->attached && !fn_803B34F8(chan, __CARDExtHandler)) {
+    if (!card->attached && !EXIAttach(chan, __CARDExtHandler)) {
         card->result = CARD_RESULT_NOCARD;
         OSRestoreInterrupts(enabled);
         return CARD_RESULT_NOCARD;
@@ -320,7 +319,7 @@ s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detachCallback,
 
     card->mountStep = 0;
     card->attached = TRUE;
-    fn_803B31D4(chan, NULL);
+    EXISetExiCallback(chan, NULL);
     OSCancelAlarm(&card->alarm);
     card->currentDir = NULL;
     card->currentFat = NULL;
@@ -341,8 +340,8 @@ static void DoUnmount(s32 chan, s32 result) {
     card = &__CARDBlock[chan];
     enabled = OSDisableInterrupts();
     if (card->attached) {
-        fn_803B31D4(chan, NULL);
-        fn_803B3604(chan);
+        EXISetExiCallback(chan, NULL);
+        EXIDetach(chan);
         OSCancelAlarm(&card->alarm);
         card->attached = FALSE;
         card->result = result;

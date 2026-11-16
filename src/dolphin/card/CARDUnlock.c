@@ -11,11 +11,8 @@ void *memset(void *dst, int value, unsigned long n);
 BOOL EXISelect(s32 chan, u32 dev, u32 freq);
 BOOL EXIDeselect(s32 chan);
 BOOL EXIUnlock(s32 chan);
-/* EXI calls still under placeholder names. */
-BOOL fn_803B2DB4(s32 chan, void *buf, s32 len, u32 mode);
-BOOL fn_803B33C4(s32 chan);
-#define EXIImmEx fn_803B2DB4
-#define EXIProbe fn_803B33C4
+BOOL EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+BOOL EXIProbe(s32 chan);
 
 void DSPSendMailToDSP(u32 mail);
 u32 DSPCheckMailToDSP(void);

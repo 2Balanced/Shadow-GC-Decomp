@@ -7,7 +7,7 @@
  * is finished from the EXI unlock callback. The sound, progressive-scan, language and wireless
  * controller ID accessors keep their placeholder names where game code calls them by those
  * names: fn_80376F58/fn_80376FD8 are OSGetSoundMode/OSSetSoundMode and fn_8037707C/fn_803770EC
- * OSGetProgressiveMode/OSSetProgressiveMode. fn_803B2DB4 is EXIImmEx. */
+ * OSGetProgressiveMode/OSSetProgressiveMode. */
 #include <dolphin/os.h>
 
 #define RTC_CHAN 0
@@ -67,7 +67,7 @@ BOOL EXIUnlock(s32 chan);
 BOOL EXISelect(s32 chan, u32 dev, u32 freq);
 BOOL EXIDeselect(s32 chan);
 BOOL EXIImm(s32 chan, void *buf, s32 len, u32 type, EXICallback callback);
-BOOL fn_803B2DB4(s32 chan, void *buf, s32 len, u32 mode);
+BOOL EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
 BOOL EXIDma(s32 chan, void *buf, s32 len, u32 type, EXICallback callback);
 BOOL EXISync(s32 chan);
 
@@ -102,7 +102,7 @@ static BOOL WriteSram(void *buffer, u32 offset, u32 size) {
     cmd = RTC_CMD_WRITE | (RTC_SRAM_ADDR + offset);
     err = !EXIImm(RTC_CHAN, &cmd, 4, EXI_WRITE, NULL);
     err |= !EXISync(RTC_CHAN);
-    err |= !fn_803B2DB4(RTC_CHAN, buffer, (s32)size, EXI_WRITE);
+    err |= !EXIImmEx(RTC_CHAN, buffer, (s32)size, EXI_WRITE);
     err |= !EXIDeselect(RTC_CHAN);
     EXIUnlock(RTC_CHAN);
     return !err;

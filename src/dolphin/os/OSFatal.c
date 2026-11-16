@@ -9,8 +9,8 @@
  * fn_8037F094 VISetBlack, fn_8037EEF0 VIFlush, fn_8037D6A8/fn_8037D6EC
  * VISetPreRetraceCallback/VISetPostRetraceCallback, fn_8037F110 VIGetRetraceCount,
  * fn_8037F020 VISetNextFrameBuffer, fn_8037E354 VIConfigure, fn_8037EB5C VIConfigurePan,
- * fn_803813E0/fn_8038140C AISetStreamVolLeft/Right, fn_803B31D4 EXISetExiCallback and
- * fn_80395454 GXAbortFrame. OSSwitchFiber is OSSwitchFiber, fn_80374690 OSLoadFont and
+ * fn_803813E0/fn_8038140C AISetStreamVolLeft/Right and fn_80395454
+ * GXAbortFrame. OSSwitchFiber is OSSwitchFiber, fn_80374690 OSLoadFont and
  * fn_8037490C OSGetFontTexel. ScreenReport is not matched yet: its size, frame and instruction
  * sequence are right (the pixel offset needs its own local, n), but the register allocation still
  * differs. */
@@ -113,7 +113,7 @@ void fn_8037EB5C(u16 xOrg, u16 yOrg, u16 width, u16 height);
 u32 VIGetTvFormat(void);
 void fn_803813E0(u8 volume);
 void fn_8038140C(u8 volume);
-EXICallback fn_803B31D4(s32 chan, EXICallback callback);
+EXICallback EXISetExiCallback(s32 chan, EXICallback callback);
 BOOL EXILock(s32 chan, u32 dev, EXICallback unlockedCallback);
 BOOL EXIUnlock(s32 chan);
 BOOL EXIDeselect(s32 chan);
@@ -308,8 +308,8 @@ void OSFatal(GXColor fg, GXColor bg, const char *msg) {
     OSDisableInterrupts();
     __OSCallResetFunctions(TRUE);
 
-    fn_803B31D4(0, NULL);
-    fn_803B31D4(2, NULL);
+    EXISetExiCallback(0, NULL);
+    EXISetExiCallback(2, NULL);
     while (!EXILock(0, 1, NULL)) {
         EXISync(0);
         EXIDeselect(0);

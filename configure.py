@@ -562,6 +562,36 @@ config.libs = [
             Object(Matching, "dolphin/gx/GXTransform.c"),
         ],
     },
+    DolphinLib(
+        "amcstubs",
+        [
+            Object(Matching, "dolphin/amcstubs/AmcExi2Stubs.c"),
+        ],
+    ),
+    DolphinLib(
+        "odenotstub",
+        [
+            Object(Matching, "dolphin/odenotstub/odenotstub.c"),
+        ],
+    ),
+    {
+        # The debugger link driver was built with the unpatched 1.2.5 compiler: its epilogues
+        # restore LR before the last saved register, which 1.2.5n does the other way round.
+        "lib": "odemuexi2",
+        "mw_version": "GC/1.2.5",
+        "cflags": cflags_base,
+        "progress_category": "sdk",
+        "objects": [
+            Object(Matching, "dolphin/odemuexi2/DebuggerDriver.c"),
+        ],
+    },
+    DolphinLib(
+        "exi",
+        [
+            Object(Matching, "dolphin/exi/EXIBios.c"),
+            Object(Matching, "dolphin/exi/EXIUart.c"),
+        ],
+    ),
     {
         # Gadget units. They have no splits yet, so none is linked.
         "lib": "Game",

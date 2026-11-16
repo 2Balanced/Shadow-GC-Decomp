@@ -13,13 +13,9 @@ BOOL EXISelect(s32 chan, u32 dev, u32 freq);
 BOOL EXIDeselect(s32 chan);
 BOOL EXILock(s32 chan, u32 dev, EXICallback unlocked);
 BOOL EXIUnlock(s32 chan);
-/* EXI calls still under placeholder names. */
-BOOL fn_803B2DB4(s32 chan, void *buf, s32 len, u32 mode);
-EXICallback fn_803B31D4(s32 chan, EXICallback callback);
-BOOL fn_803B33C4(s32 chan);
-#define EXIImmEx fn_803B2DB4
-#define EXISetExiCallback fn_803B31D4
-#define EXIProbe fn_803B33C4
+BOOL EXIImmEx(s32 chan, void *buf, s32 len, u32 mode);
+EXICallback EXISetExiCallback(s32 chan, EXICallback callback);
+BOOL EXIProbe(s32 chan);
 
 u16 fn_80374308(void);
 #define OSGetFontEncode fn_80374308
