@@ -37,7 +37,7 @@ using SonicteamUSA::System::CharaColli::CharaColliAttack;
 using SonicteamUSA::System::CharaColli::CharaColliBase;
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkColliderManager_80021B08;
@@ -93,11 +93,11 @@ UnkSoundHandle_801D3DC8 fn_801D3E58(int soundId, GadgetCharInfo *charInfo, void 
 void fn_801D54F4(void *manager, int id, GadgetCharInfo *charInfo, int arg3, int arg4);
 
 /* The positioned object (see ElecBomb.cpp and ChaoHolder.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 
 /* The manager and its entry by index (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
@@ -199,7 +199,7 @@ class GiantLantern : public Gadget {
     /* Member names are inferred. */
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<CharaColliBase> m_collider;
-    /* 0x40 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x40 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x48 */ boost::weak_ptr<Effect::System::EffectElement> m_flame;
     /* 0x50 */ GiantLanternFlags m_flags; /* bit 0 light now */
     /* 0x54 */ GiantLanternSetState *m_state;

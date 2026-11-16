@@ -29,7 +29,7 @@ using SonicteamUSA::System::CharaColli::AttackCallbackParam;
 using SonicteamUSA::System::CharaColli::CharaColliAttack;
 
 /* The positioned sound fn_802B4254 creates (class name unknown; see Game/DefenseSystem.cpp). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 class UnkPlayerManager_8006D6A8;
 
 extern "C" {
@@ -59,9 +59,9 @@ void fn_8015FA78(GadgetModelInfo *model,
 void *fn_80169D00(void *part, UnkParticleAttach_80169D00 *param);
 
 /* The positioned sound (see Game/DefenseSystem.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 /* Plays sound id at a character info, once and as a loop for source (see Game/BaseDoor.cpp). */
 void fn_801D54F4(void *manager, int id, GadgetCharInfo *source, int arg3, int arg4);
@@ -136,7 +136,7 @@ class SetMagmaGuard : public Gadget {
 
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
-    /* 0x40 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x40 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x48 */ s32 m_state; /* 0 placed, 1 standing, 2 destroyed, 3 done */
     /* 0x4C */ s32 m_switchId;
     /* 0x50 */ float m_hitPoints;

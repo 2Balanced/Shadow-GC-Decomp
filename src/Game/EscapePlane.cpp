@@ -44,7 +44,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ChaoHolder.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 /* The RenderWare frame of a model part and its matrices (layout from rw/rwcore.h; as in
  * EggBalloon.cpp). */
@@ -145,9 +145,9 @@ boost::shared_ptr<Target> fn_801E72DC(int flags);
 void fn_801E7108(boost::shared_ptr<Target> *target);
 
 /* The sound source and sounds (see ChaoHolder.cpp and ElecSearchLight.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 void fn_801D54F4(void *manager, int id, GadgetCharInfo *source, int arg3, int arg4);
 void fn_801D53C4(void *manager, int id, GadgetCharInfo *charInfo, void *source, int arg4, int arg5,
                  int arg6);
@@ -226,7 +226,7 @@ class SetEscapePlane : public PathObject {
     /* 0x0C */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x14 */ boost::shared_ptr<GadgetModelInfo> m_model2;
     /* 0x1C */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_smoke;
-    /* 0x24 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x24 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x2C */ float m_health;
     /* 0x30 */ float m_timer;
     /* 0x34 */ float m_hitCooldown;

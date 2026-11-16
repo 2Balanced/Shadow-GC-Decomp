@@ -111,7 +111,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkSoundManager_80053164;
@@ -143,10 +143,10 @@ boost::shared_ptr<Target> fn_801E72DC(int flags);
 void fn_801E7108(boost::shared_ptr<Target> *target);
 /* Creates the positioned object of the given kind and sets its range, a flag and its position
  * (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 /* destination = a + b (behaviour inferred). */
 void fn_8040CDD0(Vec3f *destination, const Vec3f *a, const Vec3f *b);
 /* Returns the player manager and its entry of an index (behaviour inferred). */
@@ -226,7 +226,7 @@ class ElecCoreProgram : public Gadget {
     /* 0x2B4 */ float m_angles[9];
     /* 0x2D8 */ float m_time;
     /* 0x2DC */ float m_flashTime;
-    /* 0x2E0 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x2E0 */ boost::shared_ptr<GiMissionTarget> m_sound;
 };
 SIZE_ASSERT(ElecCoreProgram, 0x2E8);
 

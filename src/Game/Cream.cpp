@@ -37,7 +37,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkHintManager_801FB180;
@@ -104,11 +104,11 @@ void fn_804165D8(_stMtnPlayWork *work, int arg1, int arg2, int arg3);
 void fn_80416148(_stMtnPlayWork *work, int arg1, float frames);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 
 /* Switches switch id on (behaviour inferred; see CityBombSmall.cpp). */
 void fn_8016907C(UnkSwitchBank_800CB69C *manager, int id, int arg2);
@@ -166,7 +166,7 @@ class Cream : public Gadget {
     /* 0x30 */ Vec3f m_position;
     /* 0x3C */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x44 */ boost::shared_ptr<Target> m_target;
-    /* 0x4C */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x4C */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x54 */ boost::shared_ptr<CharaColliBase> m_collider;
     /* 0x5C */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x64 */ CreamSetState *m_data;

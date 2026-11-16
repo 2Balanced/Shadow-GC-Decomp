@@ -848,7 +848,7 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
 #ifdef ENEMY_DISP_COMMON_UNIT
 /* The health gauge (Game/GiHPGaugeEnemy.h) and a sound (as Game/BkLarva.h names it). */
 class GiHPGaugeEnemy;
-class UnkSound_802B4254;
+class GiMissionTarget;
 #endif
 
 /* EnemyDispCommon (class name from RTTI; vtable 0x8053A928; constructor 0x801A1CB4). */
@@ -892,7 +892,7 @@ class EnemyDispCommon : public virtual EnemyReferer, public EnemyDispFunc {
     /* 0x21 */ u8 m_moving;        /* set by vfDisp_0x3C */
     /* 0x22 */ u8 m_soundOn;       /* m_sound plays (and follows the gauge) */
     /* 0x24 */ boost::shared_ptr<GiHPGaugeEnemy> m_gauge;
-    /* 0x2C */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x2C */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x34 */ float m_shadowSize;
     /* 0x38 */ float m_shadowRatio;
     /* 0x3C */ float m_speedScale; /* set each frame by vfDisp_0x30, back to 1 after the update */

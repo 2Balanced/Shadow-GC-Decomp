@@ -17,7 +17,7 @@
 
 class CharCommand;
 class Target;
-class UnkSound_802B4254;
+class GiMissionTarget;
 namespace SonicteamUSA {
 namespace System {
 namespace CharaColli {
@@ -208,7 +208,7 @@ class BkLarva : public Task {
     /* 0xA0 */ float field_0xA0;
     /* 0xA4 */ float m_spinZ;
     /* 0xA8 */ UnkSoundHandle_801D3DC8 m_sound;
-    /* 0xC4 */ boost::shared_ptr<UnkSound_802B4254> m_loop;
+    /* 0xC4 */ boost::shared_ptr<GiMissionTarget> m_loop;
     /* 0xCC */ s32 m_state; /* 0 hidden (DROP), 1 dropping, 2 waiting, 3 hopping, 4 hit, 5 thrown */
 };
 SIZE_ASSERT(BkLarva, 0xD0);

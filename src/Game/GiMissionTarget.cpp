@@ -1,7 +1,7 @@
 /* GiMissionTarget (class name from the RTTI of its shared_ptr control block,
  * sp_counted_base_impl<GiMissionTarget *, checked_deleter<GiMissionTarget>>, vtable 0x80557658):
- * the 3D marker over a mission target. The project knows the class as UnkSound_802B4254 (other
- * units hold it through boost::shared_ptr<UnkSound_802B4254>, whose weak instances carry that
+ * the 3D marker over a mission target. The project knows the class as GiMissionTarget (other
+ * units hold it through boost::shared_ptr<GiMissionTarget>, whose weak instances carry that
  * name), so this unit uses that name until the class is renamed project-wide; the control block's
  * RTTI strings in .rodata then read GiMissionTarget, as retail's do.
  *
@@ -169,20 +169,20 @@ class GiMissionTargetImpl {
 SIZE_ASSERT(GiMissionTargetImpl, 0x34);
 
 /* GiMissionTarget (see above). */
-class UnkSound_802B4254 {
+class GiMissionTarget {
   public:
-    UnkSound_802B4254(int kind, int inverted);
-    ~UnkSound_802B4254();
+    GiMissionTarget(int kind, int inverted);
+    ~GiMissionTarget();
 
     /* 0x0 */ boost::scoped_ptr<GiMissionTargetImpl> m_impl;
 };
-SIZE_ASSERT(UnkSound_802B4254, 0x4);
+SIZE_ASSERT(GiMissionTarget, 0x4);
 
 /* Deletes the Impl and the target (see checked_delete below). */
 inline void DeleteImpl(GiMissionTargetImpl *impl) {
     delete impl;
 }
-inline void DeleteTarget(UnkSound_802B4254 *target) {
+inline void DeleteTarget(GiMissionTarget *target) {
     delete target;
 }
 
@@ -195,7 +195,7 @@ inline void checked_delete<GiMissionTargetImpl>(GiMissionTargetImpl *x) {
     DeleteImpl(x);
 }
 template <>
-inline void checked_delete<UnkSound_802B4254>(UnkSound_802B4254 *x) {
+inline void checked_delete<GiMissionTarget>(GiMissionTarget *x) {
     DeleteTarget(x);
 }
 } // namespace boost
@@ -348,42 +348,42 @@ void GiMissionTargetImpl::Draw(RednerDrawArgs &args) {
     fn_80456BC4(m_clump);
 }
 
-UnkSound_802B4254::UnkSound_802B4254(int kind, int inverted) : m_impl(new GiMissionTargetImpl(kind, inverted)) {}
+GiMissionTarget::GiMissionTarget(int kind, int inverted) : m_impl(new GiMissionTargetImpl(kind, inverted)) {}
 
-UnkSound_802B4254::~UnkSound_802B4254() {}
+GiMissionTarget::~GiMissionTarget() {}
 
 extern "C" {
 
-u8 fn_802B4548(UnkSound_802B4254 *target) {
+u8 fn_802B4548(GiMissionTarget *target) {
     return target->m_impl->IsVisible();
 }
 
-u8 fn_802B4510(UnkSound_802B4254 *target, u8 visible) {
+u8 fn_802B4510(GiMissionTarget *target, u8 visible) {
     return target->m_impl->SetVisible(visible);
 }
 
-void fn_802B44C8(UnkSound_802B4254 *target, const Vec3f *position) {
+void fn_802B44C8(GiMissionTarget *target, const Vec3f *position) {
     target->m_impl->SetPosition(*position);
 }
 
-void fn_802B4498(UnkSound_802B4254 *target, float distance) {
+void fn_802B4498(GiMissionTarget *target, float distance) {
     target->m_impl->SetFarDistance(distance);
 }
 
 /* Not called anywhere: the linker strips it from the game. Retail emits the impl pointer's
  * operator-> ahead of fn_802B4498, which is where it lands when an unused caller is defined after
  * it (name inferred). */
-void GiMissionTargetSetNear(UnkSound_802B4254 *target, float distance) {
+void GiMissionTargetSetNear(GiMissionTarget *target, float distance) {
     target->m_impl->SetNearDistance(distance);
 }
 
 /* Makes a marker of kind (0 or 2; any other kind makes none). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int inverted) {
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int inverted) {
     if (kind == 2 || kind == 0) {
-        boost::shared_ptr<UnkSound_802B4254> target(new UnkSound_802B4254(kind, inverted));
+        boost::shared_ptr<GiMissionTarget> target(new GiMissionTarget(kind, inverted));
         return target;
     }
-    return boost::shared_ptr<UnkSound_802B4254>();
+    return boost::shared_ptr<GiMissionTarget>();
 }
 
 /* Loads the model of kind (0 or 2). */

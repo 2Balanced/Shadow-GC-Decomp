@@ -23,7 +23,7 @@
 #include "size_assert.h"
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 
@@ -44,9 +44,9 @@ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> fn_80166AF4(void);
 void fn_80167010(GadgetParticle::GadgetParticleCtrl *ctrl, int id);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 /* True when a character stands in the collision event's contacts (behaviour inferred). */
 bool fn_8015AC84(ColliDetectArgs &args);
@@ -95,7 +95,7 @@ class SecretDisk : public Gadget {
     /* Member names are inferred. */
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
-    /* 0x40 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x40 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x48 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
     /* 0x50 */ s32 m_state; /* 0 new, 1 waiting, 2 touched */
     /* 0x54 */ u32 field_0x54; /* never used here */

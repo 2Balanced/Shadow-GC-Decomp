@@ -38,7 +38,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 
@@ -77,9 +77,9 @@ void fn_80167010(GadgetParticle::GadgetParticleCtrl *ctrl, int id);
 void fn_8016761C(GadgetParticle::GadgetParticleCtrl *ctrl, float dt);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 /* Creates a Target for owner, and removes a gadget's target (behaviour inferred). */
 boost::shared_ptr<Target> fn_801E7128(const boost::weak_ptr<CharInfo> &owner, int flags);
@@ -164,7 +164,7 @@ class BASwitch : public Gadget {
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_models[3]; /* the switch, "blue", "red" */
     /* 0x50 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles[3];
-    /* 0x68 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x68 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x70 */ s32 m_state; /* 0 new, 1 running */
     /* 0x74 */ float m_timer;
     /* 0x78 */ s32 m_switchId;

@@ -42,7 +42,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkCameraManager_80009548;
@@ -128,11 +128,11 @@ int fn_8020642C(const boost::shared_ptr<CharInfo> &character, int message);
 bool fn_8000A950(float value);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 
 /* Sounds (behaviour inferred): playing sound id at a character info through the sound manager
  * (fn_80053164, GadgetUtil.h), and starting a sound kept by owner. */
@@ -220,7 +220,7 @@ class CityBombBig : public Gadget {
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x40 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
     /* 0x48 */ boost::shared_ptr<Target> m_target;
-    /* 0x50 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x50 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x58 */ s32 m_state; /* 0 disarmed, 1 waiting, 2 armed */
     /* 0x5C */ CityBombFlags m_flags2;
     /* 0x60 */ float m_health;

@@ -49,7 +49,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 
@@ -117,10 +117,10 @@ void fn_8015FA78(GadgetModelInfo *model, void *(*callback)(void *part, void *dat
 void *fn_80169D00(void *part, void *data);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 /* Sounds (behaviour inferred): playing sound id at a character info through the sound manager
  * (fn_80053164, GadgetUtil.h), and starting a sound kept by owner. */
@@ -247,7 +247,7 @@ class DefenseSystem : public Gadget {
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x40 */ UnkTargetList_80224850 m_ringTargets;
     /* 0x4C */ boost::shared_ptr<Target> m_target;
-    /* 0x54 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x54 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x5C */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particle;
     /* 0x64 */ DefenseSystemSetState *m_setState;
     /* 0x68 */ DefenseSystemFlags m_stateFlags;

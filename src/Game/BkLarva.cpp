@@ -188,10 +188,10 @@ void *fn_80053164(void);
 void fn_801D54F4(void *manager, int sound, const CharInfo *source, int arg3, int arg4);
 UnkSoundHandle_801D3DC8 fn_801D3C38(int soundId, const CharInfo *source, void *owner);
 u32 fn_8020D1E8(void);
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-bool fn_802B4548(UnkSound_802B4254 *sound);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+bool fn_802B4548(GiMissionTarget *sound);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 /* Effects at a position with a rotation and at a matrix (see BkWorm.cpp). */
 boost::weak_ptr<EffectElement> fn_801A1F54(const Vec3f *position, const Vec3f *rotation, int id);
 boost::weak_ptr<EffectElement> fn_801A1ED8(const Mtx34f *matrix, int id);

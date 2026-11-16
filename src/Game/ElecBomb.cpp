@@ -43,7 +43,7 @@ class UnkPlacement_800C9CD0 {
 
 /* The positioned object fn_802B4254 creates; the bomb keeps it at its position (its class is
  * unknown; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkCameraManager_80009548;
@@ -76,13 +76,13 @@ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> fn_80166AF4(void);
 /* Stops the controller's particles of the given id, all for -1 (behaviour inferred). */
 void fn_80167448(GadgetParticle::GadgetParticleCtrl *ctrl, int id);
 /* Creates the positioned object of the given kind (behaviour and arguments inferred). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
 /* Set the object's range, a flag and its position (behaviour inferred). */
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-/* shared_ptr<UnkSound_802B4254>::reset (inferred from its body). */
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+/* shared_ptr<GiMissionTarget>::reset (inferred from its body). */
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 /* Stores state as the owner's adapter state, and sets flag 0x8 of the owner's record (behaviour
  * inferred). */
 void fn_800C9930(UnkPlacement_800C9CD0 *owner, SetAdapterState *state);
@@ -136,7 +136,7 @@ class ElecBomb : public Gadget {
     /* 0x40 */ s32 m_state; /* 0 armed, 1 triggered, 2 exploded (inferred) */
     /* 0x44 */ boost::shared_ptr<CharInfo> field_0x44;
     /* 0x4C */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
-    /* 0x54 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x54 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x5C */ u32 field_0x5C;
 };
 SIZE_ASSERT(ElecBomb, 0x60);

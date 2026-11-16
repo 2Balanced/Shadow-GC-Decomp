@@ -42,7 +42,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see CityBombBig.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 struct _stMtnPlayWork;
@@ -89,11 +89,11 @@ void fn_8020642C(const boost::shared_ptr<CharInfo> &attacker, int reward);
 /* Creates a target with the given flags (see CircusBall.cpp). */
 boost::shared_ptr<Target> fn_801E72DC(int flags);
 /* The positioned object (see CityBombBig.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 /* Plays sound id at the character info's position (behaviour inferred). */
 void fn_801D54F4(void *manager, int id, GadgetCharInfo *charInfo, int arg3, int arg4);
 /* Sets switch id (behaviour and meaning of the last argument inferred). */
@@ -260,7 +260,7 @@ class Chao {
     /* 0x18 */ Vec3f m_rotation;
     /* 0x24 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x2C */ boost::shared_ptr<Target> m_target;
-    /* 0x34 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x34 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x3C */ boost::shared_ptr<CharaColliBase> m_collider;
     /* 0x44 */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x4C */ s32 m_state; /* 0 walking, 1 touched, 2 knocked over, 3 lying */

@@ -66,10 +66,10 @@ bool fn_800BF124(GiHPGaugeEnemy *gauge);
 /* The enemies' sounds: the options, a new sound, and its position, playing and play state (see
  * Game/BkLarva.cpp). */
 u32 fn_8020D1E8(void);
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-bool fn_802B4548(UnkSound_802B4254 *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+bool fn_802B4548(GiMissionTarget *sound);
 /* The shadow of the enemy (behaviour inferred). */
 void fn_80356544(const Vec3f *position, void *ground, const Vec3f *direction, float ratio,
                  float size);

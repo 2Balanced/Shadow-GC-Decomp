@@ -55,7 +55,7 @@ class Target {
 
 /* The positioned object fn_802B4254 creates (see Game/DefenseSystem.cpp; it may be a sound
  * source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 class UnkPlayerManager_8006D6A8;
 
 extern "C" {
@@ -83,9 +83,9 @@ void fn_8015FA78(GadgetModelInfo *model, void *(*callback)(void *part, UnkPartic
 void *fn_80169D00(void *part, UnkParticleAttach_80169D00 *param);
 
 /* The positioned sound (see Game/DefenseSystem.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 /* Creates a target and removes it (see Game/BAGunShip.cpp). */
 boost::shared_ptr<Target> fn_801E72DC(int flags);
@@ -182,7 +182,7 @@ class SetSuperComputer : public Gadget {
     /* 0x30 */ boost::shared_ptr<GadgetCharInfo> m_chara;
     /* 0x38 */ boost::shared_ptr<GadgetModelInfo> m_model;
     /* 0x40 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particle;
-    /* 0x48 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x48 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x50 */ boost::shared_ptr<Target> m_target;
     /* 0x58 */ UnkModelTable_80208888 *m_table;
     /* 0x5C */ boost::shared_ptr<GadgetBuilder::CrashInfoCtrl> m_entry;

@@ -57,7 +57,7 @@ extern UnkGameState_8057D6A0 lbl_8057D6A0;
 }
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 
@@ -77,12 +77,12 @@ void fn_80154C6C(UnkMaterialAnim_801621F0 *animation, const UnkColor_8040D2D8 *f
                  const UnkColor_8040D2D8 *to, float t, float t0, float t1);
 /* Creates the positioned object of the given kind and sets its range and a flag, and its position
  * (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-/* shared_ptr<UnkSound_802B4254>::reset (see ElecBomb.cpp). */
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+/* shared_ptr<GiMissionTarget>::reset (see ElecBomb.cpp). */
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 void fn_800C985C(UnkPlacement_800C9CD0 *owner);
 /* Returns the player manager and its entry (see ElecBomb.cpp). */
 UnkPlayerManager_8006D6A8 *fn_8006D6A8(void);
@@ -141,7 +141,7 @@ class ElecAccessPanel : public Gadget {
     /* 0x40 */ u32 field_0x40;
     /* 0x44 */ s32 m_state; /* 0 waiting, 1 activated, 2 fading, 3 done */
     /* 0x48 */ float m_timer;
-    /* 0x4C */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x4C */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x54 */ u32 field_0x54;
 };
 SIZE_ASSERT(ElecAccessPanel, 0x58);

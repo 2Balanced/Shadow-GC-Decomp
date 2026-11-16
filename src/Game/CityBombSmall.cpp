@@ -42,7 +42,7 @@ class Target {
 };
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 class UnkCharManager_800DDF20;
@@ -134,11 +134,11 @@ int fn_8020642C(const boost::shared_ptr<CharInfo> &character, int message);
 bool fn_8000A950(float value);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4498(UnkSound_802B4254 *sound, float range);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
-void fn_800CC978(boost::shared_ptr<UnkSound_802B4254> *sound);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4498(GiMissionTarget *sound, float range);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
+void fn_800CC978(boost::shared_ptr<GiMissionTarget> *sound);
 
 /* Plays sound id at a character info through the sound manager (fn_80053164, GadgetUtil.h;
  * behaviour inferred). */
@@ -207,7 +207,7 @@ struct CityBombFlags {
 class VacuumCityBombSmall : public VacuumObject {
   public:
     VacuumCityBombSmall(VacuumCommand &command, const boost::shared_ptr<GadgetModelInfo> &model,
-                        const boost::shared_ptr<UnkSound_802B4254> &sound,
+                        const boost::shared_ptr<GiMissionTarget> &sound,
                         const boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> &particles);
     virtual ~VacuumCityBombSmall();
     virtual void Tick(float dt);
@@ -218,11 +218,11 @@ class VacuumCityBombSmall : public VacuumObject {
     static void Start(VacuumCommand &command, const Vec3f &position,
                       const Vec3f &rotation,
                       const boost::shared_ptr<GadgetModelInfo> &model,
-                      const boost::shared_ptr<UnkSound_802B4254> &sound,
+                      const boost::shared_ptr<GiMissionTarget> &sound,
                       const boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> &particles);
 
     /* 0x08 */ boost::shared_ptr<GadgetModelInfo> m_model;
-    /* 0x10 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x10 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x18 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
 };
 SIZE_ASSERT(VacuumCityBombSmall, 0x20);
@@ -254,7 +254,7 @@ class CityBombSmall : public Gadget {
     /* 0x40 */ boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> m_particles;
     /* 0x48 */ float m_reach; /* "Range (point)" */
     /* 0x4C */ boost::shared_ptr<Target> m_target;
-    /* 0x54 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x54 */ boost::shared_ptr<GiMissionTarget> m_sound;
     /* 0x5C */ s32 m_state; /* 0 waiting, 1 armed, 2 vacuumed */
     /* 0x60 */ CityBombFlags m_flags2;
     /* 0x64 */ float m_health;
@@ -479,7 +479,7 @@ void CityBombSmall::OnAttack(AttackCallbackParam &param) {
 
 VacuumCityBombSmall::VacuumCityBombSmall(
     VacuumCommand &command, const boost::shared_ptr<GadgetModelInfo> &model,
-    const boost::shared_ptr<UnkSound_802B4254> &sound,
+    const boost::shared_ptr<GiMissionTarget> &sound,
     const boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> &particles)
     : VacuumObject(fn_80237EDC(&command), command), m_model(model), m_sound(sound),
       m_particles(particles) {}
@@ -518,7 +518,7 @@ void VacuumCityBombSmall::fn_80238180() {}
 void VacuumCityBombSmall::Start(VacuumCommand &command, const Vec3f &position,
                                 const Vec3f &rotation,
                                 const boost::shared_ptr<GadgetModelInfo> &model,
-                                const boost::shared_ptr<UnkSound_802B4254> &sound,
+                                const boost::shared_ptr<GiMissionTarget> &sound,
                                 const boost::shared_ptr<GadgetParticle::GadgetParticleCtrl> &particles) {
     boost::shared_ptr<VacuumObject> object =
         boost::shared_ptr<VacuumObject>(new VacuumCityBombSmall(command, model, sound, particles));

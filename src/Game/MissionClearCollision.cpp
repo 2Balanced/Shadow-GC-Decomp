@@ -29,7 +29,7 @@ struct UnkColor_8040D2D8 {
 SIZE_ASSERT(UnkColor_8040D2D8, 0x4);
 
 /* The positioned object fn_802B4254 creates (see ElecBomb.cpp; it may be a sound source). */
-class UnkSound_802B4254;
+class GiMissionTarget;
 
 class UnkPlayerManager_8006D6A8;
 
@@ -51,9 +51,9 @@ void fn_8016B2A4(Mission::Mission *player);
 void fn_800C9B34(UnkPlacement_800C9CD0 *owner);
 
 /* The positioned object (see ElecBomb.cpp). */
-boost::shared_ptr<UnkSound_802B4254> fn_802B4254(int kind, int arg1);
-void fn_802B4510(UnkSound_802B4254 *sound, u8 flag);
-void fn_802B44C8(UnkSound_802B4254 *sound, const Vec3f *position);
+boost::shared_ptr<GiMissionTarget> fn_802B4254(int kind, int arg1);
+void fn_802B4510(GiMissionTarget *sound, u8 flag);
+void fn_802B44C8(GiMissionTarget *sound, const Vec3f *position);
 
 void fn_8040CDD0(Vec3f *destination, const Vec3f *a, const Vec3f *b);
 }
@@ -95,7 +95,7 @@ class MissionClearCollision : public Gadget {
         u32 side; /* 0 dark, 1 normal, 2 hero */
         float radius;
     } m_params;
-    /* 0x40 */ boost::shared_ptr<UnkSound_802B4254> m_sound;
+    /* 0x40 */ boost::shared_ptr<GiMissionTarget> m_sound;
 };
 SIZE_ASSERT(MissionClearCollision, 0x48);
 
