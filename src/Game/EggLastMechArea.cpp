@@ -5,10 +5,17 @@
  * inferred)" are not original. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * NonMatching: 6 of 8 functions match. fn_803349A0 differs only in which volatile registers hold
- * the two areas and the constant 10 (and the order of two independent instructions); fn_80334A70
- * keeps &part->m_area[i] in a saved register across the operator-> call where retail recomputes
- * it with indexed loads (and colours its registers differently). */
+ * NonMatching: 7 of 8 functions match. fn_803349A0 differs only in which volatile registers hold
+ * the two areas and the constant 10 (retail r5, r6 and r4; GC/2.7 r6, r4 and r5) and in the order
+ * of two independent instructions (retail forms 4 - bossRow before the boss's column). About 45
+ * shapes in probes/Game_EggLastMechArea_R5.py to _R8.py all compile to the same 16 rows: the
+ * declaration order of the locals, inline getters for the areas, inline row/column/opposite
+ * helpers, every operand order of the opposite area, locals for its parts.
+ *
+ * fn_80334A70 matched in wave 39 through two levers: SetArea takes its index as a u32 (with an int
+ * GC/2.7 keeps &part->m_area[i] in a saved register across the operator-> call, where retail
+ * recomputes it with indexed loads), and the row and the column come from an inline function
+ * (Band), which puts the column in r3 and the address in r4. */
 #define BOOST_WEAK_PTR_CONVERTING_ASSIGNMENT
 #include "Game/EggLastMech.h"
 #include "Game/CharInfo.h"
@@ -63,7 +70,7 @@ struct UnkTimeScale_60 {
 };
 
 /* Moves character index into area, restarting its time there (name inferred). */
-inline void SetArea(UnkPart_80334C78 *part, int index, int area) {
+inline void SetArea(UnkPart_80334C78 *part, u32 index, int area) {
     if (part->m_area[index] != area) {
         part->m_lastArea[index] = part->m_area[index];
         part->m_area[index] = area;
@@ -93,6 +100,15 @@ UnkPart_80334C78::~UnkPart_80334C78() {}
 } // namespace EggLastMech
 
 /* Updates the areas of the player and the boss (name inferred). */
+inline int Band(float value, float low, float high, int a, int b, int c) {
+    if (value < low) {
+        return a;
+    } else if (value < high) {
+        return b;
+    }
+    return c;
+}
+
 extern "C" void fn_80334A70(UnkPart_80334C78 *part) {
     float border = s_border;
     float negBorder = -border;
@@ -102,24 +118,9 @@ extern "C" void fn_80334A70(UnkPart_80334C78 *part) {
             SetArea(part, i, -1);
             return;
         }
-        int row;
-        if (character.get()->m_position.z < negBorder) {
-            row = 10;
-        } else if (character.get()->m_position.z < border) {
-            row = 20;
-        } else {
-            row = 30;
-        }
-        int column;
-        if (character.get()->m_position.x < negBorder) {
-            column = 1;
-        } else if (character.get()->m_position.x < border) {
-            column = 2;
-        } else {
-            column = 3;
-        }
-        int area = row + column;
-        SetArea(part, i, area);
+        int row = Band(character.get()->m_position.z, negBorder, border, 10, 20, 30);
+        int column = Band(character.get()->m_position.x, negBorder, border, 1, 2, 3);
+        SetArea(part, i, row + column);
         UnkTimeScale_60 scale;
         scale = reinterpret_cast<const UnkTimeScale_60 &>(character->field_0x60);
         if (scale.m_scale != 0) {

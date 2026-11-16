@@ -11,9 +11,19 @@
  * in reverse address order (deferred inlining emits functions last-defined first).
  * Open: fn_80414120 and fn_804142B0 only get retail's code as inline functions (their early
  * return becomes a branch over a dead jump), but GC/2.7 then emits them as weak copies right after
- * fn_80413B30 instead of after fn_80413E38; fn_8041575C keeps its four copies in load-store order
- * in retail while GC/2.7 always hoists the loads; the Hermite functions fn_804156D8 and
- * fn_80415530 differ only in float register numbers (about 40 source orders tried). */
+ * fn_80413B30 instead of after fn_80413E38; the Hermite function fn_80415530 differs only in
+ * float register numbers.
+ * Matched in wave 39: fn_8041575C keeps its four copies in load-store order because its parameter
+ * points to non-const (through a pointer to const GC/2.7 hoists the loads above the stores), and
+ * fn_804156D8 has retail's float registers with its locals declared at the top in the order
+ * written there: the scratch float registers go to the locals in declaration order, so inv2, b
+ * and inv have to be the last three, in that order.
+ * fn_80415530 does not follow from that alone: over about 25,000 declaration orders of its twelve
+ * locals (probes/Game_MotionHalfKeyTrack_R3.py: random orders, a hill climb, every order two moves
+ * from the best) the best is 41 rows of 71, with retail's saved registers (b f31, inv f30,
+ * inv2 f29, c6 f28) but s in f0 for retail's f13; the function is left as it was (48 rows). */
+/* fn_8041575C takes a pointer to non-const here (see Game/MotionHalfKeyTrack.h). */
+#define MOTIONHALFKEYTRACK_IMPL
 #include <dolphin/types.h>
 #include <string.h>
 #include "Game/MotionHalfKeyTrack.h"
@@ -80,7 +90,7 @@ extern "C" void fn_80415784(void) {
 }
 
 /* Sets the first four words of the shared state. */
-extern "C" void fn_8041575C(const float *params) {
+extern "C" void fn_8041575C(float *params) {
     lbl_805E12C0.field_0x0 = params[0];
     lbl_805E12C0.field_0x4 = params[1];
     lbl_805E12C0.m_speed = params[2];
@@ -90,22 +100,33 @@ extern "C" void fn_8041575C(const float *params) {
 /* The Hermite value between two keys. */
 extern "C" float fn_804156D8(const HalfKey *prev, const HalfKey *next, float time) {
     float h00, h01, h10, h11;
-    float s = time - prev->m_time;
-    float len = next->m_time - prev->m_time;
-    float inv = 1.0f / len;
-    float s2 = s * s;
-    float inv2 = inv * inv;
-    float s3 = s2 * s;
-    float a = inv2 * s3;
-    float b = s2 * inv;
-    float d = 2.0f * a * inv;
-    float c = 3.0f * s2 * inv2;
+    float s;
+    float len;
+    float s2;
+    float s3;
+    float a;
+    float d;
+    float c;
+    float inv2;
+    float b;
+    float inv;
+    s = time - prev->m_time;
+    len = next->m_time - prev->m_time;
+    inv = 1.0f / len;
+    s2 = s * s;
+    inv2 = inv * inv;
+    s3 = s2 * s;
+    a = inv2 * s3;
+    b = s2 * inv;
+    d = 2.0f * a * inv;
+    c = 3.0f * s2 * inv2;
     h11 = a - b;
     h10 = s + (h11 - b);
     h00 = 1.0f + (d - c);
     h01 = -d + c;
     return prev->m_value * h00 + next->m_value * h01 + prev->m_out * h10 + next->m_in * h11;
 }
+
 
 /* The Hermite slope between two keys. */
 extern "C" float fn_8041564C(const HalfKey *prev, const HalfKey *next, float time) {

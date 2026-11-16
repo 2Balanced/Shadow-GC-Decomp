@@ -58,7 +58,7 @@ void *fn_8001277C(void *loader, s32 slot, int arg2);
 /* Colliders (see Game/DevilDoomCtrlUnit.cpp and Game/EggLastMech.cpp). */
 void *fn_80021B08(void);
 boost::shared_ptr<CharaColliBase> fn_800C7F7C(void *manager, const boost::weak_ptr<CharInfo> &charInfo,
-                                              const void *part, void *work, int arg4, int arg5);
+                                              const void *part, void *work, int arg4, u16 arg5);
 boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager, boost::shared_ptr<CharaColliBase> collider);
 boost::weak_ptr<CharaColliAttack> fn_800C42D0(void *manager, boost::shared_ptr<CharaColliBase> collider);
 
@@ -140,9 +140,11 @@ template <> inline void checked_delete<BossCharaColli::Impl>(BossCharaColli::Imp
 }
 } // namespace boost
 
-/* NonMatching (99.87%): in the first fn_800C7F7C call retail keeps m_param in r3 and sets up the
- * weak_ptr argument's address before the return slot's; GC/2.7 does the reverse and uses r5
- * (4 instructions). The second call matches. About 20 source shapes were tried. */
+/* The last argument of fn_800C7F7C is a u16, as Game/CharaColliManager.cpp defines it. Declared
+ * int, GC/2.7 keeps m_param in r5 in the first call and sets up the return slot's address before
+ * the weak_ptr argument's; with the u16 it gives retail's r3 and order (4 instructions). About 50
+ * shapes of the call itself (locals for each argument, inline getters, const, the other parameter
+ * types) changed nothing. */
 BossCharaColli::Impl::Impl(BossVarParam *param) : m_param(param), m_stopped(true) {
     if (m_param->m_charaPtr && m_param->m_motion) {
         boost::shared_ptr<CharaColliBase> collider;

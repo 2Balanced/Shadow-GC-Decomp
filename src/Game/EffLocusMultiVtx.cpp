@@ -5,7 +5,11 @@
  * points' histories with RenderWare's immediate mode; the alpha falls off along the history. Once
  * the owner lets the points go, the history shrinks by one each frame until the task ends. File
  * name inferred from the class. Names marked "(name inferred)" are not original. Definitions are in
- * reverse address order (deferred inlining emits functions last-defined first). */
+ * reverse address order (deferred inlining emits functions last-defined first).
+ *
+ * Update and Draw read the history's counts through inline getters (Count, PointCount): read as
+ * members, GC/2.7 colours the locals that hold them differently from retail whatever their
+ * declaration order (wave 39). */
 /* boost::scoped_array needs it (see boost/checked_delete.hpp). */
 #define BOOST_CHECKED_ARRAY_DELETE
 
@@ -72,7 +76,10 @@ inline void RwIm3DVertexSetPos(RwIm3DVertex *vert, float x, float y, float z) {
     vert->objVertex.z = z;
 }
 
-inline void RwIm3DVertexSetRGBA(RwIm3DVertex *vert, u8 r, u8 g, u8 b, u8 a) {
+/* Sets a vertex's colour (name inferred). Blue comes before green in the parameters: retail reads
+ * the alpha, the green, the blue and then the red, and GC/2.7 evaluates arguments right to left
+ * (with RenderWare's order r, g, b, a it reads the blue before the green). */
+inline void SetVertexColor(RwIm3DVertex *vert, u8 r, u8 b, u8 g, u8 a) {
     vert->color[0] = r;
     vert->color[1] = g;
     vert->color[2] = b;
@@ -100,40 +107,18 @@ namespace Test {
  * vertices of a strip (class name inferred). */
 class LocusHistory {
   public:
-    LocusHistory(int length, int pointCount)
-        : m_head(0), m_count(0), m_length(length), m_pointCount(pointCount) {
-        int total = length * m_pointCount;
-        m_positions.reset(new Vec3f[total]);
-        m_alphas.reset(new float[length]);
-        m_vertices.reset(new RwIm3DVertex[length * 2]);
-    }
-
+    LocusHistory(int length, int pointCount);
+    ~LocusHistory();
     /* Where point was age frames ago, or 0. */
-    Vec3f *Get(int point, int age) {
-        if (age >= m_count) {
-            return 0;
-        }
-        age = m_head - age;
-        if (age < 0) {
-            age += m_length;
-        }
-        return &m_positions[age + point * m_length];
-    }
+    Vec3f *Get(int point, int age);
+    void Push(const Vec3f *points);
 
-    void Push(const Vec3f *points) {
-        m_head++;
-        if (m_head >= m_length) {
-            m_head = 0;
-        }
-        m_count++;
-        if (m_count >= m_length) {
-            m_count = m_length - 1;
-        }
-        for (int i = 0; i < m_pointCount; i++) {
-            fn_800091D0(&m_positions[m_head + i * m_length], &points[i]);
-        }
+    int Count() const {
+        return m_count;
     }
-
+    int PointCount() const {
+        return m_pointCount;
+    }
     float &Alpha(int age) {
         return m_alphas[age];
     }
@@ -194,6 +179,44 @@ inline void checked_delete<Test::EffLocusMultiVtx::Impl>(Test::EffLocusMultiVtx:
 
 namespace Test {
 
+/* The history's constructor, destructor, Push and Get are not inline: retail has them after the
+ * trail's own functions, in this order reversed (0x802DF128 to 0x802DF2EF), where an inline
+ * function would follow the first function that calls it, as Alpha and Vertices follow Draw. */
+LocusHistory::LocusHistory(int length, int pointCount)
+    : m_head(0), m_count(0), m_length(length), m_pointCount(pointCount) {
+    int total = length * m_pointCount;
+    m_positions.reset(new Vec3f[total]);
+    m_alphas.reset(new float[length]);
+    m_vertices.reset(new RwIm3DVertex[length * 2]);
+}
+
+LocusHistory::~LocusHistory() {}
+
+void LocusHistory::Push(const Vec3f *points) {
+    m_head++;
+    if (m_head >= m_length) {
+        m_head = 0;
+    }
+    m_count++;
+    if (m_count >= m_length) {
+        m_count = m_length - 1;
+    }
+    for (int i = 0; i < m_pointCount; i++) {
+        fn_800091D0(&m_positions[m_head + i * m_length], &points[i]);
+    }
+}
+
+Vec3f *LocusHistory::Get(int point, int age) {
+    if (age >= m_count) {
+        return 0;
+    }
+    age = m_head - age;
+    if (age < 0) {
+        age += m_length;
+    }
+    return &m_positions[age + point * m_length];
+}
+
 EffLocusMultiVtx::Impl::Impl(int length, int count, Vec3f *points, const Mtx34f *matrix,
                              const UnkColor_8040D2EC *color)
     : m_points(points), m_matrix(matrix), m_color(*color), m_history(length, count) {
@@ -207,7 +230,7 @@ EffLocusMultiVtx::Impl::~Impl() {}
  * registers. */
 bool EffLocusMultiVtx::Impl::Update() {
     if (m_points != 0) {
-        int pointCount = m_history.m_pointCount;
+        int pointCount = m_history.PointCount();
         if (m_matrix != 0) {
             for (int i = 0; i < pointCount; i++) {
                 fn_800091D0(&m_transformed[i],
@@ -256,8 +279,8 @@ void EffLocusMultiVtx::Impl::Draw() {
         RwRenderStateSet(rwRENDERSTATEVERTEXALPHAENABLE, 1);
         RwRenderStateSet(rwRENDERSTATEFOGENABLE, 0);
         RwIm3DVertex *vertices = m_history.Vertices();
-        int count = m_history.m_count;
-        int pointCount = m_history.m_pointCount;
+        int count = m_history.Count();
+        int pointCount = m_history.PointCount();
         int vertexCount = count * 2;
         int parity = 0;
         for (int i = 0; i < pointCount; i++) {
@@ -271,8 +294,8 @@ void EffLocusMultiVtx::Impl::Draw() {
                 vertex->objVertex.x = x;
                 vertex->objVertex.y = y;
                 vertex->objVertex.z = z;
-                RwIm3DVertexSetRGBA(vertex, m_color.m_r, m_color.m_g, m_color.m_b,
-                                    (int)(m_color.m_a * alpha));
+                SetVertexColor(vertex, m_color.m_r, m_color.m_b, m_color.m_g,
+                               (int)(m_color.m_a * alpha));
             }
             if (i > 0) {
                 if (fn_8049A82C(vertices, vertexCount, 0, 0x18) != 0) {

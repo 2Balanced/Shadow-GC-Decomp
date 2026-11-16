@@ -10,7 +10,13 @@
  * retail's instructions and stack layout, but GC/2.7 gives their callee-saved registers out in a
  * different order (the contact's object, the node and the contact list trade registers; about
  * thirty source shapes tried, among them every declaration order of those variables). Everything
- * else, including the data, matches, and linking this unit changes only those three functions. */
+ * else, including the data, matches, and linking this unit changes only those three functions.
+ * Second pass (wave 39, probes/Game_BulletUtil*.py, 35 shapes on fn_8005B2F0): retail orders the
+ * saved registers to, from, result, object, the two hoisted addresses, node (in kind's register) and
+ * the contact list last (in player's). GC/2.7 puts the contact list first and the object last;
+ * with the list taken from an inline function (LineContacts in the probe table) it moves below the
+ * parameters (7 rows for 16), but the object stays last whatever is done to it (declared or zeroed
+ * at the top, inline getters of the node or the iterator), so that is not applied here. */
 #define ATTACK_IGNORE_LIST_MEMBERS
 #define CHARA_COLLI_ATTACK_MEMBERS
 #include "Game/AttackIgnoreList.h"

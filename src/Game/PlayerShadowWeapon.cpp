@@ -12,7 +12,13 @@
  *
  * Not yet matching: GiveWeapon (99.4%) keeps the given weapon's type in r4 and the held one's in r0
  * where retail has them the other way round; about 30 source shapes did not change it. Every other
- * function and all data match, and with the unit linked only those three instructions differ. */
+ * function and all data match, and with the unit linked only those three instructions differ.
+ * Second pass (wave 39, probes/Game_PlayerShadowWeapon*.py, 25 shapes): retail also passes the
+ * given weapon's type to fn_8005B9AC (mr r3,r0), not the held one's. Reading both types through
+ * TypeId() and passing the held one's gives retail's two registers but then passes r4 (1 row);
+ * every form that passes the given type (the local, a second TypeId() call, the member) swaps the
+ * registers back. fn_80206AD4, called by OnIK and Tick, is Player::PlayerTargetBase::GetTurn in
+ * symbols.txt now: call it by that name before linking the unit. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 

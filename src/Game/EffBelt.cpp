@@ -190,6 +190,9 @@ class EffBelt::Impl {
     bool Update();
     void Draw();
 
+    float Width() const {
+        return m_width;
+    }
     void Finish() {
         m_finished = true;
     }
@@ -236,9 +239,10 @@ EffBelt::Impl::Impl(int count, const UnkColor_8040D2EC &color, float width)
 
 EffBelt::Impl::~Impl() {}
 
-/* NonMatching (92%): retail reads m_width before normalizing and keeps it in f31 across the
- * call; GC/2.7 reads it after the call for every shape tried (a local, inline Scale/Normalize
- * helpers). */
+/* NonMatching (3 rows): retail reads m_width before normalizing and keeps it in f31 across the
+ * call. GC/2.7 does that when the width comes from an inline getter (Width(), wave 39); read as a
+ * member or through a local it reads it after the call. What is left is the order of the two
+ * arguments of the first m_ring.Get(0) (retail sets up the ring's address before the index). */
 void EffBelt::Impl::Add(const Vec3f &position) {
     Vec3f direction;
     BeltPoint *last = m_ring.Get(0);
@@ -253,12 +257,15 @@ void EffBelt::Impl::Add(const Vec3f &position) {
     Vec3f across;
     AssignVector(across, fn_8040CFB8(&side, &direction));
     AssignVector(side, fn_8040CFB8(&direction, &across));
-    float width = m_width;
-    AssignVector(side, Scale(fn_8040CEE8(&side), width));
+    AssignVector(side, Scale(fn_8040CEE8(&side), Width()));
     m_ring.Push(position, side, rotation);
 }
 
-/* NonMatching (99%): retail gives count and the loop index each other's registers. */
+/* NonMatching (99%): retail gives count and the loop index each other's registers (count r29, i
+ * r28, and the fade then takes count's). Nothing tried in wave 39 moved them (about 40 shapes in
+ * probes/Game_EffBelt_R2.py to _R4.py: every declaration order of the five locals at the top of
+ * the function, an inline getter for the count, the index declared per loop, the fade set in the
+ * for statement, while loops, scoped point locals). */
 bool EffBelt::Impl::Update() {
     if (!m_player.expired()) {
         boost::shared_ptr<Player::PlayerBase> player = m_player.lock();
@@ -295,7 +302,9 @@ bool EffBelt::Impl::Update() {
 }
 
 /* NonMatching (98%): retail loads the colour bytes and the position components in a slightly
- * different order (left to right); the vertex setters and locals tried get most of it. */
+ * different order (left to right); the vertex setters and locals tried get most of it. The setter
+ * with blue before green that matches Game/EffLocusMultiVtx.cpp does not help here (24 rows for
+ * 23): in the second loop retail also holds the red in r6 where GC/2.7 uses r0. */
 void EffBelt::Impl::Draw() {
     RwIm3DVertex vertices[22];
     u32 srcBlend;

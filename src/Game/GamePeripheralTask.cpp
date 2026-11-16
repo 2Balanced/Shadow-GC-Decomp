@@ -8,14 +8,11 @@
  * names are inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * Not matching yet: Update (0x8034997C) is 99.9%, 5 rows. Retail updates the repeat counters
- * without a branch (subfic/subfe and a mask). GC/2.7 gives that for an if/else on a counter read
- * into a local first (as written here), and for `held ? (s16)(count + 1) : 0`; with the load or
- * the increment inside the conditional it branches. What is left is register colouring: retail
- * keeps the counter in r7 (and the masked result with it) and the row's address in r8, GC/2.7 the
- * counter in r8, the result in r0 and the address in r7. About 35 spellings tried in wave 39 (the
- * explicit mask, a second local for the result, a row pointer, a bool for the test, int/s16
- * locals). Everything else, including the data and the link order, matches. */
+ * Update (0x8034997C) updates the repeat counters without a branch (subfic/subfe and a mask) and
+ * keeps the counter in r7 and the row's address in r8. GC/2.7 only colours it that way when the
+ * step is an inline function taking the counter and the masked buttons (NextCount); about 60
+ * spellings of the same statements written in the loop (locals, ternaries, row pointers, a bool
+ * for the test) all swap the two registers. */
 #include <cmath>
 #include <cstdlib>
 #include <memory>
@@ -281,6 +278,15 @@ void UnkPads_80051734::Init() {
 
 void UnkPads_80051734::Reset() {}
 
+inline s16 NextCount(s16 count, u32 held) {
+    if (held) {
+        count++;
+    } else {
+        count = 0;
+    }
+    return count;
+}
+
 void UnkPads_80051734::Update() {
     for (int i = 0; i < 2; i++) {
         if (m_pads[i] != 0) {
@@ -338,13 +344,7 @@ void UnkPads_80051734::Update() {
                 m_states[i].m_released |= 0x100000;
             }
             for (int j = 0; j < 8; j++) {
-                s16 count = m_repeat[i][j];
-                if (m_states[i].m_down & s_repeatMasks[j]) {
-                    count++;
-                } else {
-                    count = 0;
-                }
-                m_repeat[i][j] = count;
+                m_repeat[i][j] = NextCount(m_repeat[i][j], m_states[i].m_down & s_repeatMasks[j]);
             }
         }
     }

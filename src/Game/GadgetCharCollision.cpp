@@ -129,7 +129,12 @@ extern "C" void fn_8015BDC4(GadgetCharCollision *handle, int kind, int id) {
 
 /* NonMatching (99.67%): retail colours the two field comparisons' registers the other way round
  * (lwz r0 from the entry, r3 from the character, then cmpw r0,r3); about 35 source shapes tried
- * (operand order, casts, pair copies, inline helpers, enum/int/long types, index forms). */
+ * (operand order, casts, pair copies, inline helpers, enum/int/long types, index forms).
+ * Second pass (wave 39, 45 more shapes in probes/Game_GadgetCharCollision*.py): retail's second
+ * test loads the character's word before the entry's, so the character side is evaluated first in
+ * both and compared on the right. Only a subtraction (`!(entry->first - id)`) gives that order and
+ * those registers, with `subf.` for `cmpw` (2 rows); inline comparison helpers, getters through the
+ * shared_ptr, locals and references all keep the 6 rows. */
 bool GadgetCharCollision::IsAllIgnored(UnkColliContacts_8001EE04 *contacts) {
     UnkColliContactNode_800587A0 *it = fn_8001EE04(contacts);
     boost::weak_ptr<CharaColliBase> collider;

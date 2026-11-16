@@ -55,8 +55,15 @@ float fn_804149E0(HalfKeyTrack *track);
 void fn_80414CBC(float *value, float *slope, HalfKeyTrack *track);
 float fn_80414FD0(HalfKeyTrack *track);
 float fn_8041525C(HalfKeyTrack *track);
-/* Sets the start, end, speed and time the tracks are evaluated with. */
+/* Sets the start, end, speed and time the tracks are evaluated with. The function takes a pointer
+ * to non-const (retail keeps its four copies in load-store order, which GC/2.7 only does through
+ * one); Game/MotionHalfKeyTrack.cpp defines MOTIONHALFKEYTRACK_IMPL to see it that way, the callers
+ * keep passing pointers to const. */
+#ifdef MOTIONHALFKEYTRACK_IMPL
+void fn_8041575C(float *params);
+#else
 void fn_8041575C(const float *params);
+#endif
 /* Resets the shared state to the Hermite functions. */
 void fn_80415784(void);
 }
