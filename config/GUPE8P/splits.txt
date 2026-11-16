@@ -6991,6 +6991,87 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
 
+Runtime.PPCEABI.H/GCN_mem_alloc.c:
+	.text       start:0x803A2944 end:0x803A2AB4
+	.rodata     start:0x80513CB0 end:0x80513D28
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/abort_exit.c:
+	.text       start:0x803A2AB4 end:0x803A2C40
+	.bss        start:0x805A5140 end:0x805A5240
+	.sbss       start:0x805F12D8 end:0x805F12E8
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/alloc.c:
+	.text       start:0x803A2C40 end:0x803A442C
+	.rodata     start:0x80513D28 end:0x80513D40
+	.bss        start:0x805A5240 end:0x805A5278
+	.sbss       start:0x805F12E8 end:0x805F12F0
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/errno.c:
+	.sbss       start:0x805F12F0 end:0x805F12F8
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ansi_files.c:
+	.text       start:0x803A442C end:0x803A4544
+	.data       start:0x80567E10 end:0x80567F50
+	.bss        start:0x805A5278 end:0x805A5578
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ansi_fp.c:
+	.text       start:0x803A4544 end:0x803A7B20
+	.rodata     start:0x80513D40 end:0x80513E20
+	.data       start:0x80567F50 end:0x805680B8
+	.sdata2     start:0x805FA7D0 end:0x805FA800
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/arith.c:
+	.text       start:0x803A7B20 end:0x803A7B40
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/bsearch.c:
+	.text       start:0x803A7B40 end:0x803A7C2C
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/buffer_io.c:
+	.text       start:0x803A7C2C end:0x803A7D24
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/char_io.c:
+	.text       start:0x803A7D24 end:0x803A8018
+
+PowerPC_EABI_Support/MSL/MSL_C/PPC_EABI/SRC/critical_regions.gamecube.c:
+	.text       start:0x803A8018 end:0x803A8024
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ctype.c:
+	.text       start:0x803A8024 end:0x803A8048
+	.data       start:0x805680B8 end:0x805683B8
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/locale.c:
+	.rodata     start:0x80513E20 end:0x80513E28
+	.data       start:0x805683B8 end:0x805683F0
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/direct_io.c:
+	.text       start:0x803A8048 end:0x803A83D0
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/file_io.c:
+	.text       start:0x803A83D0 end:0x803A86C4
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/FILE_POS.C:
+	.text       start:0x803A86C4 end:0x803A8A84
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mbstring.c:
+	.text       start:0x803A8A84 end:0x803A8DA8
+	.sdata2     start:0x805FA800 end:0x805FA808
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mem.c:
+	.text       start:0x803A8DA8 end:0x803A8F18
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mem_funcs.c:
+	.text       start:0x803A8F18 end:0x803A91E8
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/misc_io.c:
+	.text       start:0x803A91E8 end:0x803A91F8
+
+PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/printf.c:
+	.text       start:0x803A91F8 end:0x803AB44C
+	.rodata     start:0x80513E28 end:0x80513E50
+	.data       start:0x805683F0 end:0x80568620
+	.sdata      start:0x805EDCB8 end:0x805EDCC0
+	.sdata2     start:0x805FA808 end:0x805FA810
+
 dolphin/amcstubs/AmcExi2Stubs.c:
 	.text       start:0x803B1FAC end:0x803B1FDC
 

@@ -240,6 +240,13 @@ cflags_runtime = [
     "-inline auto",
 ]
 
+# The Metrowerks Standard Library (MSL C): the runtime flags with deferred inlining (its functions
+# come out in reverse definition order, and helpers defined after their callers are inlined).
+cflags_msl = [
+    *cflags_runtime,
+    "-inline deferred",
+]
+
 # Game C++ flags (see docs/research-notes.md). main() at 0x80050FD4 matches only with -O4,s and
 # stmw/lmw. The gadget code needs RTTI (its classes have RTTI records), read-only pooled strings, and
 # deferred inlining one level deep: functions come out in reverse definition order, and an inline
@@ -385,6 +392,36 @@ config.libs = [
             Object(Matching, "Runtime.PPCEABI.H/ptmf.c"),
             Object(Matching, "Runtime.PPCEABI.H/runtime.c"),
             Object(Matching, "Runtime.PPCEABI.H/__init_cpp_exceptions.cpp"),
+            # Its two messages are separate objects in .rodata, not one pooled string table.
+            Object(Matching, "Runtime.PPCEABI.H/GCN_mem_alloc.c", cflags=[*cflags_runtime, "-str nopool"]),
+        ],
+    },
+    {
+        "lib": "MSL_C.PPCEABI.bare.H",
+        "mw_version": "GC/2.7",
+        "cflags": cflags_msl,
+        "progress_category": "sdk",
+        "objects": [
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/abort_exit.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/alloc.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ansi_files.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ansi_fp.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/arith.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/bsearch.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/buffer_io.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/char_io.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/PPC_EABI/SRC/critical_regions.gamecube.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/ctype.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/direct_io.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/errno.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/file_io.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/FILE_POS.C"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/locale.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mbstring.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mem.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/mem_funcs.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/misc_io.c"),
+            Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/printf.c"),
         ],
     },
     DolphinLib(
