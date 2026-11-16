@@ -12,7 +12,9 @@
  * the contact list in r30 and the volume in r29; GC/2.7 gives this r29 and the volume r31 for every
  * source shape tried (an inline Play helper, a named s8, the volume as a call argument, the
  * contact list in the if, a separate per-target inline function). SetSeOneShot's Behave, the same
- * loop without the volume, matches. */
+ * loop without the volume, matches. Wave 39 also tried the volume declared at the top of the
+ * function and, around Behave alone, the pragmas optimize_for_size, optimization_level 2 and 3,
+ * scheduling, peephole and the opt_* switches: none moves this out of r29. */
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/DebugDisp.h"

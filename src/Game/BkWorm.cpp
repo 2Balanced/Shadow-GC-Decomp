@@ -5,10 +5,13 @@
  * inferred from the class. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 65 of 67 functions and all data match. vfPara_0x48 (0x80192B68): retail loads
- * m_enemy's base pointer above the store of the link register, as in EnemyRender.cpp and
- * CameraScreenSet.cpp; GC/2.7 does not. CreateLockons (0x80192394): retail gives this r31 and the
- * loop counter r27; GC/2.7 swaps the callee-saved registers under every form tried. */
+ * NonMatching: 66 of 67 functions and all data match. CreateLockons (0x80192394): retail gives
+ * this r31, the strength-reduced offset r30, the lock-on's address r29, the weapon r28 and the
+ * loop counter r27; GC/2.7 gives the offset r31, the address r30 and this r27 under every form
+ * tried (the counter declared before or after the weapon or in the for, a pointer to the weapon,
+ * the function written over an explicit self; the two named locals trade places with their
+ * declarations, this never moves). vfPara_0x48 (0x80192B68) matches as a function over a const
+ * worm (see its definition). */
 
 #include "Effect/System/EffectElement.h"
 #include "Game/BkWorm.h"
@@ -244,8 +247,11 @@ void BkWormBase::vfDisp_0x10(float dt) {
     }
 }
 
-int BkWormBase::vfPara_0x48() {
-    return m_enemy->m_status->vfStat_0x34() ? 0 : 1;
+/* Defined under its symbol over a const worm (as GetViewport in Game/CameraScreenSet.cpp): only
+ * for a const object does GC/2.7 read the pointer to the EnemyReferer base above the store of the
+ * link register, the way retail does. */
+extern "C" int vfPara_0x48__10BkWormBaseFv(const BkWormBase *self) {
+    return self->m_enemy->m_status->vfStat_0x34() ? 0 : 1;
 }
 
 int BkWormBase::vfPara_0x5C() {

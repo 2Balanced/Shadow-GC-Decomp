@@ -93,6 +93,8 @@ class BkChaos : public EnemyFlyerCommon {
      * (0x802AFD80, 0x802AFD14). */
     void TakeHit(boost::shared_ptr<CharInfo> attacker);
     float GetChibiLife();
+    /* The heights the chaos flies between, about y (name inferred; inline). */
+    void SetRange(float y, float height, float offset);
     /* Where the chibis gather: the core node of the model (0x802AF888). */
     Fn8040CopyVector3 GetCorePosition();
     /* Grows or shrinks the body toward the chibis in it (0x802AF7D4). */

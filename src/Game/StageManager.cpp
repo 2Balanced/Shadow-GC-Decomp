@@ -11,7 +11,9 @@
  * Not matching yet (everything else, data and .sbss/.bss layout included, links): Start
  * (0x80178020) holds the new TFogSet in r29 where retail uses r28, and OnStageDataLoaded
  * (0x801775B0) adds the archive entry's 0x34 after the header where retail adds it first, which
- * also shifts four registers. */
+ * also shifts four registers. Wave 39: every spelling of the entry's address tried (the inline
+ * GetEntry with an int, long or unsigned index, casts over the header, a named base) gives either
+ * the same 16 rows or 35. */
 /* The shared_ptr control blocks' allocation failure throws a bad_alloc, whose names this unit's
  * .rodata holds (see <new>). */
 #define MSL_NEW_INLINE_BAD_ALLOC

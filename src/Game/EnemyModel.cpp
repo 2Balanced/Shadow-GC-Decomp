@@ -10,7 +10,12 @@
  * NonMatching: 30 of 32 functions and all data match. Two differ only in register allocation:
  * fn_801A3CE4, where retail gives the parameters r27..r30 in their order (GC/2.7 gives model r29
  * and slot r23, for every source form tried), and Part::SetAlpha, where retail loads m_area into r3
- * and m_baseArea into r0 for the comparison in its second branch (GC/2.7 swaps the two). */
+ * and m_baseArea into r0 for the comparison in its second branch (GC/2.7 swaps the two). Wave 39
+ * tried about 20 more spellings of that comparison (operands swapped, named locals, inline
+ * getters and setters, the types of the two members): `m_area != (m_area = m_baseArea)` is the
+ * only one that gives retail's registers, with the store ahead of the branch. For fn_801A3CE4,
+ * separate loop counters, the counter and count declared in other places and the second bound
+ * read in the condition all leave slot and table in r23/r24. */
 /* boost::scoped_array needs it (see boost/checked_delete.hpp). */
 #define BOOST_CHECKED_ARRAY_DELETE
 

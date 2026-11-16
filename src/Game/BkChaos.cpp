@@ -11,11 +11,20 @@
  * Game/CharaColliBaseCharInfo.h and Game/TNumEdit.h supply the RTTI base lists the .data starts
  * with (as in BkSoldier.cpp).
  *
- * NonMatching: 129 of 135 functions match. Left: vfStat_0x98 and GetChibiLife (prologue
- * scheduling, 4 rows each), vfSet_0x20 (the order of two float loads), vfDisp_0x40 (operand order
- * of the cylinder's two products), StretchCallback (saved-register choice, about 26 rows) and
- * BkChibiChaos::Update (7 rows: one compare's operand order, a register and one argument's
- * place). Retail also pools 2.0 ahead of Update's constants in .sdata2. */
+ * NonMatching: 133 of 135 functions match. Left: StretchCallback (13 rows: retail keeps the
+ * callback's parameter in r31 and the node index in r27 and tests the index unsigned, GC/2.7 swaps
+ * the two registers; it also loads the pitch straight into f29 where GC/2.7 goes through f4) and
+ * BkChibiChaos::Update (3 rows: the upper height test compares m_maxY with the position, operands
+ * swapped but loaded in the same order, and case 1 sets up r5, r3, r4 for the subtraction where
+ * GC/2.7 has r4, r5, r3; about 25 spellings of the two were tried). Retail also pools 2.0 ahead of
+ * Update's constants in .sdata2.
+ *
+ * What matched the other four (wave 39): vfStat_0x98 takes its attacker through a non-const
+ * reference and GetChibiLife is defined over a const chaos - GC/2.7 moves a load above the
+ * prologue's stores exactly when the object it reads is const; vfSet_0x20 passes its three
+ * values to an inline function (arguments are evaluated right to left); vfDisp_0x40 names the
+ * cylinder's two constants; StretchCallback reads field_0x2FC as volatile for its test, because
+ * retail loads it again for the decrement. */
 #define BK_CHAOS_UNIT
 /* See EnemyBaseAI (Game/EnemyAI.h): the area radius helper, fn_8018346C. */
 #define ENEMY_BASE_AI_HELPERS
@@ -606,8 +615,7 @@ void BkChibiChaos::Update(float dt) {
         Vec2f angles = fn_8040F760(&m_info->field_0x18);
         m_info->m_rotation.x = fn_8040F314(m_info->m_rotation.x, angles.x, 0.1f);
         m_info->m_rotation.y = fn_8040F314(m_info->m_rotation.y, angles.y, 0.1f);
-        float step = dt * fn_8040CF50(&velocity);
-        if (fn_8040CF50(&toCore) < step) {
+        if (fn_8040CF50(&toCore) < dt * fn_8040CF50(&velocity)) {
             m_collider->TurnOff(-1);
             m_target->Deactivate();
             fn_802CD5CC(m_render.get());
@@ -784,7 +792,9 @@ static void StretchCallback(_stMtnCallbackParam *param) {
         } else if (pitch < DegToRad(-80.0f)) {
             pitch = DegToRad(-80.0f);
         }
-        if (chaos->field_0x2FC > 0) {
+        /* Read as volatile (not original as far as is known): retail loads the count again for
+         * the decrement, which GC/2.7 only does for a volatile object. */
+        if (*(volatile s32 *)&chaos->field_0x2FC > 0) {
             stretch = scale;
             chaos->field_0x2FC--;
         }
@@ -867,14 +877,17 @@ void BkChaos::vfSet_0x1C(UnkPlacement_800C9CD0 *placement) {
     m_ctrl->vfCtrl_0x20();
 }
 
+/* An inline function: GC/2.7 evaluates its arguments right to left, which is the order retail
+ * loads MoveHeightOffset and MoveHeight in, ahead of the call. */
+inline void BkChaos::SetRange(float y, float height, float offset) {
+    m_maxY = offset + (y + height);
+    m_minY = offset + (y - height);
+}
+
 void BkChaos::vfSet_0x20(UnkPlacement_800C9CD0 *placement) {
     TEnemySetBase::vfSet_0x20(placement);
     fn_800C9DBC(placement, &m_params, sizeof(m_params));
-    float height = m_params.MoveHeight;
-    float offset = m_params.MoveHeightOffset;
-    float y = GetPosition()->y;
-    m_maxY = offset + (y + height);
-    m_minY = offset + (y - height);
+    SetRange(GetPosition()->y, m_params.MoveHeight, m_params.MoveHeightOffset);
     if (m_params.ShapeType == 0) {
         if (m_params.CombineStartTime > 0.0f) {
             m_state = 0;
@@ -997,7 +1010,11 @@ void BkChaos::vfDisp_0x40(EnemyMotionEventArg &arg) {
         }
         case 0: {
             field_0x300 = 1;
-            UnkCylinder_80034854 cylinder(lbl_805E07A0, m_size * 5.0f, m_size * 30.0f,
+            /* Named: with the literals in the products GC/2.7 multiplies them the other way
+             * round. */
+            float halfHeight = 5.0f;
+            float radius = 30.0f;
+            UnkCylinder_80034854 cylinder(lbl_805E07A0, m_size * halfHeight, m_size * radius,
                                           Vec3f(90.0f * (lbl_805FAD38 / 180.0f), 0.0f, 0.0f), 0);
             m_attack.Set(EnemyAttack::Desc(data->value, 1, EnemyAttack::Desc::Shape(3, &cylinder),
                                            boost::weak_ptr<CharInfo>(fn_8017D014(this))),
@@ -1062,13 +1079,20 @@ void BkChaos::TakeHit(boost::shared_ptr<CharInfo> attacker) {
     }
 }
 
-float BkChaos::GetChibiLife() {
-    int count = m_params.ChibiNum - m_hits;
+} // namespace BkChaos
+
+/* Defined under its symbol over a const chaos (as GetViewport in Game/CameraScreenSet.cpp): only
+ * for a const object does GC/2.7 read ChibiNum and m_hits above the prologue's stores, the way
+ * retail does. */
+extern "C" float GetChibiLife__Q27BkChaos7BkChaosFv(const BkChaos::BkChaos *self) {
+    int count = self->m_params.ChibiNum - self->m_hits;
     if (count > 0) {
-        return vfStat_0xAC() / count;
+        return const_cast<BkChaos::BkChaos *>(self)->vfStat_0xAC() / count;
     }
-    return m_params.MaxLife;
+    return self->m_params.MaxLife;
 }
+
+namespace BkChaos {
 
 float BkChaos::vfPara_0x6C() {
     return m_params.MaxLife;
@@ -1130,7 +1154,7 @@ extern "C" void vfStat_0x98__17EnemyStatusCommonFv(EnemyStatusCommon *status,
                                                     const boost::shared_ptr<CharInfo> &attacker);
 
 extern "C" void vfStat_0x98__Q27BkChaos7BkChaosFv(BkChaos::BkChaos *self,
-                                                   const boost::shared_ptr<CharInfo> &attacker) {
+                                                   boost::shared_ptr<CharInfo> &attacker) {
     if (attacker.get() != 0) {
         for (int i = 0; i < self->m_params.ChibiNum; i++) {
             vfStat_0x98__17EnemyStatusCommonFv(&static_cast<EnemyStatusCommon &>(*self), attacker);

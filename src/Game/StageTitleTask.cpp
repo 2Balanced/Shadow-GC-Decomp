@@ -78,7 +78,9 @@ class StageTitleTask : public Task {
 SIZE_ASSERT(StageTitleTask, 0x28);
 
 /* NonMatching: GC/2.7 gives `this` r31 and the string pool base r30; retail has them the other
- * way round (14 register operands differ). About ten source shapes were tried. */
+ * way round (14 register operands differ). About fifteen source shapes were tried (an alias of
+ * m_csd by reference or pointer, the strings named ahead of their use). The load's success is
+ * the taken branch, as retail has it. */
 bool UnkObject_801E67EC::Load(int stage) {
     char path[0x80];
     if (m_state != 0) {
@@ -93,16 +95,16 @@ bool UnkObject_801E67EC::Load(int stage) {
     if (!FileExists(path)) {
         return false;
     }
-    if (!fn_8003F938(m_csd, "csdFiles/stageTitle/StageTitle", path)) {
-        return false;
+    if (fn_8003F938(m_csd, "csdFiles/stageTitle/StageTitle", path)) {
+        strcpy(m_csd.m_sceneName, "StageTitle");
+        fn_8003E414(m_csd, 1, 1);
+        fn_8003E414(m_csd, 2, 0);
+        fn_8003FB10(m_csd);
+        m_state = 1;
+        fn_8003FE2C(m_csd);
+        return true;
     }
-    strcpy(m_csd.m_sceneName, "StageTitle");
-    fn_8003E414(m_csd, 1, 1);
-    fn_8003E414(m_csd, 2, 0);
-    fn_8003FB10(m_csd);
-    m_state = 1;
-    fn_8003FE2C(m_csd);
-    return true;
+    return false;
 }
 
 bool UnkObject_801E67EC::Update() {

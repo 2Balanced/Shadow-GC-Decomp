@@ -27,7 +27,12 @@
  * retail, so only the deleter half is crossed; and the order does not answer to the shape of the
  * source: including CameraManagerUnit.h before CameraShake.h, and keeping the CameraShake new behind
  * the CameraManagerUnit one behind a file-scope inline helper, were both tried and changed nothing
- * (the helper also cost an out-of-line MakeShake). The first two macros below are what puts our
+ * (the helper also cost an out-of-line MakeShake). Wave 39: retail does have that out-of-line
+ * helper (0x8000D728, called from fn_8000D664), so MakeShake is back and both functions match
+ * again; the crossed pair is as before. Its two "guards" are the zero bytes the compiler copies a
+ * checked_deleter temporary from: ours number CameraManagerUnit's first wherever MakeShake is
+ * defined (ahead of fn_8000D664, or at the end of the file behind a declaration) and also when an
+ * unused function defined after fn_8000D1E0 builds a shared_ptr<CameraShake> first. The first two macros below are what puts our
  * .data records exactly where retail's are, the 4-byte gap retail has at its end
  * (gap_07_8051C594_data) aside: the shared_ptr base destructor goes to the library, which retires
  * our local copy of the base's vtable, its __RTTI__ record and its .sdata word, and std::exception's
@@ -198,11 +203,16 @@ extern "C" void fn_8000D8EC(CameraManager *manager, int kind, int index, float s
     fn_8000D0F0(manager, index)->m_shake = fn_8000EDD0(kind, strength);
 }
 
-/* A shake from its values. */
+/* A shake from its values. Retail has it out of line (0x8000D728), as GC/2.7 emits an inline
+ * function whose body calls inline functions. */
+inline boost::shared_ptr<CameraShake> MakeShake(float duration, float amplitude, float frequency) {
+    return boost::shared_ptr<CameraShake>(new CameraShake(duration, amplitude, frequency));
+}
+
+/* Starts a shake on a screen's camera. */
 extern "C" void fn_8000D664(CameraManager *manager, int index, float duration, float amplitude,
                             float frequency) {
-    fn_8000D0F0(manager, index)->m_shake =
-        boost::shared_ptr<CameraShake>(new CameraShake(duration, amplitude, frequency));
+    fn_8000D0F0(manager, index)->m_shake = MakeShake(duration, amplitude, frequency);
 }
 
 /* Stops a screen's shake. */

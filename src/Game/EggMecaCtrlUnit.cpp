@@ -7,11 +7,15 @@
  * original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * The unit is NonMatching (251/256 functions): the ShockWave constructor (two registers swapped in
- * the arguments of fn_800C7EA8, as in DevilDoomCtrlUnit.cpp), Laser::GetAngles (retail reloads
- * m_index between its two tests, 4 bytes longer), IronBall::GetThrowVelocity (the stack slots of
- * its two-float vectors), AcceptIronBallHit (prologue scheduling) and FixLookCharCamera::IsEnabled
- * (float register numbering in its two interpolations). .data also differs in the zero-filled
+ * The unit is NonMatching (254/256 functions): IronBall::GetThrowVelocity (retail has the
+ * difference's temporary above the two flat points on the stack and builds the second point
+ * first; an out-pointer call over named points built by an inline setter gets within 4 rows, two
+ * float registers apart, and is not kept) and FixLookCharCamera::IsEnabled (float register
+ * numbering in its two interpolations: retail numbers the constants before the difference; naming
+ * the ratio or the constants, operand order and inline helpers all leave it). Matched in wave 39:
+ * the ShockWave constructor (fn_800C7EA8 declared with its radius ahead of the offset),
+ * Laser::GetAngles (m_index read as volatile for the second test) and AcceptIronBallHit (a const
+ * candidate, which is what lets GC/2.7 load above the prologue's stores). .data also differs in the zero-filled
  * vtables near its middle (retail has 0x1C more bytes before EggMecaCtrlUnit's vtable and the
  * zeroed BossCtrlUnit vtable after it). The boss's mode unit (EggMecaModeCtrlUnit) starts right
  * after this unit, at 0x802A7C9C with its in-class Tick. */
@@ -288,10 +292,13 @@ UnkCharaList_80074194 *fn_80074194(void);
 boost::weak_ptr<CharInfo> fn_800A8B74(UnkCharaList_80074194 *manager, int id);
 bool fn_800B7AD0(const boost::shared_ptr<CharInfo> *chara);
 void *fn_80021B08(void);
+/* The radius is declared ahead of the offset here (floats travel in their own registers, so the
+ * call is the same): the ShockWave constructor then evaluates it first, which gives the owner
+ * pointer and the address of the zero vector the registers retail has them in. */
 boost::shared_ptr<CharaColliBase> fn_800C7EA8(void *manager, const Vec3f *position, u32 flags,
                                               int arg3, int arg4,
-                                              const boost::weak_ptr<CharInfo> &owner,
-                                              const Vec3f *offset, float radius);
+                                              const boost::weak_ptr<CharInfo> &owner, float radius,
+                                              const Vec3f *offset);
 boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager,
                                               boost::shared_ptr<CharaColliBase> collider);
 boost::weak_ptr<CharaColliAttack> fn_800C42D0(void *manager,
@@ -303,7 +310,7 @@ void *fn_80020D40(void);
 void fn_80021C04(UnkSphere_80021C04 *sphere, const Vec3f *center, float radius);
 CollisionResultList *fn_80021934(void *world, const UnkSphere_80021C04 *sphere,
                                  const Vec3f *velocity, int arg3, int arg4, int arg5,
-                                 bool (*filter)(UnkCollisionCandidate_80021934 *candidate),
+                                 bool (*filter)(const UnkCollisionCandidate_80021934 *candidate),
                                  void *data, int arg8);
 void fn_800C4190(void *manager, boost::weak_ptr<CharaColliAttack> attack,
                  CollisionResultList *hits, int arg3);
@@ -871,8 +878,9 @@ EggMecaCtrlUnit_IronBall::~EggMecaCtrlUnit_IronBall() {
 }
 
 /* Accepts the players and, of the other characters of kind 4, those whose collider lacks the
- * attributes 0x40004 (name inferred). */
-static bool AcceptIronBallHit(UnkCollisionCandidate_80021934 *candidate) {
+ * attributes 0x40004 (name inferred). The candidate is const: only then does GC/2.7 read
+ * m_collider above the prologue's stores, the way retail does. */
+static bool AcceptIronBallHit(const UnkCollisionCandidate_80021934 *candidate) {
     if (candidate->m_collider != 0) {
         CharaColliBaseCharInfo *collider = dynamic_cast<CharaColliBaseCharInfo *>(candidate->m_collider);
         if (collider != 0) {
@@ -1161,7 +1169,9 @@ Vec3f EggMecaCtrlUnit_Laser::GetAngles() {
     if (m_index == 0) {
         y += m_sweep;
     }
-    if (m_index != 0) {
+    /* Read as volatile (not original as far as is known): retail loads m_index again here, which
+     * GC/2.7 only does for a volatile object. */
+    if (*(volatile s32 *)&m_index != 0) {
         x -= m_sweep;
     }
     return Vec3f(x, y, z);
@@ -1586,8 +1596,8 @@ EggMecaCtrlUnit_ShockWave::EggMecaCtrlUnit_ShockWave(EggMecaVarParam *param, int
     }
     fn_8000D664(fn_80009548(), 0, m_owner->m_settings.m_shakeArgs[0], m_owner->m_settings.m_shakeArgs[1],
                 m_owner->m_settings.m_shakeArgs[2]);
-    m_collider = fn_800C7EA8(fn_80021B08(), &position, 0x40000, 6, 0, lbl_805EE698, &lbl_805E07A0,
-                             m_owner->m_settings.m_ironBallRadius);
+    m_collider = fn_800C7EA8(fn_80021B08(), &position, 0x40000, 6, 0, lbl_805EE698,
+                             m_owner->m_settings.m_ironBallRadius, &lbl_805E07A0);
     m_collider->SetField2C(1);
     fn_800091D0(&m_position, &position);
     m_small = effect == 7;

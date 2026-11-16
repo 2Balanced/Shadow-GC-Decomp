@@ -6,11 +6,12 @@
  * UnkHintTarget_801FB180. Names other than the class's are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching (17/21; every section's data matches): register allocation only. fn_80049BC0 (99.5%)
- * gives the three saved parameters other registers, fn_8004A684 (99.9%) the saved image path,
- * fn_8004A7B4 (97.5%) swaps the loop counter and the font pointer, and fn_8004A074 (98.2%) loads
- * 0.5 before the height and copies the text pointer later than retail. About 10 source shapes
- * were tried for each. */
+ * NonMatching (18/21; every section's data matches): register allocation only. fn_80049BC0 (99.5%)
+ * gives the three saved parameters other registers, fn_8004A684 (99.9%) the saved image path and
+ * fn_8004A7B4 (97.5%) swaps the loop counter and the font pointer (a named font pointer, declared
+ * before or after the counter, changes nothing). About 10 source shapes were tried for each.
+ * fn_8004A074 matches since wave 39: the halves are divisions by 2 (GC/2.7 then multiplies in
+ * retail's operand order) and the shadow pass's text pointer is set ahead of its test. */
 
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -530,19 +531,21 @@ extern "C" bool fn_8004A074(TMessageDisp *self, const u16 *text, float x, float 
         break;
     case 1:
         position.x = x;
-        position.y = y - height * 0.5f;
+        position.y = y - height / 2.0f;
         break;
     case 2:
-        position.x = x - width * 0.5f;
-        position.y = y - height * 0.5f;
+        position.x = x - width / 2.0f;
+        position.y = y - height / 2.0f;
         break;
     }
     RwV2d pen = {0.005f + position.x, position.y - 0.005f};
+    /* Set ahead of the test, as retail has it. */
+    c = text;
     if (lbl_805EE0B0 == 0) {
         s_layout.m_next = 0;
         lbl_805F15B4->fpRenderStateSet(rwRENDERSTATESRCBLEND, (void *)1);
         lbl_805F15B4->fpRenderStateSet(rwRENDERSTATEDESTBLEND, (void *)4);
-        for (c = text; *c != 0; c++) {
+        for (; *c != 0; c++) {
             if (*c != '\n') {
                 fn_80049FB8(self, *c, &pen, true);
             } else {
