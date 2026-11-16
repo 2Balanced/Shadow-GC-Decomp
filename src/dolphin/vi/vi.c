@@ -7,7 +7,12 @@
  * display, pan and frame buffer geometry the registers are derived from.
  *
  * The OS thread calls keep dtk's names (nothing in the binary names them); the macros below give
- * them the public SDK names. */
+ * them the public SDK names.
+ *
+ * Not linked yet, two functions differ in register choice only: in fn_8037E1B4 retail loads the
+ * mask of a later `changed` bit one instruction later, which leaves r5 free for the first
+ * update; in fn_8037E354 the inlined setPicConfig keeps the interlace mode in r0 and the
+ * register value in r6, where this source has them the other way round. */
 #include <dolphin/os.h>
 #include <dolphin/os_interrupt.h>
 
@@ -325,11 +330,15 @@ static VITiming *fn_8037D730(u32 mode) {
 }
 
 void fn_8037D7D8(u32 mode) {
+    volatile u32 a;
+    /* Never used: retail reserves three more stack words below the delay counter. */
+    u32 unused1;
+    u32 unused2;
+    u32 unused3;
     VITiming *tm;
     u32 nonInter;
     u32 tv;
     u32 tvBits;
-    volatile u32 a;
     u16 hct;
     u16 vct;
 
@@ -459,8 +468,8 @@ void fn_8037D9DC(void) {
 
     dspCr = __VIRegs[1];
     value = __VITvFormatInBootrom;
-    HorVer.nonInter = (dspCr >> 2) & 1;
-    HorVer.tv = (dspCr >> 8) & 3;
+    HorVer.nonInter = (dspCr & 4) >> 2;
+    HorVer.tv = (dspCr & 0x300) >> 8;
     if (value == 1 && HorVer.tv == 0) {
         HorVer.tv = 5;
     }
@@ -491,8 +500,10 @@ void fn_8037D9DC(void) {
     HorVer.threeD = FALSE;
 
     OSInitThreadQueue(&retraceQueue);
-    __VIRegs[24] &= 0x7FFF;
-    __VIRegs[26] &= 0x7FFF;
+    /* Written out (not `&=`): retail forms the register address once to read and again to
+     * write. */
+    __VIRegs[24] = __VIRegs[24] & 0x7FFF;
+    __VIRegs[26] = __VIRegs[26] & 0x7FFF;
     PreCB = NULL;
     PostCB = NULL;
     __OSSetInterruptHandler(24, fn_8037D434);
@@ -839,6 +850,7 @@ void fn_8037EB5C(u16 xOrg, u16 yOrg, u16 width, u16 height) {
 }
 
 void fn_8037EEF0(void) {
+    u32 unused; /* never used; retail's frame has room for it */
     BOOL enabled;
     s32 regIndex;
 
@@ -918,8 +930,11 @@ static u32 fn_8037F154(void) {
 /* The one caller that reaches the beam position reader out of line. */
 #pragma dont_inline on
 u32 fn_8037F1BC(void) {
-    u32 hct;
+    /* Never used: retail keeps a free stack word on either side of the two counters. */
+    u32 unused1;
     u32 vct;
+    u32 hct;
+    u32 unused2;
     u32 nextField;
     BOOL enabled;
 

@@ -4,7 +4,11 @@
  * whether each is direct or indexed) and of the eight vertex attribute format tables. Setters
  * only mark the state dirty; GXBegin sends it (__GXSetVCD, __GXSetVAT) and recomputes the
  * vertex size (__GXCalculateVLim). Also programs array bases/strides and texture coordinate
- * generation. */
+ * generation.
+ *
+ * Not linked yet: __GXCalculateVLim differs in instruction order and register choice only.
+ * Retail extracts the normal count bit after the first table lookup and compares it last; this
+ * source gets both one step earlier, with the format word in r5 instead of r8. */
 #include <dolphin/gx/GXPrivate.h>
 
 void GXSetVtxDesc(GXAttr attr, GXAttrType type) {
@@ -269,8 +273,12 @@ void GXSetVtxAttrFmtv(GXVtxFmt vtxfmt, const GXVtxAttrFmtList *list) {
     u32 *vb = &gx->vatB[vtxfmt];
     u32 *vc = &gx->vatC[vtxfmt];
 
-    for (; list->attr != 0xFF; list++) {
+    /* The end test reads the attribute through a plain word pointer: retail loads it again for
+     * the body instead of keeping the tested value, which the compiler only does when the two
+     * reads are not the same expression. */
+    while (*(const s32 *)&list->attr != 0xFF) {
         SETVAT(va, vb, vc, list->attr, list->cnt, list->compType, list->frac);
+        list++;
     }
     gx->dirtyState |= GX_DIRTY_VAT;
     gx->dirtyVAT |= (u8)(1 << (u8)vtxfmt);

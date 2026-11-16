@@ -7,11 +7,10 @@
  * whose apploader predates 2004/02/01 cannot do this, so they get the old reboot path instead:
  * the small reboot program after the apploader is run at 0x81300000.
  *
- * The DVD, AI and string calls this file makes are still unnamed in the binary: fn_8037C0F8 is
+ * The DVD and string calls this file makes are still unnamed in the binary: fn_8037C0F8 is
  * DVDReadAbsAsyncPrio, fn_8037C548 DVDGetCommandBlockStatus, fn_8037C9F4 DVDCheckDisk,
  * fn_8037C9EC DVDGetCurrentDiskID, fn_8037C640 DVDSetAutoInvalidation, fn_8037C650 DVDResume,
- * fn_8037CAEC __DVDPrepareResetAsync, fn_8037C378 DVDCancelStreamAsync, fn_803813E0 and
- * fn_8038140C AISetStreamVolLeft/Right, fn_80381120 AISetStreamPlayState, fn_803AC8DC strncmp,
+ * fn_8037CAEC __DVDPrepareResetAsync, fn_8037C378 DVDCancelStreamAsync, fn_803AC8DC strncmp;
  * the reset and reboot code lives in OSReset.c and OSReboot.c. */
 #include <dolphin/os.h>
 
@@ -103,9 +102,9 @@ BOOL fn_8037C640(BOOL autoInval);
 void fn_8037C650(void);
 BOOL fn_8037CAEC(void (*callback)(void));
 BOOL fn_8037C378(DVDCommandBlock *block, DVDCBCallback callback);
-void fn_803813E0(u8 volume);
-void fn_8038140C(u8 volume);
-void fn_80381120(u32 state);
+void AISetStreamVolLeft(u8 volume);
+void AISetStreamVolRight(u8 volume);
+void AISetStreamPlayState(u32 state);
 void __OSDoHotReset(u32 resetCode);
 void OSGetSaveRegion(void **start, void **end);
 u32 __OSMaskInterrupts(u32 mask);
@@ -161,6 +160,23 @@ static asm void Run(register void *entryPoint) {
     blr
 }
 
+static void ReadDisc(void *addr, s32 length, s32 offset);
+static s32 GetApploaderPosition(void);
+
+/* Reads the apploader's header and then the apploader itself to 0x81200000. It stands ahead of
+ * the two helpers it calls on purpose: retail inlines this into __OSBootDolSimple but calls
+ * ReadDisc and GetApploaderPosition from it, where every later use of them is inlined - which
+ * is what the compiler does for callees it has not seen the body of yet. */
+static inline AppLoaderStruct *LoadApploader(void) {
+    AppLoaderStruct *header;
+
+    header = (AppLoaderStruct *)OSAllocFromArenaLo(0x20, 32);
+    ReadDisc(header, 0x20, GetApploaderPosition());
+    ReadDisc(APPLOADER_ADDR, OSRoundUp32B(header->size), GetApploaderPosition() + 0x20);
+    ICInvalidateRange(APPLOADER_ADDR, OSRoundUp32B(header->size));
+    return header;
+}
+
 /* Reads from the disc and waits; a disc that goes away meanwhile resets the console. */
 static void ReadDisc(void *addr, s32 length, s32 offset) {
     DVDCommandBlock block;
@@ -206,29 +222,59 @@ static s32 GetApploaderPosition(void) {
     return apploaderPosition;
 }
 
-/* Built without automatic inlining: the helper code it does inline is written out in place. */
-#pragma dont_inline on
+static inline BOOL IsStreamEnabled(void) {
+    if (fn_8037C9EC()->streaming) {
+        return TRUE;
+    }
+    return FALSE;
+}
+
+static inline BOOL IsNewApploader(AppLoaderStruct *header) {
+    return fn_803AC8DC(header->date, "2004/02/01", 10) > 0 ? TRUE : FALSE;
+}
+
+/* Lets the apploader read the executable in, piece by piece; returns its entry point. */
+static inline void *LoadDol(OSExecParams *params,
+                            void (*entry)(void *init, void *main, void *close)) {
+    AppLoaderInit appLoaderInit;
+    AppLoaderMain appLoaderMain;
+    AppLoaderClose appLoaderClose;
+    void *addr;
+    s32 length;
+    s32 offset;
+    OSExecParams *copy;
+
+    entry(&appLoaderInit, &appLoaderMain, &appLoaderClose);
+    copy = (OSExecParams *)OSAllocFromArenaLo(sizeof(OSExecParams), 1);
+    memcpy(copy, params, sizeof(OSExecParams));
+    __OSExecParams = copy;
+    appLoaderInit(OSReport);
+    OSSetArenaLo(copy);
+    while (appLoaderMain(&addr, &length, &offset)) {
+        ReadDisc(addr, length, offset);
+    }
+    return appLoaderClose();
+}
+
+/* Leaves the parameters where the new program looks for them and jumps to it. */
+static inline void StartDol(OSExecParams *params, void *entry) {
+    OSExecParams *copy;
+
+    copy = (OSExecParams *)OSAllocFromArenaLo(sizeof(OSExecParams), 1);
+    memcpy(copy, params, sizeof(OSExecParams));
+    __OSExecParams = copy;
+    __PIRegs[PI_RESET_CODE] = 7;
+    OSDisableInterrupts();
+    Run(entry);
+}
+
 void __OSBootDolSimple(u32 doloffset, u32 restartCode, void *regionStart, void *regionEnd,
                        BOOL argsUseDefault, s32 argc, char **argv) {
-    DVDCommandBlock streamBlock;
-    u32 unused1; /* stack the original reserves but never touches */
-    s32 offset;
-    s32 length;
-    void *addr;
-    AppLoaderClose appLoaderClose;
-    AppLoaderMain appLoaderMain;
-    AppLoaderInit appLoaderInit;
-    u32 unused2;
-    DVDCommandBlock rebootBlock;
-    DVDCommandBlock tgcBlock;
-    DVDCommandBlock loadBlock;
-    u32 unused3[2];
     OSExecParams *params;
-    OSExecParams *copy;
     AppLoaderStruct *header;
     void *dolEntry;
-    s32 pos;
-    u32 *tgcHeader;
+    DVDCommandBlock block;
+    u32 unused; /* stack the original reserves but never touches */
 
     OSDisableInterrupts();
 
@@ -259,102 +305,42 @@ void __OSBootDolSimple(u32 doloffset, u32 restartCode, void *regionStart, void *
     }
 
     /* Silence and stop any audio streaming from the disc. */
-    if (!__OSIsGcam && (fn_8037C9EC()->streaming ? TRUE : FALSE)) {
-        fn_803813E0(0);
-        fn_8038140C(0);
-        fn_8037C378(&streamBlock, NULL);
-        while (fn_8037C548(&streamBlock)) {
+    if (!__OSIsGcam && IsStreamEnabled()) {
+        AISetStreamVolLeft(0);
+        AISetStreamVolRight(0);
+        fn_8037C378(&block, NULL);
+        while (fn_8037C548(&block)) {
             if (!fn_8037C9F4()) {
                 __OSDoHotReset(0);
             }
         }
-        fn_80381120(0);
+        AISetStreamPlayState(0);
     }
 
-    header = (AppLoaderStruct *)OSAllocFromArenaLo(0x20, 32);
-    ReadDisc(header, 0x20, GetApploaderPosition());
-    ReadDisc(APPLOADER_ADDR, OSRoundUp32B(header->size), GetApploaderPosition() + 0x20);
-    ICInvalidateRange(APPLOADER_ADDR, OSRoundUp32B(header->size));
+    header = LoadApploader();
 
-    if ((fn_803AC8DC(header->date, "2004/02/01", 10) > 0) ? TRUE : FALSE) {
+    if (IsNewApploader(header)) {
         if (doloffset == 0xFFFFFFFF) {
-            /* The executable follows the apploader. */
-            if (apploaderPosition != 0) {
-                pos = apploaderPosition;
-            } else {
-                if (__OSAppLoaderOffset != 0) {
-                    tgcHeader = (u32 *)OSAllocFromArenaLo(0x40, 32);
-                    fn_8037C0F8(&tgcBlock, tgcHeader, 0x40, __OSAppLoaderOffset, NULL, 0);
-                    while (fn_8037C548(&tgcBlock)) {
-                        if (!fn_8037C9F4()) {
-                            __OSDoHotReset(0);
-                        }
-                    }
-                    apploaderPosition = __OSAppLoaderOffset + tgcHeader[0x38 / 4];
-                } else {
-                    apploaderPosition = DEFAULT_APPLOADER_POSITION;
-                }
-                pos = apploaderPosition;
-            }
-            doloffset = pos + header->size + 0x20;
+            /* The executable follows the apploader. The constant comes first: that is the
+             * order retail adds the three terms in. */
+            doloffset = sizeof(AppLoaderStruct) + GetApploaderPosition() + header->size;
         }
         params->bootDol = doloffset;
-
-        header->entry(&appLoaderInit, &appLoaderMain, &appLoaderClose);
-        copy = (OSExecParams *)OSAllocFromArenaLo(sizeof(OSExecParams), 1);
-        memcpy(copy, params, sizeof(OSExecParams));
-        __OSExecParams = copy;
-        appLoaderInit(OSReport);
-        OSSetArenaLo(copy);
-        while (appLoaderMain(&addr, &length, &offset)) {
-            s32 o = offset;
-            s32 l = length;
-            void *a = addr;
-
-            fn_8037C0F8(&loadBlock, a, l, o, NULL, 0);
-            while (fn_8037C548(&loadBlock)) {
-                if (!fn_8037C9F4()) {
-                    __OSDoHotReset(0);
-                }
-            }
-        }
-        dolEntry = appLoaderClose();
-
-        copy = (OSExecParams *)OSAllocFromArenaLo(sizeof(OSExecParams), 1);
-        memcpy(copy, params, sizeof(OSExecParams));
-        __OSExecParams = copy;
-        __PIRegs[PI_RESET_CODE] = 7;
-        OSDisableInterrupts();
-        Run(dolEntry);
+        dolEntry = LoadDol(params, header->entry);
+        StartDol(params, dolEntry);
     } else {
         /* Old apploader: run the reboot program that follows it instead. */
         __OSRebootRegionStart = regionStart;
         __OSRebootRegionEnd = regionEnd;
         __OSRebootFlag = TRUE;
-        {
-            s32 o;
-            s32 l;
-            void *a;
-
-            o = GetApploaderPosition() + header->size;
-            o += 0x20;
-            l = OSRoundUp32B(header->rebootSize);
-            a = REBOOT_ADDR;
-
-            fn_8037C0F8(&rebootBlock, a, l, o, NULL, 0);
-        }
-        while (fn_8037C548(&rebootBlock)) {
-            if (!fn_8037C9F4()) {
-                __OSDoHotReset(0);
-            }
-        }
+        ReadDisc(REBOOT_ADDR, OSRoundUp32B(header->rebootSize),
+                 sizeof(AppLoaderStruct) + GetApploaderPosition() + header->size);
         ICInvalidateRange(REBOOT_ADDR, OSRoundUp32B(header->rebootSize));
         OSDisableInterrupts();
         ICFlashInvalidate();
         Run(REBOOT_ADDR);
     }
 }
-#pragma dont_inline reset
 
 /* Boots the executable at disc offset `doloffset`, passing the offset as argv[0]. */
 void __OSBootDol(u32 doloffset, u32 restartCode, const char **argv) {

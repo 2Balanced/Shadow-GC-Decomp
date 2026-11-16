@@ -1,10 +1,6 @@
 /* Dolphin SDK AXFX: the delay effect. One delay line per bus (left, right, surround), each with
  * its own length, feedback and output level; the aux callback feeds the bus through its line.
- * Lines are sized in audio frames of 160 samples.
- *
- * Not linked yet: AXFXDelaySettings differs in register choice only. Retail keeps the six
- * feedback and output values of the range check in r9..r4 and loads the zero it stores later
- * (r31) in the middle of that check; this source uses r0 for all of them. */
+ * Lines are sized in audio frames of 160 samples. */
 #include <dolphin/os.h>
 
 /* Placeholder symbols are kept: nothing in the binary names these functions, and other units
@@ -80,10 +76,14 @@ int AXFXDelaySettings(AXFX_DELAY *delay) {
     s32 *sur;
     BOOL enabled;
 
+    /* The percentages are unsigned, so their lower bounds compile to nothing, but the checks
+     * are needed: they are why the zero and the six values sit in registers of their own. */
     if (delay->delay[0] < 10 || delay->delay[0] > 5000 || delay->delay[1] < 10 ||
         delay->delay[1] > 5000 || delay->delay[2] < 10 || delay->delay[2] > 5000 ||
-        delay->feedback[0] > 100 || delay->feedback[1] > 100 || delay->feedback[2] > 100 ||
-        delay->output[0] > 100 || delay->output[1] > 100 || delay->output[2] > 100) {
+        delay->feedback[0] < 0 || delay->feedback[0] > 100 || delay->feedback[1] < 0 ||
+        delay->feedback[1] > 100 || delay->feedback[2] < 0 || delay->feedback[2] > 100 ||
+        delay->output[0] < 0 || delay->output[0] > 100 || delay->output[1] < 0 ||
+        delay->output[1] > 100 || delay->output[2] < 0 || delay->output[2] > 100) {
         return FALSE;
     }
 

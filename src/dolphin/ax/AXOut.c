@@ -54,14 +54,16 @@ static u16 __AXDramImage[0x2000];
 static DSPTaskInfo task;
 static AXPROFILE __AXLocalProfile;
 
-static u32 __AXOutFrame;
-static u32 __AXAiDmaFrame;
+/* The frame counters and the stepping flag are shared with the interrupt side. Being volatile
+ * keeps __AXOutInit's stores to them in source order, which is what retail has. */
+static volatile u32 __AXOutFrame;
+static volatile u32 __AXAiDmaFrame;
 static u32 __AXOutDspReady;
 static volatile OSTime __AXOsTime;
 static AXUserCallback __AXUserFrameCallback;
 static volatile BOOL __AXDSPInitFlag;
 static BOOL __AXDSPDoneFlag;
-static BOOL __AXDebugSteppingMode;
+static volatile BOOL __AXDebugSteppingMode;
 static OSThreadQueue __AXOutThreadQueue;
 static u32 __AXOutputBufferMode;
 

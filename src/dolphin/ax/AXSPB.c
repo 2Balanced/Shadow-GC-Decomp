@@ -12,7 +12,9 @@
 
 #define CLAMP_DELTA(d)                                                                                 if ((d) > AX_DPOP_MAX_DELTA) {                                                                         (d) = AX_DPOP_MAX_DELTA;                                                                       }                                                                                                  if ((d) < -AX_DPOP_MAX_DELTA) {                                                                        (d) = -AX_DPOP_MAX_DELTA;                                                                      }
 
-static AXSPB __AXStudio;
+/* Handed to the DSP by address, so it starts on a cache line: retail leaves 24 bytes free in
+ * front of it. */
+static AXSPB __AXStudio __attribute__((aligned(32)));
 
 static s32 __AXDpopL;
 static s32 __AXDpopR;
