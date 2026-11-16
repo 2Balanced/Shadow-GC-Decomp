@@ -1,0 +1,296 @@
+/* pow(x, y) = 2^(y * log2(x)). log2(x) is computed to about 85 bits as a sum of two doubles,
+ * multiplied by y in two parts, and the result split into an integer n and a fraction whose
+ * exponential is evaluated by a rational approximation; 2^n is applied at the end. The special
+ * cases of C99 (zeros, infinities, NaNs, negative bases) are answered first. */
+
+#include "fdlibm.h"
+
+static const double bp[] = {
+    1.0,
+    1.5,
+};
+static const double dp_h[] = {
+    0.0,
+    5.84962487220764160156e-01,
+};
+static const double dp_l[] = {
+    0.0,
+    1.35003920212974897128e-08,
+};
+static const double zero = 0.0;
+static const double one = 1.0;
+static const double two = 2.0;
+static const double two53 = 9007199254740992.0;
+static const double huge = 1.0e300;
+static const double tiny = 1.0e-300;
+/* log(1 + s) polynomial */
+static const double L1 = 5.99999999999994648725e-01;
+static const double L2 = 4.28571428578550184252e-01;
+static const double L3 = 3.33333329818377432918e-01;
+static const double L4 = 2.72728123808534006489e-01;
+static const double L5 = 2.30660745775561754067e-01;
+static const double L6 = 2.06975017800338417784e-01;
+/* exponential rational approximation */
+static const double P1 = 1.66666666666666019037e-01;
+static const double P2 = -2.77777777770155933842e-03;
+static const double P3 = 6.61375632143793436117e-05;
+static const double P4 = -1.65339022054652515390e-06;
+static const double P5 = 4.13813679705723846039e-08;
+static const double lg2 = 6.93147180559945286227e-01;
+static const double lg2_h = 6.93147182464599609375e-01;
+static const double lg2_l = -1.90465429995776804525e-09;
+static const double ovt = 8.0085662595372944372e-17; /* -(1024 - log2(overflow + 0.5 ulp)) */
+static const double cp = 9.61796693925975554329e-01; /* 2 / (3 ln 2) */
+static const double cp_h = 9.61796700954437255859e-01;
+static const double cp_l = -7.02846165095275826516e-09;
+static const double ivln2 = 1.44269504088896338700e+00; /* 1 / ln 2 */
+static const double ivln2_h = 1.44269502162933349609e+00;
+static const double ivln2_l = 1.92596299112661746302e-08;
+
+double __ieee754_pow(double x, double y) {
+    double z, ax, z_h, z_l, p_h, p_l;
+    double y1, t1, t2, r, s, t, u, v, w;
+    int i, j, k, yisint, n;
+    int hx, hy, ix, iy;
+    unsigned int lx, ly;
+
+    hx = __HI(x);
+    lx = __LO(x);
+    hy = __HI(y);
+    ly = __LO(y);
+    ix = hx & 0x7FFFFFFF;
+    iy = hy & 0x7FFFFFFF;
+
+    /* x^0 = 1, even for a NaN x */
+    if ((iy | ly) == 0) {
+        return one;
+    }
+
+    /* a NaN operand */
+    if (ix > 0x7FF00000 || ((ix == 0x7FF00000) && (lx != 0)) || iy > 0x7FF00000 ||
+        ((iy == 0x7FF00000) && (ly != 0))) {
+        return x + y;
+    }
+
+    /* For a negative x, classify y: 0 not an integer, 1 an odd integer, 2 an even integer. */
+    yisint = 0;
+    if (hx < 0) {
+        if (iy >= 0x43400000) {
+            yisint = 2; /* every double this large is an even integer */
+        } else if (iy >= 0x3FF00000) {
+            k = (iy >> 20) - 0x3FF;
+            if (k > 20) {
+                j = ly >> (52 - k);
+                if ((j << (52 - k)) == ly) {
+                    yisint = 2 - (j & 1);
+                }
+            } else if (ly == 0) {
+                j = iy >> (20 - k);
+                if ((j << (20 - k)) == iy) {
+                    yisint = 2 - (j & 1);
+                }
+            }
+        }
+    }
+
+    /* special values of y */
+    if (ly == 0) {
+        if (iy == 0x7FF00000) { /* y is infinite */
+            if (((ix - 0x3FF00000) | lx) == 0) {
+                return y - y; /* (+-1)^inf is a NaN */
+            } else if (ix >= 0x3FF00000) {
+                return (hy >= 0) ? y : zero;
+            } else {
+                return (hy < 0) ? -y : zero;
+            }
+        }
+        if (iy == 0x3FF00000) { /* y is +-1 */
+            if (hy < 0) {
+                return one / x;
+            } else {
+                return x;
+            }
+        }
+        if (hy == 0x40000000) {
+            return x * x;
+        }
+        if (hy == 0x3FE00000) {
+            if (hx >= 0) {
+                return sqrt(x);
+            }
+        }
+    }
+
+    ax = fabs(x);
+
+    /* special values of x */
+    if (lx == 0) {
+        if (ix == 0x7FF00000 || ix == 0 || ix == 0x3FF00000) {
+            z = ax;
+            if (hy < 0) {
+                z = one / z;
+            }
+            if (hx < 0) {
+                if (((ix - 0x3FF00000) | yisint) == 0) {
+                    z = (z - z) / (z - z); /* (-1)^non-integer is a NaN */
+                } else if (yisint == 1) {
+                    z = -z;
+                }
+            }
+            return z;
+        }
+    }
+
+    /* (negative)^(non-integer) is a NaN */
+    if ((((hx >> 31) + 1) | yisint) == 0) {
+        errno = EDOM;
+        return NAN;
+    }
+
+    if (iy > 0x41E00000) { /* |y| > 2^31 */
+        if (iy > 0x43F00000) { /* |y| > 2^64: must over- or underflow */
+            if (ix <= 0x3FEFFFFF) {
+                return (hy < 0) ? huge * huge : tiny * tiny;
+            }
+            if (ix >= 0x3FF00000) {
+                return (hy > 0) ? huge * huge : tiny * tiny;
+            }
+        }
+        /* over- or underflow unless x is very close to 1 */
+        if (ix < 0x3FEFFFFF) {
+            return (hy < 0) ? huge * huge : tiny * tiny;
+        }
+        if (ix > 0x3FF00000) {
+            return (hy > 0) ? huge * huge : tiny * tiny;
+        }
+        /* |1 - x| is tiny: log(x) from the series x - x^2/2 + x^3/3 - x^4/4 */
+        t = x - 1;
+        w = (t * t) * (0.5 - t * (0.3333333333333333333333 - t * 0.25));
+        u = ivln2_h * t;
+        v = t * ivln2_l - w * ivln2;
+        t1 = u + v;
+        __LO(t1) = 0;
+        t2 = v - (t1 - u);
+    } else {
+        double s2, s_h, s_l, t_h, t_l;
+
+        n = 0;
+        if (ix < 0x00100000) { /* subnormal x */
+            ax *= two53;
+            n -= 53;
+            ix = __HI(ax);
+        }
+        n += ((ix) >> 20) - 0x3FF;
+        j = ix & 0x000FFFFF;
+        /* choose the interval: x in [1, sqrt(3/2)), [sqrt(3/2), sqrt(3)) or beyond */
+        ix = j | 0x3FF00000;
+        if (j <= 0x3988E) {
+            k = 0;
+        } else if (j < 0xBB67A) {
+            k = 1;
+        } else {
+            k = 0;
+            n += 1;
+            ix -= 0x00100000;
+        }
+        __HI(ax) = ix;
+
+        /* s = (x - bp) / (x + bp), in a high and a low part */
+        u = ax - bp[k];
+        v = one / (ax + bp[k]);
+        s = u * v;
+        s_h = s;
+        __LO(s_h) = 0;
+        t_h = zero;
+        __HI(t_h) = ((ix >> 1) | 0x20000000) + 0x00080000 + (k << 18);
+        t_l = ax - (t_h - bp[k]);
+        s_l = v * ((u - s_h * t_h) - s_h * t_l);
+        /* log(ax) */
+        s2 = s * s;
+        r = s2 * s2 * (L1 + s2 * (L2 + s2 * (L3 + s2 * (L4 + s2 * (L5 + s2 * L6)))));
+        r += s_l * (s_h + s);
+        s2 = s_h * s_h;
+        t_h = 3.0 + s2 + r;
+        __LO(t_h) = 0;
+        t_l = r - ((t_h - 3.0) - s2);
+        u = s_h * t_h;
+        v = s_l * t_h + t_l * s;
+        /* 2 / (3 ln 2) * (s + ...) */
+        p_h = u + v;
+        __LO(p_h) = 0;
+        p_l = v - (p_h - u);
+        z_h = cp_h * p_h;
+        z_l = cp_l * p_h + p_l * cp + dp_l[k];
+        /* log2(ax) = (s + ...) * cp + dp + n */
+        t = (double)n;
+        t1 = (((z_h + z_l) + dp_h[k]) + t);
+        __LO(t1) = 0;
+        t2 = z_l - (((t1 - t) - dp_h[k]) - z_h);
+    }
+
+    /* the sign of the result: negative for (negative)^(odd integer) */
+    s = one;
+    if ((((hx >> 31) + 1) | (yisint - 1)) == 0) {
+        s = -one;
+    }
+
+    /* y * log2(x), with y split so the products are exact */
+    y1 = y;
+    __LO(y1) = 0;
+    p_l = (y - y1) * t1 + y * t2;
+    p_h = y1 * t1;
+    z = p_l + p_h;
+    j = __HI(z);
+    i = __LO(z);
+    if (j >= 0x40900000) { /* z >= 1024 */
+        if (((j - 0x40900000) | i) != 0) {
+            return s * huge * huge; /* overflow */
+        } else {
+            if (p_l + ovt > z - p_h) {
+                return s * huge * huge;
+            }
+        }
+    } else if ((j & 0x7FFFFFFF) >= 0x4090CC00) { /* z <= -1075 */
+        if (((j - 0xC090CC00) | i) != 0) {
+            return s * tiny * tiny; /* underflow */
+        } else {
+            if (p_l <= z - p_h) {
+                return s * tiny * tiny;
+            }
+        }
+    }
+
+    /* 2^(p_h + p_l): split off the integer part n */
+    i = j & 0x7FFFFFFF;
+    k = (i >> 20) - 0x3FF;
+    n = 0;
+    if (i > 0x3FE00000) { /* |z| > 0.5: round to the nearest integer */
+        n = j + (0x00100000 >> (k + 1));
+        k = ((n & 0x7FFFFFFF) >> 20) - 0x3FF;
+        t = zero;
+        __HI(t) = (n & ~(0x000FFFFF >> k));
+        n = ((n & 0x000FFFFF) | 0x00100000) >> (20 - k);
+        if (j < 0) {
+            n = -n;
+        }
+        p_h -= t;
+    }
+    t = p_l + p_h;
+    __LO(t) = 0;
+    u = t * lg2_h;
+    v = (p_l - (t - p_h)) * lg2 + t * lg2_l;
+    z = u + v;
+    w = v - (z - u);
+    t = z * z;
+    t1 = z - t * (P1 + t * (P2 + t * (P3 + t * (P4 + t * P5))));
+    r = (z * t1) / (t1 - two) - (w + z * w);
+    z = one - (r - z);
+    j = __HI(z);
+    j += (n << 20);
+    if ((j >> 20) <= 0) {
+        z = ldexp(z, n); /* subnormal result */
+    } else {
+        __HI(z) += (n << 20);
+    }
+    return s * z;
+}

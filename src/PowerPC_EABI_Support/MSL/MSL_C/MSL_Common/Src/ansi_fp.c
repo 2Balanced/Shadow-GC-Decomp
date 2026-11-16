@@ -6,10 +6,6 @@
 #include "msl_ansi_fp.h"
 
 /* Math functions outside this library's lower half, still under their placeholder symbols. */
-#define frexp fn_803B1760
-#define ldexp fn_803B17EC
-#define modf fn_803B19B0
-#define copysign fn_803B151C
 
 double frexp(double x, int *exp);
 double ldexp(double x, int exp);
@@ -18,8 +14,6 @@ double copysign(double x, double y);
 double pow(double x, double y);
 
 /* Floating-point limits (float.c), read through integer views of their bit patterns. */
-#define __float_huge lbl_805EDCCC
-#define __double_max lbl_805EDCD0
 
 extern long __float_huge[];
 extern long __double_max[];

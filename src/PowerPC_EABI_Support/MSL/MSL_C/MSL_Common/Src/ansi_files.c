@@ -6,7 +6,6 @@
 
 /* The console's transfer functions, outside this library's lower half. */
 #define __read_console fn_8039F60C
-#define __write_console fn_803AE558
 #define __close_console fn_8039F4CC
 
 int __read_console(__file_handle file, unsigned char *buff, size_t *count, __ref_con ref_con);
