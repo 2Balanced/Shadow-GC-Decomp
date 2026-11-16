@@ -430,6 +430,12 @@ config.libs = [
         ],
     ),
     DolphinLib(
+        "pad",
+        [
+            Object(Matching, "dolphin/pad/Pad.c"),
+        ],
+    ),
+    DolphinLib(
         "base",
         [
             Object(Matching, "dolphin/base/PPCArch.c"),
