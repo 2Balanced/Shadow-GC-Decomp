@@ -6976,6 +6976,18 @@ Runtime.PPCEABI.H/__init_cpp_exceptions.cpp:
 	.dtors      start:0x804AA084 end:0x804AA088 rename:.dtors$15
 	.sdata      start:0x805EDCA0 end:0x805EDCA8
 
+dolphin/si/SIBios.c:
+	.text       start:0x803B49F8 end:0x803B60E8
+	.data       start:0x80568888 end:0x805689A0
+	.bss        start:0x805A5650 end:0x805A5850
+	.sdata      start:0x805EDD08 end:0x805EDD10
+	.sbss       start:0x805F1340 end:0x805F1350
+
+dolphin/si/SISamplingRate.c:
+	.text       start:0x803B60E8 end:0x803B61F0
+	.data       start:0x805689A0 end:0x80568A38
+	.sbss       start:0x805F1350 end:0x805F1358
+
 Game/SonicteamHeap.cpp:
 	extab       start:0x8000574C end:0x8000577C
 	extabindex  start:0x80007628 end:0x80007670

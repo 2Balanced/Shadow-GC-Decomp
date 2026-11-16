@@ -440,6 +440,13 @@ config.libs = [
         ],
     ),
     DolphinLib(
+        "si",
+        [
+            Object(Matching, "dolphin/si/SIBios.c"),
+            Object(Matching, "dolphin/si/SISamplingRate.c"),
+        ],
+    ),
+    DolphinLib(
         "card",
         [
             Object(Matching, "dolphin/card/CARDRdwr.c"),

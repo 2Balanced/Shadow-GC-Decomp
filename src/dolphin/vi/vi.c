@@ -112,8 +112,7 @@ void fn_8037847C(OSThreadQueue *queue);
 #define OSSleepThread fn_8037847C
 void fn_80378568(OSThreadQueue *queue);
 #define OSWakeupThread fn_80378568
-void fn_803B61CC(void);
-#define SIRefreshSamplingRate fn_803B61CC
+void SIRefreshSamplingRate(void);
 
 #define VI_BITMASK(index) (1ull << (63 - (index)))
 #define CLAMP(x, l, h) (((x) > (h)) ? (h) : (((x) < (l)) ? (l) : (x)))

@@ -3,8 +3,7 @@
  * chained SI callbacks; PADRead turns the polled response words into PADStatus through the
  * MakeStatus routine of the selected controller spec, relative to the stored origin.
  *
- * Channel sets are bit masks with channel 0 in the top bit. The SI functions keep dtk's names
- * (nothing in the binary names them); the macros below give them the public SDK names. */
+ * Channel sets are bit masks with channel 0 in the top bit. */
 #include <dolphin/os.h>
 
 /* Only the functions marked inline are inlined here: PADInit, PADRead and the reset function
@@ -56,30 +55,18 @@ typedef void (*__OSInterruptHandler)(s16 interrupt, OSContext *context);
 u32 SIGetType(s32 chan);
 BOOL SITransfer(s32 chan, void *output, u32 outputBytes, void *input, u32 inputBytes,
                 SICallback callback, OSTime delay);
-BOOL fn_803B49F8(void);
-#define SIBusy fn_803B49F8
-BOOL fn_803B4A18(s32 chan);
-#define SIIsChanBusy fn_803B4A18
-BOOL fn_803B512C(__OSInterruptHandler handler);
-#define SIRegisterPollingHandler fn_803B512C
-BOOL fn_803B51F8(__OSInterruptHandler handler);
-#define SIUnregisterPollingHandler fn_803B51F8
-u32 fn_803B55AC(s32 chan);
-#define SIGetStatus fn_803B55AC
-void fn_803B5628(s32 chan, u32 command);
-#define SISetCommand fn_803B5628
-void fn_803B563C(void);
-#define SITransferCommands fn_803B563C
-u32 fn_803B56B8(u32 poll);
-#define SIEnablePolling fn_803B56B8
-u32 fn_803B5754(u32 poll);
-#define SIDisablePolling fn_803B5754
-BOOL fn_803B5894(s32 chan, void *data);
-#define SIGetResponse fn_803B5894
-u32 fn_803B5FAC(s32 chan, SITypeAndStatusCallback callback);
-#define SIGetTypeAsync fn_803B5FAC
-void fn_803B61CC(void);
-#define SIRefreshSamplingRate fn_803B61CC
+BOOL SIBusy(void);
+BOOL SIIsChanBusy(s32 chan);
+BOOL SIRegisterPollingHandler(__OSInterruptHandler handler);
+BOOL SIUnregisterPollingHandler(__OSInterruptHandler handler);
+u32 SIGetStatus(s32 chan);
+void SISetCommand(s32 chan, u32 command);
+void SITransferCommands(void);
+u32 SIEnablePolling(u32 poll);
+u32 SIDisablePolling(u32 poll);
+BOOL SIGetResponse(s32 chan, void *data);
+u32 SIGetTypeAsync(s32 chan, SITypeAndStatusCallback callback);
+void SIRefreshSamplingRate(void);
 
 void OSRegisterVersion(const char *id);
 void OSSetWirelessID(s32 chan, u16 id);
@@ -88,7 +75,7 @@ void *memset(void *dest, int c, u32 n);
 /* Low memory: wireless pad fix mode and a game-code dependent flag byte. */
 u16 __OSWirelessPadFixMode : 0x800030E0;
 u8 __gUnknown800030E3 : 0x800030E3;
-extern u32 lbl_805F1348; /* set by another library when the pad fix is wanted */
+extern u32 __PADFixBits; /* SI: channels whose wireless receiver ID is to be fixed */
 
 static void fn_8037F7B4(s32 chan, u32 error, OSContext *context);
 static void fn_8037F878(s32 chan, u32 error, OSContext *context);
@@ -389,7 +376,7 @@ BOOL fn_803800AC(void) {
     }
     Initialized = TRUE;
 
-    if (lbl_805F1348 != 0) {
+    if (__PADFixBits != 0) {
         OSTime time = OSGetTime();
 
         __OSWirelessPadFixMode = (u16)((((time) & 0xFFFF) + ((time >> 16) & 0xFFFF) +
