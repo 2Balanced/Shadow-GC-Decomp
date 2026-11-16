@@ -8,10 +8,12 @@
  * Several tree walkers (fn_8041966C, fn_8041AF1C, fn_8041C5A8, fn_8041CC18 to fn_8041D448) are
  * recursive functions that retail inlines into themselves one level deep; they are written here as
  * the function plus an inline copy of its body that calls the function.
- * Open: the Euler-angle channels (fn_8041DBD4, fn_8041E480, fn_8041FB4C, ...) convert float to int
- * and back through one shared stack slot, which GC/2.7 never does (docs/research-notes.md);
- * fn_80420590 keeps its loads after the stores into its local matrix in retail while GC/2.7 hoists
- * them; most of the other functions differ only in register numbers or in a few scheduled rows. */
+ * Open (30 of 100 functions): fn_80420590 keeps its loads after the stores into its local matrix
+ * in retail while GC/2.7 hoists them; the blended channels (fn_8041D580 to fn_8041F290) index
+ * their per-layer entries as (index * 2 + 1) * 4 from a separate base where GC/2.7 folds the
+ * offset; the rest differ in register numbers or a few scheduled rows. Levers that matched
+ * functions here: a local entry pointer advanced with "+=" (keeps the array base apart), the
+ * matrix taken before the angle in ROT, word copies of the frame record, declaration order. */
 #include <dolphin/types.h>
 #include <cmath>
 #include <string.h>
@@ -604,23 +606,20 @@ inline MotionModel *FindFrame(MotionModel *model, u32 key) {
 }
 
 /* Rotates the top of the matrix stack by angles in 1/65536 of a turn, Z first. */
-#define ROTATE_ZYX(x, y, z)                                                                        \
-    if (z) {                                                                                       \
-        fn_8040B80C(TopMatrix(), 6.2831855f * (u16)(z) / 65536.0f);                                \
-    }                                                                                              \
-    if (y) {                                                                                       \
-        fn_8040B848(TopMatrix(), 6.2831855f * (u16)(y) / 65536.0f);                                \
-    }                                                                                              \
-    if (x) {                                                                                       \
-        fn_8040B884(TopMatrix(), 6.2831855f * (u16)(x) / 65536.0f);                                \
+/* One rotation of ROTATE_ZYX; the matrix is taken before the angle is converted. */
+#define ROT(FN, v)                                                                                 \
+    {                                                                                              \
+        Mtx34f *m = TopMatrix();                                                                   \
+        FN(m, 6.2831855f * (s32)(u16)(v) / 65536.0f);                                              \
     }
+#define ROTATE_ZYX(x, y, z)                                                                            if (z) {                                                                                               ROT(fn_8040B80C, z);                                                                           }                                                                                                  if (y) {                                                                                               ROT(fn_8040B848, y);                                                                           }                                                                                                  if (x) {                                                                                               ROT(fn_8040B884, x);                                                                           }
 
 // DEFINITIONS
 /* Blends the rotations of two matrices through quaternions. */
 extern "C" void fn_8042062C(Mtx34f *out, const Mtx34f *from, const Mtx34f *to, float t) {
-    Quatf a;
-    Quatf b;
     Quatf blended;
+    Quatf b;
+    Quatf a;
 
     fn_804208EC(&a, from);
     fn_804208EC(&b, to);
@@ -784,8 +783,8 @@ extern "C" void fn_80420158(void *data) {
 /* Second update of a mirrored rotation source: swaps the rotations of the two sides, mirrored. */
 extern "C" void fn_8041FF0C(void *data) {
     MotionRootMotion *motion = (MotionRootMotion *)data;
-    MotionBody *mirror = (MotionBody *)motion->m_link[0];
     MotionBody *body = motion->m_body;
+    MotionBody *mirror = (MotionBody *)motion->m_link[0];
     MotionSource *otherSource = (MotionSource *)motion->m_link[1];
     Vec3f *other;
     Vec3f swap;
@@ -873,26 +872,38 @@ extern "C" void fn_8041FD0C(void *data) {
 /* Translation channel of a single layer. */
 extern "C" void fn_8041FCC0(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
+    MotionChannelLayer *entry = args->m_entries;
+    Mtx34f *top = TopMatrix();
 
-    fn_8040B59C(TopMatrix(), (Vec3f *)args->m_entries[args->m_list->m_order[0]].m_data);
+    entry += args->m_list->m_order[0];
+    fn_8040B59C(top, (Vec3f *)entry->m_data);
 }
 
 /* Rotation channel (Euler angles) of a single layer. */
 extern "C" void fn_8041FB4C(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    Vec3f *angles = (Vec3f *)args->m_entries[args->m_list->m_order[0]].m_data;
-    int x = 65536.0f * angles->x / 6.2831855f;
-    int y = 65536.0f * angles->y / 6.2831855f;
-    int z = 65536.0f * angles->z / 6.2831855f;
+    MotionChannelLayer *entry = args->m_entries;
+    Vec3f *angles;
+    int x;
+    int y;
+    int z;
 
+    entry += args->m_list->m_order[0];
+    angles = (Vec3f *)entry->m_data;
+    x = 65536.0f * angles->x / 6.2831855f;
+    y = 65536.0f * angles->y / 6.2831855f;
+    z = 65536.0f * angles->z / 6.2831855f;
     ROTATE_ZYX(x, y, z);
 }
 
 /* Scale channel of a single layer. */
 extern "C" void fn_8041FAD8(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
-    Vec3f *scale = (Vec3f *)args->m_entries[args->m_list->m_order[0]].m_data;
+    MotionChannelLayer *entry = args->m_entries;
+    Vec3f *scale;
 
+    entry += args->m_list->m_order[0];
+    scale = (Vec3f *)entry->m_data;
     if (1.0f != scale->x || 1.0f != scale->y || 1.0f != scale->z) {
         fn_8040B790(TopMatrix(), scale);
     }
@@ -919,13 +930,14 @@ extern "C" void fn_8041F7D0(void *data) {
     int x = 65536.0f * angles->x / 6.2831855f;
     int y = 65536.0f * angles->y / 6.2831855f;
     int z = 65536.0f * angles->z / 6.2831855f;
+    Mtx34f *saved;
     int i;
 
     fn_8040C204(lbl_805F13A8);
     for (i = 0; i < 5; i++) {
-        fn_8040C148(fn_80411700(lbl_805F13A8), &lbl_805E12E0[i]);
+        fn_8040C148(fn_80411700(lbl_805F13A8), saved = &lbl_805E12E0[i]);
         ROTATE_ZYX(x, y, z);
-        fn_8040C148(&lbl_805E12E0[i], fn_80411700(lbl_805F13A8));
+        fn_8040C148(saved, fn_80411700(lbl_805F13A8));
     }
     fn_8040C244(lbl_805F13A8);
     ROTATE_ZYX(x, y, z);
@@ -1943,16 +1955,18 @@ extern "C" void fn_8041CD6C(MotionModel *model, int index) {
 
 /* Resets the weight scale of a layer in a model frame and all the frames below and after it. */
 extern "C" void fn_8041CC18(MotionModel *model, int index) {
-    MotionWeightScale *scale = &model->m_weightScales[index];
+    MotionModel *child = model->m_child;
+    MotionWeightScale *scale;
 
-    scale->m_enabled = 0;
+    model->m_weightScales[index].m_enabled = 0;
+    scale = &model->m_weightScales[index];
     scale->m_pending = 0;
     scale->m_scale = 1.0f;
     scale->m_offset = 0.0f;
     scale->m_newScale = 1.0f;
     scale->m_newOffset = 0.0f;
-    if (model->m_child) {
-        ResetWeightScale(model->m_child, index);
+    if (child) {
+        ResetWeightScale(child, index);
     }
     if (model->m_next) {
         ResetWeightScale(model->m_next, index);
@@ -1962,14 +1976,13 @@ extern "C" void fn_8041CC18(MotionModel *model, int index) {
 /* Adds up the source and channel storage and the nodes a body tree needs for layers layers. */
 extern "C" void fn_8041CA78(u32 *sourceSize, u32 *channelSize, s32 *nodeCount, int layers,
                             MotionBody *body) {
-    u32 sources = 0;
     u32 channels;
+    u32 sources = 0;
 
+    channels = 0x3C;
     if (body->m_flags & 0x400) {
         channels = (layers * 2 + 2) * 4 + 0x3C;
         sources = 0xE0;
-    } else {
-        channels = 0x3C;
     }
     channels += 8;
     if (body->m_flags & 7) {
@@ -2020,11 +2033,13 @@ extern "C" void fn_8041CA78(u32 *sourceSize, u32 *channelSize, s32 *nodeCount, i
 /* Links the sources of a body tree into a list and sets their update functions. */
 extern "C" void fn_8041C854(MotionSource **cursor, MotionSource **last, MotionBody *body) {
     MotionSource *next;
+    MotionSource *source;
 
     if (body->m_flags & 0x400) {
         (*cursor)->m_update = fn_80420308;
-        (*cursor)->m_next = 0;
-        next = (MotionSource *)((u8 *)*cursor + 0xE0);
+        source = *cursor;
+        source->m_next = 0;
+        next = (MotionSource *)((u8 *)source + 0xE0);
         if (*last) {
             (*last)->m_next = *cursor;
         }
@@ -2035,8 +2050,9 @@ extern "C" void fn_8041C854(MotionSource **cursor, MotionSource **last, MotionBo
         (*cursor)->m_update = fn_804204C8;
         (*cursor)->m_update2 = fn_804202B8;
         (*cursor)->m_next = 0;
-        (*cursor)->m_rootMotion.m_link[0] = body;
-        next = (MotionSource *)((u8 *)*cursor + 0xF0);
+        source = *cursor;
+        source->m_rootMotion.m_link[0] = body;
+        next = (MotionSource *)((u8 *)source + 0xF0);
         if (*last) {
             (*last)->m_next = *cursor;
         }
@@ -2047,8 +2063,9 @@ extern "C" void fn_8041C854(MotionSource **cursor, MotionSource **last, MotionBo
         (*cursor)->m_update = fn_80420438;
         (*cursor)->m_update2 = fn_8041FF08;
         (*cursor)->m_next = 0;
-        (*cursor)->m_rootMotion.m_body = body;
-        next = (MotionSource *)((u8 *)*cursor + 0xF0);
+        source = *cursor;
+        source->m_rootMotion.m_body = body;
+        next = (MotionSource *)((u8 *)source + 0xF0);
         if (*last) {
             (*last)->m_next = *cursor;
         }
@@ -2058,8 +2075,9 @@ extern "C" void fn_8041C854(MotionSource **cursor, MotionSource **last, MotionBo
         (*cursor)->m_update = fn_8042043C;
         (*cursor)->m_update2 = fn_80420158;
         (*cursor)->m_next = 0;
-        (*cursor)->m_rootMotion.m_body = body;
-        next = (MotionSource *)((u8 *)*cursor + 0xF0);
+        source = *cursor;
+        source->m_rootMotion.m_body = body;
+        next = (MotionSource *)((u8 *)source + 0xF0);
         if (*last) {
             (*last)->m_next = *cursor;
         }
@@ -2449,8 +2467,9 @@ extern "C" MotionPlayWork *fn_8041B908(u32 key, int layers) {
         fn_803A953C("Cannot find bone data.\n");
         return 0;
     }
-    if (data->m_type != 0xFF) {
+    if ((int)data->m_type != 0xFF) {
         fn_803A953C("Illegal bonetype.\n");
+
         return 0;
     }
     return fn_8041B980(data, layers);
@@ -2484,9 +2503,12 @@ extern "C" void fn_8041B6FC(MotionModel *model, int index) {
     u8 *entry;
     HalfKeyTrack *tracks;
     Vec3f *scale;
+    MotionChannelLayer *slot;
 
     if (model->field_0x0 & 0x400) {
-        entry = channel->m_layers[index].m_data;
+        slot = channel->m_layers;
+        slot += index;
+        entry = slot->m_data;
         scale = (Vec3f *)entry;
         tracks = (HalfKeyTrack *)(entry + 0x10);
         scale->x = scale->y = scale->z = 1.0f;
@@ -2496,7 +2518,9 @@ extern "C" void fn_8041B6FC(MotionModel *model, int index) {
         channel = channel->m_next;
     }
     if (model->field_0x0 & 7) {
-        entry = channel->m_layers[index].m_data;
+        slot = channel->m_layers;
+        slot += index;
+        entry = slot->m_data;
         memcpy(entry, &model->m_header->m_position, sizeof(Vec3f));
         tracks = (HalfKeyTrack *)(entry + 0x20);
         fn_80413E10(&tracks[0]);
@@ -2505,7 +2529,9 @@ extern "C" void fn_8041B6FC(MotionModel *model, int index) {
     }
     channel = channel->m_next;
     if (!(model->field_0x0 & 0x40) && (model->field_0x0 & 0x38)) {
-        entry = channel->m_layers[index].m_data;
+        slot = channel->m_layers;
+        slot += index;
+        entry = slot->m_data;
         memcpy(entry, &model->m_header->m_rotation, 0x10);
         tracks = (HalfKeyTrack *)(entry + 0x20);
         fn_80413E10(&tracks[0]);
@@ -2514,7 +2540,9 @@ extern "C" void fn_8041B6FC(MotionModel *model, int index) {
     }
     channel = channel->m_next;
     if (model->field_0x0 & 0x380) {
-        entry = channel->m_layers[index].m_data;
+        slot = channel->m_layers;
+        slot += index;
+        entry = slot->m_data;
         memcpy(entry, &model->m_header->m_scale, sizeof(Vec3f));
         tracks = (HalfKeyTrack *)(entry + 0x10);
         fn_80413E10(&tracks[0]);
@@ -2532,6 +2560,7 @@ extern "C" void fn_8041B6FC(MotionModel *model, int index) {
 /* Starts the key tracks of a layer in the channels of the model frames a motion body animates. */
 extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u16 motion,
                             float ratio) {
+    MotionChannelLayer *slot;
     MotionModel *frame = fn_8041D448(work->m_model, body->m_key);
     MotionCallback *channel = 0;
     u8 *entry;
@@ -2542,7 +2571,9 @@ extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u
     }
     if (body->m_flags & 0x400) {
         if (frame && (frame->field_0x0 & 0x400)) {
-            entry = channel->m_layers[index].m_data;
+            slot = channel->m_layers;
+            slot += index;
+            entry = slot->m_data;
             tracks = (HalfKeyTrack *)(entry + 0x10);
             memcpy(entry, &frame->m_header->m_scale, sizeof(Vec3f));
             fn_80413E38(&tracks[0], fn_804124DC(motion));
@@ -2559,7 +2590,9 @@ extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u
     }
     if (body->m_flags & 7) {
         if (frame && (frame->field_0x0 & 7)) {
-            entry = channel->m_layers[index].m_data;
+            slot = channel->m_layers;
+            slot += index;
+            entry = slot->m_data;
             *(float *)(entry + 0x10) = ratio;
             tracks = (HalfKeyTrack *)(entry + 0x20);
             memcpy(entry, &frame->m_header->m_position, sizeof(Vec3f));
@@ -2595,7 +2628,9 @@ extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u
     }
     if (!(body->m_flags & 0x40) && (body->m_flags & 0x38)) {
         if (frame && (frame->field_0x0 & 0x38)) {
-            entry = channel->m_layers[index].m_data;
+            slot = channel->m_layers;
+            slot += index;
+            entry = slot->m_data;
             tracks = (HalfKeyTrack *)(entry + 0x20);
             memcpy(entry, &frame->m_header->m_rotation, 0x10);
             if (body->m_flags & 8) {
@@ -2630,7 +2665,9 @@ extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u
     }
     if (body->m_flags & 0x380) {
         if (frame && (frame->field_0x0 & 0x380)) {
-            entry = channel->m_layers[index].m_data;
+            slot = channel->m_layers;
+            slot += index;
+            entry = slot->m_data;
             tracks = (HalfKeyTrack *)(entry + 0x10);
             memcpy(entry, &frame->m_header->m_scale, sizeof(Vec3f));
             if (body->m_flags & 0x80) {
@@ -2671,11 +2708,13 @@ extern "C" void fn_8041B2BC(MotionPlayWork *work, MotionBody *body, int index, u
 /* Loads a motion into a layer. */
 extern "C" int fn_8041B170(MotionPlayWork *work, int index, u16 motion) {
     float ratio = -1.0f;
-    MotionFrames *frames = &work->m_layers[index].m_frames;
     u32 key;
     MotionData *data;
+    MotionBody *body;
+    MotionFrames *frames = &work->m_layers[index].m_frames;
 
     fn_8041B6FC(work->m_model, index);
+
     if (!fn_804125F4(frames, motion)) {
         work->m_layers[index].m_minFrame = 0.0f;
         work->m_layers[index].m_maxFrame = 1.0f;
@@ -2689,11 +2728,12 @@ extern "C" int fn_8041B170(MotionPlayWork *work, int index, u16 motion) {
     if (!data) {
         return 0;
     }
+    body = &data->m_body;
     if (key != work->m_skeleton->m_key && std::fabs(data->m_scale) > 0.0001f &&
         std::fabs(work->m_skeleton->m_scale) > 0.0001f) {
         ratio = work->m_skeleton->m_scale / data->m_scale;
     }
-    fn_8041B2BC(work, &data->m_body, index, motion, ratio);
+    fn_8041B2BC(work, body, index, motion, ratio);
     return 1;
 }
 
@@ -2701,24 +2741,33 @@ extern "C" int fn_8041B170(MotionPlayWork *work, int index, u16 motion) {
 extern "C" void fn_8041AFCC(MotionModel *model, int index) {
     MotionCallback *channel = model->m_callbacks;
     HalfKeyTrack *tracks;
+    MotionChannelLayer *entry;
 
     if (model->field_0x0 & 0x400) {
-        tracks = (HalfKeyTrack *)(channel->m_layers[index].m_data + 0x10);
+        entry = channel->m_layers;
+        entry += index;
+        tracks = (HalfKeyTrack *)(entry->m_data + 0x10);
         RESET_TRACKS(tracks);
         channel = channel->m_next;
     }
     if (model->field_0x0 & 7) {
-        tracks = (HalfKeyTrack *)(channel->m_layers[index].m_data + 0x20);
+        entry = channel->m_layers;
+        entry += index;
+        tracks = (HalfKeyTrack *)(entry->m_data + 0x20);
         RESET_TRACKS(tracks);
     }
     channel = channel->m_next;
     if (!(model->field_0x0 & 0x40) && (model->field_0x0 & 0x38)) {
-        tracks = (HalfKeyTrack *)(channel->m_layers[index].m_data + 0x20);
+        entry = channel->m_layers;
+        entry += index;
+        tracks = (HalfKeyTrack *)(entry->m_data + 0x20);
         RESET_TRACKS(tracks);
     }
     channel = channel->m_next;
     if (model->field_0x0 & 0x380) {
-        tracks = (HalfKeyTrack *)(channel->m_layers[index].m_data + 0x10);
+        entry = channel->m_layers;
+        entry += index;
+        tracks = (HalfKeyTrack *)(entry->m_data + 0x10);
         RESET_TRACKS(tracks);
     }
 }
@@ -2761,12 +2810,12 @@ extern "C" void fn_8041AED0(MotionPlayWork *work, int index) {
 extern "C" u32 fn_8041AD94(MotionFrames *frames, MotionFrames *request, float minFrame,
                            float maxFrame) {
     u32 result = 0;
-    float speed = request->m_speed;
+    float speed;
     float start;
     float end;
     float frame;
 
-    if (frames->m_speed * speed < 0.0001f) {
+    if (frames->m_speed * (speed = request->m_speed) < 0.0001f) {
         result |= 1;
     }
     frames->m_speed = speed;
@@ -2836,8 +2885,8 @@ extern "C" void fn_8041AB3C(MotionPlayWork *work, int index) {
     float minFrame;
     float maxFrame;
     float length;
-    MotionFrames frames;
     MotionFrames baseFrames;
+    MotionFrames frames;
 
     if (work->m_layerCount == 1) {
         return;
@@ -2920,13 +2969,13 @@ extern "C" void fn_8041AB3C(MotionPlayWork *work, int index) {
 /* Walks a model frame and its children and siblings, running their channels and storing their
  * matrices. */
 extern "C" void fn_8041A83C(MotionPlayWork *work, MotionModel *model) {
-    int scaled = 0;
     int root = 0;
     MotionCallback *channel = model->m_callbacks;
+    int scaled = 0;
     MotionBody *header = model->m_header;
-    int i;
     int index;
     MotionWeightScale *scale;
+    int i;
     Vec3f *scaleOut;
     Mtx34f rootMatrix;
     Mtx34f matrix;
@@ -2947,10 +2996,10 @@ extern "C" void fn_8041A83C(MotionPlayWork *work, MotionModel *model) {
         }
         scale = &model->m_weightScales[index];
         if (scale->m_enabled) {
+            float weight = model->m_layerWeights[index].m_weight2;
             saved[index] = lbl_805E14F0[index];
             scaled = 1;
-            lbl_805E14F0[index] =
-                model->m_layerWeights[index].m_weight2 * scale->m_scale + scale->m_offset;
+            lbl_805E14F0[index] = weight * scale->m_scale + scale->m_offset;
         }
     }
     if (model->m_output) {
@@ -2969,9 +3018,10 @@ extern "C" void fn_8041A83C(MotionPlayWork *work, MotionModel *model) {
             fn_8040C244(lbl_805F13A8);
             channel = channel->m_next;
         } else {
-            channel->m_target->m_scale.x = 1.0f;
-            channel->m_target->m_scale.y = 1.0f;
-            channel->m_target->m_scale.z = 1.0f;
+            scaleOut = &channel->m_target->m_scale;
+            scaleOut->x = 1.0f;
+            scaleOut->y = 1.0f;
+            scaleOut->z = 1.0f;
         }
         while (channel) {
             if (channel->m_function) {
@@ -3541,9 +3591,9 @@ extern "C" void fn_804194B8(MotionModel *model) {
 
 /* Applies the requests (new motion, frames) made to the layers of a play work. */
 extern "C" void fn_804192EC(MotionPlayWork *work) {
+    int i;
     int changed = 0;
     int blended = 0;
-    int i;
     int index;
     MotionLayer *layer;
     u32 result;
@@ -3859,6 +3909,10 @@ extern "C" void fn_80418A4C(MotionPlayWork *work) {
 }
 
 /* Advances the half-key tracks of the playing layers of a play work. */
+struct MotionFrameWords {
+    u32 w[4];
+};
+
 extern "C" void fn_804188A0(MotionPlayWork *work) {
     int i;
     int index;
@@ -3885,7 +3939,7 @@ extern "C" void fn_804188A0(MotionPlayWork *work) {
             lbl_805F13D8 = fn_80414438;
         }
         if (work->m_flags & 8) {
-            frames = layer->m_frames;
+            *(MotionFrameWords *)&frames = *(MotionFrameWords *)&layer->m_frames;
             frames.m_frame = (int)frames.m_frame;
             fn_8041575C((const float *)&frames);
         } else {
@@ -3911,11 +3965,11 @@ extern "C" void fn_804188A0(MotionPlayWork *work) {
 extern "C" void fn_804186A0(MotionPlayWork *work, MotionModel *model) {
     int scaled = 0;
     MotionCallback *callback = model->m_callbacks;
-    int i;
     int index;
     MotionWeightScale *scale;
-    MotionCallbackArgs args;
+    int i;
     float saved[4];
+    MotionCallbackArgs args;
 
     if (model->m_next) {
         fn_8040C204(lbl_805F13A8);
@@ -3927,10 +3981,10 @@ extern "C" void fn_804186A0(MotionPlayWork *work, MotionModel *model) {
         }
         scale = &model->m_weightScales[index];
         if (scale->m_enabled) {
+            float weight = model->m_layerWeights[index].m_weight2;
             saved[index] = lbl_805E14F0[index];
             scaled = 1;
-            lbl_805E14F0[index] =
-                model->m_layerWeights[index].m_weight2 * scale->m_scale + scale->m_offset;
+            lbl_805E14F0[index] = weight * scale->m_scale + scale->m_offset;
         }
     }
     while (callback) {
@@ -3940,9 +3994,9 @@ extern "C" void fn_804186A0(MotionPlayWork *work, MotionModel *model) {
         callback = callback->m_next;
     }
     if (model->m_callback) {
+        args.field_0x8 = model->m_header->m_key;
         args.m_matrix = TopMatrix();
         args.field_0x4 = model->field_0x20;
-        args.field_0x8 = model->m_header->m_key;
         model->m_callback(&args);
     }
     if (model->m_output) {
@@ -4495,7 +4549,7 @@ extern "C" int fn_80416F28(MotionPlayWork *work, int slot, int which, int op) {
     }
     switch (which) {
     case 11:
-        result = work->m_flags & 1;
+        result = (work->m_flags & 1) != 0;
         switch (op) {
         case 0:
             work->m_flags |= 1;
@@ -4999,11 +5053,11 @@ extern "C" int fn_804165D8(MotionPlayWork *work, int mode, int from, int to) {
 
 /* Stops the layer of a slot. */
 extern "C" int fn_80416198(MotionPlayWork *work, int slot) {
-    int type = 3;
     int index;
     MotionLayer *layer;
     u32 blended;
     int i;
+    int type = 3;
     int j;
     int pos;
     int n;
@@ -5022,15 +5076,18 @@ extern "C" int fn_80416198(MotionPlayWork *work, int slot) {
     } else if (layer->m_blend->m_flags & 1) {
         type = layer->m_blend->m_type;
     }
+    i = 0;
     pos = -1;
-    for (i = 0; i < work->m_layerCount * 2; i++) {
-        if (work->m_order[i] == -1) {
+    for (; i < work->m_layerCount * 2; i++) {
+        n = work->m_order[i];
+        if (n == -1) {
             break;
         }
-        if (work->m_order[i] == index) {
+        if (n == index) {
             pos = i;
         }
     }
+
     if (pos == -1) {
         return 0;
     }
@@ -5154,20 +5211,19 @@ extern "C" void fn_80416014(MotionPlayWork *work, int slot, float weight) {
     if (!layer) {
         return;
     }
-    if (layer->m_flags2 & 0x200) {
-        blend = layer->m_blend;
-        if (blend->m_mode == 1 || blend->m_mode == 2) {
-            blend->m_weight = weight;
-            if (layer->m_blend->m_weight < 0.0f) {
-                layer->m_blend->m_weight = 0.0f;
-            }
-            if (layer->m_blend->m_weight > 1.0f) {
-                layer->m_blend->m_weight = 1.0f;
-            }
+    if ((layer->m_flags2 & 0x200) &&
+        ((blend = layer->m_blend)->m_mode == 1 || blend->m_mode == 2)) {
+        blend->m_weight = weight;
+        if (layer->m_blend->m_weight < 0.0f) {
+            layer->m_blend->m_weight = 0.0f;
+        }
+        if (layer->m_blend->m_weight > 1.0f) {
+            layer->m_blend->m_weight = 1.0f;
         }
     } else {
         blend = layer->m_blend;
         if (blend->m_type == 1 || blend->m_type == 2) {
+
             blend->m_weight2 = weight;
             if (layer->m_blend->m_weight2 < 0.0f) {
                 layer->m_blend->m_weight2 = 0.0f;
@@ -5200,8 +5256,8 @@ extern "C" void fn_80415F98(MotionPlayWork *work, int slot, u32 key, float scale
 
 /* Updates a play work. */
 extern "C" void fn_80415EA4(MotionPlayWork *work) {
-    int i;
     MotionLayer *layer;
+    int i;
     int index;
 
     if (!work) {
@@ -5279,21 +5335,22 @@ extern "C" void fn_80415D40(MotionPlayWork *work, int slot, float *frames) {
 /* The motion of a slot if it is playing, else 0. */
 extern "C" u16 fn_80415CDC(MotionPlayWork *work, int slot) {
     MotionLayer *layer;
-
     if (!work) {
         return 0;
     }
     layer = GetPlayingLayer(work, slot);
-    if (!layer) {
+    if (layer == 0) {
         return 0;
+    } else {
+        return layer->m_motion;
     }
-    return layer->m_motion;
 }
+
 
 /* Moves a play work by offset. */
 extern "C" void fn_80415BDC(MotionPlayWork *work, const Vec3f *offset) {
-    MotionNode *node;
     int i;
+    MotionNode *node;
     MotionBody *header;
 
     if (work == 0 || offset == 0) {
@@ -5316,6 +5373,7 @@ extern "C" void fn_80415BDC(MotionPlayWork *work, const Vec3f *offset) {
         fn_80411548(&work->m_position, &work->m_position, offset);
     }
 }
+
 
 /* The same as fn_80415854 for the second kind of target. */
 extern "C" int fn_80415A18(MotionPlayWork *work, int slot, int target, void *arg, int count) {
