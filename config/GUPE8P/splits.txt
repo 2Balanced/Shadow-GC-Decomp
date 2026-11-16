@@ -6827,6 +6827,16 @@ dolphin/card/CARDBlock.c:
 dolphin/card/CARDDir.c:
 	.text       start:0x8038ED18 end:0x8038EF7C
 
+dolphin/card/CARDCheck.c:
+	.text       start:0x8038EF7C end:0x8038FEB8
+
+dolphin/card/CARDMount.c:
+	.text       start:0x8038FEB8 end:0x80390974
+	.data       start:0x805673E0 end:0x80567420
+
+dolphin/card/CARDFormat.c:
+	.text       start:0x80390974 end:0x80391158
+
 dolphin/card/CARDOpen.c:
 	.text       start:0x80391158 end:0x80391744
 

@@ -75,7 +75,7 @@ s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     dir = __CARDGetDirBlock(card);
     check = (CARDDirCheck *)&dir[CARD_MAX_FILE];
     ++check->checkCode;
-    fn_8038EF7C(dir, CARD_SYSTEM_BLOCK_SIZE - 4, &check->checkSum, &check->checkSumInv);
+    __CARDCheckSum(dir, CARD_SYSTEM_BLOCK_SIZE - 4, &check->checkSum, &check->checkSumInv);
     DCStoreRange(dir, CARD_SYSTEM_BLOCK_SIZE);
     card->eraseCallback = callback;
     return fn_8038CF20(

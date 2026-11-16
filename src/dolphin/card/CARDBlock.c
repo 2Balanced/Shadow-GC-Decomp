@@ -135,7 +135,7 @@ s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback) {
     CARDControl *card = &__CARDBlock[chan];
 
     ++fat[CARD_FAT_CHECKCODE];
-    fn_8038EF7C(&fat[CARD_FAT_CHECKCODE], CARD_SYSTEM_BLOCK_SIZE - 4, &fat[CARD_FAT_CHECKSUM],
+    __CARDCheckSum(&fat[CARD_FAT_CHECKCODE], CARD_SYSTEM_BLOCK_SIZE - 4, &fat[CARD_FAT_CHECKSUM],
                 &fat[CARD_FAT_CHECKSUMINV]);
     DCStoreRange(fat, CARD_SYSTEM_BLOCK_SIZE);
     card->eraseCallback = callback;

@@ -13,7 +13,7 @@
 
 extern "C" {
 /* CARDProbeEx (Dolphin SDK; the symbol is still a placeholder). */
-s32 fn_8038FF84(s32 chan, s32 *memSize, s32 *sectorSize);
+s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);
 /* The memory card controller (Game/MemoryCardCtrl.cpp): starting a search, whether a request is
  * running, the card's status, the last request's result, whether the card has room for the file
  * and the number of files the search found. */
@@ -48,7 +48,7 @@ bool Impl::Update() {
     }
     switch (m_state) {
     case 0:
-        m_probe = fn_8038FF84(0, 0, 0);
+        m_probe = CARDProbeEx(0, 0, 0);
         m_state = 1;
     case 1:
         switch (m_probe) {

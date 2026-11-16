@@ -4,6 +4,7 @@
 /* What the Dolphin SDK CARD library's own units share: the per-slot control block and the calls
  * between the units. Only the fields the decompiled units touch are named. */
 
+#include <dolphin/os.h>
 #include <dolphin/card.h>
 
 #ifdef __cplusplus
@@ -52,13 +53,30 @@ typedef struct CARDDiskID {
     u8 unk06[0x20 - 0x06];
 } CARDDiskID;
 
+/* The card's header block (the first 512 bytes of system block 0). */
+typedef struct CARDID {
+    u8 serial[32];   /* 0x000: flash ID mixed with the format time, then the time and settings */
+    u16 deviceID;    /* 0x020 */
+    u16 size;        /* 0x022 */
+    u16 encode;      /* 0x024: font encoding of the file comments */
+    u8 padding[470]; /* 0x026 */
+    u16 checkSum;    /* 0x1FC */
+    u16 checkSumInv; /* 0x1FE */
+} CARDID;
+
 typedef struct CARDControl {
     BOOL attached;              /* 0x00 */
-    u8 unk04[0x0A - 0x04];
+    s32 result;                 /* 0x04: of the last operation; BUSY while one runs */
+    u16 size;                   /* 0x08: megabits */
     u16 pageSize;               /* 0x0A */
     s32 sectorSize;             /* 0x0C */
     u16 cBlock;                 /* 0x10 */
-    u8 unk12[0x80 - 0x12];
+    u16 vendorID;               /* 0x12 */
+    s32 latency;                /* 0x14 */
+    u8 id[12];                  /* 0x18: flash ID */
+    s32 mountStep;              /* 0x24 */
+    s32 formatStep;             /* 0x28 */
+    u8 unk2C[0x80 - 0x2C];
     void *workArea;             /* 0x80 */
     CARDDir *currentDir;        /* 0x84 */
     u16 *currentFat;            /* 0x88 */
@@ -70,11 +88,15 @@ typedef struct CARDControl {
     u16 freeNo;                 /* 0xBC */
     u16 startBlock;             /* 0xBE */
     CARDFileInfo *fileInfo;     /* 0xC0: the file being created */
-    u8 unkC4[0xD0 - 0xC4];
+    CARDCallback extCallback;   /* 0xC4: card pulled out */
+    u8 unkC8[4];
+    CARDCallback exiCallback;   /* 0xCC */
     CARDCallback apiCallback;   /* 0xD0 */
     CARDCallback xferCallback;  /* 0xD4 */
     CARDCallback eraseCallback; /* 0xD8 */
-    u8 unkDC[0x10C - 0xDC];
+    CARDCallback unlockCallback; /* 0xDC: run once the EXI bus is ours */
+    OSAlarm alarm;              /* 0xE0 */
+    u32 cid;                    /* 0x108: the EXI device ID */
     struct CARDDiskID *diskID;  /* 0x10C: whose files this slot may touch */
 } CARDControl;
 
@@ -93,9 +115,11 @@ s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *fileNo);
 BOOL __CARDIsOpened(CARDControl *card, s32 fileNo);            /* is the file open? */
 s32 __CARDIsWritable(CARDControl *card, CARDDir *entry);          /* may this game write the file? */
 s32 __CARDIsReadable(CARDControl *card, CARDDir *entry);          /* may this game read the file? */
-void fn_8038EF7C(void *data, int length, u16 *checkSum, u16 *checkSumInv);
+u16 fn_8038D0DC(void);                                       /* the console's font encoding */
+void __CARDCheckSum(void *data, int length, u16 *checkSum, u16 *checkSumInv);
 
 BOOL __CARDCompareFileName(CARDDir *entry, const char *fileName);
+s32 __CARDVerify(CARDControl *card);
 s32 __CARDSeek(CARDFileInfo *fileInfo, s32 length, s32 offset, CARDControl **pcard);
 s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback);
 s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *src, CARDCallback callback);

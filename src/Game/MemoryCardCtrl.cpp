@@ -50,11 +50,11 @@ extern "C" {
 /* Dolphin SDK CARD functions (names from the SDK; the symbols are still placeholders). */
 s32 fn_8038D238(s32 chan);                                          /* CARDGetResultCode */
 s32 fn_8038D268(s32 chan, s32 *bytesNotUsed, s32 *filesNotUsed);    /* CARDFreeBlocks */
-s32 fn_8038FE90(s32 chan, CARDCallback callback);                   /* CARDCheckAsync */
-s32 fn_8038FF84(s32 chan, s32 *memSize, s32 *sectorSize);           /* CARDProbeEx */
-s32 fn_8039068C(s32 chan, void *workArea, CARDCallback detach, CARDCallback attach); /* CARDMountAsync */
-s32 fn_803908C8(s32 chan);                                          /* CARDUnmount */
-s32 fn_80391110(s32 chan, CARDCallback callback);                   /* CARDFormatAsync */
+s32 CARDCheckAsync(s32 chan, CARDCallback callback);                   /* CARDCheckAsync */
+s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);           /* CARDProbeEx */
+s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detach, CARDCallback attach); /* CARDMountAsync */
+s32 CARDUnmount(s32 chan);                                          /* CARDUnmount */
+s32 CARDFormatAsync(s32 chan, CARDCallback callback);                   /* CARDFormatAsync */
 s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo); /* CARDOpen */
 s32 CARDClose(CARDFileInfo *fileInfo);                            /* CARDClose */
 s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *fileInfo,
@@ -412,7 +412,7 @@ MemoryCard::MemoryCard(s32 channel) {
 
 MemoryCard::~MemoryCard() {
     if (m_flags & 1) {
-        fn_803908C8(m_channel);
+        CARDUnmount(m_channel);
     }
     if (m_flags & 2) {
         CARDClose(&m_work->m_fileInfo);
@@ -658,7 +658,7 @@ void MemoryCard::Finish() {
     m_request = 0;
     m_result = 0;
     if (m_flags & 1) {
-        fn_803908C8(m_channel);
+        CARDUnmount(m_channel);
     }
     if (m_flags & 2) {
         CARDClose(&m_work->m_fileInfo);
@@ -671,7 +671,7 @@ void MemoryCard::Fail() {
     m_busy = 0;
     m_request = 0;
     if (m_flags & 1) {
-        fn_803908C8(m_channel);
+        CARDUnmount(m_channel);
     }
     if (m_flags & 2) {
         CARDClose(&m_work->m_fileInfo);
@@ -718,7 +718,7 @@ void MemoryCard::SetError(s32 result) {
         s32 sectorSize;                                                      \
         s32 memSize;                                                         \
         do {                                                                 \
-            result = fn_8038FF84(m_channel, &memSize, &sectorSize);          \
+            result = CARDProbeEx(m_channel, &memSize, &sectorSize);          \
         } while (result == CARD_RESULT_BUSY);                                \
     }
 
@@ -791,7 +791,7 @@ bool MemoryCard::StartMount() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_8039068C(m_channel, m_work->m_workArea, 0, 0) != CARD_RESULT_BUSY;
+    return CARDMountAsync(m_channel, m_work->m_workArea, 0, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollMount() {
@@ -828,7 +828,7 @@ bool MemoryCard::StartCheck() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_8038FE90(m_channel, 0) != CARD_RESULT_BUSY;
+    return CARDCheckAsync(m_channel, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollCheck() {
@@ -990,7 +990,7 @@ bool MemoryCard::StartFormat() {
     if (result != CARD_RESULT_READY) {
         return false;
     }
-    return fn_80391110(m_channel, 0) != CARD_RESULT_BUSY;
+    return CARDFormatAsync(m_channel, 0) != CARD_RESULT_BUSY;
 }
 
 void MemoryCard::PollFormat() {
