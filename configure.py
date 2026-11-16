@@ -487,7 +487,7 @@ config.libs = [
             Object(Matching, "Game/BirdModelBase.cpp"),
             Object(Matching, "Game/BitTable.cpp"),
             Object(NonMatching, "Game/BkChaos.cpp"),
-            Object(NonMatching, "Game/BkChaosAI.cpp"),
+            Object(Matching, "Game/BkChaosAI.cpp"),
             Object(Matching, "Game/BkGiant.cpp"),
             Object(Matching, "Game/BkGiantAI.cpp"),
             Object(Matching, "Game/BkLarva.cpp"),

@@ -19,6 +19,20 @@ class EnemyAttack {
   public:
     /* What Set is passed (struct name unknown). */
     struct Desc {
+        /* The shape the collider is made of (struct name unknown): its kind (BkChaos passes 0 with
+         * a sphere and 3 with a cylinder) and the shape. */
+        struct Shape {
+            Shape(s32 kind, const void *shape) : m_kind(kind), m_shape(shape) {}
+
+            /* 0x0 */ s32 m_kind;
+            /* 0x4 */ const void *m_shape;
+        };
+
+        /* Inline (BkChaos emits a weak copy, 0x802B0200). */
+        Desc(s32 type, s32 damage, Shape shape, const boost::weak_ptr<CharInfo> &owner)
+            : m_type(type), m_damage(damage), field_0x8(shape.m_kind),
+              field_0xC(reinterpret_cast<u32>(shape.m_shape)), m_owner(owner) {}
+
         /* 0x00 */ s32 m_type;   /* the kind of attack; a new kind remakes the collider */
         /* 0x04 */ s32 m_damage; /* passed to the attack collision */
         /* 0x08 */ u32 field_0x8; /* the first two words of the collider's shape */
