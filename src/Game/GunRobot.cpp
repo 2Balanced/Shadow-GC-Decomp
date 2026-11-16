@@ -589,11 +589,11 @@ int GunRobot::vfPara_0x58() {
     return 2;
 }
 
-int GunRobot::vfPara_0x5C() {
+int GunRobot::vfPara_0x5C() const {
     return 7;
 }
 
-int GunRobot::vfPara_0x60() {
+int GunRobot::vfPara_0x60() const {
     return 7;
 }
 

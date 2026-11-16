@@ -44,8 +44,8 @@ class BkWingSmallBase : public FlyerCommonBase {
     virtual int vfPara_0x50();
     virtual int vfPara_0x54();
     virtual int vfPara_0x58();
-    virtual int vfPara_0x5C();
-    virtual int vfPara_0x60();
+    virtual int vfPara_0x5C() const;
+    virtual int vfPara_0x60() const;
 
     /* The flying speed (the AI scales its steps by it; name inferred). */
     float GetSpeed();

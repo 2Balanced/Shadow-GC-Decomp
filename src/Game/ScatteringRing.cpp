@@ -11,13 +11,9 @@
  * HitCharacter, which is defined before the constructor: that puts its code where the original has
  * it. Instantiate, which is emitted after HitCharacter, is defined before it.
  *
- * Not yet matching (48 of 49 functions match; the data matches): in Instantiate the original loads
- * request.count only after storing the three components of the launch direction, while GC/2.7
- * (and 1.3.2 to 2.6) schedules that load above the stores; 3.0a3/3.0a5 keep it after them, as the
- * original does. No source shape tried (if/else, ternary, accessors, pointer or by-value request,
- * pointer/reference/aggregate initialisation of the direction, loops and labels) changes it, so it
- * looks like another trait of the newer compiler described in docs/research-notes.md. The other
- * 0x1F0 bytes of Instantiate match. */
+ * Instantiate takes its request by reference to non-const: retail loads request.count only
+ * after the three stores of the launch direction, and GC/2.7 moves a load through a pointer to
+ * const above such stores (docs/research-notes.md, "Source levers measured in wave 39"). */
 /* Keeps the dead copy of bad_alloc's vtable in .data, as retail has it (see <new>). */
 #define MSL_NEW_INLINE_BAD_ALLOC
 
@@ -288,7 +284,7 @@ class ScatteringRing : public Task {
     virtual void Tick(float dt);
 
     /* Throws request.count rings from request.position (name inferred). */
-    static void Instantiate(const UnkScatterRequest_800B7E40 &request, bool flag);
+    static void Instantiate(UnkScatterRequest_800B7E40 &request, bool flag);
 
     /* Method names are inferred. */
     bool TestHit(ColliDetectArgs &args);
@@ -311,7 +307,7 @@ SIZE_ASSERT(ScatteringRing, 0x88);
 
 const char *ScatteringRing::s_taskName = "ScatteringRing";
 
-void ScatteringRing::Instantiate(const UnkScatterRequest_800B7E40 &request, bool flag) {
+void ScatteringRing::Instantiate(UnkScatterRequest_800B7E40 &request, bool flag) {
     ScatterParams params;
     Mtx34f matrix;
     Vec3f velocity;

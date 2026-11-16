@@ -43,7 +43,7 @@ void fn_801D54F4(void *manager, int id, const Vec3f *position, int arg3, int arg
 }
 
 /* The parameters' default for slot 0x60 (Game/Enemy.h; inline, first emitted here). */
-inline int EnemyParaFunc::vfPara_0x60() {
+inline int EnemyParaFunc::vfPara_0x60() const {
     return -1;
 }
 

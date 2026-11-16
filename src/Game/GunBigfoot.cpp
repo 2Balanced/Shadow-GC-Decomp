@@ -453,11 +453,11 @@ int GunBigfoot::vfPara_0x58() {
     return 7;
 }
 
-int GunBigfoot::vfPara_0x5C() {
+int GunBigfoot::vfPara_0x5C() const {
     return m_hovering ? 10 : 9;
 }
 
-int GunBigfoot::vfPara_0x60() {
+int GunBigfoot::vfPara_0x60() const {
     return m_hovering ? 10 : 11;
 }
 

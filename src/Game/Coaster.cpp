@@ -17,7 +17,10 @@
  *   fn_8040B67C call and passes it to fn_8040CDD0 afterwards; GC/2.7 loads it after the call
  *   (also when it is first copied to a local, which the compiler propagates past the call). No
  *   source shape tried reproduces retail's order; probably the newer compiler of
- *   docs/research-notes.md.
+ *   docs/research-notes.md. Wave 39 (probes/Game_Coaster.py) added: a pointer or reference local
+ *   read through px, get() or operator->, the same through inline free and member functions (a
+ *   second inline level is called out of line, at retail's position but as a call), and
+ *   fn_8040B67C declared with non-const parameters. All keep the load after the call.
  * - Behave: in the running-back case retail keeps the stage record's pointer in r5 and loads
  *   its flag before m_backward; GC/2.7 uses r8 and loads the flag last (4 instructions, register
  *   allocation only).

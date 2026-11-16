@@ -126,18 +126,16 @@ struct UnkColliContactIter_8001EDFC {
     UnkColliContactNode_800587A0 *m_node;
 };
 
-/* The 0x18-byte line segment fn_80020A20 builds from two points (name inferred), and the one
- * fn_80021DE4 converts it to (meaning unknown). */
-struct UnkSegment_80020A20 {
-    UnkSegment_80020A20() {}
+/* The 0x18-byte line segment fn_80020A20 builds from two points (the struct of
+ * Game/DebugDisp.h, declared here by its size; its copy constructor is out of line at
+ * 0x80021DE4). */
+struct UnkDebugLine_80020A20 {
+    UnkDebugLine_80020A20() {}
+    UnkDebugLine_80020A20(const UnkDebugLine_80020A20 &line);
 
     /* 0x00 */ u8 m_data[0x18]; /* the start and end points */
 };
-SIZE_ASSERT(UnkSegment_80020A20, 0x18);
-
-struct UnkSegment_80021DE4 {
-    u8 m_data[0x18];
-};
+SIZE_ASSERT(UnkDebugLine_80020A20, 0x18);
 
 extern "C" {
 /* A 32-bit flag word: fn_8000AAEC constructs one from a value, fn_80014E10 clears it, fn_80014E1C
@@ -236,7 +234,7 @@ Vec3f fn_8040D0AC(const Vec3f *vector, float angle);       /* turned about y */
 void fn_8040F990(Vec3f *along, Vec3f *across, const Vec3f *vector,
                  const Vec3f *normal);
 /* The angle between two unit vectors. */
-double fn_8040F8FC(const Vec3f *a, const Vec3f *b);
+float fn_8040F8FC(const Vec3f *a, const Vec3f *b);
 /* The rotation by angle about axis. */
 Mtx34f fn_8040FD8C(const Vec3f *axis, float angle);
 /* The Euler angles of a direction. */
@@ -244,8 +242,7 @@ Vec3f fn_8040F7F8(const Vec3f *direction);
 /* The inverse of a matrix. */
 Mtx34f fn_8040BEF8(const Mtx34f *matrix);
 /* The point of segment nearest to point. */
-Vec3f fn_8040FC3C(const UnkSegment_80021DE4 &segment, const Vec3f *point);
-UnkSegment_80021DE4 fn_80021DE4(const UnkSegment_80020A20 *segment);
+Vec3f fn_8040FC3C(const UnkDebugLine_80020A20 &segment, const Vec3f *point);
 /* value clamped to [low, high]. */
 const float &fn_80070460(const float &value, const float &low, const float &high);
 }
@@ -544,7 +541,7 @@ void Helicopter::ReloadPlacement(UnkPlacement_800C9CD0 *owner) {
     m_model->fn_8016108C();
     switch ((s32)m_params.moveType) {
     case 0: {
-        UnkSegment_80020A20 segment;
+        UnkDebugLine_80020A20 segment;
         fn_80020A20(&segment, &m_chara.px->m_position,
                     &(const Vec3f &)fn_8040CDD0(
                         &m_chara->m_position, &Vec3f(m_params.param0, m_params.param1, m_params.param2)));
@@ -668,9 +665,8 @@ void Helicopter::UpdateCircle(float dt) {
     }
 }
 
-/* NonMatching (98.8%): retail stores angle (stfs) before rounding fn_8040F8FC's result for
- * fn_8000A950 (frsp); GC/2.7 rounds first. Every source shape tried keeps GC/2.7's order, which
- * looks like the float conversion differences in docs/research-notes.md. */
+/* fn_8040F8FC is declared returning float here: retail stores the angle (stfs) before it rounds
+ * the result for fn_8000A950 (frsp), which GC/2.7 only does for a float result. */
 void Helicopter::UpdateTilt(float dt) {
     if (!IsZero(m_chara->field_0x18)) {
         Vec3f horizontal;
@@ -720,9 +716,8 @@ void Helicopter::OnColliDetectBack(ColliDetectArgs &args) {
     CatchPlayer(args, false);
 }
 
-/* NonMatching (99.9%): retail sets fn_8040FC3C's result pointer (r3) before the segment (r4); with
- * the segment held by reference GC/2.7 sets them the other way round, and writing the call nested
- * (which orders them right) gives the result temporary the wrong stack slot. */
+/* The skid's line is a copy-constructed local: that sets fn_8040FC3C's result pointer (r3) before
+ * the line's address (r4) and keeps the result temporary in the lowest stack slot. */
 void Helicopter::CatchPlayer(ColliDetectArgs &args, bool front) {
     if (args.m_contacts != 0) {
         boost::shared_ptr<CharInfo> player = fn_800A8B74(fn_80074194(), lbl_805EE588).lock();
@@ -737,8 +732,8 @@ void Helicopter::CatchPlayer(ColliDetectArgs &args, bool front) {
                 fn_8040B848(&matrix, m_chara->m_rotation.y);
                 fn_8040B884(&matrix, m_chara->m_rotation.x);
                 const SkidSegment *skid = front ? &s_frontSegment : &s_backSegment;
-                const UnkSegment_80021DE4 &line = fn_80021DE4((const UnkSegment_80020A20 *)fn_80020A20(
-                    &UnkSegment_80020A20(), &(const Vec3f &)fn_8040B67C(&matrix, skid->Start()),
+                UnkDebugLine_80020A20 line(*(const UnkDebugLine_80020A20 *)fn_80020A20(
+                    &UnkDebugLine_80020A20(), &(const Vec3f &)fn_8040B67C(&matrix, skid->Start()),
                     &(const Vec3f &)fn_8040B67C(&matrix, skid->End())));
                 fn_800091D0(&m_hangPosition,
                             &(const Vec3f &)fn_8040FC3C(line, &m_chara->m_position));

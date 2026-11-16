@@ -6,9 +6,9 @@
  * FlyerCommonBase and FlyingObject, and their virtual-base thunks. File name inferred from the
  * class. Names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first). */
-/* EnemyMoveCommon's vfMove_0x24 is inline here, as in the original: its weak copy pools the
+/* EnemyMoveFunc's vfMove_0x24 is inline here, as in the original: its weak copy pools the
  * constant 0 ahead of vfPara_0x68's 10 in .sdata2 (see Game/Enemy.h). */
-#define ENEMY_MOVE_COMMON_INLINE
+#define ENEMY_MOVE_FUNC_INLINE
 
 #include "Game/BkWingLarge.h"
 #include "Game/Gadget.h"
@@ -316,11 +316,11 @@ int BkWingLargeBase::vfPara_0x58() {
     return 1;
 }
 
-int BkWingLargeBase::vfPara_0x5C() {
+int BkWingLargeBase::vfPara_0x5C() const {
     return 2;
 }
 
-int BkWingLargeBase::vfPara_0x60() {
+int BkWingLargeBase::vfPara_0x60() const {
     return (m_params.Type & 0xF) ? 4 : 2;
 }
 

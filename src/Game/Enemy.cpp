@@ -448,7 +448,7 @@ inline int EnemyParaFunc::vfPara_0x44() {
 inline int EnemyParaFunc::vfPara_0x50() {
     return -1;
 }
-inline int EnemyParaFunc::vfPara_0x5C() {
+inline int EnemyParaFunc::vfPara_0x5C() const {
     return -1;
 }
 inline int EnemyParaFunc::vfPara_0x64() {

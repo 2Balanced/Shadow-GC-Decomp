@@ -500,11 +500,11 @@ int GunBeetleBase::vfPara_0x58() {
     return vfPara_0x48();
 }
 
-int GunBeetleBase::vfPara_0x5C() {
+int GunBeetleBase::vfPara_0x5C() const {
     return 2;
 }
 
-int GunBeetleBase::vfPara_0x60() {
+int GunBeetleBase::vfPara_0x60() const {
     return 2;
 }
 

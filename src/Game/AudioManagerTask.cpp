@@ -6,8 +6,8 @@
  * Names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: UnkSound_80053164::FindFreeChannel (95%: retail keeps the priority in r4 and clears
- * the channel's priority byte again before the equality test). Every other function matches. */
+ * FindFreeChannel's two loops declare their locals in the order of retail's scratch registers
+ * (the channel array first), with the assignments in another order. */
 #include "Game/IAudio.h"
 #include "Game/SoundManager.h"
 #include "Game/Task.h"
@@ -393,6 +393,26 @@ UnkSoundChannel_801D98FC *UnkSound_80053164::FindChannel(u16 id, void *owner) {
     return &channels[found];
 }
 
+/* A channel's priority and age, and the back end's calls of FindFreeChannel (names inferred).
+ * FindFreeChannel only matches with these inline: the priority read through a function is
+ * narrowed again before the equality test, the age read through one takes r0, and the group and
+ * voice are loaded before the back end is tested. */
+inline u8 GetPriority(const UnkSoundChannel_801D98FC *channel) {
+    return channel->m_priority;
+}
+inline u16 GetAge(const UnkSoundChannel_801D98FC *channel) {
+    return channel->m_age;
+}
+inline void StopVoice(IAudio *audio, s8 group, u8 voice) {
+    if (audio != 0) {
+        audio->vf_0x48(group, voice);
+    }
+}
+inline void ReleaseVoice(IAudio *audio, s8 group, u8 voice) {
+    if (audio != 0) {
+        audio->vf_0x30(group, voice);
+    }
+}
 s8 UnkSound_80053164::FindFreeChannel(UnkSoundBankEntry *entry, u8 priority) {
     if (entry == 0) {
         return -1;
@@ -401,25 +421,26 @@ s8 UnkSound_80053164::FindFreeChannel(UnkSoundBankEntry *entry, u8 priority) {
     u16 id = entry->m_id;
     if (entry->m_flags & 2) {
         s8 index = m_nextVoice;
-        s8 count = 0x2B;
+        s8 count;
         UnkSoundChannel_801D98FC *channel = &m_channels[index];
         s8 oldest = -1;
         s8 lower = -1;
         u16 age;
+        count = 0x2B;
         while (count > 0x26) {
             if (channel->m_entry == 0) {
                 found = index;
                 break;
             }
-            if (channel->m_priority < priority) {
+            if (GetPriority(channel) < priority) {
                 lower = index;
-            } else if (priority == channel->m_priority) {
+            } else if (priority == GetPriority(channel)) {
                 if (oldest < 0) {
                     age = channel->m_age;
                     lower = index;
-                } else if (age < channel->m_age) {
+                } else if (age < GetAge(channel)) {
                     oldest = index;
-                    age = channel->m_age;
+                    age = GetAge(channel);
                 }
             }
             index++;
@@ -444,13 +465,20 @@ s8 UnkSound_80053164::FindFreeChannel(UnkSoundBankEntry *entry, u8 priority) {
             m_nextVoice = 0x26;
         }
     } else {
-        s8 index = m_nextChannel;
-        s8 lower = -1;
-        s8 oldest = -1;
-        u16 age = 0;
-        s8 count = 0x20;
-        UnkSoundChannel_801D98FC *channels = m_channels;
-        UnkSoundChannel_801D98FC *channel = &channels[index];
+        UnkSoundChannel_801D98FC *channels;
+        s8 index;
+        UnkSoundChannel_801D98FC *channel;
+        s8 count;
+        s8 lower;
+        s8 oldest;
+        u16 age;
+        index = m_nextChannel;
+        lower = -1;
+        oldest = -1;
+        age = 0;
+        count = 0x20;
+        channels = m_channels;
+        channel = &channels[index];
         while (found < 0 && count > 0) {
             if (channel->m_id == 0) {
                 found = index;
@@ -494,13 +522,9 @@ s8 UnkSound_80053164::FindFreeChannel(UnkSoundBankEntry *entry, u8 priority) {
             if (channel->field_0x4 != 0 || channel->field_0x5 != 0) {
                 channel->field_0x4 = 0;
                 channel->field_0x5 = 0;
-                if (m_audio != 0) {
-                    m_audio->vf_0x48(left, right);
-                }
+                StopVoice(m_audio, left, right);
             }
-            if (m_audio != 0) {
-                m_audio->vf_0x30(left, right);
-            }
+            ReleaseVoice(m_audio, left, right);
         }
     }
     return found;

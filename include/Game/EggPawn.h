@@ -14,6 +14,53 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
+/* The values of point index of a walking enemy's parameters Param: Pos0 (index 0, the starting
+ * point), Pos1 and Pos2. Function templates over the parameter struct, so each enemy's unit has
+ * its own copies, which retail calls out of line (names inferred; Game/GunRobot.cpp has its own
+ * copy of these templates). They are function templates and not members of a class template:
+ * GC/2.7 emits a unit's function template instances last, behind EnemyTemplate's vfSet_0x2C as in
+ * retail, and in the reverse of the order they were first declared in, hence the declarations
+ * (Game/EggPawn.cpp declares its own template ahead of this header for the same reason). */
+template <class Param>
+float GetMoveSpeedRatio(const Param *param, int index);
+template <class Param>
+int GetActionType(const Param *param, int index);
+template <class Param>
+float GetActionTime(const Param *param, int index);
+
+template <class Param>
+float GetActionTime(const Param *param, int index) {
+    if (index == 1) {
+        return param->Pos1_ActionTime;
+    }
+    if (index == 2) {
+        return param->Pos2_ActionTime;
+    }
+    return param->Pos0_ActionTime;
+}
+
+template <class Param>
+int GetActionType(const Param *param, int index) {
+    if (index == 1) {
+        return param->Pos1_ActionType;
+    }
+    if (index == 2) {
+        return param->Pos2_ActionType;
+    }
+    return param->Pos0_ActionType;
+}
+
+template <class Param>
+float GetMoveSpeedRatio(const Param *param, int index) {
+    if (index == 1) {
+        return param->Pos1_MoveSpeedRatio;
+    }
+    if (index == 2) {
+        return param->Pos2_MoveSpeedRatio;
+    }
+    return param->Pos0_MoveSpeedRatio;
+}
+
 class EnemyShield;
 class EnemyWeapon;
 class EggPawnBase;
@@ -35,13 +82,13 @@ struct EggPawnParam {
 
     /* The values of point index (Game/EnemyWalker.h). */
     float GetActionTime(int index) const {
-        return EnemyWalkerPoints<EggPawnParam>::GetActionTime(*this, index);
+        return ::GetActionTime(this, index);
     }
     int GetActionType(int index) const {
-        return EnemyWalkerPoints<EggPawnParam>::GetActionType(*this, index);
+        return ::GetActionType(this, index);
     }
     float GetMoveSpeedRatio(int index) const {
-        return EnemyWalkerPoints<EggPawnParam>::GetMoveSpeedRatio(*this, index);
+        return ::GetMoveSpeedRatio(this, index);
     }
 
     /* 0x00 */ float MoveRange;
@@ -101,9 +148,9 @@ class EggPawnBase : public EnemyWalker {
     virtual int vfPara_0x50();
     virtual int vfPara_0x54();
     virtual int vfPara_0x58();
-    virtual int vfPara_0x5C();
+    virtual int vfPara_0x5C() const;
     virtual int vfPara_0x64();
-    virtual int vfPara_0x60();
+    virtual int vfPara_0x60() const;
     virtual float vfPara_0x20();
     virtual void vfDisp_0x08();
     virtual void vfDisp_0x64();

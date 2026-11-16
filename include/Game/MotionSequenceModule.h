@@ -99,12 +99,26 @@ class MotionSequenceModule {
     }
 
     /* Starts sequence index when the table has it. */
+#ifdef MOTION_SEQUENCE_START_RESULT
+    /* What EnemyStatusCommon::vfStat_0x20 shows (Game/EggPawn.cpp): Start returns whether the
+     * sequence started, from a local. Behind a macro because the local renumbers the @N locals
+     * of the units that call Start and drop its result (Game/Vine.cpp). */
+    bool Start(int index) {
+        bool result = false;
+        if (m_table != 0 && index < m_table->count) {
+            m_index = index;
+            result = fn_800C961C(this, &m_table->sequences[index]);
+        }
+        return result;
+    }
+#else
     void Start(int index) {
         if (m_table != 0 && index < m_table->count) {
             m_index = index;
             fn_800C961C(this, &m_table->sequences[index]);
         }
     }
+#endif
 
     bool HasEnded() const {
         return m_finished;

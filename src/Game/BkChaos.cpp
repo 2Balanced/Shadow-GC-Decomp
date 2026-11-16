@@ -1110,7 +1110,7 @@ int BkChaos::vfPara_0x54() {
     return vfPara_0x48();
 }
 
-int BkChaos::vfPara_0x5C() {
+int BkChaos::vfPara_0x5C() const {
     return 1;
 }
 

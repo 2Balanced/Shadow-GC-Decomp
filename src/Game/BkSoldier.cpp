@@ -627,11 +627,11 @@ int BkSoldierBase::vfPara_0x58() {
     return 12;
 }
 
-int BkSoldierBase::vfPara_0x5C() {
+int BkSoldierBase::vfPara_0x5C() const {
     return field_0x358 ? 6 : 7;
 }
 
-int BkSoldierBase::vfPara_0x60() {
+int BkSoldierBase::vfPara_0x60() const {
     return field_0x358 ? 16 : 17;
 }
 

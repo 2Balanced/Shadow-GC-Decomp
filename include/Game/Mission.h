@@ -14,6 +14,35 @@
  * weak_ptr instances at 0x80073EA0..0x800740E4). */
 namespace Mission {
 
+#ifdef MISSION_MESSAGE_MEMBERS
+/* The message managers of Mission and CountMission, as far as the mission units call them (their
+ * definitions are in Game/BasicMessage.cpp and Game/CountMessage.cpp). Behind a macro: the units
+ * that only read the missions keep the members as bytes. */
+enum MissionState {
+    kMissionRunning,
+    kMissionCleared,
+    kMissionFailed,
+};
+
+class BasicMessageManage {
+  public:
+    BasicMessageManage(int id, int player);
+    ~BasicMessageManage();
+    void Show(MissionState state);
+
+    u8 field_0x0[0x28];
+};
+
+class CountMessageManage {
+  public:
+    CountMessageManage(int id, int player, int target);
+    ~CountMessageManage();
+    void SetCount(s32 count);
+
+    u8 field_0x0[0x30];
+};
+#endif
+
 class Mission {
   public:
     Mission(int id, int player);
@@ -68,7 +97,11 @@ class Mission {
     /* 0x14 */ u8 m_flag;
     /* 0x15 */ u8 m_savedFlag;
     /* 0x16 */ u8 field_0x16[2];
-    /* 0x18 */ u8 m_message[0x28]; /* the message manager (Mission::BasicMessageManage?) */
+#ifdef MISSION_MESSAGE_MEMBERS
+    /* 0x18 */ BasicMessageManage m_message; /* the message manager */
+#else
+    /* 0x18 */ u8 m_message[0x28]; /* the message manager (Mission::BasicMessageManage) */
+#endif
 };
 SIZE_ASSERT(Mission, 0x40);
 
@@ -98,7 +131,11 @@ class CountMission : public virtual Mission {
     /* 0x1C */ int m_subCount;
     /* 0x20 */ int m_savedCount;
     /* 0x24 */ int m_savedSubCount;
-    /* 0x28 */ u8 m_message[0x30]; /* the count display (Mission::CountMessageManage?) */
+#ifdef MISSION_MESSAGE_MEMBERS
+    /* 0x28 */ CountMessageManage m_message; /* the count display */
+#else
+    /* 0x28 */ u8 m_message[0x30]; /* the count display (Mission::CountMessageManage) */
+#endif
 };
 
 } // namespace Mission

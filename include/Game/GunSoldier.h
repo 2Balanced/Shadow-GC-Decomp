@@ -81,8 +81,8 @@ class GunSoldierBase : public SoldierCommonBase {
     virtual int vfPara_0x50();
     virtual int vfPara_0x54();
     virtual int vfPara_0x58();
-    virtual int vfPara_0x5C();
-    virtual int vfPara_0x60();
+    virtual int vfPara_0x5C() const;
+    virtual int vfPara_0x60() const;
     virtual int vfPara_0x64();
     virtual void vfSet_0x1C(UnkPlacement_800C9CD0 *placement);
     virtual void vfSet_0x20(UnkPlacement_800C9CD0 *placement);

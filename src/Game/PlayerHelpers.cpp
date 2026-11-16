@@ -36,7 +36,7 @@ struct UnkScatterRequest_800B7E40 {
 namespace ScatteringRing {
 class ScatteringRing {
   public:
-    static void Instantiate(const UnkScatterRequest_800B7E40 &request, bool flag);
+    static void Instantiate(UnkScatterRequest_800B7E40 &request, bool flag);
 };
 } // namespace ScatteringRing
 

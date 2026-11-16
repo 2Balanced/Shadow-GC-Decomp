@@ -2318,13 +2318,33 @@ Game/TFogSet.cpp:
 Game/UnkStageCallbacks_8016A9E0.cpp:
 	.text       start:0x8016A9E0 end:0x8016AA90
 
+Game/CountMission.cpp:
+	.text       start:0x8016AA90 end:0x8016AF38
+	.rodata     start:0x804C2FE8 end:0x804C3018
+	.data       start:0x8052B740 end:0x8052B7C8
+	.sdata      start:0x805E6730 end:0x805E6740
+
 Game/Mission.cpp:
-	.text       start:0x8016AA90 end:0x8016ECF0
-	.rodata     start:0x804C2FE8 end:0x804C3620
-	.data       start:0x8052B740 end:0x8052B970
-	.sdata      start:0x805E6730 end:0x805E67F0
+	.text       start:0x8016AF38 end:0x8016B384
+	.rodata     start:0x804C3018 end:0x804C3048
+	.data       start:0x8052B7C8 end:0x8052B810
+	.sdata      start:0x805E6740 end:0x805E6748
+	.sdata2     start:0x805F4BC0 end:0x805F4BD8
+
+Game/MissionTable.cpp:
+	.text       start:0x8016B384 end:0x8016D89C
+	.rodata     start:0x804C3048 end:0x804C3590
+	.data       start:0x8052B810 end:0x8052B950
+	.sdata      start:0x805E6748 end:0x805E67D8
 	.sbss       start:0x805EF260 end:0x805EF280
-	.sdata2     start:0x805F4BC0 end:0x805F4BF0
+	.sdata2     start:0x805F4BD8 end:0x805F4BE0
+
+Game/MissionManagerTask.cpp:
+	.text       start:0x8016D89C end:0x8016ECF0
+	.rodata     start:0x804C3590 end:0x804C3620
+	.data       start:0x8052B950 end:0x8052B970
+	.sdata      start:0x805E67D8 end:0x805E67F0
+	.sdata2     start:0x805F4BE0 end:0x805F4BF0
 
 Game/RingMission.cpp:
 	.text       start:0x8016ECF0 end:0x8016EEC0

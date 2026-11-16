@@ -11,6 +11,8 @@
 /* See EnemyReferer (Game/Enemy.h) and EnemyBaseAI (Game/EnemyAI.h). */
 #define ENEMY_REFERER_DTOR
 #define ENEMY_BASE_AI_STATES
+/* See MotionSequenceModule::Start (Game/MotionSequenceModule.h). */
+#define MOTION_SEQUENCE_START_RESULT
 
 #include <stdio.h>
 #include <string.h>
@@ -18,6 +20,12 @@
 /* The ten zero words .rodata starts with (meaning and type unknown; the bytes are reproduced, as
  * in BkSoldier.cpp). */
 static const float s_zeros[10] = {0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f};
+/* Declared ahead of Game/EggPawn.h's function templates: GC/2.7 emits the instances in the
+ * reverse of the order of the templates' first declarations, and retail has this one last. */
+class UnkLabelQuery_800CBC20;
+template <class Walker>
+const char *WalkerParamLabel(UnkLabelQuery_800CBC20 *query, const char **actionTypes);
+
 /* The order of the casts sets the order of the RTTI base lists in .data. */
 #include "Game/CharaColliBaseCharInfo.h"
 #include "Game/TNumEdit.h"
@@ -291,20 +299,21 @@ inline int EnemyStatusCommon::vfStat_0x24() {
     return m_motion.m_index;
 }
 
-/* NonMatching: retail tests restart before clearing field_0x4 and reuses restart's register for
- * the zero (3 instructions differ; no source order tried reproduces it). */
-inline int EnemyStatusCommon::vfStat_0x20(int motion, bool restart) {
+/* Returns whether the sequence is playing: Start's result (false in r3 from before the test of
+ * restart, which is how retail shows that Start keeps its result in a local), or true when the
+ * sequence already plays. The path through Reset returns nothing. */
+inline bool EnemyStatusCommon::vfStat_0x20(int motion, bool restart) {
     field_0x70 = motion;
     if (motion < 0) {
         m_motion.Reset();
     } else {
         m_motion.field_0x4 = 0;
         if (restart) {
-            m_motion.Start(motion);
+            return m_motion.Start(motion);
         } else if (motion != m_motion.m_index) {
-            m_motion.Start(motion);
+            return m_motion.Start(motion);
         } else {
-            return 1;
+            return true;
         }
     }
 }
@@ -321,7 +330,9 @@ inline int EnemyDispCommon::vfDisp_0x14() {
     return 0;
 }
 
-inline float EnemyMoveCommon::vfMove_0x24() {
+/* EnemyMoveFunc's own slot, emitted here after EnemyMoveCommon's virtuals (EnemyMoveCommon
+ * inherits it): its first copy in the game. */
+inline float EnemyMoveFunc::vfMove_0x24() {
     return 0.0f;
 }
 
@@ -651,13 +662,13 @@ int EggPawnBase::vfPara_0x58() {
 }
 
 /* vfPara_0x5C and vfPara_0x60 load m_status ahead of saving the link register, which GC/2.7
- * does only for a const this: EnemyParaFunc's getters are most likely const member functions in
- * the original (a change to Game/Enemy.h and every enemy's overrides). */
-int EggPawnBase::vfPara_0x5C() {
+ * does only for a const this: the two slots are const member functions (Game/Enemy.h and every
+ * enemy's overrides). The other getters of EnemyParaFunc show nothing either way. */
+int EggPawnBase::vfPara_0x5C() const {
     return m_status->vfStat_0x74() == 0 ? 17 : 18;
 }
 
-int EggPawnBase::vfPara_0x60() {
+int EggPawnBase::vfPara_0x60() const {
     return m_status->vfStat_0x74() == 0 ? 19 : 20;
 }
 
@@ -676,11 +687,15 @@ float EggPawnBase::vfPara_0x20() {
     return EnemyParamCommon::vfPara_0x20();
 }
 
-/* NonMatching only through its neighbours: retail passes the rotation to vfDisp_0x38 by value (a
- * plain vector the call copies to the stack, as here) and references GetPosition before
- * GetRotation, so their weak copies come out GetRotation first. With Game/Enemy.h's pointer
- * parameter, this copy matches the function but swaps those two copies. */
+/* Retail passes the rotation to vfDisp_0x38 by value (a plain vector the call copies to the
+ * stack, as here) and references GetPosition before GetRotation, so their weak copies, whose first
+ * copies are this unit's, come out GetRotation first. With Game/Enemy.h's pointer parameter the
+ * rotation has to be copied first, so the first statement only names GetPosition (it emits no
+ * code; taking the function's address instead would leave a member pointer in .data). */
 void EggPawnBase::vfSet_0x1C(UnkPlacement_800C9CD0 *placement) {
+    if (false) {
+        GetPosition();
+    }
     vfSet_0x20(placement);
     /* Copied as a plain struct (word loads and stores), unlike Vec3f's own copy. */
     Vec3fWords rotation = *reinterpret_cast<Vec3fWords *>(GetRotation());

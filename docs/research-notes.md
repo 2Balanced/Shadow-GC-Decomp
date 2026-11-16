@@ -359,6 +359,50 @@ docstring).
   showed as matched. Flipping a unit whose functions all match and running `tools/doldiff.py` names
   the words that differ.
 
+- **The stores of one statement run may be reordered, the registers are not.** GC/2.7 moved the
+  store of the winner above the two counters' stores in `Result2PAction`'s constructor, but numbered
+  the scratch registers in source order; only the source order `rounds++; wins[n]++; winner = n`
+  gives retail's registers (24 orders probed, `probes/Game_Result2PAction.py`).
+- **A member read through an inline function keeps the conversion of its return type.**
+  `FindFreeChannel` (`Game/AudioManagerTask.cpp`) narrows the channel's priority again before the
+  equality test (`clrlwi r0,r0,24`) and keeps the age in r0 only when both are read through inline
+  getters; the back end's calls behind a null test load their arguments first only as inline
+  functions. Its two loops also needed their locals declared in the order of retail's scratch
+  registers with the assignments in another order.
+- **An unset tail of a struct shows only in the frame size.** `Result2PAction`'s constructor had a
+  frame 16 bytes short until its local load request got the sixth word the file system's request
+  has (`Game/TBGRead.h`).
+- **A copy-constructed local orders a call's arguments.** `Helicopter::CatchPlayer` sets the result
+  pointer before the line's address only when the line is a local built with the struct's
+  out-of-line copy constructor; a reference to the temporary or the nested call swaps them or moves
+  the result's stack slot.
+- **A `float` return type instead of `double` removes a rounding before the store.**
+  `fn_8040F8FC` returns `float` for `Helicopter::UpdateTilt` (`stfs` before `frsp`).
+- **A grouping decides the register of a sum's operand.** `next = motion + (base - 1); step++;`
+  (`ShadowMotion::Step800B2EA4`) is the only one of some sixty forms that keeps the motion in r5
+  and adds base to it in retail's operand order.
+- **A class's out-of-line constructor and destructor are emitted where they are defined.**
+  `Game/PlayerShadowMotion.cpp` has the IK slot's constructor and destructor, each followed by the
+  inline functions it calls, between two ordinary functions; written in the class they come out
+  behind the owner's constructor. An `inline` definition outside the class does not move them.
+- **Function template instances at the end of a unit come out in the reverse of the order of the
+  templates' first declarations**, behind the members of class template instances
+  (`Game/EggPawn.cpp`: a forward declaration ahead of the header that declares the others).
+- **A dead reference orders weak copies.** `if (false) { GetPosition(); }` ahead of the statement
+  that calls `GetRotation()` first makes GC/2.7 emit the two weak functions in retail's order
+  without code (`EggPawnBase::vfSet_0x1C`); `(void)&Enemy::GetPosition;` does the same but leaves
+  a member pointer in `.data`.
+- **Duplicate strings and 8-byte padding inside a unit's sections mean several translation
+  units.** `Game/Mission.cpp` held two copies of `"Mission::Mission"` and of
+  `"Memory allocation failure"`, a second RTTI record of `Mission` and a zero word that no source
+  produced: retail has four units there (`Game/CountMission.cpp`, `Game/Mission.cpp`,
+  `Game/MissionTable.cpp`, `Game/MissionManagerTask.cpp`), each section padded to 8 bytes. Split
+  that way, three of them match without the `typeid` helper functions the combined unit needed.
+- **An inherited inline virtual is emitted behind the class's own virtuals.** The address two
+  vtables shared (0x8017B5A0) was `EnemyMoveFunc::vfMove_0x24`, emitted in `Game/EggPawn.cpp` for
+  `EnemyMoveCommon`'s vtable, which does not override it; a label alias in `symbols.txt` had hidden
+  that until the unit was linked from source.
+
 Residuals that no shape changed, each seen in more than one unit (so probably the later compiler
 build described above):
 

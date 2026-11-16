@@ -402,11 +402,11 @@ int EggShadowAndroid::vfPara_0x58() {
     return 10;
 }
 
-int EggShadowAndroid::vfPara_0x5C() {
-    return vfStat_0x74() == 0 ? 11 : 12;
+int EggShadowAndroid::vfPara_0x5C() const {
+    return const_cast<EggShadowAndroid *>(this)->vfStat_0x74() == 0 ? 11 : 12;
 }
 
-int EggShadowAndroid::vfPara_0x60() {
+int EggShadowAndroid::vfPara_0x60() const {
     return 14;
 }
 

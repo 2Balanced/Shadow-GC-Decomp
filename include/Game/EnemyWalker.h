@@ -14,49 +14,6 @@
 #include <dolphin/types.h>
 #include "size_assert.h"
 
-/* The values of point index of a walking enemy's parameters Param: Pos0 (index 0, the starting
- * point), Pos1 and Pos2. A template over the parameter struct, so each enemy's unit has its own
- * copies, which retail calls out of line (as EggPawn's; names inferred). */
-template <class Param>
-struct EnemyWalkerPoints {
-    static float GetActionTime(const Param &param, int index);
-    static int GetActionType(const Param &param, int index);
-    static float GetMoveSpeedRatio(const Param &param, int index);
-};
-
-template <class Param>
-float EnemyWalkerPoints<Param>::GetActionTime(const Param &param, int index) {
-    if (index == 1) {
-        return param.Pos1_ActionTime;
-    }
-    if (index == 2) {
-        return param.Pos2_ActionTime;
-    }
-    return param.Pos0_ActionTime;
-}
-
-template <class Param>
-int EnemyWalkerPoints<Param>::GetActionType(const Param &param, int index) {
-    if (index == 1) {
-        return param.Pos1_ActionType;
-    }
-    if (index == 2) {
-        return param.Pos2_ActionType;
-    }
-    return param.Pos0_ActionType;
-}
-
-template <class Param>
-float EnemyWalkerPoints<Param>::GetMoveSpeedRatio(const Param &param, int index) {
-    if (index == 1) {
-        return param.Pos1_MoveSpeedRatio;
-    }
-    if (index == 2) {
-        return param.Pos2_MoveSpeedRatio;
-    }
-    return param.Pos0_MoveSpeedRatio;
-}
-
 /* EnemyWalker (class name from RTTI; vtable 0x8053AFBC). */
 class EnemyWalker : public EnemyWalkerCommon {
   public:

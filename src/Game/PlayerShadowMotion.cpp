@@ -351,7 +351,9 @@ class UnkIKCallback_800B4D30 {
  * held at, the callback that places the target, whether the matrix or the callback is used, and
  * the weight. */
 struct UnkIKSlot_800B1264 {
-    UnkIKSlot_800B1264() : m_active(0), m_weight(0.0f) {}
+    /* Defined at the end of the file, where retail emits them. */
+    UnkIKSlot_800B1264();
+    ~UnkIKSlot_800B1264();
 
     /* 0x00 */ UnkMatrix_800B1304 m_bones[3];
     /* 0x90 */ Mtx34f m_matrix;
@@ -362,9 +364,8 @@ struct UnkIKSlot_800B1264 {
 
 /* The head's rotation (struct name unknown). */
 struct UnkHeadTurn_800B1308 {
-    UnkHeadTurn_800B1308() {
-        SetIdentity();
-    }
+    /* Defined ahead of Update, at the end of the file, where retail emits it. */
+    UnkHeadTurn_800B1308();
     void SetIdentity() {
         fn_8040C908(&m_rotation);
     }
@@ -560,12 +561,6 @@ static const MotionEntry s_motions[48] = {
     {-1, -1, 0x0, &s_27E4},
     {-1, -1, 0x0, &s_none},
     {-1, -1, 0x0, &s_none},
-};
-
-/* The run's motions by speed, without and with a weapon: the motion and the one blended with it. */
-static const int s_runMotions[2][4][2] = {
-    {{0x67, 0x93}, {0x93, 0x88}, {0x88, 0x91}, {0x91, 0x66}},
-    {{0x85, 0x87}, {0x87, 0x88}, {0x88, 0x88}, {0x88, 0x88}},
 };
 
 /* The idle motions picked at random. */
@@ -1057,6 +1052,14 @@ void ShadowMotion::Stand() {
     m_moved = 0;
 }
 
+/* The run's motions by speed, without and with a weapon: the motion and the one blended with it.
+ * Defined here, behind InstallIK: retail's .rodata has the type name of InstallIK's bind object
+ * ahead of the table. */
+static const int s_runMotions[2][4][2] = {
+    {{0x67, 0x93}, {0x93, 0x88}, {0x88, 0x91}, {0x91, 0x66}},
+    {{0x85, 0x87}, {0x87, 0x88}, {0x88, 0x88}, {0x88, 0x88}},
+};
+
 void ShadowMotion::SelectRunMotion() {
     int armed = fn_8006CD78(m_player.get()->m_stateBits, 0x1E) ? 1 : 0;
     float speed = RunSpeed();
@@ -1115,8 +1118,8 @@ void ShadowMotion::SelectRunMotion() {
     }
 }
 
-/* NonMatching (99.6%): the end differs only in register allocation (base - 1 is kept in r4 in
- * retail). */
+/* The two ids are declared ahead of base - 1, which gives them r3 and r4 as in retail (scratch
+ * registers go to the locals in declaration order). */
 void ShadowMotion::Walk() {
     Vec3f front;
     fn_800091EC(&front, &Ref(fn_800796DC(m_player.get())));
@@ -1153,10 +1156,12 @@ void ShadowMotion::Walk() {
         }
         RunBlend() = 2.0f * (1.0f + dot);
     }
+    int next;
+    int nextArg;
     int base = m_motionBase - 1;
     m_speed = RunSpeed();
-    int next = a + base;
-    int nextArg = b + base;
+    next = a + base;
+    nextArg = b + base;
     if (m_nextMotion != next || m_nextMotionArg != nextArg) {
         m_nextMotion = next;
         m_nextMotionArg = nextArg;
@@ -1415,15 +1420,16 @@ void ShadowMotion::Step800B2F48() {
     m_nextMotionArg = -1;
 }
 
-/* NonMatching (90%): retail keeps the motion in r5 and interleaves the step increment with the
- * id's sum; no source order tried reproduces it. */
+/* The id is the motion plus (base - 1), written before the step's increment: any other grouping
+ * or order moves the motion out of r5 or swaps the sum's operands (probes/
+ * Game_PlayerShadowMotion_R2.py). */
 void ShadowMotion::Step800B2EA4() {
     int next = m_nextMotion;
     switch (m_step) {
     case 0: {
         int motion = RunSpeed() > 0.0f ? 0x90 : 0x8E;
+        next = motion + (m_motionBase - 1);
         m_step++;
-        next = m_motionBase - 1 + motion;
         break;
     }
     case 1:
@@ -1968,6 +1974,18 @@ static void Slot3HandCallback(void *data) {
     }
 }
 
+/* Not called anywhere: the linker strips it from the game. Retail pools the constant 1 between
+ * Update's 0.5 and Slot3ArmCallback's bone lengths, so a function that is not in the game (or
+ * code the compiler folded away) used it at this point of the file; what it was is not known
+ * (as in Helicopter.cpp and ElecSmallCube.cpp; see docs/research-notes.md). */
+float UnusedOne() {
+    return 1.0f;
+}
+
+UnkHeadTurn_800B1308::UnkHeadTurn_800B1308() {
+    SetIdentity();
+}
+
 void UnkHeadTurn_800B1308::Update(UnkNodeArgs_800B10CC *args, float dt) {
     ShadowMotion *motion = args->m_motion;
     Vec2f angles(0.0f, 0.0f);
@@ -2018,6 +2036,14 @@ void UnkHeadTurn_800B1308::Update(UnkNodeArgs_800B10CC *args, float dt) {
     fn_8040B8C0(&matrix, &m_rotation);
     fn_800163F4(args->m_frame, &matrix);
 }
+
+/* The slot's constructor and destructor come out between UnkHeadTurn's Update and fn_800B10CC
+ * in retail, each followed by the inline functions it calls: they are defined here, out of line,
+ * and not in the struct, where GC/2.7 would emit them behind ShadowMotion's constructor and
+ * destructor. */
+UnkIKSlot_800B1264::UnkIKSlot_800B1264() : m_active(0), m_weight(0.0f) {}
+
+UnkIKSlot_800B1264::~UnkIKSlot_800B1264() {}
 
 } // namespace Shadow
 } // namespace Player

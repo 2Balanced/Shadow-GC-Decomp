@@ -124,8 +124,8 @@ class EnemyParaFunc {
     virtual int vfPara_0x50();    /* 0x8019B4C8 */
     virtual int vfPara_0x54();    /* 0x8018019C */
     virtual int vfPara_0x58();    /* 0x8017FA78 */
-    virtual int vfPara_0x5C();    /* 0x8019B4D0 */
-    virtual int vfPara_0x60();    /* 0x80180C58 */
+    virtual int vfPara_0x5C() const;    /* 0x8019B4D0 */
+    virtual int vfPara_0x60() const;    /* 0x80180C58 */
     virtual int vfPara_0x64();    /* 0x8019B4D8 */
     virtual float vfPara_0x68();  /* 0x8019B4E0 */
     virtual float vfPara_0x6C();  /* 0x8019B4E8 */
@@ -146,8 +146,8 @@ class EnemyStatFunc {
     virtual void vfStat_0x1C() {}
     /* Starts motion sequence motion, again from its start when restart is set (behaviour
      * inferred from EnemyStatusCommon). */
-    virtual int vfStat_0x20(int motion, bool restart) {
-        return 0;
+    virtual bool vfStat_0x20(int motion, bool restart) {
+        return false;
     }
     virtual int vfStat_0x24() {
         return -1;
@@ -299,7 +299,17 @@ class EnemyMoveFunc {
     virtual bool vfMove_0x18();         /* 0x8019588C */
     virtual int vfMove_0x1C();          /* 0x8019B448 */
     virtual int vfMove_0x20();          /* 0x8019B450 */
+#ifdef ENEMY_MOVE_FUNC_INLINE
+    /* Inline in the original, like the rest of the interface: its first copy (0x8017B5A0) is
+     * emitted in Game/EggPawn.cpp after EnemyMoveCommon's own virtuals, for EnemyMoveCommon's
+     * vtable, which inherits the slot. Units that define ENEMY_MOVE_FUNC_INLINE emit a weak copy
+     * and its constant, as retail does (see Game/BkWingLarge.cpp). */
+    virtual float vfMove_0x24() {
+        return 0.0f;
+    }
+#else
     virtual float vfMove_0x24();        /* 0x8017B5A0 */
+#endif
     virtual float vfMove_0x28();        /* 0x8019B458 */
     virtual int vfMove_0x2C();          /* 0x8017CAC0 */
     virtual void *vfMove_0x30();        /* 0x8017CAC8 */
@@ -629,10 +639,10 @@ class EnemyParamCommon : public virtual EnemyReferer, public EnemyParaFunc {
     virtual int vfPara_0x58() {
         return 0;
     }
-    virtual int vfPara_0x5C() {
+    virtual int vfPara_0x5C() const {
         return 0;
     }
-    virtual int vfPara_0x60() {
+    virtual int vfPara_0x60() const {
         return 0;
     }
     virtual int vfPara_0x64() {
@@ -767,7 +777,7 @@ class EnemyStatusCommon : public virtual EnemyReferer, public EnemyStatFunc {
     virtual void vfStat_0x14();                  /* 0x801A8440 */
     virtual void vfStat_0x18();                  /* 0x801A83D8 */
     virtual void vfStat_0x1C();                  /* 0x801A833C */
-    virtual int vfStat_0x20(int motion, bool restart); /* 0x8017B61C */
+    virtual bool vfStat_0x20(int motion, bool restart); /* 0x8017B61C */
     virtual int vfStat_0x24();                   /* 0x8017B6F8 */
     virtual bool vfStat_0x2C();                  /* 0x8017B700 */
     virtual bool vfStat_0x28();                  /* 0x8017B708 */
@@ -942,16 +952,7 @@ class EnemyMoveCommon : public virtual EnemyReferer, public EnemyMoveFunc {
     virtual float vfMove_0x28();         /* 0x8017B588 */
     virtual int vfMove_0x2C();           /* 0x8017B590 */
     virtual void *vfMove_0x30();         /* 0x8017B598 */
-#ifdef ENEMY_MOVE_COMMON_INLINE
-    /* Inline in the original (weak copy 0x8017B5A0): units that define ENEMY_MOVE_COMMON_INLINE
-     * emit it, and its constant, as retail does (see Game/BkWingLarge.cpp). It is declared after
-     * 0x30, the order in which Game/EggPawn.cpp, where its first copy is, emits the slots. */
-    virtual float vfMove_0x24() {
-        return 0.0f;
-    }
-#else
-    virtual float vfMove_0x24();         /* 0x8017B5A0 */
-#endif
+    /* Slot 0x24 is EnemyMoveFunc's (0x8017B5A0): it is not overridden. */
     virtual void vfMove_0x34();          /* 0x801A560C */
 
 #ifdef ENEMY_MOVE_COMMON_UNIT

@@ -175,15 +175,15 @@ struct MovieEntry {
 /* The movies beside the text. */
 class Movie {
   public:
-    Movie(Context *context);
+    Movie(const Context *context);
     ~Movie();
 
     void Update(Context *context);
-    void Draw(Context *context);
+    void Draw(const Context *context);
     void UpdateMovie(Context *context);
     void DrawFrame(s32 x, s32 y, float scale);
     void DrawFade(s32 x, s32 y, float scale);
-    void BuildList(Context *context);
+    void BuildList(const Context *context);
 
     /* 0x0 */ float m_time;
     /* 0x4 */ MovieEntry *m_entries;

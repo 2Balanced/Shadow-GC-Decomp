@@ -49,11 +49,12 @@ static const float s_movieLengths[8] = {105.6f, 63.9f, 24.19f, 63.9f, 36.0f, 20.
 /* Where the movie goes for each layout. */
 static Position s_moviePositions[5] = {{32, 128}, {32, 128}, {336, 128}, {336, 128}, {32, 128}};
 
-/* NonMatching (90%): retail reads context->m_type before the member stores and stores the zeros
- * from the register that holds movie; GC/2.7 keeps a separate zero and schedules the loads
- * differently for every order tried. */
-Movie::Movie(Context *context) {
-    s32 type = context->m_type;
+/* The context is const in Movie's constructor, Draw and BuildList: retail reads it above stores
+ * that GC/2.7 only lets a load through a pointer to const pass (docs/research-notes.md, wave 39).
+ * NonMatching (96%, 3 instructions): retail stores the two null pointers from the register that
+ * holds movie, already zero; GC/2.7 keeps a separate zero in r5 wherever movie is cleared, also
+ * with the stores chained or movie initialised first (probes/Game_AdvStaffRollMovie.py). */
+Movie::Movie(const Context *context) {
     u32 i;
     u32 movie;
     MovieEntry *entry;
@@ -64,7 +65,7 @@ Movie::Movie(Context *context) {
     m_current = 0;
     m_brightness = 1.0f;
     movie = 0;
-    if (type != 4) {
+    if (context->m_type != 4) {
         BuildList(context);
     } else {
         file = context->m_file;
@@ -118,9 +119,7 @@ void Movie::Update(Context *context) {
     UpdateMovie(context);
 }
 
-/* NonMatching (89%): retail loads context->m_layout first; GC/2.7 schedules it after the load of
- * lbl_805EE0B0 for every shape tried. */
-void Movie::Draw(Context *context) {
+void Movie::Draw(const Context *context) {
     s32 layout = context->m_layout;
     Position *position = &s_moviePositions[layout];
     if (lbl_805EE0B0 != 0) {
@@ -164,7 +163,9 @@ void Movie::UpdateMovie(Context *context) {
 }
 
 /* NonMatching (99.5%): retail keeps scale in f26 and the outer bottom edge in f27; GC/2.7 swaps
- * them for every declaration order tried. */
+ * them for every declaration order tried, also with the last edges declared where they are
+ * first set or scale copied to a local (the float parameter residual of
+ * docs/research-notes.md). */
 void Movie::DrawFrame(s32 x, s32 y, float scale) {
     /* The frame around the movie, outer and inner edges, at scale 1. */
     float frameX[4] = {-1.0f, 641.0f, 8.0f, 632.0f};
@@ -283,9 +284,7 @@ void Movie::DrawFade(s32 x, s32 y, float scale) {
     lbl_805F15B4->fpIm2DRenderPrimitive(rwPRIMTYPETRISTRIP, vertices, 4);
 }
 
-/* NonMatching (96%): retail loads the file pointer before the int-to-float constant; GC/2.7
- * hoists the constant's load above it (see docs/research-notes.md on load scheduling). */
-void Movie::BuildList(Context *context) {
+void Movie::BuildList(const Context *context) {
     MovieEntry *entry = m_entries;
     if (entry != 0) {
         while (entry != 0) {

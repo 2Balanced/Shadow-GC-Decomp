@@ -79,7 +79,7 @@ class BkChaos : public EnemyFlyerCommon {
     virtual int vfPara_0x4C();
     virtual int vfPara_0x54();
     virtual int vfPara_0x58();
-    virtual int vfPara_0x5C();
+    virtual int vfPara_0x5C() const;
     virtual void vfSet_0x1C(UnkPlacement_800C9CD0 *placement);
     virtual void vfSet_0x20(UnkPlacement_800C9CD0 *placement);
 

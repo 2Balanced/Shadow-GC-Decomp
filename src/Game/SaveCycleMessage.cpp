@@ -7,9 +7,11 @@
  * inferred; the functions other units call keep their fn_ names. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 18 of 19 functions match. DrawWindow (0x802E4C58) differs in its prologue (retail
- * loads m_alpha above the stmw, as in Game/VehiclePathMove.cpp) and in the registers of the frame
- * rectangles (r6-r10 permuted; about 20 source forms tried). The .sdata2 constants and two
+ * NonMatching: 18 of 19 functions match. DrawWindow (0x802E4C58) is a const member function
+ * (retail loads m_alpha above the stmw, which GC/2.7 does for a const this); it still differs in
+ * the registers of the frame rectangles (r6-r10 permuted; about 20 source forms tried, and in
+ * wave 39 the rectangles' edges as named locals in several declaration orders, which moves the
+ * instructions as well: probes/Game_SaveCycleMessage_R2.py). The .sdata2 constants and two
  * .rodata strings also come out in another order under GC/2.7, and the weak boost exception
  * classes add RTTI records to .sdata. */
 #include "Game/Task.h"
@@ -178,7 +180,7 @@ class UnkSaveMessage_802E5B74 {
 
     void Input();
     void DrawText();
-    void DrawWindow();
+    void DrawWindow() const;
 
     /* 0x00 */ boost::weak_ptr<UnkHintTarget_801FB180> m_target;
     /* 0x08 */ s32 m_request;
@@ -606,7 +608,7 @@ void UnkSaveMessage_802E5B74::DrawText() {
     }
 }
 
-void UnkSaveMessage_802E5B74::DrawWindow() {
+void UnkSaveMessage_802E5B74::DrawWindow() const {
     u32 width = 299.0f * m_alpha;
     s32 left = 0x140 - width;
     width *= 2;

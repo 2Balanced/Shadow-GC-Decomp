@@ -669,11 +669,11 @@ int GunSoldierBase::vfPara_0x58() {
     return result;
 }
 
-int GunSoldierBase::vfPara_0x5C() {
+int GunSoldierBase::vfPara_0x5C() const {
     return field_0x357 ? 7 : 8;
 }
 
-int GunSoldierBase::vfPara_0x60() {
+int GunSoldierBase::vfPara_0x60() const {
     return field_0x357 ? 11 : 12;
 }
 

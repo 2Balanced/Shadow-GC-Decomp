@@ -5,7 +5,11 @@
  * (half the rounds plus one) and to black otherwise, plays the winner's event, then shows
  * "Winner" or moves on to the next round (state 7), the game over (11) or the match's end (16).
  * File name inferred. Names marked "(name inferred)" are not original. Definitions are in reverse
- * address order (deferred inlining emits functions last-defined first). */
+ * address order (deferred inlining emits functions last-defined first).
+ *
+ * The constructor counts the round before it stores the winner: GC/2.7 moves the store of the
+ * winner above the two counters' stores but numbers the registers in source order. The load
+ * request is 0x18 bytes (Game/TBGRead.h), which shows only in the frame size. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -28,6 +32,8 @@ namespace CSD {
 /* CTexList (class name from the RTTI of RCPtr<CTexList>::RCObject<CTexList>): a project's texture
  * list. */
 class CTexList;
+/* Game/csdTexList.cpp */
+s32 LoadTexList(CTexList *texList, const void *data, u32 size, const char *directory);
 } // namespace CSD
 } // namespace Chao
 
@@ -126,6 +132,7 @@ struct Result2PRequest {
     /* 0x08 */ u32 m_size;
     /* 0x0C */ void *m_user;
     /* 0x10 */ void (*m_callback)(Result2PRequest *request);
+    /* 0x14 */ u32 field_0x14; /* not set here (the request is 0x18 bytes: Game/TBGRead.h) */
 };
 
 class UnkFileSystem_800371D8;
@@ -162,7 +169,6 @@ void fn_80049B34(void *data);
  * loading textures from memory into it, giving it to a project, loading a project from memory,
  * advancing and drawing a project, a scene by name, and the scene calls. */
 RCPtr<CTexList> fn_80362094(u32 type);
-void fn_80361F30(CTexList *texList, void *data, u32 size, int arg3);
 void fn_8036C64C(Chao::CSD::CProject *project, const RCPtr<CTexList> &texList);
 void fn_8036DB70(Chao::CSD::CProject *project, void *data, u32 size, int arg3);
 void fn_8036DAD4(Chao::CSD::CProject *project);
@@ -231,14 +237,14 @@ Result2PAction::Result2PAction() {
                 lbl_8057D6A0.m_lastWinner = -1;
                 m_winner = 0;
             } else if (rings1 < rings2) {
-                lbl_8057D6A0.m_lastWinner = 1;
                 lbl_8057D6A0.m_roundsPlayed++;
                 lbl_8057D6A0.m_wins[1]++;
+                lbl_8057D6A0.m_lastWinner = 1;
                 m_winner = 1;
             } else {
-                lbl_8057D6A0.m_lastWinner = 0;
                 lbl_8057D6A0.m_roundsPlayed++;
                 lbl_8057D6A0.m_wins[0]++;
+                lbl_8057D6A0.m_lastWinner = 0;
                 m_winner = 1;
             }
             m_state = 0;
@@ -247,16 +253,16 @@ Result2PAction::Result2PAction() {
             m_winner = 0;
             m_state = 2;
         } else if (out1) {
-            lbl_8057D6A0.m_lastWinner = 1;
             lbl_8057D6A0.m_roundsPlayed++;
             lbl_8057D6A0.m_wins[1]++;
+            lbl_8057D6A0.m_lastWinner = 1;
             m_winner = 1;
             m_state = 4;
             m_wait = 1.0f;
         } else {
-            lbl_8057D6A0.m_lastWinner = 0;
             lbl_8057D6A0.m_roundsPlayed++;
             lbl_8057D6A0.m_wins[0]++;
+            lbl_8057D6A0.m_lastWinner = 0;
             m_winner = 1;
             m_state = 4;
             m_wait = 1.0f;
@@ -285,7 +291,7 @@ void Result2PAction::Execute() {
     } else if (m_texData != 0 && m_projectData != 0) {
         m_project = new Chao::CSD::CProject;
         RCPtr<CTexList> texList = fn_80362094(0x2E525754);
-        fn_80361F30(texList.Get(), m_texData, m_texSize, 0);
+        Chao::CSD::LoadTexList(texList.Get(), m_texData, m_texSize, 0);
         fn_8036C64C(m_project, texList);
         fn_8036DB70(m_project, m_projectData, m_projectSize, 0);
         fn_8036D598(m_project, 0);

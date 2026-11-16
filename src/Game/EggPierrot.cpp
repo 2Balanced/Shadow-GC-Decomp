@@ -982,11 +982,11 @@ int EggPierrot::vfPara_0x58() {
     return m_targetInArea ? 2 : 0;
 }
 
-int EggPierrot::vfPara_0x5C() {
+int EggPierrot::vfPara_0x5C() const {
     return 5;
 }
 
-int EggPierrot::vfPara_0x60() {
+int EggPierrot::vfPara_0x60() const {
     return 6;
 }
 

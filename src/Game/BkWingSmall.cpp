@@ -4,9 +4,9 @@
  * inferred from the class. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first). */
 
-/* EnemyMoveCommon::vfMove_0x24 inline, as in BkWingLarge.cpp: its constant 0 comes first in
+/* EnemyMoveFunc::vfMove_0x24 inline, as in BkWingLarge.cpp: its constant 0 comes first in
  * .sdata2, as in retail. */
-#define ENEMY_MOVE_COMMON_INLINE
+#define ENEMY_MOVE_FUNC_INLINE
 
 #include "Game/BkWingSmall.h"
 #include "Game/EnemyRender.h"
@@ -158,11 +158,11 @@ int BkWingSmallBase::vfPara_0x58() {
     return 2;
 }
 
-int BkWingSmallBase::vfPara_0x5C() {
+int BkWingSmallBase::vfPara_0x5C() const {
     return 3;
 }
 
-int BkWingSmallBase::vfPara_0x60() {
+int BkWingSmallBase::vfPara_0x60() const {
     return 3;
 }
 

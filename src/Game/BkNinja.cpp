@@ -640,12 +640,12 @@ int BkNinja::vfPara_0x58() {
     return 7;
 }
 
-int BkNinja::vfPara_0x5C() {
-    return vfStat_0x74() == 0 ? 8 : 9;
+int BkNinja::vfPara_0x5C() const {
+    return const_cast<BkNinja *>(this)->vfStat_0x74() == 0 ? 8 : 9;
 }
 
-int BkNinja::vfPara_0x60() {
-    return vfStat_0x74() == 0 ? 10 : 11;
+int BkNinja::vfPara_0x60() const {
+    return const_cast<BkNinja *>(this)->vfStat_0x74() == 0 ? 10 : 11;
 }
 
 int BkNinja::GetWaitMotion() {

@@ -305,11 +305,11 @@ int BkGiant::vfPara_0x58() {
     return vfPara_0x48();
 }
 
-int BkGiant::vfPara_0x5C() {
+int BkGiant::vfPara_0x5C() const {
     return 8;
 }
 
-int BkGiant::vfPara_0x60() {
+int BkGiant::vfPara_0x60() const {
     return 9;
 }
 

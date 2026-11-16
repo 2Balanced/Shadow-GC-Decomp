@@ -67,7 +67,7 @@ class BkWormBase : public EnemyWalkerCommon {
     virtual void vfDisp_0x5C();
     virtual void vfDisp_0x54();
     virtual int vfPara_0x48();
-    virtual int vfPara_0x5C();
+    virtual int vfPara_0x5C() const;
 
     /* The shots: creates a lock-on target per barrel, fires one shot from each barrel, and fires
      * one from matrix along target (names inferred). */

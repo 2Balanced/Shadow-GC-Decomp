@@ -254,7 +254,7 @@ extern "C" int vfPara_0x48__10BkWormBaseFv(const BkWormBase *self) {
     return self->m_enemy->m_status->vfStat_0x34() ? 0 : 1;
 }
 
-int BkWormBase::vfPara_0x5C() {
+int BkWormBase::vfPara_0x5C() const {
     return 4;
 }
 
