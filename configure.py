@@ -509,6 +509,30 @@ config.libs = [
         ],
     ),
     {
+        # Same as the other Dolphin libraries, but GX was built without floating-point
+        # contraction: retail keeps separate fmuls/fsubs where -fp_contract on fuses them.
+        "lib": "gx",
+        "mw_version": "GC/1.2.5n",
+        "cflags": [*cflags_base, "-fp_contract off"],
+        "progress_category": "sdk",
+        "objects": [
+            Object(NonMatching, "dolphin/gx/GXAttr.c"),
+            Object(Matching, "dolphin/gx/GXBump.c"),
+            Object(Matching, "dolphin/gx/GXDisplayList.c"),
+            Object(Matching, "dolphin/gx/GXFifo.c"),
+            Object(Matching, "dolphin/gx/GXFrameBuf.c"),
+            Object(Matching, "dolphin/gx/GXGeometry.c"),
+            Object(Matching, "dolphin/gx/GXInit.c"),
+            Object(Matching, "dolphin/gx/GXLight.c"),
+            Object(Matching, "dolphin/gx/GXMisc.c"),
+            Object(Matching, "dolphin/gx/GXPerf.c"),
+            Object(Matching, "dolphin/gx/GXPixel.c"),
+            Object(NonMatching, "dolphin/gx/GXTev.c"),
+            Object(Matching, "dolphin/gx/GXTexture.c"),
+            Object(Matching, "dolphin/gx/GXTransform.c"),
+        ],
+    },
+    {
         # Gadget units. They have no splits yet, so none is linked.
         "lib": "Game",
         "mw_version": "GC/2.7",
