@@ -134,6 +134,78 @@ void L2GlobalInvalidate(void);
 
 void DBPrintf(char *str, ...);
 
+/* Threads. Every thread is on the active list (head at 0x800000DC); a runnable one also sits in
+ * the run queue of its priority, a waiting one in the queue it sleeps on. */
+typedef struct OSThread OSThread;
+typedef struct OSMutex OSMutex;
+
+typedef struct OSThreadQueue {
+    OSThread *head;
+    OSThread *tail;
+} OSThreadQueue;
+
+typedef struct OSThreadLink {
+    OSThread *next;
+    OSThread *prev;
+} OSThreadLink;
+
+typedef struct OSMutexQueue {
+    OSMutex *head;
+    OSMutex *tail;
+} OSMutexQueue;
+
+typedef struct OSMutexLink {
+    OSMutex *next;
+    OSMutex *prev;
+} OSMutexLink;
+
+struct OSMutex {
+    OSThreadQueue queue;
+    OSThread *thread; /* owner, null while unlocked */
+    s32 count;        /* recursion depth */
+    OSMutexLink link; /* in the owner's queueMutex */
+};
+
+struct OSThread {
+    OSContext context;
+    u16 state;
+    u16 attr;
+    s32 suspend;   /* > 0 while suspended */
+    s32 priority;  /* effective priority (raised by priority inheritance) */
+    s32 base;      /* priority given at creation or by OSSetThreadPriority */
+    void *val;     /* exit value */
+    OSThreadQueue *queue; /* queue the thread is linked into */
+    OSThreadLink link;
+    OSThreadQueue queueJoin;
+    OSMutex *mutex;          /* mutex the thread is waiting for */
+    OSMutexQueue queueMutex; /* mutexes the thread holds */
+    OSThreadLink linkActive;
+    u8 *stackBase;
+    u32 *stackEnd;
+    s32 error;
+    void *specific[2];
+};
+
+/* OSThread.state */
+#define OS_THREAD_STATE_READY 1
+#define OS_THREAD_STATE_RUNNING 2
+#define OS_THREAD_STATE_WAITING 4
+#define OS_THREAD_STATE_MORIBUND 8
+
+/* OSThread.attr */
+#define OS_THREAD_ATTR_DETACH 0x0001
+
+#define OS_PRIORITY_MIN 0
+#define OS_PRIORITY_MAX 31
+#define OS_PRIORITY_IDLE OS_PRIORITY_MAX
+
+#define OS_THREAD_STACK_MAGIC 0xDEADBABE
+
+/* Per-thread data the OS keeps in low memory. */
+#define __OSActiveThreadQueue (*(OSThreadQueue *)OSPhysicalToCached(0x00DC))
+#define __OSCurrentThread (*(OSThread **)OSPhysicalToCached(0x00E4))
+
+
 #ifdef __cplusplus
 }
 #endif
