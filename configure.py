@@ -468,6 +468,26 @@ config.libs = [
             Object(Matching, "dolphin/os/__ppc_eabi_init.cpp"),
         ],
     ),
+    DolphinLib(
+        "mtx",
+        [
+            Object(Matching, "dolphin/mtx/mtx.c"),
+            Object(Matching, "dolphin/mtx/mtx44.c"),
+        ],
+    ),
+    DolphinLib(
+        "dvd",
+        [
+            Object(Matching, "dolphin/dvd/dvdlow.c"),
+            Object(Matching, "dolphin/dvd/dvdfs.c"),
+            Object(Matching, "dolphin/dvd/dvd.c"),
+            Object(Matching, "dolphin/dvd/dvdqueue.c"),
+            Object(Matching, "dolphin/dvd/dvderror.c"),
+            Object(Matching, "dolphin/dvd/dvdidutils.c"),
+            Object(Matching, "dolphin/dvd/dvdFatal.c"),
+            Object(Matching, "dolphin/dvd/fstload.c"),
+        ],
+    ),
     {
         # Gadget units. They have no splits yet, so none is linked.
         "lib": "Game",
