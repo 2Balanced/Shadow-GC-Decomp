@@ -110,7 +110,7 @@ BOOL fn_8037C9F4(void);                                        /* DVDCheckDisk *
 u32 fn_80381A78(u32 length);                                   /* ARAlloc */
 void fn_803836F4(UnkAramRequest_8032C0F4 *request, u32 owner, u32 type, u32 priority, u32 source,
                  u32 dest, u32 length, UnkAramCallback callback); /* ARQPostRequest */
-s32 fn_8038D238(s32 channel);
+s32 CARDGetResultCode(s32 channel);
 void fn_803804FC(const u32 *commands);                         /* PADControlAllMotors */
 char *strcpy(char *dst, const char *src);
 
@@ -746,7 +746,7 @@ extern "C" void fn_8032BB78(u8 noReset) {
                 s_stopped = true;
                 lbl_8057D6A0.field_0x10 = 0;
             }
-            if (!noReset && fn_8038D238(0) != -1) {
+            if (!noReset && CARDGetResultCode(0) != -1) {
                 if (*fn_80053164() != 0) {
                     fn_8003723C();
                     fn_801D654C(fn_80053164());

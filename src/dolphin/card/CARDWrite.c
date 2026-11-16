@@ -51,7 +51,7 @@ static void WriteCallback(s32 chan, s32 result) {
             result = CARD_RESULT_BROKEN;
             goto error;
         }
-        result = fn_8038CF20(chan, card->sectorSize * (u32)fileInfo->iBlock, EraseCallback);
+        result = __CARDEraseSector(chan, card->sectorSize * (u32)fileInfo->iBlock, EraseCallback);
     }
     if (result < 0) {
         goto error;
@@ -61,7 +61,7 @@ static void WriteCallback(s32 chan, s32 result) {
 error:
     callback = card->apiCallback;
     card->apiCallback = NULL;
-    fn_8038D1D4(card, result);
+    __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
 
@@ -85,7 +85,7 @@ static void EraseCallback(s32 chan, s32 result) {
 error:
     callback = card->apiCallback;
     card->apiCallback = NULL;
-    fn_8038D1D4(card, result);
+    __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
 
@@ -102,22 +102,22 @@ s32 CARDWriteAsync(CARDFileInfo *fileInfo, const void *buffer, s32 length, s32 o
         return result;
     }
     if (OFFSET(offset, card->sectorSize) != 0 || OFFSET(length, card->sectorSize) != 0) {
-        return fn_8038D1D4(card, CARD_RESULT_FATAL_ERROR);
+        return __CARDPutControlBlock(card, CARD_RESULT_FATAL_ERROR);
     }
 
     dir = __CARDGetDirBlock(card);
     entry = &dir[fileInfo->fileNo];
     result = __CARDIsWritable(card, entry);
     if (result < 0) {
-        return fn_8038D1D4(card, result);
+        return __CARDPutControlBlock(card, result);
     }
 
     DCStoreRange((void *)buffer, (u32)length);
-    card->apiCallback = callback ? callback : fn_8038BFCC;
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
     card->buffer = (void *)buffer;
-    result = fn_8038CF20(fileInfo->chan, card->sectorSize * (u32)fileInfo->iBlock, EraseCallback);
+    result = __CARDEraseSector(fileInfo->chan, card->sectorSize * (u32)fileInfo->iBlock, EraseCallback);
     if (result < 0) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     return result;
 }

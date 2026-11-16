@@ -91,7 +91,7 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat) {
     if (fileNo < 0 || CARD_MAX_FILE <= fileNo) {
         return CARD_RESULT_FATAL_ERROR;
     }
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
@@ -112,7 +112,7 @@ s32 CARDGetStatus(s32 chan, s32 fileNo, CARDStat *stat) {
         stat->commentAddr = entry->commentAddr;
         UpdateIconOffsets(entry, stat);
     }
-    return fn_8038D1D4(card, result);
+    return __CARDPutControlBlock(card, result);
 }
 
 s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callback) {
@@ -127,7 +127,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callba
          CARD_SYSTEM_BLOCK_SIZE - 0x40 < stat->commentAddr % CARD_SYSTEM_BLOCK_SIZE)) {
         return CARD_RESULT_FATAL_ERROR;
     }
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
@@ -136,7 +136,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callba
     entry = &dir[fileNo];
     result = __CARDIsWritable(card, entry);
     if (result < 0) {
-        return fn_8038D1D4(card, result);
+        return __CARDPutControlBlock(card, result);
     }
 
     entry->bannerFormat = stat->bannerFormat;
@@ -153,7 +153,7 @@ s32 CARDSetStatusAsync(s32 chan, s32 fileNo, CARDStat *stat, CARDCallback callba
 
     result = __CARDUpdateDir(chan, callback);
     if (result < 0) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     return result;
 }

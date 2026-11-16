@@ -48,8 +48,8 @@ SIZE_ASSERT(UnkSaveData_800BB74C, 0x1F5C);
 
 extern "C" {
 /* Dolphin SDK CARD functions (names from the SDK; the symbols are still placeholders). */
-s32 fn_8038D238(s32 chan);                                          /* CARDGetResultCode */
-s32 fn_8038D268(s32 chan, s32 *bytesNotUsed, s32 *filesNotUsed);    /* CARDFreeBlocks */
+s32 CARDGetResultCode(s32 chan);
+s32 CARDFreeBlocks(s32 chan, s32 *bytesNotUsed, s32 *filesNotUsed);
 s32 CARDCheckAsync(s32 chan, CARDCallback callback);                   /* CARDCheckAsync */
 s32 CARDProbeEx(s32 chan, s32 *memSize, s32 *sectorSize);           /* CARDProbeEx */
 s32 CARDMountAsync(s32 chan, void *workArea, CARDCallback detach, CARDCallback attach); /* CARDMountAsync */
@@ -799,7 +799,7 @@ void MemoryCard::PollMount() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -836,7 +836,7 @@ void MemoryCard::PollCheck() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -895,7 +895,7 @@ void MemoryCard::PollOpen() {
         return;
     }
     if (m_flags & 2) {
-        result = fn_8038D238(m_channel);
+        result = CARDGetResultCode(m_channel);
     } else {
         result = CARDOpen(m_channel, m_work->m_fileName, &m_work->m_fileInfo);
     }
@@ -948,7 +948,7 @@ void MemoryCard::PollGetStatus() {
         return;
     }
     if (m_flags & 4) {
-        result = fn_8038D238(m_channel);
+        result = CARDGetResultCode(m_channel);
     } else {
         result = CARDGetStatus(m_channel, m_work->m_fileNo, &m_work->m_stat);
     }
@@ -998,7 +998,7 @@ void MemoryCard::PollFormat() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1029,7 +1029,7 @@ void MemoryCard::PollCreate() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1073,7 +1073,7 @@ void MemoryCard::PollDelete() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1103,7 +1103,7 @@ void MemoryCard::PollRead() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1133,7 +1133,7 @@ void MemoryCard::PollWrite() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1179,7 +1179,7 @@ void MemoryCard::PollFreeBlocks() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D268(m_channel, &bytes, &files);
+    result = CARDFreeBlocks(m_channel, &bytes, &files);
     if (result == CARD_RESULT_BUSY) {
         return;
     }
@@ -1211,7 +1211,7 @@ void MemoryCard::PollSetStatus() {
     if (CheckCard()) {
         return;
     }
-    result = fn_8038D238(m_channel);
+    result = CARDGetResultCode(m_channel);
     if (result == CARD_RESULT_BUSY) {
         return;
     }

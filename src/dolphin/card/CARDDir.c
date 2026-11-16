@@ -25,7 +25,7 @@ static void WriteCallback(s32 chan, s32 result) {
         }
     }
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->eraseCallback;
     if (callback) {
@@ -54,7 +54,7 @@ static void EraseCallback(s32 chan, s32 result) {
 
 error:
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->eraseCallback;
     if (callback) {
@@ -63,22 +63,28 @@ error:
     }
 }
 
+/* The check code and checksums at the end of a directory block. An inline function, not a macro:
+ * retail's ++check->checkCode goes through the directory pointer, which only this form gives. */
+static inline CARDDirCheck *__CARDGetDirCheck(CARDDir *dir) {
+    return (CARDDirCheck *)&dir[CARD_MAX_FILE];
+}
+
 s32 __CARDUpdateDir(s32 chan, CARDCallback callback) {
     CARDControl *card = &__CARDBlock[chan];
     CARDDirCheck *check;
     CARDDir *dir;
+    u32 addr;
     u32 unused; /* never touched; retail's frame has room for it */
 
     if (!card->attached) {
         return CARD_RESULT_NOCARD;
     }
     dir = __CARDGetDirBlock(card);
-    check = (CARDDirCheck *)&dir[CARD_MAX_FILE];
+    check = __CARDGetDirCheck(dir);
     ++check->checkCode;
     __CARDCheckSum(dir, CARD_SYSTEM_BLOCK_SIZE - 4, &check->checkSum, &check->checkSumInv);
     DCStoreRange(dir, CARD_SYSTEM_BLOCK_SIZE);
     card->eraseCallback = callback;
-    return fn_8038CF20(
-        chan, ((u32)dir - (u32)card->workArea) / CARD_SYSTEM_BLOCK_SIZE * card->sectorSize,
-        EraseCallback);
+    addr = ((u32)dir - (u32)card->workArea) / CARD_SYSTEM_BLOCK_SIZE * card->sectorSize;
+    return __CARDEraseSector(chan, addr, EraseCallback);
 }

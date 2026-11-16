@@ -286,7 +286,7 @@ void fn_8042A5E0(Effect::System::EffectSystem *system);
 void fn_800A31F0(void);
 void **fn_8000DCC0(void);
 void fn_80474258(void *object);
-void fn_8038D030(void);
+void CARDInit(void);
 }
 
 /* The movie's status (see Game/DiscErrorHandler.cpp; only tested here). */
@@ -476,7 +476,7 @@ extern "C" bool fn_801E2234(void) {
     fn_800A31F0();
     fn_80474258(*fn_8000DCC0());
     fn_801E59C4();
-    fn_8038D030();
+    CARDInit();
     return true;
 }
 

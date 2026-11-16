@@ -6850,6 +6850,21 @@ dolphin/dsp/dsp_task.c:
 	.data       start:0x805670D0 end:0x80567210
 	.sbss       start:0x805F1230 end:0x805F1248
 
+dolphin/card/CARDBios.c:
+	.text       start:0x8038BFCC end:0x8038D424
+	.data       start:0x80567210 end:0x80567280
+	.bss        start:0x805A1BE0 end:0x805A1E20
+	.sdata      start:0x805EDC18 end:0x805EDC20
+	.sbss       start:0x805F1248 end:0x805F1250
+
+dolphin/card/CARDUnlock.c:
+	.text       start:0x8038D424 end:0x8038E684
+	.data       start:0x80567280 end:0x805673E0
+	.sdata      start:0x805EDC20 end:0x805EDC28
+
+dolphin/card/CARDNet.c:
+	.sdata      start:0x805EDC28 end:0x805EDC30
+
 dolphin/card/CARDRdwr.c:
 	.text       start:0x8038E684 end:0x8038E914
 

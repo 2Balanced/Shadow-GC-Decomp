@@ -5,9 +5,6 @@
 int fn_803A8DA8(const void *a, const void *b, unsigned long n); /* memcmp */
 #define memcmp fn_803A8DA8
 
-#define __CARDDiskNone lbl_805A1E00
-#define __CARDPermMask lbl_805EDC2A
-
 #define CARD_ATTR_PUBLIC 0x04
 #define CARD_ATTR_GLOBAL 0x20
 #define CARD_ATTR_COMPANY 0x40
@@ -111,7 +108,7 @@ s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo) {
     s32 fileNo;
 
     fileInfo->chan = -1;
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
@@ -128,19 +125,19 @@ s32 CARDOpen(s32 chan, const char *fileName, CARDFileInfo *fileInfo) {
             fileInfo->iBlock = entry->startBlock;
         }
     }
-    return fn_8038D1D4(card, result);
+    return __CARDPutControlBlock(card, result);
 }
 
 s32 CARDClose(CARDFileInfo *fileInfo) {
     CARDControl *card;
     s32 result;
 
-    result = fn_8038D11C(fileInfo->chan, &card);
+    result = __CARDGetControlBlock(fileInfo->chan, &card);
     if (result < 0) {
         return result;
     }
     fileInfo->chan = -1;
-    return fn_8038D1D4(card, CARD_RESULT_READY);
+    return __CARDPutControlBlock(card, CARD_RESULT_READY);
 }
 
 /* No file is ever marked open in this version. */

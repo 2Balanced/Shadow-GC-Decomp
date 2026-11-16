@@ -6,6 +6,7 @@
 
 #include <dolphin/os.h>
 #include <dolphin/card.h>
+#include <dolphin/dsp.h>
 
 #ifdef __cplusplus
 extern "C" {
@@ -76,11 +77,16 @@ typedef struct CARDControl {
     u8 id[12];                  /* 0x18: flash ID */
     s32 mountStep;              /* 0x24 */
     s32 formatStep;             /* 0x28 */
-    u8 unk2C[0x80 - 0x2C];
+    u32 scramble;               /* 0x2C: the unlock cipher's shift register */
+    DSPTaskInfo task;           /* 0x30: the DSP program that answers the card's challenge */
     void *workArea;             /* 0x80 */
     CARDDir *currentDir;        /* 0x84 */
     u16 *currentFat;            /* 0x88 */
-    u8 unk8C[0xAC - 0x8C];
+    OSThreadQueue threadQueue;  /* 0x8C */
+    u8 cmd[9];                  /* 0x94: the command being sent, kept for retries */
+    s32 cmdlen;                 /* 0xA0 */
+    u32 mode;                   /* 0xA4: EXI transfer direction; -1 for a command with no data */
+    int retry;                  /* 0xA8 */
     s32 repeat;                 /* 0xAC: pages or segments left in the transfer */
     u32 addr;                   /* 0xB0 */
     void *buffer;               /* 0xB4 */
@@ -89,7 +95,7 @@ typedef struct CARDControl {
     u16 startBlock;             /* 0xBE */
     CARDFileInfo *fileInfo;     /* 0xC0: the file being created */
     CARDCallback extCallback;   /* 0xC4: card pulled out */
-    u8 unkC8[4];
+    CARDCallback txCallback;    /* 0xC8: the DMA transfer finished */
     CARDCallback exiCallback;   /* 0xCC */
     CARDCallback apiCallback;   /* 0xD0 */
     CARDCallback xferCallback;  /* 0xD4 */
@@ -101,22 +107,38 @@ typedef struct CARDControl {
 } CARDControl;
 
 extern CARDControl __CARDBlock[2];
-extern CARDDiskID lbl_805A1E00; /* the all-games disc ID (CARDBios) */
-extern u8 lbl_805EDC2A;         /* permission bits honoured for other games' files (CARDBios) */
+extern CARDDiskID __CARDDiskNone; /* the all-games disc ID */
+extern u16 __CARDVendorID;        /* CARDNet */
+extern u8 __CARDPermMask;         /* CARDNet: permission bits honoured for other games' files */
 
-/* CARDBios and CARDCheck, still under their placeholder names. */
-s32 fn_8038CCB0(s32 chan, CARDCallback callback);            /* read one 512-byte segment */
-s32 fn_8038CDE4(s32 chan, CARDCallback callback);            /* write one page */
-s32 fn_8038CF20(s32 chan, u32 addr, CARDCallback callback);  /* erase one sector */
-s32 fn_8038D1D4(CARDControl *card, s32 result);              /* release the control block */
-void fn_8038BFCC(s32 chan, s32 result);                      /* the do-nothing API callback */
-s32 fn_8038D11C(s32 chan, CARDControl **card);               /* claim the control block */
+/* CARDBios */
+void __CARDDefaultApiCallback(s32 chan, s32 result);          /* the do-nothing API callback */
+void __CARDExtHandler(s32 chan, OSContext *context);          /* card removed */
+void __CARDExiHandler(s32 chan, OSContext *context);          /* card interrupt */
+void __CARDTxHandler(s32 chan, OSContext *context);
+void __CARDUnlockedHandler(s32 chan, OSContext *context);     /* EXI bus granted */
+s32 __CARDEnableInterrupt(s32 chan, BOOL enable);
+s32 __CARDReadStatus(s32 chan, u8 *status);
+s32 __CARDReadVendorID(s32 chan, u16 *vendorID);
+s32 __CARDClearStatus(s32 chan);
+s32 __CARDReadSegment(s32 chan, CARDCallback callback);       /* read one 512-byte segment */
+s32 __CARDWritePage(s32 chan, CARDCallback callback);         /* write one page */
+s32 __CARDEraseSector(s32 chan, u32 addr, CARDCallback callback);
+u16 __CARDGetFontEncode(void);                                /* the console's font encoding */
+void __CARDSetDiskID(CARDDiskID *id);
+s32 __CARDGetControlBlock(s32 chan, CARDControl **pcard);     /* claim the control block */
+s32 __CARDPutControlBlock(CARDControl *card, s32 result);     /* release the control block */
+BOOL CARDGetFastMode(void);
+
+/* CARDUnlock */
+s32 __CARDUnlock(s32 chan, u8 flashID[12]);
+
 s32 __CARDGetFileNo(CARDControl *card, const char *fileName, s32 *fileNo);
 BOOL __CARDIsOpened(CARDControl *card, s32 fileNo);            /* is the file open? */
 s32 __CARDIsWritable(CARDControl *card, CARDDir *entry);          /* may this game write the file? */
 s32 __CARDIsReadable(CARDControl *card, CARDDir *entry);          /* may this game read the file? */
-u16 fn_8038D0DC(void);                                       /* the console's font encoding */
 void __CARDCheckSum(void *data, int length, u16 *checkSum, u16 *checkSumInv);
+void __CARDMountCallback(s32 chan, s32 result);
 
 BOOL __CARDCompareFileName(CARDDir *entry, const char *fileName);
 s32 __CARDVerify(CARDControl *card);

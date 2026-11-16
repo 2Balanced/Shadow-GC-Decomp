@@ -49,7 +49,7 @@ static void CreateCallbackFat(s32 chan, s32 result) {
     return;
 
 error:
-    fn_8038D1D4(card, result);
+    __CARDPutControlBlock(card, result);
     if (callback) {
         callback(chan, result);
     }
@@ -69,7 +69,7 @@ s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *file
     if (strlen(fileName) > CARD_FILENAME_MAX) {
         return CARD_RESULT_NAMETOOLONG;
     }
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
@@ -88,19 +88,19 @@ s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *file
         } else if (fn_803A8DA8(entry->gameName, card->diskID->gameName, 4) == 0 &&
                    fn_803A8DA8(entry->company, card->diskID->company, 2) == 0 &&
                    __CARDCompareFileName(entry, fileName)) {
-            return fn_8038D1D4(card, CARD_RESULT_EXIST);
+            return __CARDPutControlBlock(card, CARD_RESULT_EXIST);
         }
     }
     if (freeNo == (u16)-1) {
-        return fn_8038D1D4(card, CARD_RESULT_NOENT);
+        return __CARDPutControlBlock(card, CARD_RESULT_NOENT);
     }
 
     fat = __CARDGetFatBlock(card);
     if (card->sectorSize * fat[CARD_FAT_FREEBLOCKS] < size) {
-        return fn_8038D1D4(card, CARD_RESULT_INSSPACE);
+        return __CARDPutControlBlock(card, CARD_RESULT_INSSPACE);
     }
 
-    card->apiCallback = callback ? callback : fn_8038BFCC;
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
     card->freeNo = freeNo;
     entry = &dir[freeNo];
     entry->length = (u16)(size / card->sectorSize);
@@ -112,7 +112,7 @@ s32 CARDCreateAsync(s32 chan, const char *fileName, u32 size, CARDFileInfo *file
 
     result = __CARDAllocBlock(chan, size / card->sectorSize, CreateCallbackFat);
     if (result < 0) {
-        return fn_8038D1D4(card, result);
+        return __CARDPutControlBlock(card, result);
     }
     return result;
 }

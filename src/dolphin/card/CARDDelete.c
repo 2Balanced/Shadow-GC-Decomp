@@ -19,7 +19,7 @@ static void DeleteCallback(s32 chan, s32 result) {
     return;
 
 error:
-    fn_8038D1D4(card, result);
+    __CARDPutControlBlock(card, result);
     if (callback) {
         callback(chan, result);
     }
@@ -32,16 +32,16 @@ s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback) {
     CARDDir *dir;
     CARDDir *entry;
 
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
     result = __CARDGetFileNo(card, fileName, &fileNo);
     if (result < 0) {
-        return fn_8038D1D4(card, result);
+        return __CARDPutControlBlock(card, result);
     }
     if (__CARDIsOpened(card, fileNo)) {
-        return fn_8038D1D4(card, CARD_RESULT_BUSY);
+        return __CARDPutControlBlock(card, CARD_RESULT_BUSY);
     }
 
     dir = __CARDGetDirBlock(card);
@@ -49,10 +49,10 @@ s32 CARDDeleteAsync(s32 chan, const char *fileName, CARDCallback callback) {
     card->startBlock = entry->startBlock;
     memset(entry, 0xFF, sizeof(CARDDir));
 
-    card->apiCallback = callback ? callback : fn_8038BFCC;
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
     result = __CARDUpdateDir(chan, DeleteCallback);
     if (result < 0) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     return result;
 }

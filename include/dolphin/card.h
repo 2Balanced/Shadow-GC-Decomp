@@ -2,9 +2,9 @@
 #define DOLPHIN_CARD_H
 
 /* What the decompiled game code needs from the Dolphin SDK memory card library (CARD): result
- * codes, a few limits, the callback type and the two structures the game fills in. The library's
- * own functions keep their fn_ placeholder names; each unit declares the ones it calls. The names
- * are the SDK's public interface names, so code that uses them reads like any other CARD client. */
+ * codes, a few limits, the callback type and the two structures the game fills in. Each unit
+ * declares the library functions it calls. The names are the SDK's public interface names, so code
+ * that uses them reads like any other CARD client. */
 
 #include <dolphin/types.h>
 

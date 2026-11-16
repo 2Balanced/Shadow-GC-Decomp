@@ -26,7 +26,7 @@ static void WriteCallback(s32 chan, s32 result) {
         }
     }
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->eraseCallback;
     if (callback) {
@@ -55,7 +55,7 @@ static void EraseCallback(s32 chan, s32 result) {
 
 error:
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->eraseCallback;
     if (callback) {
@@ -139,7 +139,7 @@ s32 __CARDUpdateFatBlock(s32 chan, u16 *fat, CARDCallback callback) {
                 &fat[CARD_FAT_CHECKSUMINV]);
     DCStoreRange(fat, CARD_SYSTEM_BLOCK_SIZE);
     card->eraseCallback = callback;
-    return fn_8038CF20(
+    return __CARDEraseSector(
         chan, ((u32)fat - (u32)card->workArea) / CARD_SYSTEM_BLOCK_SIZE * card->sectorSize,
         EraseCallback);
 }

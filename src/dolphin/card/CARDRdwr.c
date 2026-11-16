@@ -16,7 +16,7 @@ static void BlockReadCallback(s32 chan, s32 result) {
     if (--card->repeat <= 0) {
         goto error;
     }
-    result = fn_8038CCB0(chan, BlockReadCallback);
+    result = __CARDReadSegment(chan, BlockReadCallback);
     if (result < 0) {
         goto error;
     }
@@ -24,7 +24,7 @@ static void BlockReadCallback(s32 chan, s32 result) {
 
 error:
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->xferCallback;
     if (callback) {
@@ -43,7 +43,7 @@ s32 __CARDRead(s32 chan, u32 addr, s32 length, void *dst, CARDCallback callback)
     card->repeat = (s32)((u32)length / 0x200);
     card->addr = addr;
     card->buffer = dst;
-    return fn_8038CCB0(chan, BlockReadCallback);
+    return __CARDReadSegment(chan, BlockReadCallback);
 }
 
 static void BlockWriteCallback(s32 chan, s32 result) {
@@ -59,7 +59,7 @@ static void BlockWriteCallback(s32 chan, s32 result) {
     if (--card->repeat <= 0) {
         goto error;
     }
-    result = fn_8038CDE4(chan, BlockWriteCallback);
+    result = __CARDWritePage(chan, BlockWriteCallback);
     if (result < 0) {
         goto error;
     }
@@ -67,7 +67,7 @@ static void BlockWriteCallback(s32 chan, s32 result) {
 
 error:
     if (card->apiCallback == NULL) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     callback = card->xferCallback;
     if (callback) {
@@ -86,5 +86,5 @@ s32 __CARDWrite(s32 chan, u32 addr, s32 length, void *src, CARDCallback callback
     card->repeat = length / card->pageSize;
     card->addr = addr;
     card->buffer = src;
-    return fn_8038CDE4(chan, BlockWriteCallback);
+    return __CARDWritePage(chan, BlockWriteCallback);
 }

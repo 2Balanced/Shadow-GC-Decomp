@@ -68,7 +68,7 @@ static s32 VerifyID(CARDControl *card) {
     }
     __OSUnlockSramEx(FALSE);
 
-    if (id->encode != fn_8038D0DC()) {
+    if (id->encode != __CARDGetFontEncode()) {
         return CARD_RESULT_ENCODING;
     }
     return CARD_RESULT_READY;
@@ -213,19 +213,19 @@ s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
     if (xferBytes) {
         *xferBytes = 0;
     }
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
     result = VerifyID(card);
     if (result < 0) {
-        return fn_8038D1D4(card, result);
+        return __CARDPutControlBlock(card, result);
     }
 
     errors = VerifyDir(card, &currentDir);
     errors += VerifyFAT(card, &currentFat);
     if (1 < errors) {
-        return fn_8038D1D4(card, CARD_RESULT_BROKEN);
+        return __CARDPutControlBlock(card, CARD_RESULT_BROKEN);
     }
 
     dir[0] = (CARDDir *)((u8 *)card->workArea + (1 + 0) * CARD_SYSTEM_BLOCK_SIZE);
@@ -262,11 +262,11 @@ s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
         for (iBlock = entry->startBlock, cBlock = 0; iBlock != 0xFFFF && cBlock < entry->length;
              iBlock = card->currentFat[iBlock], ++cBlock) {
             if (!CARDIsValidBlockNo(card, iBlock) || 1 < ++map[iBlock]) {
-                return fn_8038D1D4(card, CARD_RESULT_BROKEN);
+                return __CARDPutControlBlock(card, CARD_RESULT_BROKEN);
             }
         }
         if (cBlock != entry->length || iBlock != 0xFFFF) {
-            return fn_8038D1D4(card, CARD_RESULT_BROKEN);
+            return __CARDPutControlBlock(card, CARD_RESULT_BROKEN);
         }
     }
 
@@ -282,7 +282,7 @@ s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
             }
             cFree++;
         } else if (!CARDIsValidBlockNo(card, nextBlock) && nextBlock != 0xFFFF) {
-            return fn_8038D1D4(card, CARD_RESULT_BROKEN);
+            return __CARDPutControlBlock(card, CARD_RESULT_BROKEN);
         }
     }
     if (cFree != card->currentFat[CARD_FAT_FREEBLOCKS]) {
@@ -310,7 +310,7 @@ s32 CARDCheckExAsync(s32 chan, s32 *xferBytes, CARDCallback callback) {
         return __CARDUpdateFatBlock(chan, card->currentFat, callback);
     }
 
-    fn_8038D1D4(card, CARD_RESULT_READY);
+    __CARDPutControlBlock(card, CARD_RESULT_READY);
     if (callback) {
         BOOL enabled = OSDisableInterrupts();
 

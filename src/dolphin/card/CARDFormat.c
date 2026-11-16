@@ -37,7 +37,7 @@ static void FormatCallback(s32 chan, s32 result) {
 
     ++card->formatStep;
     if (card->formatStep < CARD_NUM_SYSTEM_BLOCK) {
-        result = fn_8038CF20(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
+        result = __CARDEraseSector(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
         if (0 <= result) {
             return;
         }
@@ -62,7 +62,7 @@ static void FormatCallback(s32 chan, s32 result) {
 error:
     callback = card->apiCallback;
     card->apiCallback = NULL;
-    fn_8038D1D4(card, result);
+    __CARDPutControlBlock(card, result);
     callback(chan, result);
 }
 
@@ -80,7 +80,7 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
     OSTime rand;
     CARDDirCheck *check;
 
-    result = fn_8038D11C(chan, &card);
+    result = __CARDGetControlBlock(chan, &card);
     if (result < 0) {
         return result;
     }
@@ -132,17 +132,17 @@ s32 __CARDFormatRegionAsync(s32 chan, u16 encode, CARDCallback callback) {
                     &fat[CARD_FAT_CHECKSUM], &fat[CARD_FAT_CHECKSUMINV]);
     }
 
-    card->apiCallback = callback ? callback : fn_8038BFCC;
+    card->apiCallback = callback ? callback : __CARDDefaultApiCallback;
     DCStoreRange(card->workArea, CARD_NUM_SYSTEM_BLOCK * CARD_SYSTEM_BLOCK_SIZE);
 
     card->formatStep = 0;
-    result = fn_8038CF20(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
+    result = __CARDEraseSector(chan, (u32)card->sectorSize * card->formatStep, FormatCallback);
     if (result < 0) {
-        fn_8038D1D4(card, result);
+        __CARDPutControlBlock(card, result);
     }
     return result;
 }
 
 s32 CARDFormatAsync(s32 chan, CARDCallback callback) {
-    return __CARDFormatRegionAsync(chan, fn_8038D0DC(), callback);
+    return __CARDFormatRegionAsync(chan, __CARDGetFontEncode(), callback);
 }
