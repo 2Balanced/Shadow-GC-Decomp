@@ -6,15 +6,9 @@
  * are not original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * The unit is NonMatching: every function and the function order match except six that differ in
- * register use or scheduling under GC/2.7 (129/135 functions): the DoomsEye constructor (a clrlwi
- * before fn_804125F4), AttackCallbackEye::OnDamage and WingControl::OnDamage (GC/2.7 keeps the
- * address of the parameter's position in a register where retail recomputes it; with
- * "#pragma opt_common_subs off" the former matches but for one reloaded pointer),
- * WingControl::GetWingAngle (float register numbering), WingControl's constructor (the argument
- * scheduling of fn_800C7EA8) and GetStatus::Tick (one float register). The Devil Doom boss task
- * (DevilDoom, DevilDoomVarParam and DEVIL_DOOM's type record, 0x8030BCD4-0x8030CC08) is a separate
- * unit: its .sdata2 repeats this unit's float constants. */
+ * The Devil Doom boss task (DevilDoom, DevilDoomVarParam and DEVIL_DOOM's type record,
+ * 0x8030BCD4-0x8030CC08) is a separate unit: its .sdata2 repeats this unit's float constants. The
+ * unit's .sbss holds boost::bind's _1 and four guard bytes of the bound callback's templates. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -61,8 +55,7 @@ struct _stMtnCallbackParam {
 /* What fn_80415D40 reports about a motion (layout from its use here). */
 struct UnkMotionInfo_80415D40 {
     /* 0x00 */ u8 field_0x0[0xC];
-    /* 0x0C */ float m_frame;
-    /* 0x10 */ u8 field_0x10[0x8];
+    /* 0x0C */ float m_frame; /* 0x10 bytes: WingControl::OnDamage's stack has no room for more */
 };
 
 /* Target (class name from RTTI): the flag word and the value at 0x24 are mapped here (bit 0 makes
@@ -185,7 +178,7 @@ void fn_80417568(_stMtnPlayWork *work, u16 motion);
 void *fn_80415E70(_stMtnPlayWork *work, int id);
 void fn_80415808(_stMtnPlayWork *work, int id, void (*callback)(void *, void *), void *data);
 void fn_80411634(void *frame, void *node, void *part);
-UnkMotionRange_804125F4 fn_804125F4(u16 motion);
+void fn_804125F4(UnkMotionRange_804125F4 *out, u16 motion);
 void fn_80335844(void *, void *);
 
 /* The clump updater's update (behaviour inferred). */
@@ -212,9 +205,11 @@ bool fn_802039E8(void *pause);
 UnkCharaList_80074194 *fn_80074194(void);
 boost::weak_ptr<CharInfo> fn_800A8B74(UnkCharaList_80074194 *manager, int id);
 void *fn_80021B08(void);
+/* Declared with the radius before the offset (the float travels in f1 either way): WingControl's
+ * constructor loads its arguments in this order. The other units declare the radius last. */
 boost::shared_ptr<CharaColliBase> fn_800C7EA8(void *manager, const Vec3f *position, u32 flags,
                                               int arg3, int arg4, const boost::weak_ptr<CharInfo> &owner,
-                                              const Vec3f *offset, float radius);
+                                              float radius, const Vec3f *offset);
 boost::shared_ptr<CharaColliBase> fn_800C799C(void *manager, const Vec3f *position,
                                               const Vec3f *arg2, int arg3, int arg4, int arg5,
                                               int arg6, const boost::weak_ptr<CharInfo> &owner,
@@ -248,10 +243,12 @@ Vec3f fn_80093230(const Vec3f *direction);
 
 UnkHintManager_801FB180 *GetHintManager();
 
-/* The last frame of motion (name inferred). NonMatching: retail passes the u16 motion on without
- * the clrlwi GC/2.7 emits here. */
-inline float MotionEnd(int motion) {
-    return fn_804125F4(motion).m_end;
+/* The last frame of motion (name inferred). fn_804125F4 fills the range through a pointer: called
+ * as returning it by value, the u16 motion is masked again before the call. */
+inline float MotionEnd(u16 motion) {
+    UnkMotionRange_804125F4 range;
+    fn_804125F4(&range, motion);
+    return range.m_end;
 }
 
 /* fn_8040CD74 called as returning a - b by value (see ArkCannon.cpp). */
@@ -349,8 +346,8 @@ int DevilDoomCtrlUnit_GetStatus::Tick(float dt) {
     Vec3f delta;
     fn_800091EC(&delta, &Ref(((VectorSubtractFn)fn_8040CD74)(&m_owner->m_target, &m_owner->m_prevTarget)));
     float length = fn_8040CF50(&delta);
-    float speed = m_owner->m_settings.field_0xC;
-    if (length > speed * dt) {
+    if (length > m_owner->m_settings.field_0xC * dt) {
+        float speed = m_owner->m_settings.field_0xC;
         fn_800091D0(&delta, &Ref(fn_8040CDA8(&Ref(fn_8040CDA8(&Ref(fn_8040CEE8(&delta)), speed)), dt)));
         fn_800091D0(&m_owner->m_target, &Ref(fn_8040CDD0(&m_owner->m_prevTarget, &delta)));
     }
@@ -407,23 +404,25 @@ DevilDoomCtrlUnit_AttackCallback::DevilDoomCtrlUnit_AttackCallback(DevilDoomVarP
 }
 
 void DevilDoomCtrlUnit_AttackCallbackEye::OnDamage(AttackCallbackParam &param) {
+    DevilDoomAttackParam &hit = *(DevilDoomAttackParam *)&param;
     if (m_owner->m_invincible) {
-        Param(param).m_result = 5;
+        hit.m_result = 5;
         return;
     }
-    Param(param).m_result = 1;
+    hit.m_result = 1;
     fn_803358D0(m_owner, new BossCtrlUnit_DamageEff(m_owner));
     Vec3f rotation;
     fn_800091EC(&rotation, &lbl_805E07A0);
-    fn_801A1F54(&Param(param).m_position, &rotation, 0x69);
-    fn_801D54F4(fn_80053164(), 0x8142, &Param(param).m_position, 0, 1);
+    fn_801A1F54(&hit.m_position, &rotation, 0x69);
+    fn_801D54F4(fn_80053164(), 0x8142, &hit.m_position, 0, 1);
     float before = m_owner->m_health;
-    m_owner->m_health = before - Param(param).m_damage;
+    m_owner->m_health = before - hit.m_damage;
     if (m_owner->m_health < 0.0f) {
         m_owner->m_health = 0.0f;
     }
     float after = m_owner->m_health;
-    fn_8016F0CC(fn_80079808()->m_score, 0, (float)m_owner->m_settings.m_score * Param(param).m_damage);
+    void *score = fn_80079808()->m_score;
+    fn_8016F0CC(score, 0, (float)m_owner->m_settings.m_score * hit.m_damage);
     if (after <= 0.0f) {
         m_owner->m_nextMode = 0xE;
     } else if (before / m_owner->m_maxHealth >= 0.5f && after / m_owner->m_maxHealth < 0.5f) {
@@ -886,7 +885,7 @@ DevilDoomCtrlUnit_WingControl::DevilDoomCtrlUnit_WingControl(DevilDoomVarParam *
     void *manager = fn_80021B08();
     m_collider = fn_800C7EA8(manager, &Ref(fn_8040CDD0(&m_owner->m_chara->m_position,
                                                         &Vec3f(0.0f, 35.0f, 0.0f))),
-                             0, 4, 0, lbl_805EE698, &lbl_805E07A0, m_owner->m_settings.field_0x104);
+                             0, 4, 0, lbl_805EE698, m_owner->m_settings.field_0x104, &lbl_805E07A0);
     if (m_collider) {
         m_collider->SetField2C(1);
         boost::weak_ptr<CharaColliAttack> attack = fn_800C4374(manager, m_collider);
@@ -1050,9 +1049,10 @@ void DevilDoomCtrlUnit_WingControl::OnMotion(_stMtnCallbackParam &param) {
 }
 
 void DevilDoomCtrlUnit_WingControl::OnDamage(AttackCallbackParam &param) {
+    DevilDoomAttackParam &hit = *(DevilDoomAttackParam *)&param;
     Mtx34f matrix;
     Vec3f offset;
-    fn_800091EC(&offset, &Ref(((VectorSubtractFn)fn_8040CD74)(&Param(param).m_position,
+    fn_800091EC(&offset, &Ref(((VectorSubtractFn)fn_8040CD74)(&hit.m_position,
                                                               &m_owner->m_chara->m_position)));
     float angle = fn_80016260(-offset.x, -offset.z) - m_owner->m_angle;
     WRAP_ANGLE(angle);
@@ -1066,16 +1066,16 @@ void DevilDoomCtrlUnit_WingControl::OnDamage(AttackCallbackParam &param) {
     float wingAngle = m_owner->m_settings.m_wingAngle;
     if (degrees > wingAngle && degrees < 180.0f - wingAngle && m_health[side] > 0.0f &&
         m_flash[side] > 0.0f) {
-        Param(param).m_result = 5;
+        hit.m_result = 5;
         Vec3f up(0.0f, 1.0f, 0.0f);
         Vec3f forward;
-        fn_800091EC(&forward, &Ref(fn_80016284(&Param(param).m_direction)));
+        fn_800091EC(&forward, &Ref(fn_80016284(&hit.m_direction)));
         Vec3f right;
         fn_800091EC(&right, &Ref(fn_8040CFB8(&up, &forward)));
         fn_8040CE74(&right);
         fn_800091D0(&up, &Ref(fn_8040CFB8(&forward, &right)));
         fn_8040C148(&matrix, &lbl_805E0720);
-        fn_8040B59C(&matrix, &Param(param).m_position);
+        fn_8040B59C(&matrix, &hit.m_position);
         matrix.values[0][0] = right.x;
         matrix.values[1][0] = right.y;
         matrix.values[2][0] = right.z;
@@ -1091,7 +1091,7 @@ void DevilDoomCtrlUnit_WingControl::OnDamage(AttackCallbackParam &param) {
             fn_80425E68(element.get(), &matrix);
             element->SetField14(FrameTime());
         }
-        m_health[side] -= Param(param).m_damage;
+        m_health[side] -= hit.m_damage;
         if (m_health[side] < 0.0f) {
             m_health[side] = 0.0f;
             fn_804165D8(m_motions[side], 0, -1, -1);
@@ -1106,14 +1106,14 @@ void DevilDoomCtrlUnit_WingControl::OnDamage(AttackCallbackParam &param) {
             UnkMotionInfo_80415D40 info;
             fn_80415D40(m_motions[1 - side], 0, &info);
             fn_80416E20(m_motions[side], 0, info.m_frame);
-            fn_801D54F4(fn_80053164(), 0x8140, &Param(param).m_position, 0, 1);
+            fn_801D54F4(fn_80053164(), 0x8140, &hit.m_position, 0, 1);
         } else {
-            fn_801D54F4(fn_80053164(), 0x813F, &Param(param).m_position, 0, 1);
+            fn_801D54F4(fn_80053164(), 0x813F, &hit.m_position, 0, 1);
         }
         fn_800BEFD0(m_gauges[side].px, 32.0f);
         fn_800BF0B0(m_gauges[side].px, m_health[side] / m_owner->m_settings.m_wingTime);
     } else {
-        Param(param).m_result = 8;
+        hit.m_result = 8;
     }
 }
 
@@ -1126,36 +1126,36 @@ float DevilDoomCtrlUnit_WingControl::GetWingAngle() {
     float radius = 0.01f * m_owner->m_settings.field_0x104;
     float s = 0.01f * m_owner->m_distance * std::sin(angle);
     float c = 0.01f * m_owner->m_distance * std::cos(angle);
-    float diff = x - c;
-    Vec3f b;
-    Vec3f a;
-    if (std::fabs(diff) < 0.01f) {
-        a.x = fn_8000FEE4(radius * radius - x * x);
-        a.y = 0.0f;
-        a.z = x;
-        fn_800091D0(&b, &a);
-        b.x = -b.x;
+    Vec3f roots[2];
+    if (std::fabs(x - c) < 0.01f) {
+        roots[0].x = fn_8000FEE4(radius * radius - x * x);
+        roots[0].y = 0.0f;
+        roots[0].z = x;
+        fn_800091D0(&roots[1], &roots[0]);
+        roots[1].x = -roots[1].x;
     } else {
+        float diff = x - c;
         float qa = 1.0f + (s * s) / (diff * diff);
         float qb = s * (-x * s) / (diff * diff);
         float qc = s * (s * (x * x)) / (diff * diff) - radius * radius;
-        float disc = qb * qb - qa * qc;
-        a.y = 0.0f;
-        a.z = (-qb + fn_8000FEE4(disc)) / qa;
-        a.x = (-s * a.z + x * s) / diff;
-        b.y = 0.0f;
-        b.z = (-qb - fn_8000FEE4(disc)) / qa;
-        b.x = (-s * b.z + x * s) / diff;
+        roots[0].z = (-qb + fn_8000FEE4(qb * qb - qa * qc)) / qa;
+        roots[0].y = 0.0f;
+        roots[0].x = (-s * roots[0].z + x * s) / diff;
+        roots[1].z = (-qb - fn_8000FEE4(qb * qb - qa * qc)) / qa;
+        roots[1].y = 0.0f;
+        roots[1].x = (-s * roots[1].z + x * s) / diff;
     }
     Vec3f point(s, 0.0f, c);
     float result;
-    if (fn_8040CF50(&Ref(((VectorSubtractFn)fn_8040CD74)(&a, &point))) <
-        fn_8040CF50(&Ref(((VectorSubtractFn)fn_8040CD74)(&b, &point)))) {
-        result = fn_80016260(a.x, a.z);
+    float da = fn_8040CF50(&Ref(((VectorSubtractFn)fn_8040CD74)(&roots[0], &point)));
+    float db = fn_8040CF50(&Ref(((VectorSubtractFn)fn_8040CD74)(&roots[1], &point)));
+    if (da < db) {
+        result = fn_80016260(roots[0].x, roots[0].z);
     } else {
-        result = fn_80016260(b.x, b.z);
+        result = fn_80016260(roots[1].x, roots[1].z);
     }
-    result = ToDegree(std::fabs(result)) + m_owner->m_settings.field_0x100;
+    result = ToDegree(std::fabs(result));
+    result += m_owner->m_settings.field_0x100;
     if (m_owner->m_flipped) {
         result = 180.0f - result;
     }

@@ -11,7 +11,7 @@
  * address order (deferred inlining emits functions last-defined first). The unit's code reaches its
  * .rodata through a pooled base address, so the linker keeps that section whole.
  *
- * Not matching yet (82 of 90 functions match):
+ * Not matching yet (83 of 90 functions match):
  * - Retail's .sdata2 keeps separate copies of equal constants for each class (0.0f six times, 30.0f,
  *   1.0f and the extension strings twice) and pools them in source order, with the character table's
  *   strings after the constants of the code before it; GC/2.7 merges equal constants and pools
@@ -48,6 +48,9 @@ static const float lbl_804C3668[19] = {
 
 /* The RenderWare types used here, declared locally (layouts as in rw/rwcore.h and rw/rpworld.h,
  * reduced to the members used). */
+/* Game/AdbManager.cpp: no texture-change frame pinned. */
+void ResetTextureChangeTime();
+
 extern "C" {
 typedef struct RwV3d {
     float x;
@@ -282,7 +285,6 @@ void fn_8004F9E8(void *out, void *resources, RpClump *clump, void *data, const c
                  void *user);
 void *fn_8004FE88(void *resources, void *data);
 void fn_8004FE00(void *resources, void *data);
-void fn_8005001C(void);
 void *fn_80014534(void);
 void fn_80039618(void *loader, void *data, int arg2);
 void fn_802E0600(void *data);
@@ -1154,7 +1156,7 @@ TPjsEventActionScene::~TPjsEventActionScene() {
     m_props.Clear();
     m_asobi.Clear();
     Release();
-    fn_8005001C();
+    ResetTextureChangeTime();
 }
 
 bool TPjsEventActionScene::StartLoad() {

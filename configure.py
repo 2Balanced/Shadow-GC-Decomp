@@ -829,7 +829,7 @@ config.libs = [
             Object(NonMatching, "Game/DeltaMorphAnimManagerTask.cpp"),
             Object(Matching, "Game/DevilDoom.cpp"),
             Object(NonMatching, "Game/DevilDoomModeCtrlUnit.cpp"),
-            Object(NonMatching, "Game/DevilDoomCtrlUnit.cpp"),
+            Object(Matching, "Game/DevilDoomCtrlUnit.cpp"),
             Object(Matching, "Game/DevilDoomCtrlUnitBit.cpp"),
             Object(NonMatching, "Game/DevilDoomCtrlUnitPsychoObject.cpp"),
             Object(Matching, "Game/Diablon.cpp"),
