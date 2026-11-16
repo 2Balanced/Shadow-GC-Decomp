@@ -5,14 +5,7 @@
  * it breaks into pieces and reports itself finished. Its colour fades through four colours as it
  * wears. File name inferred from the class. Method names marked "(name inferred)" are not original.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
- * first).
- *
- * Not yet matching: in fn_800CBC1C the original passes the line's end point (character info
- * position + offset, through fn_8040CDD0) as a temporary in the lowest stack slot, yet reloads the
- * character info pointer after the addition. Written as one call with a temporary, GC/2.7 keeps the
- * pointer in a register across the addition instead; with a named end point, as here, the code is
- * the same but the end point sits above the other temporaries (six stack offsets differ). Everything
- * else matches. */
+ * first). */
 #include <cmath>
 
 #include <boost/bind.hpp>
@@ -23,6 +16,7 @@
 #include "Game/DebugDraw.h"
 #include "Game/Gadget.h"
 #include "Game/GadgetCharInfo.h"
+#include "Game/GadgetDebris.h"
 #include "Game/GadgetModelInfo.h"
 #include "Game/GadgetClassDesc.h"
 #include "Game/MathConstants.h"
@@ -62,19 +56,6 @@ struct UnkModelPart_8015F7BC {
     /* 0x4 */ void *field_0x4;
 };
 
-/* The pieces a gadget breaks into, set up by fn_8015F0B8 and launched by fn_8015D93C (see
- * ElecFireWall.cpp). */
-struct UnkPieces_8015F0B8 {
-    /* 0x00 */ u8 field_0x0[0x34];
-    /* 0x34 */ float field_0x34;
-    /* 0x38 */ u8 field_0x38[0xC];
-    /* 0x44 */ u32 field_0x44;
-    /* 0x48 */ u32 field_0x48;
-    /* 0x4C */ s32 field_0x4C;
-    /* 0x50 */ u32 field_0x50;
-    /* 0x54 */ u8 field_0x54;
-};
-
 /* The fields of the cursor that the label callback reads (layout from its accesses). */
 struct ElecCristalWallParamCursor {
     /* 0x0 */ u32 field_0x0;
@@ -106,9 +87,7 @@ void fn_80154C6C(UnkMaterialAnim_801621F0 *animation, const UnkColor_8040D2D8 *f
  * (see ElecFireWall.cpp). */
 UnkModelPart_8015F7BC *fn_8015F7BC(GadgetModelInfo *model, int id);
 UnkPieceManager_800122D4 *fn_800122D4(void);
-void fn_8015F0B8(UnkPieces_8015F0B8 *pieces, const boost::shared_ptr<CharInfo> &charInfo, int arg2);
 u32 fn_80012700(UnkPieceManager_800122D4 *manager, int arg1, void *arg2);
-void fn_8015D93C(UnkPieces_8015F0B8 *pieces);
 /* Builds matrix from rotation in the given axis order, and reads a rotation back from a matrix
  * (behaviour inferred). */
 void fn_800193B8(Mtx34f *matrix, const Vec3f *rotation, int order);
@@ -119,7 +98,7 @@ Vec3f fn_8040D0AC(const Vec3f *vector, float angle);
 /* vector * scale (behaviour inferred). */
 Vec3f fn_800091A4(const Vec3f *vector, float scale);
 /* destination = a + b; vector += value (behaviour inferred). */
-void fn_8040CDD0(Vec3f *destination, const Vec3f *a, const Vec3f *b);
+Vec3f fn_8040CDD0(const Vec3f *a, const Vec3f *b);
 void fn_8040CFF8(Vec3f *vector, const Vec3f *value);
 /* Sets up a debug line from start to end, and draws it (behaviour inferred). */
 void *fn_80020A20(UnkDebugLine_80020A20 *line, const Vec3f *start, const Vec3f *end);
@@ -338,6 +317,13 @@ void ElecCristalWall::ReloadPlacement(UnkPlacement_800C9CD0 *owner) {
     }
 }
 
+/* The sum of two vectors (name inferred): an inline wrapper of the out-of-line addition. Being
+ * inline, it is evaluated before the statement that uses it, so the line's start is read from the
+ * character info again after the addition, and its result is a temporary below the other two. */
+inline Vec3f AddVectors(const Vec3f &a, const Vec3f &b) {
+    return fn_8040CDD0(&a, &b);
+}
+
 void ElecCristalWall::fn_800CBC1C() {
     UnkDebugLine_80020A20 segment;
 
@@ -346,9 +332,8 @@ void ElecCristalWall::fn_800CBC1C() {
     Vec3f offset(0.0f, 0.0f, -30.0f);
     AssignVector(offset, fn_8040D118(&offset, m_params.appearAngleX * (lbl_805FAD38 / 180.0f)));
     AssignVector(offset, fn_8040D0AC(&offset, m_params.appearAngleY * (lbl_805FAD38 / 180.0f)));
-    Vec3f end;
-    fn_8040CDD0(&end, &m_chara->m_position, &offset);
-    fn_80020A20(&segment, &m_chara->m_position, &end);
+    fn_80020A20(&segment, &m_chara->m_position,
+                &(const Vec3f &)AddVectors(m_chara->m_position, offset));
     fn_802E0AA0(&segment, &lbl_805F06D8, 3.0f);
     if (m_model != 0) {
         m_model->fn_8016108C();
@@ -409,11 +394,10 @@ void ElecCristalWall::Break() {
         UnkModelPart_8015F7BC *part = fn_8015F7BC(m_model, 1);
         if (part != 0) {
             UnkPieceManager_800122D4 *manager = fn_800122D4();
-            UnkPieces_8015F0B8 pieces;
+            UnkDebrisParam_8015F0B8 pieces(m_chara, 0);
 
-            fn_8015F0B8(&pieces, m_chara, 0);
-            pieces.field_0x34 = 1.5f;
-            pieces.field_0x44 = fn_80012700(manager, 1, part->field_0x4);
+            pieces.scale = 1.5f;
+            pieces.model = fn_80012700(manager, 1, part->field_0x4);
             pieces.field_0x54 = 0;
             pieces.field_0x4C = 150;
             fn_8015D93C(&pieces);

@@ -536,7 +536,14 @@ struct UnkLensFlareDesc_80430CAC {
     /* 0x40 */ float z;
 };
 
-/* Copies the description's settings. */
+/* Copies the description's settings.
+ * NonMatching (the constructor, 8 rows): retail copies the five fields one after the other, each
+ * load directly before its store; GC/2.7 schedules every load above the previous store. It is the
+ * scheduling difference of docs/research-notes.md (ScatteringRing: a load GC/2.7 moves above
+ * stores and retail does not). Wave 39 tried 12 forms without a change in the object: a
+ * non-const description, the copies written in the constructor, reference parameters, the
+ * position as one shared struct type on both sides, raw byte and float pointers; a member
+ * SetPosition and #pragma scheduling off for the constructor are worse (15 rows each). */
 inline void ReadLensFlareDesc(UnkLensFlareParam_8043232C *param,
                               const UnkLensFlareDesc_80430CAC *desc) {
     param->alpha = desc->alpha;

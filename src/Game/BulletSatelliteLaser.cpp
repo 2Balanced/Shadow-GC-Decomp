@@ -5,17 +5,10 @@
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
  *
- * Not yet matching: two words, both in the constructor's null test.  Retail reads the owner pointer
- * as `lwz r5,56(r1); cmplwi r5,0` and GC/2.7 keeps the same load in r0; every other instruction of
- * the unit, on both sides of those two words, is already byte identical (same stack slots, same
- * branch targets and displacements), so the register choice has no live-range cause to fix.  The
- * test was written twenty-nine ways without moving r0: plain, negated and reversed comparisons,
- * swapping the two operands of ||, splitting the test into two ifs, a bare-pointer local, a bool
- * local, hoisting the raw pointers above and below the test, changing the order the two shared
- * pointers are declared, casts to void *, u32, long and the pointed types, and extra register and
- * plain locals for interference.  The
- * spellings that do move the register also move other instructions, so they are further away, not
- * closer.  Everything else, including the data, matches. */
+ * The target's position is asked for with the owner as argument: retail keeps the owner pointer in
+ * r5 across the null test, which is where the virtual call's second argument goes, and without the
+ * argument GC/2.7 keeps the same load in r0 (the last two words of the unit). The parameter's type
+ * is not known: CharInfo's position is its first member, so it may equally be a point. */
 #include "Effect/System/EffectElement.h"
 #include "Game/CharInfo.h"
 #include "Game/GadgetUtil.h"
@@ -31,10 +24,10 @@ using Weapon::LockonTarget;
 using Weapon::ShotInfo;
 
 /* Target (class name from RTTI): a point other objects can aim at. Only its first virtual
- * function, which returns the point, is used here (name inferred). */
+ * function, which returns the point for an observer, is used here (name inferred). */
 class Target {
   public:
-    virtual Vec3f GetPosition();
+    virtual Vec3f GetPosition(const CharInfo *seenBy);
 };
 
 extern "C" {
@@ -115,7 +108,7 @@ SatelliteLaser::SatelliteLaser(const ShotInfo &info, int size)
         return;
     }
     Target *point = target.get();
-    fn_800091D0(&m_position, &(const Vec3f &)point->GetPosition());
+    fn_800091D0(&m_position, &(const Vec3f &)point->GetPosition(owner.get()));
     m_effect = fn_8005E3D0(0x28B, owner);
     if (!m_effect.expired()) {
         boost::shared_ptr<Effect::System::EffectElement> effect = m_effect.lock();

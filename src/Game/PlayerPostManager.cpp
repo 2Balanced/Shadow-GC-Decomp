@@ -2,12 +2,7 @@
  * the players have moved, hands each player's position and state to the camera of the player's
  * screen as a PJSCamera::PJSCameraTargetInfo. The stage manager starts it (fn_8029773C). Member
  * and function names other than the class's are inferred. Definitions are in reverse address order
- * (deferred inlining emits functions last-defined first).
- *
- * NonMatching: 4 of 5 functions match, and the data. PostManage (0x80297798) differs from the aim
- * block on: retail calls the player pointer's operator-> out of line before fn_8006F8D0 (as when
- * its result feeds an inline call), which no form tried here reproduces; the rest of the function
- * then shifts by one instruction. */
+ * (deferred inlining emits functions last-defined first). */
 #define MSL_LIST_ACCESSORS
 #include "Game/CameraManagerUnit.h"
 #include "Game/CharInfo.h"
@@ -15,6 +10,7 @@
 #include "Game/MathTypes.h"
 #include "Game/PJSCameraTargetInfo.h"
 #include "Game/Player.h"
+#include "Game/PlayerPadInput.h"
 #include "Game/TVehicleBase.h"
 #include "Game/Task.h"
 #include "boost/shared_ptr.hpp"
@@ -34,12 +30,6 @@ SIZE_ASSERT(UnkGameState_8057D6A0, 0x150);
 
 extern UnkGameState_8057D6A0 lbl_8057D6A0;
 
-/* What fn_8006F8D0 returns for a player (struct name unknown). */
-struct UnkPlayerAim_8006F8D0 {
-    /* 0x0 */ u8 field_0x0[0x8];
-    /* 0x8 */ float field_0x8;
-    /* 0xC */ float field_0xC;
-};
 
 extern "C" {
 /* A character of the list by index (see Game/CityBombSmall.cpp). */
@@ -52,10 +42,18 @@ Vec3f fn_80079698(Player::PlayerBase *player);
 Vec3f fn_800796DC(Player::PlayerBase *player);
 /* Tests a state bit (see Game/PlayerShadowWeapon.cpp). */
 bool fn_8006CD78(u32 *bits, int bit);
-/* Copies a player's state bits (three words). */
-void fn_80095364(u32 *to, const u32 *from);
-/* PlayerBase's word at 0x218 (behaviour inferred). */
-UnkPlayerAim_8006F8D0 *fn_8006F8D0(Player::PlayerBase *player);
+/* A player's pad input (see Game/PlayerPadInput.h). */
+UnkPlayerInput_800A85B0 *fn_8006F8D0(Player::PlayerBase *player);
+}
+
+/* Copies the second stick of the player's pad to the target (name inferred). Retail calls the
+ * player pointer's operator-> out of line before fn_8006F8D0, which GC/2.7 does only when the
+ * pointer is the argument of an inline call that is a statement of its own; an inline lookup used
+ * as an initializer or inside an expression leaves operator-> inline. */
+inline void SetAim(PJSCamera::PJSCameraTargetInfo *info, Player::PlayerBase *player) {
+    UnkPlayerInput_800A85B0 *input = fn_8006F8D0(player);
+    info->field_0x4C.x = input->m_subStick.x;
+    info->field_0x4C.y = input->m_subStick.y;
 }
 
 namespace {
@@ -106,11 +104,9 @@ static void PostManage() {
             fn_800091D0(&info.field_0x18, &(const Vec3f &)fn_80079698(player.get()));
             fn_800091D0(&info.field_0x24, &(const Vec3f &)fn_800796DC(player.get()));
             fn_800091D0(&info.field_0x30, (Vec3f *)((u8 *)player.get() + 0xE8));
-            fn_80095364(info.field_0x40.m_words, player->m_stateBits);
+            info.field_0x40 = *reinterpret_cast<const UnkWords_8007A4D4 *>(player->m_stateBits);
             if (lbl_8057D6A0.field_0xC8 == 0 && !fn_8006CD78(player->m_stateBits, 0x2A)) {
-                UnkPlayerAim_8006F8D0 *aim = fn_8006F8D0(player.get());
-                info.field_0x4C.x = aim->field_0x8;
-                info.field_0x4C.y = aim->field_0xC;
+                SetAim(&info, player.operator->());
             }
             UnkCameraManager_80009548 *manager = fn_80009548();
             SetCameraTarget(manager, player->field_0x54, &info);

@@ -124,15 +124,21 @@ void fn_80497F24(int comp0, int ref0, int op, int comp1, int ref1);
 void fn_80497778(int before);
 }
 
-/* One layer model of a block. */
+/* One layer model of a block. Its constructor stores the handle's two halfwords one after the
+ * other with the same scratch register; GC/2.7 schedules both constants first unless scheduling
+ * is off for it (docs/research-notes.md, "#pragma scheduling off"). */
 struct UnkLandLayer_8003A840 {
-    UnkLandLayer_8003A840() {}
+    UnkLandLayer_8003A840();
     ~UnkLandLayer_8003A840() {}
 
     /* 0x0 */ void *m_data;
     /* 0x4 */ int m_texIndex;
     /* 0x8 */ UnkHandle_80045A98 m_handle;
 };
+
+#pragma scheduling off
+inline UnkLandLayer_8003A840::UnkLandLayer_8003A840() {}
+#pragma scheduling reset
 
 /* A land block. */
 struct UnkLandBlock_8003A840 {
@@ -272,7 +278,7 @@ class LandALoadMananger : public Task {
     /* 0xAC */ UnkOneFile_8004CFB0 *m_file;
     /* 0xB0 */ UnkOneFile_8004CFB0 *m_texFile;
     /* 0xB4 */ int m_state;
-    /* 0xB8 */ int m_fileIndex;
+    /* 0xB8 */ volatile int m_fileIndex; /* read again at the top of Tick's texture loop */
     /* 0xBC */ int m_texIndex;
     /* 0xC0 */ int m_id;
     /* 0xC4 */ u8 m_pending[15];
@@ -713,6 +719,14 @@ bool LandALoadMananger::LoadLayers(UnkLandBlock_8003A840 *block, UnkOneFile_8004
     }
     block->m_id = id;
     return loading;
+}
+
+/* Not called anywhere: the linker strips it from the game. Retail pools "_COLI" before "_TEX" in
+ * .sdata2, the order the two literals stand in the source; GC/2.7 pools in emission order, and
+ * LoadLayers, emitted before Tick, uses "_TEX". Compiling a use of "_COLI" at this point of the file
+ * (it is emitted before LoadLayers) gives retail's order. The name is a placeholder. */
+int UnkLandCollisionIndex(UnkOneFile_8004CFB0 *file) {
+    return fn_8004C850(file, "_COLI", 2);
 }
 
 static void OnLayerLoaded(void *data, void *arg) {

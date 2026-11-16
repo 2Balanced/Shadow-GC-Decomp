@@ -5,8 +5,12 @@
  * inferred)"). Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: fn_801D852C (99.5%) swaps the registers of the entry pointer and the 16-bit id;
- * everything else matches. */
+ * NonMatching: fn_801D852C (99.5%) swaps the registers of the entry pointer and the 16-bit id
+ * (retail r5 and r6); everything else matches. Retail compares the id with the entry's (cmpw key,
+ * id), which the source now does. Wave 39 tried 12 forms for the registers: the three locals in
+ * every declaration order, the entry declared in the loop, no entry local, the masked id written
+ * in the comparison or stored back to the parameter, a u16 key, an inline finder (not inlined
+ * into the loop the same way, 16 rows) and a walking pointer (20 rows); the rest stay at 5 rows. */
 #include "Game/SoundManager.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -151,7 +155,7 @@ UnkSoundBankEntry *UnkSoundBank_801D8890::fn_801D852C(int id) {
     UnkSoundBankEntry *found = 0;
     for (int i = 0; i < group->m_count; i++) {
         entry = &group->m_entries[i];
-        if ((s32)entry->m_id == key) {
+        if (key == (s32)entry->m_id) {
             found = entry;
             break;
         }

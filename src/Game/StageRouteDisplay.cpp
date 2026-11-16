@@ -5,7 +5,15 @@
  * between them and the cursor on the current stage, plays the scenes IconsBG, Pics and Arrows and
  * fades out once all three have ended. The file name comes from the class name; the names marked
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
- * emits functions last-defined first). */
+ * emits functions last-defined first).
+ *
+ * NonMatching: the constructor differs in 6 rows, two stack slots. Retail keeps the cursor's
+ * position (the 8 bytes fn_8036AE98 returns) below the render pointer temporary, as a temporary
+ * made after it; a named local sits above it under GC/2.7. Written as a temporary (the call nested
+ * in fn_8036AE70's argument, a const reference, the parameter by value or by reference) the slots
+ * are retail's, but GC/2.7 then takes the temporary's address before the cursor's Get() and keeps
+ * it in r0 across it (4 rows); inline wrappers for either call are not inlined or call Get() out
+ * of line (16 to 36 rows). Ten forms, wave 39. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <cstdio>

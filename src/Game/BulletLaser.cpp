@@ -8,10 +8,19 @@
  * Not yet matching: in HitCallback::Call (0x80220E88, a weak copy emitted here) the original loads
  * the function's manager after saving r31, while GC/2.7 schedules that load above the save (the
  * scheduling difference described in docs/research-notes.md for ScatteringRing). Everything else,
- * including the data, matches. */
+ * including the data, matches. #pragma scheduling off around Call (wave 39) gives retail's prologue
+ * but then leaves the epilogue's two loads unscheduled, which retail does schedule, so it only
+ * moves the two rows. */
 /* std::runtime_error with the library's size (see <stdexcept>). */
 #define MSL_RUNTIME_ERROR_STRING
 #include <stdexcept>
+#include <boost/function/function_base.hpp>
+
+/* std::swap for boost::function's functor pointer: the game's one shared copy (0x80019164),
+ * declared here so that function1::swap calls it (see Game/Bomb.cpp). */
+namespace std {
+void swap(boost::detail::function::any_pointer &a, boost::detail::function::any_pointer &b);
+} // namespace std
 
 #include <boost/bind.hpp>
 #include <boost/function.hpp>

@@ -13,7 +13,10 @@
  * statics come out in definition order, while retail has them in the order the start-up function
  * (fn_801E2234) first calls their functions (fn_801E2178, fn_801E2878, fn_801E2128, fn_801E265C,
  * then fn_801E1BD4), with the instance pointers and lbl_805EF9E8 after them; .sbss and .bss
- * differ by that order. */
+ * differ by that order. Wave 39: the start-up function now calls ResourceManagerTask's constructor
+ * by its symbol (it matched but for that name); for fn_801E2878's store, the count written as
+ * m_first[26], the table through a pointer, the counter declared outside or before the store and
+ * a while loop give the same two rows or more. */
 #include "Effect/System/EffectSystem.h"
 #include "Game/GameSystem.h"
 #include "Game/NowLoading.h"
@@ -273,7 +276,8 @@ void fn_8003F8D4(void);
 void fn_802BEBE0(s32 stage);
 void fn_80170234(void);
 UnkObject_800122D4 *fn_800122D4(void);
-void fn_800123B8(void *task, Task *parent);
+/* ResourceManagerTask's constructor (Game/ResourceManagerTask.cpp), called by its symbol name. */
+void __ct__19ResourceManagerTaskFP4Task(void *task, Task *parent);
 void fn_8003A840(void);
 void fn_8004414C(Task *task, void *object);
 /* TextureUVAnimManagerTask's constructor (Game/TextureUVAnimManagerTask.cpp), called by its
@@ -457,7 +461,7 @@ extern "C" bool fn_801E2234(void) {
     object122D4->field_0x14 = 0x17;
     void *memory = operator new(0x28);
     if (memory != 0) {
-        fn_800123B8(memory, fn_801EB304(fn_8001C4F8(), 0));
+        __ct__19ResourceManagerTaskFP4Task(memory, fn_801EB304(fn_8001C4F8(), 0));
     }
     new SonicteamUSA::System::DebugDisp();
     fn_8003A840();

@@ -15,7 +15,7 @@ SIZE_ASSERT(UnkFlashbackEntry_803546C0, 0x8);
 /* The flashbacks still to play (class name unknown; the stage info at 0x80584720 keeps one at
  * 0x24). StageSequence::PlayFlashback (Game/StageSequencePlayFlashback.cpp) fills it and plays the
  * front entry; StageAction::FlashbackAction (Game/FlashbackAction.cpp) pops a stage's entry once
- * its event can play. The methods are in Game/StageSequencePlayFlashback.cpp. Names are inferred. */
+ * its event can play. The methods are in Game/FlashbackQueue.cpp. Names are inferred. */
 class UnkFlashbackQueue_803546C0 {
   public:
     /* The front entry, or null when the queue is empty (0x803546C0). */

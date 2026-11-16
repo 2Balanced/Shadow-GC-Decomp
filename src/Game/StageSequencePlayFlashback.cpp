@@ -5,7 +5,7 @@
  * 0x80584720). It then plays the front of the queue: an event movie, which it pops, or a stage,
  * whose StageAction::FlashbackAction pops it. The file name and the names marked "(name inferred)"
  * are not original. Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first). */
+ * last-defined first). The queue's own functions follow this unit in Game/FlashbackQueue.cpp. */
 #include "Game/FlashbackQueue.h"
 #include "Game/StageManager.h"
 #include "Game/StageSequence.h"
@@ -127,60 +127,6 @@ inline void checked_delete<StageSequence::PlayFlashback::phaseImpl>(StageSequenc
 
 SIZE_ASSERT(StageSequence::PlayFlashback::phaseImpl, 0x90);
 SIZE_ASSERT(StageSequence::PlayFlashback::Phase, 0x8);
-
-/* Pop's function-local static copy of the front entry (static UnkFlashbackEntry_803546C0 s_front =
- * m_entries[0]) and its guard, written out (names not original): GC/2.7 emits a function-local
- * static where it parses it, but retail has this one after the unit's RTTI records and
- * temporaries, where Pop is compiled, and aligns the guard to a word. Defined at the end of the
- * unit, the copy's two words are separate statics so that GC/2.7 addresses each through r13, as
- * retail's copy construction does. */
-/* The guard is a byte, word-aligned as retail places it. */
-union PopGuard {
-    s8 m_done;
-    s32 m_align;
-};
-
-struct PopCopy {
-    static PopGuard s_initialized;
-    static s32 s_event;
-    static s32 s_stageId;
-};
-
-void UnkFlashbackQueue_803546C0::Clear() {
-    m_count = 0;
-}
-
-void UnkFlashbackQueue_803546C0::Push(UnkFlashbackEntry_803546C0 *entry) {
-    m_entries[m_count] = *entry;
-    m_count++;
-}
-
-/* NonMatching (2 instructions): retail stores the copy's words in the order it loads them; GC/2.7
- * keeps one of the orders but not both (every order of these statements was tried). */
-UnkFlashbackEntry_803546C0 *UnkFlashbackQueue_803546C0::Pop() {
-    if (m_count != 0) {
-        if (!PopCopy::s_initialized.m_done) {
-            s32 event = m_entries[0].m_event;
-            s32 stageId = m_entries[0].m_stageId;
-            PopCopy::s_stageId = stageId;
-            PopCopy::s_event = event;
-            PopCopy::s_initialized.m_done = 1;
-        }
-        for (int i = 0; i < m_count - 1; i++) {
-            m_entries[i] = m_entries[i + 1];
-        }
-        m_count = m_count - 1;
-        return reinterpret_cast<UnkFlashbackEntry_803546C0 *>(&PopCopy::s_event);
-    }
-    return 0;
-}
-
-UnkFlashbackEntry_803546C0 *UnkFlashbackQueue_803546C0::Front() {
-    if (m_count != 0) {
-        return &m_entries[0];
-    }
-    return 0;
-}
 
 namespace StageSequence {
 namespace PlayFlashback {
@@ -338,8 +284,3 @@ void Phase::Skip() {
 
 } // namespace PlayFlashback
 } // namespace StageSequence
-PopGuard PopCopy::s_initialized;
-#pragma explicit_zero_data on
-s32 PopCopy::s_event = 0;
-s32 PopCopy::s_stageId = 0;
-#pragma explicit_zero_data reset

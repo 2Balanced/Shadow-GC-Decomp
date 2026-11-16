@@ -4,13 +4,30 @@
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
  *
- * NonMatching: 87 of 90 functions and all data match. In slot 0x98 retail loads the attacker's
- * pointer above the prologue's store of r31 (as in Game/EnemyParamCommon.cpp); in Reset retail
- * keeps the result in r4 and the table in r5, GC/2.7 the other way round; and boost's
- * function1::operator() (0x801AA680) has a stack frame 0x10 bytes larger in retail, with the
- * same code. */
+ * NonMatching: 89 of 90 functions and all data match. In slot 0x98 (vfStat_0x98, 2 rows) retail
+ * loads the attacker's pointer after the prologue's save of r31 and the copy of the parameter;
+ * GC/2.7 schedules that load above the save (the prologue scheduling of Game/BulletLaser.cpp's
+ * HitCallback::Call and Game/EnemyParamCommon.cpp). Game/ElecCircuitColli.cpp's HitCharacter has
+ * retail's order under GC/2.7, with its load through the other parameter; here a pointer or
+ * reference local for the attacker, a local for its pointer, for the status or for the reward,
+ * an early return and the reward nested in the call (8 forms, wave 39) leave it as it is or add
+ * rows. Wave 39 matched the other two: Reset declares its result before the table, and
+ * boost::function1::operator() gets retail's frame from std::runtime_error's library size
+ * (MSL_RUNTIME_ERROR_STRING), with function1::swap calling the game's shared std::swap. */
 /* The fields of EnemyCharaColliModule (Game/Enemy.h). */
 #define ENEMY_STATUS_COMMON_UNIT
+
+/* std::runtime_error with the library's size (see <stdexcept>): boost::function's
+ * bad_function_call derives from it, and its size is the frame of function1::operator(). */
+#define MSL_RUNTIME_ERROR_STRING
+#include <stdexcept>
+#include <boost/function/function_base.hpp>
+
+/* std::swap for boost::function's functor pointer: the game's one shared copy (0x80019164),
+ * declared here so that function1::swap calls it (see Game/Bomb.cpp). */
+namespace std {
+void swap(boost::detail::function::any_pointer &a, boost::detail::function::any_pointer &b);
+} // namespace std
 
 #include "Game/CharaColliBaseCharInfo.h"
 #include "Game/BossDef.h"
@@ -413,8 +430,8 @@ inline int StartSequence(MotionSequenceModule *module, int index) {
 extern "C" int Reset__25EnemyMotionSequenceModuleFv(EnemyMotionSequenceModule *module) {
     module->field_0x4 = 0;
     int index = module->m_enemy->m_para->vfPara_0x48();
+    int result = 0; /* declared before the table: retail has it in r4 and the table in r5 */
     const MotionSequenceTable *table = module->m_table;
-    int result = 0;
     if (table != 0 && index < table->count) {
         module->m_index = index;
         result = ((StartSequenceFn)fn_800C961C)(module, &module->m_table->sequences[index]);

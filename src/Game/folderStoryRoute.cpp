@@ -245,7 +245,13 @@ extern "C" bool fn_800BBDD8(const UnkFlags_801E5810 *flags, int bit) {
 /* NonMatching (2 instructions): retail loads the manager's player and cursor into two registers
  * before storing either; GC/2.7 gives both r0 and stores the player before loading the cursor (the
  * same detail as folderPause's constructor). Locals in either order, stores in either order, struct
- * copies, an inline setter and pointer copies did not reproduce it. */
+ * copies, an inline setter and pointer copies did not reproduce it. Wave 39 (25 more forms): retail's
+ * four words are what GC/2.7 emits for the copy-initialization of an 8-byte struct (a placement new
+ * of {player, cursor} gives them, plus a null test of the destination that retail does not have; so
+ * does a function-local static's initializer, see Game/FlashbackQueue.cpp), while every assignment
+ * comes out interleaved (struct of 8 or 12 bytes, with or without a constructor) or with the value
+ * stored last loaded first (two locals, an inline setter with either parameter order, a u64 copy).
+ * A by-value inline getter is not inlined (the struct returns in r3:r4). */
 folderStoryRoute::folderStoryRoute(Chao::CSD::CProject *project) : m_check(0) {
     TPauseManager *manager = fn_800BADE8();
     m_managerState = manager->m_state;

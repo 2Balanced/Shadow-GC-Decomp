@@ -5,11 +5,7 @@
  * name (directory, extension and anything after an underscore stripped, at most 31 characters).
  * Other units call these by their fn_ names, so they keep them; the file name is invented and
  * everything here is named from what the code does. Definitions are in reverse address order
- * (deferred inlining emits functions last-defined first).
- *
- * NonMatching: 12 of 13 functions match. In fn_80410BB4 retail keeps the path in r3 across the
- * directory loop's jump to its test, where GC/2.7 copies it from r29 at the test (3 rows of 50);
- * eight loop shapes, a separate pointer and an inline helper all give GC/2.7's form. */
+ * (deferred inlining emits functions last-defined first). */
 #include <dolphin/types.h>
 #include "size_assert.h"
 
@@ -181,22 +177,27 @@ void fn_80410C7C(UnkMotionEntry_80410A4C *entry, UnkMotionNode_80410D40 *node) {
 int fn_80410BB4(char *name, const char *path) {
     char buffer[0x100];
     const char *separator = "/";
+    /* One pointer serves every search and, at the end, the buffer itself (retail keeps them all in
+     * r31); the directory loop walks a second pointer that the search reads from r3, and copies
+     * it to the path each time round. */
     char *found;
-    while ((found = fn_803AC6C0(path, separator)) != 0) {
-        path = found + strlen(separator);
+    const char *p = path;
+    while ((found = fn_803AC6C0(p, separator)) != 0) {
+        p = found + strlen(separator);
+        path = p;
     }
     strcpy(buffer, path);
-    char *dot = fn_803AC6C0(buffer, ".");
-    if (dot != 0) {
-        *dot = 0;
+    found = fn_803AC6C0(buffer, ".");
+    if (found != 0) {
+        *found = 0;
     }
-    char *underscore = fn_803AC6C0(buffer, "_");
-    if (underscore != 0) {
-        *underscore = 0;
+    found = fn_803AC6C0(buffer, "_");
+    if (found != 0) {
+        *found = 0;
     }
-    char *bare = buffer;
-    if (strlen(bare) < 0x20) {
-        strcpy(name, bare);
+    found = buffer;
+    if (strlen(found) < 0x20) {
+        strcpy(name, found);
         return 1;
     }
     return 0;

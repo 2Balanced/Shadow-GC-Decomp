@@ -13,7 +13,11 @@
  * extern "C" names), and the class is instantiated only by the unused UnkTouchTreeBalance (stripped
  * by the linker) through two out-of-line template members, so that GC/2.7 generates the friends
  * after the tree's last instances. With the register swap fixed the unit links (main.dol OK was
- * checked with the swap as the only difference). */
+ * checked with the swap as the only difference). Wave 39 added 11 shapes, all with the same object
+ * (or one row worse for the swapped comparison): locals for the parent, the grandparent, both
+ * (declared in the loop, before it, in either order) and the grandparent's left child, and the
+ * uncle read through the grandparent local. The named locals are propagated away, so the choice
+ * between r4 and r5 is made on the same instructions. */
 #define MSL_PAIR_CONVERTING_CONSTRUCTOR
 #define MSL_TREE_ITERATOR_ASSIGN_CALL
 #define MSL_TREE_END_NODE_PER_TREE

@@ -11,7 +11,14 @@
  * three functions differ): HandleUser's constructor, where GC/2.7 loads both halfword constants
  * before storing the vtable pointer (the scheduling difference Game/LandManager.cpp documents for
  * its layer constructor); UpdateLoads (two pairs of callee-saved registers swapped) and fn_8003A380
- * (three registers rotated), register allocation only. About 15 source shapes were tried for each. */
+ * (three registers rotated), register allocation only. About 15 source shapes were tried for each.
+ * Wave 39, HandleUser's constructor: retail is `lis r4; addi r0,r4; stw r0,0(r3)` and then
+ * `li r4,0; li r0,-1; sth r4; sth r0`, the vtable store finished before the two constants reuse its
+ * registers, the constants scheduled as a pair. #pragma scheduling off gives the first half and
+ * leaves the pair unscheduled (3 rows, with locals, an inline setter or a comma expression alike);
+ * with scheduling on GC/2.7 interleaves everything (7 rows), also with the words as a member struct
+ * with an inline constructor or behind an empty inline call. UpdateLoads: id declared in the loop,
+ * last, after i or as s16 are all worse (12 to 41 rows). */
 #define TBLOCKMANAGE_DEFINE_CLASS
 #include "Game/TBlockManage.h"
 #define UNKHANDLE_DEFAULT_CTOR

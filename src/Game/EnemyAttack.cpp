@@ -46,7 +46,7 @@ boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager,
 void fn_800C78B0(void *manager, boost::shared_ptr<CharaColliBase> *collider);
 /* Sets up an attack collision and its callbacks (see Game/DiablonPartsBody.cpp), and tells it
  * about the other side of a hit (see Game/ThrowObject.cpp). */
-void fn_80054DD0(CharaColliAttack *attack, int arg1, int arg2, float arg3,
+void fn_80054DD0(CharaColliAttack *attack, int arg1, float arg3, int arg2,
                  const AttackCallback &onHit, const AttackCallback &onEnd);
 void fn_800532F8(CharaColliAttack *attack, boost::weak_ptr<CharaColliAttack> other);
 }
@@ -107,9 +107,9 @@ void EnemyAttack::Reset() {
     Release();
 }
 
-/* NonMatching (97%): retail loads the 1.0f argument of fn_80054DD0 before desc.m_damage; GC/2.7
- * schedules the two loads the other way round for every shape tried (locals, casts, an inline
- * wrapper, by-value callbacks). */
+/* Retail loads the 1.0f argument of fn_80054DD0 before desc.m_damage: the float parameter stands
+ * before the damage in the callee's declaration (as in Game/AttackObject.cpp and
+ * Game/PlayerAttack.cpp); the registers are the same either way. */
 void EnemyAttack::Create(const Desc &desc) {
     Release();
     UnkColliShape_800C86A8 shape = s_shape;
@@ -119,7 +119,7 @@ void EnemyAttack::Create(const Desc &desc) {
                              desc.m_owner);
     m_attack = fn_800C4374(fn_80021B08(), m_collider);
     if (boost::shared_ptr<CharaColliAttack> attack = m_attack.lock()) {
-        fn_80054DD0(attack.get(), 4, desc.m_damage, 1.0f,
+        fn_80054DD0(attack.get(), 4, 1.0f, desc.m_damage,
                     AttackCallback(boost::bind(&EnemyAttack::OnHit, this, _1)),
                     AttackCallback(boost::bind(&EnemyAttack::OnHitEnd, this, _1)));
     }

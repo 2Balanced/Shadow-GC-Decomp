@@ -147,7 +147,12 @@ UnkEnemyShield_801A7E1C::UnkEnemyShield_801A7E1C(Enemy *enemy)
  * r5 at the call (mr r5,r4) and loads the model's slot into r0 (lwz r0,36(r3)); GC/2.7 moves bone
  * to r0 in the prologue (mr r0,r4) and reads the slot into r4 (lwz r4,36(r3)). Five shapes tried
  * (a named slot local, the fn_801A3CE4 call written directly, a named EnemyMotionTable pointer, a
- * named model pointer, re-reading the member), all compile byte-identical. */
+ * named model pointer, re-reading the member), all compile byte-identical. Wave 39 added 18: an
+ * inline getter for the slot, the loader taking the enemy, the table or a pointer, its parameters
+ * in another order, the slot as u32 or through a cast, the table's first member as the argument,
+ * locals for the table, the slot, the enemy and the bone in both orders, and a return value for
+ * fn_801A3CE4; the object is the same every time. Retail leaves the table parameter in r4 and
+ * reads the slot into a scratch register, GC/2.7 moves the parameter out of the way instead. */
 void UnkEnemyShield_801A7E1C::Setup(const EnemyMotionTable &table, int bone) {
     if (m_enemy != 0) {
         LoadModel(&m_model, m_enemy->m_motionBase, table);

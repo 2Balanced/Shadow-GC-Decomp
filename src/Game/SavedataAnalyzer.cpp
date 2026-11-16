@@ -11,7 +11,12 @@
  * NonMatching: 33 of 34 functions and the data match. In fn_801ABDB8's second loop retail keeps the
  * index of the next stage in the register of the previous one (r23); GC/2.7 puts it in r20, for
  * every source form tried (a reused or a new variable, the index as the lookup's argument, a
- * pointer to the element, other declaration orders). */
+ * pointer to the element, other declaration orders). Wave 39 added 27 more: passing the element
+ * straight to the lookup gives retail's shape with the two registers exchanged (element pointer
+ * r23, both indices r20, 6 rows), which says retail's two indices are one live range that overlaps
+ * the element pointer's; a named index declared in any scope, a lookup that returns the id, a
+ * member lookup on the table's owner, a reference parameter and a walking pointer all stay at 2
+ * rows or get worse. */
 #define MSL_LESS_CAST
 #define MSL_PAIR_COPY_CALL
 #define MSL_STRING_COPY

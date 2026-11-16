@@ -6,7 +6,13 @@
  * state 9 forces) and requests the matching mode on the player's camera unit whenever the state
  * changes. While the camera stick is used it requests a general mode of its own over them
  * (UnkCameraHandle_801CF664). File name from the class; other names are inferred. Definitions are
- * in reverse address order (deferred inlining emits functions last-defined first). */
+ * in reverse address order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: ChangeState differs in 6 rows, the two places that compare a mode's id with the
+ * handle mode's: the mode pointer kept across the first virtual call is in r26 in retail and in
+ * r27 here (both registers are free there). Swapping the comparisons' operands (8 rows), the
+ * handle's id in a local (26 rows) and get() instead of operator-> (no change) were tried in wave
+ * 39. The list allocator's row was only the number of a compiler-generated string. */
 #define MSL_LIST_ACCESSORS
 #define MSL_LIST_VIBRATION
 #define MSL_FUNCTIONAL_BINDERS

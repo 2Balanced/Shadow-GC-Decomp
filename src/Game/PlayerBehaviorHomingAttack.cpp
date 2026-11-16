@@ -161,7 +161,9 @@ HomingAttack::~HomingAttack() {}
 
 /* NonMatching (96%): retail keeps the table's address in r3 and the player in r4; GC/2.7 hoists the
  * address above the player's load and swaps the two (as Player::Behavior::Ground::SetSpeedRange;
- * the forms tried are listed there). */
+ * the forms tried are listed there). Wave 39: the lookup as an inline member of the table or of
+ * the player, and as a free inline function with the table and the player in either order, give
+ * the player r4 but split the table's address over r3 and r0 (4 rows). */
 bool HomingAttack::vf_0x0C(int prevId, const InitializeArgs &args) {
     return lbl_804F1834[FieldsOf(m_player.get())->m_kind].m_canHomingAttack;
 }

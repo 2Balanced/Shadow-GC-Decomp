@@ -168,15 +168,20 @@ template<> inline void checked_delete<Player::Shadow::MotionEyeImpl>(Player::Sha
 namespace Player {
 namespace Shadow {
 
-/* NonMatching (99%): register allocation only (the file entry and the second loop's world). */
+/* NonMatching (11 rows): register allocation only. In the second loop retail keeps the clump's
+ * offset in r26 and the world in r28, GC/2.7 the other way round. Wave 39: the index in a local
+ * gave the first loop's file entry retail's r3; for the second loop the world declared before
+ * the loop or the stage (17 rows), one counter for both loops (17), a clump local (14), the area
+ * in a local and the inline with its parameters exchanged (no change) were tried. */
 MotionEyeBlink::MotionEyeBlink(const shared_ptr<PlayerBase> &player, const UnkMotionNode_800AA760 *node,
                                UnkClumpFade_80027D5C *fade, const UnkMotionFiles_800ADE78 &files)
     : m_state(0), m_step(0), m_time(0.0f), m_current(0), m_hidden(0) {
     m_node = node;
     void *loader = fn_800122D4();
     for (int i = 0; i < 5; i++) {
-        if (files.m_set2[i].m_index >= 0) {
-            m_clumps[i] = fn_8001277C(loader, files.m_set2[i].m_file, files.m_set2[i].m_index);
+        int index = files.m_set2[i].m_index;
+        if (index >= 0) {
+            m_clumps[i] = fn_8001277C(loader, files.m_set2[i].m_file, index);
         } else {
             m_clumps[i] = 0;
         }
@@ -255,13 +260,16 @@ void MotionEyeBlink::AddTo(UnkClumpList_8006CAE4 *list) {
     }
 }
 
-/* NonMatching (90%): retail loads the player's motion into r0 for the test and copies it to r29
- * after it; every source shape tried either loads it straight into r29 or reloads it. */
+/* Retail loads the player's motion into r0 for the test and copies it to r29 after it: the copy
+ * is a pointer of another type (the motion as its Task base here; a void pointer does the same),
+ * for which GC/2.7 makes a new value after the null test. A local of the motion's own type is
+ * loaded straight into r29. */
 MotionEyeImpl::MotionEyeImpl(const shared_ptr<PlayerBase> &player, const UnkMotionFiles_800ADE78 &files)
     : m_blink(0), m_player(player), m_files(files) {
     if (m_player.get()->m_motion != 0) {
-        m_blink = new MotionEyeBlink(m_player, fn_800AA760(m_player.get()->m_motion, 2),
-                                     fn_800AA584(m_player.get()->m_motion), m_files);
+        Task *motion = m_player.get()->m_motion;
+        m_blink = new MotionEyeBlink(m_player, fn_800AA760(static_cast<PlayerMotion *>(motion), 2),
+                                     fn_800AA584(static_cast<PlayerMotion *>(motion)), m_files);
     }
     m_clumps[0] = 0;
     m_clumps[1] = 0;

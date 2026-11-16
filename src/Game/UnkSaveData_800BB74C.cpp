@@ -8,7 +8,9 @@
  *
  * NonMatching: 26 of 27 functions match. In fn_801E5040 (99.3%) GC/2.7 gives the loaded stage
  * number the volatile register r9 ahead of the two table addresses, retail gives it r12 after them
- * (8 instructions differ only by register numbers); about a dozen source shapes were tried. */
+ * (8 instructions differ only by register numbers); about a dozen source shapes were tried. Wave
+ * 39: the comparison's operands swapped, the second test on the table's value and the choice in a
+ * local leave it at 8 rows; locals for the entry, the stage or both are worse (11 to 17). */
 #include <dolphin/types.h>
 #include "size_assert.h"
 #include <string.h>

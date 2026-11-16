@@ -6365,11 +6365,16 @@ Game/FlashbackAction.cpp:
 	.sdata2     start:0x805FA558 end:0x805FA560
 
 Game/StageSequencePlayFlashback.cpp:
-	.text       start:0x80353E50 end:0x80354788
+	.text       start:0x80353E50 end:0x803546C0
 	.rodata     start:0x805128D0 end:0x80512928
 	.data       start:0x8055F5E0 end:0x8055F600
-	.sdata      start:0x805EDA40 end:0x805EDA58
-	.sbss       start:0x805F0E10 end:0x805F0E20
+	.sdata      start:0x805EDA40 end:0x805EDA50
+	.sbss       start:0x805F0E10 end:0x805F0E18
+
+Game/FlashbackQueue.cpp:
+	.text       start:0x803546C0 end:0x80354788
+	.sdata      start:0x805EDA50 end:0x805EDA58
+	.sbss       start:0x805F0E18 end:0x805F0E20
 
 Game/StageSequencePlayHard.cpp:
 	.text       start:0x80354788 end:0x8035511C

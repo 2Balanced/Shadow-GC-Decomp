@@ -499,7 +499,10 @@ extern const s32 kMaxLaunchers;
 } // namespace HeavyDog
 
 /* NonMatching (99.9%): retail loads m_owner into r5 and &shapes into r6 for fn_800C7F7C, GC/2.7
- * swaps the two registers. */
+ * swaps the two registers: retail sets up the address of the weak pointer temporary last, GC/2.7
+ * the address of the shapes (Game/BossCharaColli.cpp has the same call and the same difference).
+ * Wave 39: the weak pointer passed by value or converted implicitly, the array passed by its
+ * name, give the same object; the motion in a local is worse (13 rows). */
 HeavyDogCtrlUnit_RocketLauncher::HeavyDogCtrlUnit_RocketLauncher(HeavyDogVarParam *param,
                                                                  int motion)
     : BossCtrlUnit(param), HeavyDogCtrlUnit(param) {
