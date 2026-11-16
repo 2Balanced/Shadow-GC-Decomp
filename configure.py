@@ -426,6 +426,9 @@ config.libs = [
     DolphinLib(
         "axfx",
         [
+            Object(NonMatching, "dolphin/axfx/reverb_hi.c", cflags=[*cflags_base, "-opt nopeephole"]),
+            Object(NonMatching, "dolphin/axfx/reverb_std.c", cflags=[*cflags_base, "-opt nopeephole"]),
+            Object(NonMatching, "dolphin/axfx/delay.c"),
             Object(Matching, "dolphin/axfx/AXFXHooks.c"),
         ],
     ),
@@ -450,6 +453,12 @@ config.libs = [
             Object(Matching, "dolphin/card/CARDWrite.c"),
             Object(Matching, "dolphin/card/CARDDelete.c"),
             Object(Matching, "dolphin/card/CARDStat.c"),
+        ],
+    ),
+    DolphinLib(
+        "mix",
+        [
+            Object(Matching, "dolphin/mix/MIX.c"),
         ],
     ),
     DolphinLib(
