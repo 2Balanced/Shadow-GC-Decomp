@@ -13,13 +13,12 @@
  * other units call them by those names. The const structs in .rodata (@N) are the constant parts
  * of the filter queries' initializers.
  *
- * NonMatching (48 of 53 functions match):
+ * NonMatching (49 of 53 functions match):
  * - fn_8001EE0C and fn_800201D4: the code is the game's, but GC/2.7 gives the variables other
  *   callee-saved registers (fn_8001EE0C: the game puts the function's own locals in r31 down and
  *   the arguments below them; fn_800201D4: the game has the shape in r31 and the triangle in r30).
  * - fn_8001FD6C and fn_80020088: the game copies the loop counter from the zero register (one
  *   instruction).
- * - fn_80021E24: the game has the line's parameter above the blocks' handle on the stack.
  * - Data: the function-local statics are written out here (their constructors and destructors have C names); the game's are real
  *   ones, which puts the pools' storage after AttackIgnorePoolObject's in .bss, and without
  *   that object's destructor record (this unit sees no destructor for it). */
@@ -619,7 +618,9 @@ extern "C" CollisionResult *fn_80021E24(CollisionQuery *query, const UnkDebugLin
     UnkDebugLine_80020A20 line(*segment);
     CollisionResult *nearest = 0;
     if (flags & 1) {
-        UnkBlockSet_80045A98 *blocks = static_cast<UnkBlockSet_80045A98 *>(fn_80045A98(fn_80021C80(0)));
+        /* A named copy of the handle: the line's parameter then lies below it on the stack. */
+        UnkBlockSetId_80045A98 handle = fn_80021C80(0);
+        UnkBlockSet_80045A98 *blocks = static_cast<UnkBlockSet_80045A98 *>(fn_80045A98(handle));
         if (blocks != 0) {
             float t;
             s16 *ids = blocks->m_shown;

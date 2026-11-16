@@ -9,13 +9,15 @@
  * The moves the tests copy are RenderWare's plain RwV3d: a struct without constructors is copied
  * through integer registers, as the game does, where Vec3f is copied through float registers.
  *
- * NonMatching (every instruction of the three tests is in place; what differs is register choice):
+ * NonMatching (7 of 9 functions match; every instruction of the two others is in place, what
+ * differs is register choice):
  * - fn_800221A8 (97%): GC/2.7 gives the radius and the corner's saved contact other float registers
  *   than the game (radius f28 instead of f31; scoping the locals moved it from f24).
  * - fn_80023B28 (97%): the game loads seg again for the cross product although the values it loaded
  *   for seg's squared length stay live (no source shape tried reproduces that), and keeps the cross
  *   product in memory unread; the unused pointer to n is a fake that reproduces only the latter.
- * - fn_800245C8 (95.7%): GC/2.7 won't fuse the first sum of squares into fmadds. */
+ * (fn_800245C8 matches with the three sums in the order point.move, move.move, point.point: the
+ * sum of squares written first is not fused into fmadds.) */
 #include "Game/MathTypes.h"
 #include "Game/RangeTriangle.h"
 #include <dolphin/types.h>
@@ -162,9 +164,9 @@ inline float MoveLengthSq(const RwV3d &v) {
  * the contact (meanings inferred). */
 extern "C" bool fn_800245C8(const Vec3f *point, RwV3d *move, float *distance, float radius) {
     int hits = 0;
-    float pp = point->x * point->x + point->y * point->y + point->z * point->z;
     float pm = point->x * move->x + point->y * move->y + point->z * move->z;
     float mm = move->x * move->x + move->y * move->y + move->z * move->z;
+    float pp = point->x * point->x + point->y * point->y + point->z * point->z;
     float radiusSq = radius * radius;
     if (pp <= 0.001f + radiusSq) {
         move->x = move->y = move->z = 0.0f;
