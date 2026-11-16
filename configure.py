@@ -334,6 +334,25 @@ cflags_effect_lib = [
     "-pool off",
 ]
 
+# MetroTRK, the debugger nub (TRK_MINNOW_DOLPHIN.a): the Metrowerks library flags without small
+# data (its globals are addressed absolutely), with deferred inlining (functions come out in
+# reverse definition order) and with strings kept apart instead of pooled per unit.
+cflags_trk = [
+    *cflags_runtime,
+    "-sdata 0",
+    "-sdata2 0",
+    "-inline deferred",
+    "-str reuse,nopool,readonly",
+]
+
+# The debugger-connection glue linked with the nub (the DDH and GDEV drivers and their helpers):
+# the same, but with small data.
+cflags_trk_cc = [
+    *cflags_runtime,
+    "-inline deferred",
+    "-str reuse,nopool,readonly",
+]
+
 # REL flags
 cflags_rel = [
     *cflags_base,
@@ -464,6 +483,43 @@ config.libs = [
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/PPC_EABI/SRC/math_ppc.c"),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common_Embedded/Math/Double_precision/w_sqrt.c"),
             Object(Matching, "PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Src/extras.c"),
+        ],
+    },
+    {
+        "lib": "TRK_MINNOW_DOLPHIN",
+        "mw_version": "GC/2.7",
+        "cflags": cflags_trk,
+        "progress_category": "sdk",
+        "objects": [
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/mainloop.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/nubevent.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/nubinit.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/msg.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/msgbuf.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/serpoll.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/usr_put.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/dispatch.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/msghndlr.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/support.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/mutex_TRK.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/notify.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/flush_cache.c"),
+            Object(NonMatching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/mem_TRK.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/targimpl.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Export/targsupp.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/dolphin_trk.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/main_TRK.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/dolphin_trk_glue.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/targcont.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/target_options.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/mslsupp.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Os/dolphin/UDP_Stubs.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_DDH_GCN/main.c", cflags=cflags_trk_cc),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/CircleBuffer.c", cflags=cflags_trk_cc),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/cc/exi2/GCN/EXI2_GDEV_GCN/main.c", cflags=cflags_trk_cc),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/common/MWTrace.c", cflags=cflags_trk_cc),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/gamedev/cust_connection/utils/gc/MWCriticalSection_gc.cpp", cflags=cflags_trk_cc),
         ],
     },
     DolphinLib(

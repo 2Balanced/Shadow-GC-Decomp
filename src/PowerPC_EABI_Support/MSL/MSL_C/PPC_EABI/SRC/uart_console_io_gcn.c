@@ -5,7 +5,6 @@ typedef unsigned long size_t;
 typedef void (*IdleProc)(void);
 
 /* These three still carry address-derived names in this project. */
-#define __TRK_write_console fn_8039F550
 
 unsigned long OSGetConsoleType(void);
 int InitializeUART(unsigned long baudRate);
