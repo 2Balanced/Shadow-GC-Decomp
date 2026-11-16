@@ -5,8 +5,13 @@
  * assignment, and of RangeSphere::GetRadius. Member names and meanings are inferred. Definitions
  * are in reverse address order (deferred inlining emits functions last-defined first).
  *
- * Not yet written: the box-against-sphere test (0x8002A704), the box's moving-sphere test
- * (vf_0x3C, 0x8002B830) and its segment test in box space (0x8002CFAC). */
+ * Not matching yet (unit NonMatching, 40/44): GetCorner and GetEdge (GC/2.7 builds the inline
+ * Vec3f temporaries of a statement before its calls; retail builds the centre after the scale
+ * call), UnkBox_8002DBC8's constructor (retail copies both zeroed locals from one initializer, as
+ * an inlined helper with an aggregate initializer would; GC/2.7 does not inline such helpers and
+ * gives each local its own), and vf_0x3C (20 of 1328 rows: the side registers of its region code
+ * and one float register of the inlined clamp). */
+
 #define RANGE_UNIT
 #include "Game/CharaColliGeneral.h"
 #include "Game/RangeBox.h"
@@ -42,6 +47,10 @@ float fn_8040CF90(const Vec3f *a, const Vec3f *b); /* a . b */
 float fn_8040D180(const Vec3f *a, const Vec3f *b); /* |a - b|^2 */
 Vec3f fn_8040CDA8(const Vec3f *v, float scale);
 Vec3f fn_8040CDD0(const Vec3f *a, const Vec3f *b);
+Vec3f fn_8040CEE8(const Vec3f *v); /* v normalized */
+Vec3f fn_80016284(const Vec3f *v); /* -v */
+void fn_8040CE60(Vec3f *v); /* v = 0 */
+void fn_8040CE38(Vec3f *v, float scale); /* v *= scale */
 void fn_8040CFF8(Vec3f *v, const Vec3f *other); /* v += other */
 Vec3f fn_8040B67C(const Mtx34f *matrix, const Vec3f *point);
 Vec3f fn_8040B618(const Mtx34f *matrix, const Vec3f *direction);
@@ -126,9 +135,16 @@ inline float Dot(const Fn8040CopyVector3 &a, const Vec3f &b) {
  * from the temporary the first returns): retail copies the box's half sizes this way. */
 #define RANGE_COPY_TWICE(to, from)                                                                             fn_800091EC(reinterpret_cast<Vec3f *>(&(to)),                                                                           fn_800091EC(reinterpret_cast<Vec3f *>(&Fn8040CopyVector3()), reinterpret_cast<const Vec3f *>(&(from))))
 
+/* The sphere's and the capsule's sweeps (Game/RangeCapsule.cpp). */
+bool SweepSphere(const Vec3f *position, const UnkSphere_8004E6CC *sphere, Vec3f *move,
+                 UnkColliContact_8001FF00 *result, float radius);
+bool SweepCapsule(const Line *segment, const UnkSphere_8004E6CC *sphere, Vec3f *move, UnkColliContact_8001FF00 *result,
+                  float radius, float halfHeight);
+
 typedef bool (*HitFn)(RangeBase *self, RangeBase *other);
 
 extern "C" bool fn_8002A67C(RangeBase *self, RangeBase *other);
+extern "C" void fn_80029DA8(RangeBox *box, const Vec3f *point, s32 *x, s32 *y, s32 *z, s32 *region);
 extern "C" bool fn_80029ED0(RangeBase *self, RangeBase *other);
 
 /* The tests by the other shape's kind (sphere, box). */
@@ -229,6 +245,126 @@ bool RangeBox::vf_0x34(const UnkDebugLine_80020A20 *segment, UnkColliContact_800
     return hit;
 }
 
+bool RangeBox::HitSegment(const UnkDebugLine_80020A20 *segment, UnkColliContact_8001FF00 *result) {
+    s32 startRegion;
+    s32 endRegion;
+    s32 sx;
+    s32 ex;
+    s32 sy;
+    s32 ey;
+    s32 sz;
+    s32 ez;
+    fn_80029DA8(this, &segment->m_start, &sx, &sy, &sz, &startRegion);
+    fn_80029DA8(this, &segment->m_end, &ex, &ey, &ez, &endRegion);
+    if ((sx != 1 && sx == ex) || (sy != 1 && sy == ey) || (sz != 1 && sz == ez)) {
+        return false;
+    }
+    if (endRegion == 13 && result == 0) {
+        return true;
+    }
+    Fn8040CopyVector3 dir(((VectorSubtractFn)fn_8040CD74)(&segment->m_end, &segment->m_start));
+    if (startRegion == 13) {
+        if (result != 0) {
+            result->SetPosition(segment->m_start);
+            result->m_distance = 0.0f;
+            result->field_0x10 = result->GetDistance();
+            result->SetNormal(fn_80016284(&fn_8040CEE8(reinterpret_cast<const Vec3f *>(&dir))));
+            result->field_0x2C = 3;
+        }
+        return true;
+    }
+    Fn8040CopyVector3 half(GetHalfSize());
+    if ((startRegion == 12 && endRegion == 14) || (startRegion == 14 && endRegion == 12) ||
+        (startRegion == 10 && endRegion == 16) || (startRegion == 16 && endRegion == 10) ||
+        (startRegion == 4 && endRegion == 22) || (startRegion == 22 && endRegion == 4)) {
+        if (result != 0) {
+            float t;
+            if (startRegion == 12 || startRegion == 14) {
+                t = ((sx == 0 ? -half.x : half.x) - segment->m_start.x) / dir.x;
+                if (startRegion == 12) {
+                    result->SetNormal(Vec3f(-1.0f, 0.0f, 0.0f));
+                }
+                if (startRegion == 14) {
+                    result->SetNormal(Vec3f(1.0f, 0.0f, 0.0f));
+                }
+            } else if (startRegion == 10 || startRegion == 16) {
+                t = ((sy == 0 ? -half.y : half.y) - segment->m_start.y) / dir.y;
+                if (startRegion == 10) {
+                    result->SetNormal(Vec3f(0.0f, -1.0f, 0.0f));
+                }
+                if (startRegion == 16) {
+                    result->SetNormal(Vec3f(0.0f, 1.0f, 0.0f));
+                }
+            } else if (startRegion == 4 || startRegion == 22) {
+                t = ((sz == 0 ? -half.z : half.z) - segment->m_start.z) / dir.z;
+                if (startRegion == 4) {
+                    result->SetNormal(Vec3f(0.0f, 0.0f, -1.0f));
+                }
+                if (startRegion == 22) {
+                    result->SetNormal(Vec3f(0.0f, 0.0f, 1.0f));
+                }
+            }
+            result->SetPosition(fn_8040CDD0(&segment->m_start, &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&dir), t)));
+            result->m_distance = t * fn_8040CF50(reinterpret_cast<const Vec3f *>(&dir));
+            result->field_0x10 = result->GetDistance();
+            result->field_0x2C = 0;
+        }
+        return true;
+    }
+    if (sx == 0 || sx == 2) {
+        float t = ((sx == 0 ? -half.x : half.x) - segment->m_start.x) / dir.x;
+        Fn8040CopyVector3 point(fn_8040CDD0(&segment->m_start, &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&dir), t)));
+        if (std::fabs(point.y) < half.y && std::fabs(point.z) < half.z) {
+            result->SetPosition(*reinterpret_cast<const Vec3f *>(&point));
+            result->m_distance = t * fn_8040CF50(reinterpret_cast<const Vec3f *>(&dir));
+            result->field_0x10 = result->GetDistance();
+            result->field_0x2C = 0;
+            if (sx == 0) {
+                result->SetNormal(Vec3f(-1.0f, 0.0f, 0.0f));
+            }
+            if (sx == 2) {
+                result->SetNormal(Vec3f(1.0f, 0.0f, 0.0f));
+            }
+            return true;
+        }
+    }
+    if (sy == 0 || sy == 2) {
+        float t = ((sy == 0 ? -half.y : half.y) - segment->m_start.y) / dir.y;
+        Fn8040CopyVector3 point(fn_8040CDD0(&segment->m_start, &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&dir), t)));
+        if (std::fabs(point.x) < half.x && std::fabs(point.z) < half.z) {
+            result->SetPosition(*reinterpret_cast<const Vec3f *>(&point));
+            result->m_distance = t * fn_8040CF50(reinterpret_cast<const Vec3f *>(&dir));
+            result->field_0x10 = result->GetDistance();
+            result->field_0x2C = 0;
+            if (sy == 0) {
+                result->SetNormal(Vec3f(0.0f, -1.0f, 0.0f));
+            }
+            if (sy == 2) {
+                result->SetNormal(Vec3f(0.0f, 1.0f, 0.0f));
+            }
+            return true;
+        }
+    }
+    if (sz == 0 || sz == 2) {
+        float t = ((sz == 0 ? -half.z : half.z) - segment->m_start.z) / dir.z;
+        Fn8040CopyVector3 point(fn_8040CDD0(&segment->m_start, &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&dir), t)));
+        if (std::fabs(point.x) < half.x && std::fabs(point.y) < half.y) {
+            result->SetPosition(*reinterpret_cast<const Vec3f *>(&point));
+            result->m_distance = t * fn_8040CF50(reinterpret_cast<const Vec3f *>(&dir));
+            result->field_0x10 = result->GetDistance();
+            result->field_0x2C = 0;
+            if (sz == 0) {
+                result->SetNormal(Vec3f(0.0f, 0.0f, -1.0f));
+            }
+            if (sz == 2) {
+                result->SetNormal(Vec3f(0.0f, 0.0f, 1.0f));
+            }
+            return true;
+        }
+    }
+    return false;
+}
+
 bool RangeBox::vf_0x38(const UnkSphere_8004E6CC *sphere, UnkColliContact_8001FF00 *result) {
     float radius = 0.001f + (sphere->m_radius + m_margin);
     if (fn_8040D180(reinterpret_cast<const Vec3f *>(&m_position), &sphere->m_center) > radius * radius) {
@@ -264,6 +400,327 @@ extern "C" inline Line *fn_8002CCF0(Line *line, const Line *other) {
     reinterpret_cast<Fn8040CopyVector3 &>(line->m_start) = reinterpret_cast<const Fn8040CopyVector3 &>(other->m_start);
     reinterpret_cast<Fn8040CopyVector3 &>(line->m_end) = reinterpret_cast<const Fn8040CopyVector3 &>(other->m_end);
     return line;
+}
+
+/* Clamp written out where the moving-sphere test re-clamps its point (retail inlines it there). */
+inline float ClampToHalf(float value, float half, s32 *side) {
+    if (half < value) {
+        *side = 2;
+        return half;
+    }
+    if (value < -half) {
+        *side = 0;
+        return -half;
+    }
+    *side = 1;
+    return value;
+}
+
+/* The corner the moving-sphere test picks from the signs of a point. */
+inline s32 CornerOf(const Vec3f &point) {
+    return (point.x >= 0.0f ? 4 : 0) + (point.y >= 0.0f ? 2 : 0) + (point.z >= 0.0f ? 1 : 0);
+}
+
+bool RangeBox::vf_0x3C(const UnkSphere_8004E6CC *sphere, const Vec3f *move, UnkColliContact_8001FF00 *result) {
+    float radius = 0.001f + (sphere->m_radius + m_margin);
+    RangeLineData path;
+    fn_80020A20(reinterpret_cast<UnkDebugLine_80020A20 *>(&path), &sphere->m_center,
+                &fn_8040CDD0(&sphere->m_center, move));
+    if (fn_8003C660(reinterpret_cast<const Vec3f *>(&m_position), reinterpret_cast<const UnkDebugLine_80020A20 *>(&path),
+                    0) > radius * radius) {
+        return false;
+    }
+    Fn8040CopyVector3 center(fn_8040B67C(&m_inverse, &sphere->m_center));
+    if (HitSphere(reinterpret_cast<const Vec3f *>(&center), sphere->m_radius, result)) {
+        fn_8040CE60(const_cast<Vec3f *>(move));
+        if (result != 0) {
+            result->SetPosition(fn_8040B67C(&m_matrix, reinterpret_cast<const Vec3f *>(&result->m_position)));
+            result->SetNormal(fn_8040B618(&m_matrix, reinterpret_cast<const Vec3f *>(&result->m_normal)));
+            result->SetEdgeNormal(fn_8040B618(&m_matrix, EdgeNormal(result)));
+        }
+        return true;
+    }
+    Fn8040CopyVector3 half(GetHalfSize());
+    s32 index;
+    s32 sx;
+    s32 sy;
+    s32 sz;
+    Vec3f closest(Clamp(center.x, half.x + sphere->m_radius, &sx), Clamp(center.y, half.y + sphere->m_radius, &sy),
+                  Clamp(center.z, half.z + sphere->m_radius, &sz));
+    if (sx == 1 && sy == 1 && sz == 1) {
+        fn_800091D0(&closest, &Vec3f(ClampToHalf(center.x, half.x, &sx), ClampToHalf(center.y, half.y, &sy),
+                                     ClampToHalf(center.z, half.z, &sz)));
+
+
+
+        s32 y = sy;
+        s32 z = sz;
+        s32 x = sx;
+
+        s32 region = x + (z * 9 + y * 3);
+        if (region == 0 || region == 2 || region == 6 || region == 8 || region == 18 || region == 20 ||
+            region == 24 || region == 26) {
+            index = (z == 2 ? 4 : 0) + (y == 2 ? 2 : 0) + (x == 2 ? 1 : 0);
+            Fn8040CopyVector3 corner(GetCorner(index));
+            if (SweepSphere(reinterpret_cast<const Vec3f *>(&corner), sphere, const_cast<Vec3f *>(move), result, 0.0f)) {
+                if (result != 0) {
+                    result->field_0x2C = 2;
+                    result->field_0x30 = index;
+                }
+                return true;
+            }
+            return false;
+        }
+        float length;
+        if (z == 1) {
+            index = (y == 2 ? 2 : 0) + (x == 2 ? 1 : 0);
+            length = GetHalfSize().z;
+        } else if (y == 1) {
+            index = 4 + (z == 2 ? 2 : 0) + (x == 2 ? 1 : 0);
+            length = GetHalfSize().y;
+        } else {
+            index = 8 + (z == 2 ? 2 : 0) + (y == 2 ? 1 : 0);
+            length = GetHalfSize().x;
+        }
+        UnkDebugLine_80020A20 edge(GetEdge(index));
+        if (SweepCapsule(reinterpret_cast<const Line *>(&edge), sphere, const_cast<Vec3f *>(move), result, 0.0f, length)) {
+            if (result != 0) {
+                result->field_0x2C = 1;
+                result->field_0x30 = index;
+                result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                         reinterpret_cast<const Vec3f *>(&half))));
+            }
+            return true;
+        }
+        return false;
+    }
+    Vec3f hit;
+    bool facing = false;
+    Fn8040CopyVector3 local(fn_8040B618(&m_inverse, move));
+    if (sx == 0) {
+        facing = local.x > 0.0f;
+    } else if (sx == 2) {
+        facing = local.x < 0.0f;
+    }
+    if (facing && std::fabs(closest.x - center.x) <= std::fabs(local.x)) {
+        float t = (closest.x - center.x) / local.x;
+        AssignVector(hit, fn_8040CDD0(reinterpret_cast<const Vec3f *>(&center),
+                                      &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&local), t)));
+        hit.x += sx == 0 ? sphere->m_radius : -sphere->m_radius;
+        if (std::fabs(hit.y) <= half.y && std::fabs(hit.z) <= half.z) {
+            fn_8040CE38(const_cast<Vec3f *>(move), t);
+            if (result != 0) {
+                result->SetPosition(fn_8040B67C(&m_matrix, &hit));
+                if (sx == 0) {
+                    result->SetNormal(Vec3f(-m_matrix.values[0][0], -m_matrix.values[1][0], -m_matrix.values[2][0]));
+                } else {
+                    result->SetNormal(Vec3f(m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]));
+                }
+                result->m_distance = sphere->m_radius;
+                result->field_0x10 = 0.0f;
+                result->field_0x2C = 0;
+                result->field_0x30 = sx == 0 ? 0 : 1;
+                result->field_0x34 = 0;
+            }
+            return true;
+        }
+        Line line;
+        if (std::fabs(hit.y) <= half.y + sphere->m_radius && std::fabs(hit.z) <= half.z) {
+            index = (hit.y > 0.0f ? 2 : 0) + (hit.x > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.z)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        if (std::fabs(hit.y) <= half.y && std::fabs(hit.z) <= half.z + sphere->m_radius) {
+            index = 4 + (hit.z > 0.0f ? 2 : 0) + (hit.x > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.y)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        float dy = std::fabs(hit.y) - half.y;
+        float dz = std::fabs(hit.z) - half.z;
+        if (dy * dy + dz * dz <= sphere->m_radius * sphere->m_radius) {
+            index = (hit.x >= 0.0f ? 4 : 0) + (hit.y >= 0.0f ? 2 : 0) + (hit.z >= 0.0f ? 1 : 0);
+            Fn8040CopyVector3 corner(GetCorner(index));
+            if (SweepSphere(reinterpret_cast<const Vec3f *>(&corner), sphere, const_cast<Vec3f *>(move), result, 0.0f)) {
+                if (result != 0) {
+                    result->field_0x2C = 2;
+                    result->field_0x30 = index;
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+    facing = false;
+    if (sy == 0) {
+        facing = local.y > 0.0f;
+    } else if (sy == 2) {
+        facing = local.y < 0.0f;
+    }
+    if (facing && std::fabs(closest.y - center.y) <= std::fabs(local.y)) {
+        float t = (closest.y - center.y) / local.y;
+        AssignVector(hit, fn_8040CDD0(reinterpret_cast<const Vec3f *>(&center),
+                                      &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&local), t)));
+        hit.y += sy == 0 ? sphere->m_radius : -sphere->m_radius;
+        if (std::fabs(hit.x) <= half.x && std::fabs(hit.z) <= half.z) {
+            fn_8040CE38(const_cast<Vec3f *>(move), t);
+            if (result != 0) {
+                result->SetPosition(fn_8040B67C(&m_matrix, &hit));
+                if (sy == 0) {
+                    result->SetNormal(Vec3f(-m_matrix.values[0][1], -m_matrix.values[1][1], -m_matrix.values[2][1]));
+                } else {
+                    result->SetNormal(Vec3f(m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]));
+                }
+                result->m_distance = sphere->m_radius;
+                result->field_0x10 = 0.0f;
+                result->field_0x2C = 0;
+                s32 face = 3;
+                if (sy == 0) {
+                    face = 2;
+                }
+                result->field_0x30 = face;
+                result->field_0x34 = 0;
+            }
+            return true;
+        }
+        Line line;
+        if (std::fabs(hit.x) <= half.x + sphere->m_radius && std::fabs(hit.z) <= half.z) {
+            index = (hit.y > 0.0f ? 2 : 0) + (hit.x > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.z)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        if (std::fabs(hit.x) <= half.x && std::fabs(hit.z) <= half.z + sphere->m_radius) {
+            index = 8 + (hit.z > 0.0f ? 2 : 0) + (hit.y > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.x)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        float dx = std::fabs(hit.x) - half.x;
+        float dz = std::fabs(hit.z) - half.z;
+        if (dx * dx + dz * dz <= sphere->m_radius * sphere->m_radius) {
+            index = (hit.x >= 0.0f ? 4 : 0) + (hit.y >= 0.0f ? 2 : 0) + (hit.z >= 0.0f ? 1 : 0);
+            Fn8040CopyVector3 corner(GetCorner(index));
+            if (SweepSphere(reinterpret_cast<const Vec3f *>(&corner), sphere, const_cast<Vec3f *>(move), result, 0.0f)) {
+                if (result != 0) {
+                    result->field_0x2C = 2;
+                    result->field_0x30 = index;
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+    facing = false;
+    if (sz == 0) {
+        facing = local.z > 0.0f;
+    } else if (sz == 2) {
+        facing = local.z < 0.0f;
+    }
+    if (facing && std::fabs(closest.z - center.z) <= std::fabs(local.z)) {
+        float t = (closest.z - center.z) / local.z;
+        AssignVector(hit, fn_8040CDD0(reinterpret_cast<const Vec3f *>(&center),
+                                      &fn_8040CDA8(reinterpret_cast<const Vec3f *>(&local), t)));
+        hit.z += sz == 0 ? sphere->m_radius : -sphere->m_radius;
+        if (std::fabs(hit.x) <= half.x && std::fabs(hit.y) <= half.y) {
+            fn_8040CE38(const_cast<Vec3f *>(move), t);
+            if (result != 0) {
+                result->SetPosition(fn_8040B67C(&m_matrix, &hit));
+                if (sz == 0) {
+                    result->SetNormal(Vec3f(-m_matrix.values[0][2], -m_matrix.values[1][2], -m_matrix.values[2][2]));
+                } else {
+                    result->SetNormal(Vec3f(m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]));
+                }
+                result->m_distance = sphere->m_radius;
+                result->field_0x10 = 0.0f;
+                result->field_0x2C = 0;
+                s32 face = 5;
+                if (sz == 0) {
+                    face = 4;
+                }
+                result->field_0x30 = face;
+                result->field_0x34 = 0;
+            }
+            return true;
+        }
+        Line line;
+        if (std::fabs(hit.x) <= half.x + sphere->m_radius && std::fabs(hit.y) <= half.y) {
+            index = 4 + (hit.z > 0.0f ? 2 : 0) + (hit.x > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.y)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        if (std::fabs(hit.x) <= half.x && std::fabs(hit.y) <= half.y + sphere->m_radius) {
+            index = 8 + (hit.z > 0.0f ? 2 : 0) + (hit.y > 0.0f ? 1 : 0);
+            fn_8002CCF0(&line, reinterpret_cast<const Line *>(&GetEdge(index)));
+            if (SweepCapsule(&line, sphere, const_cast<Vec3f *>(move), result, 0.0f, half.x)) {
+                if (result != 0) {
+                    result->field_0x2C = 1;
+                    result->field_0x30 = index;
+                    result->SetEdgeNormal(fn_8040B618(&m_matrix, &FaceNormal(reinterpret_cast<const Vec3f *>(&center),
+                                                                             reinterpret_cast<const Vec3f *>(&half))));
+                }
+                return true;
+            }
+            return false;
+        }
+        float dx = std::fabs(hit.x) - half.x;
+        float dy = std::fabs(hit.y) - half.y;
+        if (dx * dx + dy * dy <= sphere->m_radius * sphere->m_radius) {
+            s32 cornerIndex = (hit.x >= 0.0f ? 4 : 0) + (hit.y >= 0.0f ? 2 : 0) + (hit.z >= 0.0f ? 1 : 0);
+            Fn8040CopyVector3 corner(GetCorner(cornerIndex));
+            if (SweepSphere(reinterpret_cast<const Vec3f *>(&corner), sphere, const_cast<Vec3f *>(move), result, 0.0f)) {
+                if (result != 0) {
+                    result->field_0x2C = 2;
+                    result->field_0x30 = cornerIndex;
+                }
+                return true;
+            }
+            return false;
+        }
+    }
+    return false;
 }
 
 void RangeBox::Update(const Vec3f *position, const Vec3f *rotation, s32 order) {
@@ -343,6 +800,233 @@ float RangeBox::Clamp(float value, float half, s32 *side) {
     }
     *side = 1;
     return value;
+}
+
+/* Which of three values is the smallest (0, 1 or 2). */
+inline s32 SmallestAxis(float a, float b, float c) {
+    if (a < b) {
+        if (c < a) {
+            return 2;
+        }
+        return 0;
+    }
+    if (c < b) {
+        return 2;
+    }
+    return 1;
+}
+
+/* Whether a point is exactly the box's position. */
+inline bool SamePoint(const Fn8040CopyVector3 &a, const Vec3f &b) {
+    return a.x == b.x && a.y == b.y && a.z == b.z;
+}
+
+inline bool InReach(float distance, float reach) {
+    return distance <= reach * reach;
+}
+
+/* -1 or 1 by the sign of value. */
+
+inline float Sign(float value) {
+    return value < 0.0f ? -1.0f : 1.0f;
+}
+
+bool RangeBox::HitSphere(const Vec3f *center, float radius, UnkColliContact_8001FF00 *result) {
+    s32 sx;
+    s32 sy;
+    s32 sz;
+    Fn8040CopyVector3 half(GetHalfSize());
+    Vec3f closest(Clamp(center->x, half.x, &sx), Clamp(center->y, half.y, &sy), Clamp(center->z, half.z, &sz));
+    float reach = 0.001f + radius;
+    if (InReach(fn_8040D180(&closest, center), 0.001f + radius)) {
+        if (result == 0) {
+            return true;
+        }
+    } else {
+        return false;
+    }
+
+
+    s32 z = sz;
+    s32 y = sy;
+    s32 x = sx;
+    s32 region = y * 3 + z * 9 + x;
+    if (region == 13) {
+        if (result != 0) {
+            result->SetPosition(*center);
+            result->m_distance = 0.0f;
+            if (SamePoint(m_position, *center)) {
+                result->field_0x2C = 4;
+                switch (SmallestAxis(half.x, half.y, half.z)) {
+                case 0:
+                    result->SetNormal(Vec3f(1.0f, 0.0f, 0.0f));
+                    result->field_0x10 = -half.x - radius;
+                    break;
+                case 1:
+                    result->SetNormal(Vec3f(0.0f, 1.0f, 0.0f));
+                    result->field_0x10 = -half.y - radius;
+                    break;
+                case 2:
+                    result->SetNormal(Vec3f(0.0f, 0.0f, 1.0f));
+                    result->field_0x10 = -half.z - radius;
+                    break;
+                }
+            } else {
+                result->field_0x2C = 3;
+                float dx = half.x - std::fabs(center->x);
+                float dy = half.y - std::fabs(center->y);
+                float dz = half.z - std::fabs(center->z);
+                switch (SmallestAxis(dx, dy, dz)) {
+                case 0:
+                    result->SetNormal(Vec3f(Sign(center->x), 0.0f, 0.0f));
+                    result->field_0x10 = -dx - radius;
+                    break;
+                case 1:
+                    result->SetNormal(Vec3f(0.0f, Sign(center->y), 0.0f));
+                    result->field_0x10 = -dy - radius;
+                    break;
+                case 2:
+                    result->SetNormal(Vec3f(0.0f, 0.0f, Sign(center->z)));
+                    result->field_0x10 = -dz - radius;
+                    break;
+                }
+            }
+        }
+        return true;
+    } else if (region == 4 || region == 22) {
+        float d = center->z - (region == 4 ? -half.z : half.z);
+        if (std::fabs(d) < reach) {
+            Vec3f offset(0.0f, 0.0f, d);
+            if (result != 0) {
+                result->SetPosition(((VectorSubtractFn)fn_8040CD74)(center, &offset));
+                result->m_distance = std::fabs(d);
+                result->field_0x10 = result->GetDistance() - radius;
+                result->field_0x2C = 0;
+                result->SetNormal(Vec3f(0.0f, 0.0f, d < 0.0f ? -1.0f : 1.0f));
+            }
+            return true;
+        }
+        return false;
+    } else if (region == 10 || region == 16) {
+        float d = center->y - (region == 10 ? -half.y : half.y);
+        if (std::fabs(d) < reach) {
+            Vec3f offset(0.0f, d, 0.0f);
+            if (result != 0) {
+                result->SetPosition(((VectorSubtractFn)fn_8040CD74)(center, &offset));
+                result->m_distance = std::fabs(d);
+                result->field_0x10 = result->GetDistance() - radius;
+                result->field_0x2C = 0;
+                result->SetNormal(Vec3f(0.0f, d < 0.0f ? -1.0f : 1.0f, 0.0f));
+
+            }
+            return true;
+        }
+        return false;
+    } else if (region == 12 || region == 14) {
+        float d = center->x - (region == 12 ? -half.x : half.x);
+        if (std::fabs(d) < reach) {
+            Vec3f offset(d, 0.0f, 0.0f);
+            if (result != 0) {
+                result->SetPosition(((VectorSubtractFn)fn_8040CD74)(center, &offset));
+                result->m_distance = std::fabs(d);
+                result->field_0x10 = result->GetDistance() - radius;
+                result->field_0x2C = 0;
+                result->SetNormal(Vec3f(Sign(d), 0.0f, 0.0f));
+            }
+            return true;
+        }
+        return false;
+    } else if (region == 0 || region == 2 || region == 6 || region == 8 || region == 18 || region == 20 ||
+               region == 24 || region == 26) {
+        Vec3f corner(x == 0 ? -half.x : half.x, y == 0 ? -half.y : half.y, z == 0 ? -half.z : half.z);
+
+        float distance = fn_8040D180(&corner, center);
+        if (distance < reach * reach) {
+            if (result != 0) {
+                result->SetPosition(corner);
+                result->m_distance = fn_8000FEE4(distance);
+                result->field_0x10 = result->GetDistance() - radius;
+                result->field_0x2C = 2;
+                result->SetNormal(fn_8040CEE8(&((VectorSubtractFn)fn_8040CD74)(center, &corner)));
+                result->SetEdgeNormal(FaceNormal(center, reinterpret_cast<const Vec3f *>(&half)));
+            }
+            return true;
+        }
+        return false;
+    } else {
+        Line edge;
+        switch (sx) {
+        case 0:
+            edge.m_end.x = edge.m_start.x = -half.x;
+            break;
+        case 1:
+            edge.m_start.x = -half.x;
+            edge.m_end.x = half.x;
+            break;
+        case 2:
+            edge.m_end.x = edge.m_start.x = half.x;
+            break;
+        }
+        switch (sy) {
+        case 0:
+            edge.m_end.y = edge.m_start.y = -half.y;
+            break;
+        case 1:
+            edge.m_start.y = -half.y;
+            edge.m_end.y = half.y;
+            break;
+        case 2:
+            edge.m_end.y = edge.m_start.y = half.y;
+            break;
+        }
+        switch (sz) {
+        case 0:
+            edge.m_end.z = edge.m_start.z = -half.z;
+            break;
+        case 1:
+            edge.m_start.z = -half.z;
+            edge.m_end.z = half.z;
+            break;
+        case 2:
+            edge.m_end.z = edge.m_start.z = half.z;
+            break;
+        }
+        Vec3f nearest;
+        float distance = fn_8003C660(center, reinterpret_cast<const UnkDebugLine_80020A20 *>(&edge), &nearest);
+        if (distance < reach * reach) {
+            if (result != 0) {
+                result->SetPosition(nearest);
+                result->m_distance = fn_8000FEE4(distance);
+                result->field_0x10 = result->GetDistance() - radius;
+                result->field_0x2C = 1;
+                result->SetNormal(fn_8040CEE8(&((VectorSubtractFn)fn_8040CD74)(center, &nearest)));
+                float dx = std::fabs(center->x) - half.x;
+                float dy = std::fabs(center->y) - half.y;
+                float dz = std::fabs(center->z) - half.z;
+                if (sx == 1) {
+                    if (dz < dy) {
+                        result->SetEdgeNormal(Vec3f(0.0f, Sign(center->y), 0.0f));
+                    } else {
+                        result->SetEdgeNormal(Vec3f(0.0f, 0.0f, Sign(center->z)));
+                    }
+                } else if (sy == 1) {
+                    if (dz < dx) {
+                        result->SetEdgeNormal(Vec3f(Sign(center->x), 0.0f, 0.0f));
+                    } else {
+                        result->SetEdgeNormal(Vec3f(0.0f, 0.0f, Sign(center->z)));
+                    }
+                } else {
+                    if (dy < dx) {
+                        result->SetEdgeNormal(Vec3f(Sign(center->x), 0.0f, 0.0f));
+                    } else {
+                        result->SetEdgeNormal(Vec3f(0.0f, Sign(center->y), 0.0f));
+                    }
+                }
+            }
+            return true;
+        }
+        return false;
+    }
 }
 
 extern "C" bool fn_8002A67C(RangeBase *self, RangeBase *other) {
@@ -487,61 +1171,43 @@ UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
     Vec3f center(m_matrix.values[0][3], m_matrix.values[1][3], m_matrix.values[2][3]);
     if (index >= 0 && index <= 3) {
         float s = (index & 1) ? GetHalfSize().x : -GetHalfSize().x;
-        Vec3f axis0;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis0, m_matrix.values[0][0], m_matrix.values[1][0],
-                                                      m_matrix.values[2][0]),
-                                         s));
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]), s));
         s = (index & 2) ? GetHalfSize().y : -GetHalfSize().y;
-        Vec3f axis1;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis1, m_matrix.values[0][1], m_matrix.values[1][1],
-                                                      m_matrix.values[2][1]),
-                                         s));
-        AssignVector(line.m_start,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]), s));
+        fn_800091D0(&line.m_start,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
                                                               m_matrix.values[2][2]),
                                                         -GetHalfSize().z)));
-        AssignVector(line.m_end,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
+        fn_800091D0(&line.m_end,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][2], m_matrix.values[1][2],
                                                               m_matrix.values[2][2]),
                                                         GetHalfSize().z)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
     } else if (index >= 4 && index <= 7) {
         float s = ((index - 4) & 1) ? GetHalfSize().x : -GetHalfSize().x;
-        Vec3f axis0;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis0, m_matrix.values[0][0], m_matrix.values[1][0],
-                                                      m_matrix.values[2][0]),
-                                         s));
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]), s));
         s = ((index - 4) & 2) ? GetHalfSize().z : -GetHalfSize().z;
-        Vec3f axis2;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis2, m_matrix.values[0][2], m_matrix.values[1][2],
-                                                      m_matrix.values[2][2]),
-                                         s));
-        AssignVector(line.m_start,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
+        fn_800091D0(&line.m_start,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
                                                               m_matrix.values[2][1]),
                                                         -GetHalfSize().y)));
-        AssignVector(line.m_end,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
+        fn_800091D0(&line.m_end,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][1], m_matrix.values[1][1],
                                                               m_matrix.values[2][1]),
                                                         GetHalfSize().y)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
     } else {
         float s = ((index - 8) & 1) ? GetHalfSize().y : -GetHalfSize().y;
-        Vec3f axis1;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis1, m_matrix.values[0][1], m_matrix.values[1][1],
-                                                      m_matrix.values[2][1]),
-                                         s));
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]), s));
         s = ((index - 8) & 2) ? GetHalfSize().z : -GetHalfSize().z;
-        Vec3f axis2;
-        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&axis2, m_matrix.values[0][2], m_matrix.values[1][2],
-                                                      m_matrix.values[2][2]),
-                                         s));
-        AssignVector(line.m_start,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
+        fn_8040CFF8(&center, &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
+        fn_800091D0(&line.m_start,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
                                                               m_matrix.values[2][0]),
                                                         -GetHalfSize().x)));
-        AssignVector(line.m_end,
-                     fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
+        fn_800091D0(&line.m_end,
+                    &fn_8040CDD0(&center, &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0],
                                                               m_matrix.values[2][0]),
                                                         GetHalfSize().x)));
         return reinterpret_cast<const UnkDebugLine_80020A20 &>(line);
@@ -550,19 +1216,18 @@ UnkDebugLine_80020A20 RangeBox::GetEdge(int index) {
 
 Fn8040CopyVector3 RangeBox::GetCorner(int index) {
     Fn8040CopyVector3 corner;
+    float s = (index & 1) ? GetHalfSize().x : -GetHalfSize().x;
     fn_800091EC(reinterpret_cast<Vec3f *>(&corner),
                 &fn_8040CDD0(&Vec3f(m_matrix.values[0][3], m_matrix.values[1][3], m_matrix.values[2][3]),
-                             &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]),
-                                          (index & 1) ? GetHalfSize().x : -GetHalfSize().x)));
-    Vec3f axis1;
+                             &fn_8040CDA8(&Vec3f(m_matrix.values[0][0], m_matrix.values[1][0], m_matrix.values[2][0]), s)));
+    s = (index & 2) ? GetHalfSize().y : -GetHalfSize().y;
     fn_8040CFF8(reinterpret_cast<Vec3f *>(&corner),
-                &fn_800091A4(fn_80008E1C(&axis1, m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]),
-                             (index & 2) ? GetHalfSize().y : -GetHalfSize().y));
-    Vec3f axis2;
+                &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][1], m_matrix.values[1][1], m_matrix.values[2][1]), s));
+    s = (index & 4) ? GetHalfSize().z : -GetHalfSize().z;
     fn_8040CFF8(reinterpret_cast<Vec3f *>(&corner),
-                &fn_800091A4(fn_80008E1C(&axis2, m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]),
-                             (index & 4) ? GetHalfSize().z : -GetHalfSize().z));
+                &fn_800091A4(fn_80008E1C(&Vec3f(), m_matrix.values[0][2], m_matrix.values[1][2], m_matrix.values[2][2]), s));
     return corner;
+
 }
 
 Fn8040CopyVector3 RangeBox::GetHalfSize() {
@@ -610,4 +1275,14 @@ Vec3f RangeBox::GetRotation() {
         return fn_80029418(&m_matrix, owner->vf_0x24());
     }
     return fn_80029418(&m_matrix, m_box.field_0x24);
+}
+
+/* Not called anywhere: the linker strips it from the game. Retail pools the unit's float literals
+ * as 0, 0.001, 1, -1; GC/2.7 pools them in reverse definition order, so this last definition
+ * names them first, in that order (see docs/research-notes.md). */
+extern "C" void RangeBoxLiteralOrder(float *values) {
+    values[0] = 0.0f;
+    values[1] = 0.001f;
+    values[2] = 1.0f;
+    values[3] = -1.0f;
 }
