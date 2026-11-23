@@ -349,13 +349,15 @@ cflags_rw_r6 = [
     "-inline auto,level=5",
 ]
 
-# RenderWare units of agent r3 (wave 40): a C library built without lmw/stmw, for speed, with
+# RenderWare's world plugin, 0x80458CF8-0x80466B58 (RenderWare/RpGeometry.c .. RpGameCubeVertex.c,
+# re-cut in wave 41 from RwCpp20-RwCpp28): a C library built without lmw/stmw, for speed, with
 # automatic inlining and no deferred inlining (functions come out in definition order;
-# RpGeometryDestroy is expanded in every failure path of RpGeometryStreamRead). The sources are
-# C (-lang c): structure assignments copy words, where C++ copies float members as floats.
-# Used by RwCpp20, 21, 26 and 27; GC 2.0-2.7 give the same code, -O3/-O4,s/1.x do not. Where a
-# size-cut unit holds several of RenderWare's source files, the calls retail makes across a file
-# boundary are kept out of line with #pragma dont_inline (see RwCpp26).
+# RpGeometryDestroy is expanded in every failure path of RpGeometryStreamRead, RpMaterialDestroy in
+# RpMaterialStreamRead). The sources are C (-lang c): structure assignments copy words, where C++
+# copies float members as floats. GC 2.0-2.7 give the same code, -O3/-O4,s/1.x do not.
+# RenderWare/RpWorldSector.c needs cflags_rw_c instead (no automatic inlining: retail calls
+# RpWorldSectorRender and its recursive sector destroy out of line). Game/RwCpp20 keeps the tail
+# of the clump file (0x80458C28-0x80458CF8) until that file is re-cut.
 cflags_rw_r3 = [
     *cflags_base,
     "-use_lmw_stmw off",
@@ -1231,15 +1233,7 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp17.cpp"),
             Object(NonMatching, "Game/RwCpp18.cpp"),
             Object(NonMatching, "Game/RwCpp19.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp20.cpp", cflags=cflags_rw_r3),
-            Object(NonMatching, "Game/RwCpp21.cpp", cflags=cflags_rw_r3),
-            Object(NonMatching, "Game/RwCpp22.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp23.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp24.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp25.cpp"),
-            Object(NonMatching, "Game/RwCpp26.cpp", cflags=cflags_rw_r3),
-            Object(NonMatching, "Game/RwCpp27.cpp", cflags=cflags_rw_r3),
-            Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(Matching, "Game/RwCpp20.cpp", cflags=cflags_rw_r3),
             Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
@@ -1942,6 +1936,25 @@ config.libs = [
             Object(NonMatching, "RenderWare/RwMatrix.c", cflags=cflags_rw_r5),
             Object(NonMatching, "RenderWare/RwFreeList.c", cflags=cflags_rw_r5),
             Object(Matching, "RenderWare/RwResources.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RpGeometry.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpLight.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpMaterial.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpMaterialList.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpMesh.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpTriStrip.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpWorldSector.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpWorld.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpWorldObject.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpWorldPipe.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpGameCubeRender.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpGameCubePipelines.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpAtomicGameCube.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpWorldSectorGameCube.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpLightGameCube.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpInterpolatorGameCube.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpNativeDataGameCube.c", cflags=cflags_rw_r3),
+            Object(Matching, "RenderWare/RpMaterialGameCube.c", cflags=cflags_rw_r3),
+            Object(NonMatching, "RenderWare/RpGameCubeVertex.c", cflags=cflags_rw_r3),
         ],
     },
 ]

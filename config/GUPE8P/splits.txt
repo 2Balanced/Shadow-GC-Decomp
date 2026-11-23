@@ -7905,31 +7905,104 @@ Game/RwCpp19.cpp:
 	.text       start:0x80457090 end:0x80458C28
 
 Game/RwCpp20.cpp:
-	.text       start:0x80458C28 end:0x8045A7C4
+	.text       start:0x80458C28 end:0x80458CF8
 
-Game/RwCpp21.cpp:
-	.text       start:0x8045A7C4 end:0x8045C340
+RenderWare/RpGeometry.c:
+	.text       start:0x80458CF8 end:0x8045A760
+	.data       start:0x8056D810 end:0x8056D828
+	.sbss       start:0x805F14D0 end:0x805F14D8
+	.sdata2     start:0x805FB118 end:0x805FB120
 
-Game/RwCpp22.cpp:
-	.text       start:0x8045C340 end:0x8045D898
+RenderWare/RpLight.c:
+	.text       start:0x8045A760 end:0x8045AF28
+	.data       start:0x8056D828 end:0x8056D840
+	.bss        start:0x805E15C8 end:0x805E15F0
+	.sdata      start:0x805EDDB0 end:0x805EDDB8
+	.sbss       start:0x805F14D8 end:0x805F14E0
+	.sdata2     start:0x805FB120 end:0x805FB170
 
-Game/RwCpp23.cpp:
-	.text       start:0x8045D898 end:0x8045F458
+RenderWare/RpMaterial.c:
+	.text       start:0x8045AF28 end:0x8045B6F0
+	.data       start:0x8056D840 end:0x8056D868
+	.bss        start:0x805E15F0 end:0x805E1618
+	.sdata      start:0x805EDDB8 end:0x805EDDC0
+	.sbss       start:0x805F14E0 end:0x805F14F0
 
-Game/RwCpp24.cpp:
-	.text       start:0x8045F458 end:0x80460E74
+RenderWare/RpMaterialList.c:
+	.text       start:0x8045B6F0 end:0x8045BF30
 
-Game/RwCpp25.cpp:
-	.text       start:0x80460E74 end:0x80462914
+RenderWare/RpMesh.c:
+	.text       start:0x8045BF30 end:0x8045CA38
+	.sdata      start:0x805EDDC0 end:0x805EDDC8
+	.sbss       start:0x805F14F0 end:0x805F14F8
 
-Game/RwCpp26.cpp:
-	.text       start:0x80462914 end:0x804643E8
+RenderWare/RpTriStrip.c:
+	.text       start:0x8045CA38 end:0x8045F2A0
+	.data       start:0x8056D868 end:0x8056D880
+	.sdata2     start:0x805FB170 end:0x805FB178
 
-Game/RwCpp27.cpp:
-	.text       start:0x804643E8 end:0x80465ED4
+RenderWare/RpWorldSector.c:
+	.text       start:0x8045F2A0 end:0x8045F9E8
+	.data       start:0x8056D880 end:0x8056D898
+	.sbss       start:0x805F14F8 end:0x805F1500
 
-Game/RwCpp28.cpp:
-	.text       start:0x80465ED4 end:0x80466B58
+RenderWare/RpWorld.c:
+	.text       start:0x8045F9E8 end:0x80460974
+	.data       start:0x8056D898 end:0x8056D8B0
+	.bss        start:0x805E1618 end:0x805E1640
+	.sbss       start:0x805F1500 end:0x805F1508
+	.sdata2     start:0x805FB178 end:0x805FB180
+
+RenderWare/RpWorldObject.c:
+	.text       start:0x80460974 end:0x804626F8
+	.bss        start:0x805E1640 end:0x805E1688
+	.sdata      start:0x805EDDC8 end:0x805EDDD8
+	.sbss       start:0x805F1508 end:0x805F1520
+
+RenderWare/RpWorldPipe.c:
+	.text       start:0x804626F8 end:0x80462914
+
+RenderWare/RpGameCubeRender.c:
+	.text       start:0x80462914 end:0x8046318C
+	.bss        start:0x805E1688 end:0x805E16A0
+	.sdata      start:0x805EDDD8 end:0x805EDDE0
+	.sbss       start:0x805F1520 end:0x805F1530
+	.sdata2     start:0x805FB180 end:0x805FB190
+
+RenderWare/RpGameCubePipelines.c:
+	.text       start:0x8046318C end:0x8046335C
+
+RenderWare/RpAtomicGameCube.c:
+	.text       start:0x8046335C end:0x80463D28
+	.data       start:0x8056D8B0 end:0x8056D910
+	.sdata2     start:0x805FB190 end:0x805FB1A0
+
+RenderWare/RpWorldSectorGameCube.c:
+	.text       start:0x80463D28 end:0x804641CC
+	.data       start:0x8056D910 end:0x8056D978
+	.sdata2     start:0x805FB1A0 end:0x805FB1A8
+
+RenderWare/RpLightGameCube.c:
+	.text       start:0x804641CC end:0x80464814
+	.bss        start:0x805E16A0 end:0x805E18A0
+	.sbss       start:0x805F1530 end:0x805F1538
+	.sdata2     start:0x805FB1A8 end:0x805FB1C0
+
+RenderWare/RpInterpolatorGameCube.c:
+	.text       start:0x80464814 end:0x80464A94
+	.sdata      start:0x805EDDE0 end:0x805EDDF0
+	.sdata2     start:0x805FB1C0 end:0x805FB1D8
+
+RenderWare/RpNativeDataGameCube.c:
+	.text       start:0x80464A94 end:0x8046528C
+
+RenderWare/RpMaterialGameCube.c:
+	.text       start:0x8046528C end:0x80465CDC
+	.sdata2     start:0x805FB1D8 end:0x805FB1F0
+
+RenderWare/RpGameCubeVertex.c:
+	.text       start:0x80465CDC end:0x80466B58
+	.data       start:0x8056D978 end:0x8056DAF8
 
 RenderWare/RpWorldGameCubeVertexConvert.c:
 	.text       start:0x80466B58 end:0x8046ACBC

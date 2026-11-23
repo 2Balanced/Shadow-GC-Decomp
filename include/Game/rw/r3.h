@@ -131,6 +131,17 @@ struct RwLinkList {
     RwLLLink link;
 };
 
+/* A free list (0x24 bytes); the module files keep a static one for their objects. */
+struct RwFreeList {
+    u32 entrySize;       /* 0x00 */
+    u32 entriesPerBlock; /* 0x04 */
+    u32 heapSize;        /* 0x08 */
+    u32 alignment;       /* 0x0C */
+    RwLinkList blockList; /* 0x10 */
+    u32 flags;           /* 0x18 */
+    RwLLLink link;       /* 0x1C */
+};
+
 /* Only the fields these units read. */
 struct RwTexture {
     RwRaster *raster; /* 0x00 */
@@ -493,10 +504,33 @@ typedef struct RpTie {
     RpWorldSector *worldSector;    /* 0x14 */
 } RpTie;
 
-/* A pipeline node definition (0x44 bytes); only its name is used here. */
+/* A pipeline node definition (0x40 bytes): its name, methods, I/O specification and the size of
+ * a pipeline node's private data. */
+typedef struct RxNodeMethods {
+    void *nodeBody;           /* 0x00 */
+    void *nodeInit;           /* 0x04 */
+    void *nodeTerm;           /* 0x08 */
+    void *pipelineNodeInit;   /* 0x0C */
+    void *pipelineNodeTerm;   /* 0x10 */
+    void *pipelineNodeConfig; /* 0x14 */
+    void *configMsgHandler;   /* 0x18 */
+} RxNodeMethods;
+
+typedef struct RxIoSpec {
+    u32 numClustersOfInterest; /* 0x00 */
+    void *clustersOfInterest;  /* 0x04 */
+    void *inputRequirements;   /* 0x08 */
+    u32 numOutputs;            /* 0x0C */
+    void *outputs;             /* 0x10 */
+} RxIoSpec;
+
 typedef struct RxNodeDefinition {
-    char *name;      /* 0x00 */
-    u8 unk4[0x40];   /* 0x04: methods, I/O specification, private data size, ... */
+    char *name;                      /* 0x00 */
+    RxNodeMethods nodeMethods;       /* 0x04 */
+    RxIoSpec io;                     /* 0x20 */
+    u32 pipelineNodePrivateDataSize; /* 0x34 */
+    s32 editable;                    /* 0x38 */
+    s32 InputPipesCnt;               /* 0x3C */
 } RxNodeDefinition;
 
 struct RxPipelineNode {
