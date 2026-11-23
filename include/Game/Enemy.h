@@ -104,10 +104,10 @@ class EnemyReferer {
 class EnemyParaFunc {
   public:
     virtual int vfPara_0x08();    /* 0x8019B464 */
-    virtual int vfPara_0x0C();    /* 0x8019B46C */
-    virtual int vfPara_0x10();    /* 0x8019B474 */
-    virtual int vfPara_0x14();    /* 0x8019B47C */
-    virtual int vfPara_0x18();    /* 0x8019B484 */
+    virtual int vfPara_0x0C() const;    /* 0x8019B46C */
+    virtual int vfPara_0x10() const;    /* 0x8019B474 */
+    virtual int vfPara_0x14() const;    /* 0x8019B47C */
+    virtual int vfPara_0x18() const;    /* 0x8019B484 */
     virtual int vfPara_0x1C();    /* 0x8019B48C */
     virtual float vfPara_0x20();  /* 0x80181F04 */
     virtual float vfPara_0x24();  /* 0x8019B494 */
@@ -115,7 +115,7 @@ class EnemyParaFunc {
     virtual float vfPara_0x2C();  /* 0x8019B4A4 */
     virtual float vfPara_0x30();  /* 0x8019B4AC */
     virtual float vfPara_0x34();  /* 0x8019AD04 */
-    virtual int vfPara_0x38();    /* 0x8019B4B4 */
+    virtual int vfPara_0x38() const;    /* 0x8019B4B4 */
     virtual int vfPara_0x3C();    /* 0x80192B58 */
     virtual void vfPara_0x40(int value); /* 0x8019B4BC */
     virtual int vfPara_0x44();    /* 0x8019B4C0 */
@@ -611,10 +611,10 @@ class EnemyParamCommon : public virtual EnemyReferer, public EnemyParaFunc {
     ~EnemyParamCommon();
 
     virtual int vfPara_0x08();            /* 0x801A64E4 */
-    virtual int vfPara_0x0C();            /* 0x801A64AC */
-    virtual int vfPara_0x10();            /* 0x801A6470 */
-    virtual int vfPara_0x14();            /* 0x801A6434 */
-    virtual int vfPara_0x18();            /* 0x801A63F0 */
+    virtual int vfPara_0x0C() const;            /* 0x801A64AC */
+    virtual int vfPara_0x10() const;            /* 0x801A6470 */
+    virtual int vfPara_0x14() const;            /* 0x801A6434 */
+    virtual int vfPara_0x18() const;            /* 0x801A63F0 */
     virtual int vfPara_0x1C();            /* 0x801A6384 */
     virtual float vfPara_0x20();          /* 0x801A6364 */
     virtual float vfPara_0x24();          /* 0x801A6340 */
@@ -622,7 +622,7 @@ class EnemyParamCommon : public virtual EnemyReferer, public EnemyParaFunc {
     virtual float vfPara_0x2C();          /* 0x801A62F8 */
     virtual float vfPara_0x30();          /* 0x801A62D8 */
     virtual float vfPara_0x34();          /* 0x801A62B4 */
-    virtual int vfPara_0x38();            /* 0x801A63C4 */
+    virtual int vfPara_0x38() const;            /* 0x801A63C4 */
     virtual int vfPara_0x3C();            /* 0x801A63A4 */
     virtual void vfPara_0x40(int value);  /* 0x8017B8E4 */
     virtual int vfPara_0x44();            /* 0x8017B8EC */

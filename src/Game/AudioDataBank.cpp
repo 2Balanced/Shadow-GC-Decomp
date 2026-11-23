@@ -10,7 +10,9 @@
  * id), which the source now does. Wave 39 tried 12 forms for the registers: the three locals in
  * every declaration order, the entry declared in the loop, no entry local, the masked id written
  * in the comparison or stored back to the parameter, a u16 key, an inline finder (not inlined
- * into the loop the same way, 16 rows) and a walking pointer (20 rows); the rest stay at 5 rows. */
+ * into the loop the same way, 16 rows) and a walking pointer (20 rows); the rest stay at 5 rows.
+ * Wave 40: the entry declared first, the locals declared without initializers and assigned in
+ * either order, and a u16 key after the entry also stay at 5 rows (probes/Game_AudioDataBank_R3.py). */
 #include "Game/SoundManager.h"
 #include <dolphin/types.h>
 #include "size_assert.h"

@@ -14,20 +14,13 @@
  * order of their instances at the end of the unit holds because the set's tree is the same template
  * as the maps' (see <set>).
  *
- * NonMatching (199 of 204 functions match, in retail's order; .data, .rodata, .sbss, .sdata2 and
+ * NonMatching (203 of 204 functions match, in retail's order; .data, .rodata, .sbss, .sdata2 and
  * .ctors match, .sdata up to the RTTI record of checked_deleter<CharCommandUnit>, which retail does
- * not keep):
- * - the three find_or_insert instances (map::operator[], 0x801F0188, 0x801F03BC, 0x801F06C8):
- *   GC/2.7 computes the address of the last node's value once, before comp(), and returns it on
- *   the path that finds the key; retail computes it twice, after comp() and on that path. Every
- *   other instruction matches. Forms tried: the value through an iterator (operator* or a named
- *   iterator), the tests turned around, a const node pointer, a reference cast.
- * - Behave (0x801EF300): retail keeps this in r30 and the contacts in r29, GC/2.7 the other way
- *   round; every declaration order of the locals and an inner scope give the same.
- * - fn_801EEB2C, the label function: retail keeps the pooled .data address in r4 and the guards'
- *   string in r5, GC/2.7 the other way round (declaration orders of the statics tried).
- * These look like the register allocation and expression reuse differences of
- * docs/research-notes.md. */
+ * not keep). Left: fn_801EEB2C, the label function: retail keeps the pooled .data address in r4 and
+ * the guards' string in r5, GC/2.7 the other way round (declaration orders of the statics tried).
+ * Matched in wave 40: the three find_or_insert instances (map::operator[]) take the last node as a
+ * local of their own in <map_impl>, and Behave reads the contact list through the inline
+ * ContactsOf (a compiler temporary, coloured after this). */
 #define MSL_NEW_INLINE_BAD_ALLOC
 #define MSL_LESS_CAST
 #define MSL_MAP_SUBSCRIPT
@@ -215,10 +208,16 @@ LightColli::~LightColli() {
     }
 }
 
+/* The contact list of a collider (name inferred). Read through an inline function the list is a
+ * compiler temporary, which GC/2.7 colours after `this` (r29 behind r30) as retail has it; the
+ * same expression written in Behave takes r30. */
+inline UnkColliContacts_8001EE04 *ContactsOf(CharaColliBase *collider) {
+    return reinterpret_cast<UnkColliContacts_8001EE04 *>(reinterpret_cast<u8 *>(collider) + 0xC);
+}
+
 void LightColli::Behave(float dt) {
     UnkLightColliState_801E6500 *state;
-    UnkColliContacts_8001EE04 &contacts = *reinterpret_cast<UnkColliContacts_8001EE04 *>(
-        reinterpret_cast<u8 *>(m_collision->m_collider.get()) + 0xC);
+    UnkColliContacts_8001EE04 &contacts = *ContactsOf(m_collision->m_collider.get());
     UnkColliContactIter_8001EDFC it;
     boost::weak_ptr<CharaColliBase> collider;
     boost::weak_ptr<CharInfo> owner;

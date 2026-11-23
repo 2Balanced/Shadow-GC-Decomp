@@ -10,7 +10,8 @@
  * number the volatile register r9 ahead of the two table addresses, retail gives it r12 after them
  * (8 instructions differ only by register numbers); about a dozen source shapes were tried. Wave
  * 39: the comparison's operands swapped, the second test on the table's value and the choice in a
- * local leave it at 8 rows; locals for the entry, the stage or both are worse (11 to 17). */
+ * local leave it at 8 rows; locals for the entry, the stage or both are worse (11 to 17). Wave 40:
+ * the innermost loop in an inline helper is worse too (23 rows, probes/Game_UnkSaveData_800BB74C_R3.py). */
 #include <dolphin/types.h>
 #include "size_assert.h"
 #include <string.h>

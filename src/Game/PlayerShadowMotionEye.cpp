@@ -172,7 +172,9 @@ namespace Shadow {
  * offset in r26 and the world in r28, GC/2.7 the other way round. Wave 39: the index in a local
  * gave the first loop's file entry retail's r3; for the second loop the world declared before
  * the loop or the stage (17 rows), one counter for both loops (17), a clump local (14), the area
- * in a local and the inline with its parameters exchanged (no change) were tried. */
+ * in a local and the inline with its parameters exchanged (no change) were tried. Wave 40: either
+ * loop in an inline helper (34 rows) and the world through an inline lookup (19 and 38 rows) are
+ * worse (probes/Game_PlayerShadowMotionEye_R2.py, _R3.py). */
 MotionEyeBlink::MotionEyeBlink(const shared_ptr<PlayerBase> &player, const UnkMotionNode_800AA760 *node,
                                UnkClumpFade_80027D5C *fade, const UnkMotionFiles_800ADE78 &files)
     : m_state(0), m_step(0), m_time(0.0f), m_current(0), m_hidden(0) {

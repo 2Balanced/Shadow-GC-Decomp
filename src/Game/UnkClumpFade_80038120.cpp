@@ -237,9 +237,9 @@ RpAtomic *fn_800393E4(RpAtomic *atomic, void *data);
 RpAtomic *fn_800393D0(RpAtomic *atomic, void *data);
 RwFrame *fn_80039398(RwFrame *frame, void *data);
 RpAtomic *fn_80039380(RpAtomic *atomic, void *data);
-RpAtomic *fn_80039288(RpAtomic *atomic, RwFrame *root);
+RpAtomic *fn_80039288(RpAtomic *atomic, void *data);
 RpAtomic *fn_80039270(RpAtomic *atomic, void *data);
-RpAtomic *fn_80039178(RpAtomic *atomic, RwFrame *root);
+RpAtomic *fn_80039178(RpAtomic *atomic, void *data);
 RwFrame *fn_80039140(RwFrame *frame, void *data);
 void fn_80039114(RpClump *clump, void *data);
 void fn_800390E8(RpClump *clump);
@@ -419,10 +419,12 @@ inline RwFrame *FindBelow(RwFrame *root, RwFrame *frame) {
     return found;
 }
 
-/* NonMatching (as fn_80039178): retail gives root r30 and the geometry r28 (swapped here). */
-extern "C" RpAtomic *fn_80039288(RpAtomic *atomic, RwFrame *root) {
-    RpGeometry *geometry = atomic->geometry;
+/* As fn_80039178 (the callback's data parameter is a void pointer, as RenderWare's callback type
+ * has it; the typed pointer made from it is a local, wave 40). */
+extern "C" RpAtomic *fn_80039288(RpAtomic *atomic, void *data) {
+    RwFrame *root = static_cast<RwFrame *>(data);
     RwFrame *frame = atomic->frame;
+    RpGeometry *geometry = atomic->geometry;
     void *colors = fn_8044CCAC(geometry);
     if (colors != 0) {
         RwRGBA *color = fn_8044CDBC(colors);
@@ -449,10 +451,13 @@ extern "C" RpAtomic *fn_80039270(RpAtomic *atomic, void *data) {
     return atomic;
 }
 
-/* NonMatching: retail gives root r30 and the geometry r28 (swapped here); ~6 shapes tried. */
-extern "C" RpAtomic *fn_80039178(RpAtomic *atomic, RwFrame *root) {
-    RpGeometry *geometry = atomic->geometry;
+/* Matches since wave 40: RenderWare passes the root as the callback's void pointer, and the typed
+ * pointer made from it is a local declared before the frame and the geometry, which gives retail's
+ * root r30 and geometry r28. */
+extern "C" RpAtomic *fn_80039178(RpAtomic *atomic, void *data) {
+    RwFrame *root = static_cast<RwFrame *>(data);
     RwFrame *frame = atomic->frame;
+    RpGeometry *geometry = atomic->geometry;
     void *colors = fn_8044CCAC(geometry);
     if (colors != 0) {
         RwRGBA *color = fn_8044CDBC(colors);
@@ -565,9 +570,11 @@ inline RwFrame *FindNodeFrame(RwFrame *frame, UnkNodeSearch_80038D24 *search) {
     }
     RpHAnimHierarchy *hierarchy = fn_8044757C(frame);
     if (hierarchy != 0) {
+        RwFrame *nodeFrame;
         for (int i = 0; i < hierarchy->numNodes; i++) {
-            if (hierarchy->pNodeInfo[i].pFrame != 0 && search->m_id == hierarchy->pNodeInfo[i].nodeID) {
-                search->m_frame = hierarchy->pNodeInfo[i].pFrame;
+            nodeFrame = hierarchy->pNodeInfo[i].pFrame;
+            if (nodeFrame != 0 && search->m_id == hierarchy->pNodeInfo[i].nodeID) {
+                search->m_frame = nodeFrame;
                 return frame;
             }
         }
@@ -577,7 +584,9 @@ inline RwFrame *FindNodeFrame(RwFrame *frame, UnkNodeSearch_80038D24 *search) {
 }
 
 /* NonMatching (with fn_80038D24, which inlines it): the loop's volatile registers are allocated in
- * another order in retail; ~8 shapes tried. */
+ * another order in retail (offset r4 and search id r5, here the other way round); ~8 shapes tried,
+ * and in wave 40 the counter or the frame declared elsewhere, a node pointer, the comparison turned
+ * around and the id in a local (probes/Game_UnkClumpFade_80038120_R4.py). */
 extern "C" RwFrame *fn_80038DD8(RwFrame *frame, UnkNodeSearch_80038D24 *search) {
     return FindNodeFrame(frame, search);
 }
@@ -608,8 +617,10 @@ extern "C" void fn_80038C84(RpClump *clump) {
     fn_804474D8(hierarchy);
 }
 
-/* NonMatching: retail gives mode r31 and the raster r30 (swapped here); ~6 shapes tried. */
-extern "C" RwTexture *fn_80038B88(RwTexture *texture, s32 mode) {
+/* Matches since wave 40: the mode comes in as the callback's void pointer (RenderWare's callback
+ * type), which gives retail's mode r31 and raster r30. */
+extern "C" RwTexture *fn_80038B88(RwTexture *texture, void *data) {
+    s32 mode = reinterpret_cast<s32>(data);
     float lodBias;
     s32 a;
     s32 b;

@@ -270,7 +270,9 @@ void EggShadowAndroid::vfStat_0x38() {
  * the declared locals in declaration order (loader, model: r31, r30; declared the other way round:
  * r30, r31) and to this after them, whatever is called first; an inline wrapper for the loader, a
  * call before the declarations, the file name through a local or a comma expression and inline
- * helpers for the two loads do not put this first. */
+ * helpers for the two loads do not put this first. Wave 40: a copy of this declared first, after
+ * the loader or with every local declared first and assigned later is merged back into this
+ * (probes/Game_EggShadowAndroid_R5.py). */
 void EggShadowAndroid::vfDisp_0x64() {
     void *loader = fn_800122D4();
     void *model = fn_80012684(loader, m_enemy->m_motionBase, 5);

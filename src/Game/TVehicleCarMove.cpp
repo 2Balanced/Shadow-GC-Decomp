@@ -13,23 +13,23 @@
  * pointers to members of the bound callbacks, and dead copies of weak vtables, among them
  * Sonicteam::Gindows' VariableBasic<float> (Game/GindowsVariableEditor.h).
  *
- * NonMatching. The functions that differ do so only in register allocation, scheduling or the
- * order of commutative operands, which no source shape tried changed (see docs/research-notes.md
- * and Game/VehicleColliMove.cpp):
+ * NonMatching (four functions left). The functions that differ do so in register allocation,
+ * scheduling or the order of commutative operands, which no source shape tried changed (see
+ * docs/research-notes.md and Game/VehicleColliMove.cpp):
  * - Sweep (0x801B9CA8): the register blocker of Game/VehicleColliMove.cpp's Sweep (retail gives
  *   the locals the high saved registers).
- * - UpdateModel, Move, SetPlacement, UpdateBoost, UpdateMotion: register allocation only (retail
- *   ranks the handling-table pointer differently among the saved registers; the order of the
- *   declarations does not change it). Retail keeps the address of a local vector in a saved
- *   register where the source assigns it to a pointer inside the expression (Run's rearAddress,
- *   Move's rearAddress and rearEnd); Move still differs in the registers after that.
- * - GetNode, SetLamp, GetDamage, UpdateSpring: loads scheduled above stores (the AcceptHit
- *   pattern of Game/VehicleColliMove.cpp).
+ * - UpdateModel and Move: register allocation (retail ranks the handling-table pointer
+ *   differently among the saved registers; the order of the declarations does not change it).
+ *   Retail keeps the address of a local vector in a saved register where the source assigns it to
+ *   a pointer inside the expression (Run's rearAddress, Move's rearAddress and rearEnd); Move
+ *   still differs in the registers after that.
  * - ReadInput: the operands of the smoothing's fadds are swapped (retail adds rate + 1.0f in that
  *   order; a named denominator, 1.0f + rate, the rate taken by const reference or copied to a
  *   local, and `d *= rate; d /= rate + 1.0f` all leave GC/2.7's 1.0f + rate or cost more rows).
- * - SetCamera: retail indexes the handling table with add/lwz where GC/2.7 uses lwzx (one
- *   load).
+ * Matched in wave 40 (probes/Game_TVehicleCarMove_R*.py): GetNode, SetLamp and GetDamage are const
+ * members (GC/2.7 then loads above the prologue's stores, as retail does), UpdateSpring names the
+ * spring's speed and force, and SetCamera, SetPlacement, UpdateBoost, UpdateMotion and Move read
+ * the handling table as s_params[m_type] instead of through the inline Param().
  * .data, .bss, .sbss and .sdata2 match. .rodata differs only in the place of VariableBasic<float>'s
  * RTTI names (before, not after, the checked_deleter names); .sdata has the same order problem
  * and also holds RTTI records the linker drops. CreateTuningVariable and GetStep (at the end and
@@ -686,15 +686,15 @@ class TVehicleCarMove {
     void PushWheel(UnkSphere_80021C04 &a, CarVector &delta, UnkSphere_80021C04 &b);
     void Move(float dt);
     void UpdateSpring();
-    int GetDamage();
+    int GetDamage() const;
     void UpdateStuck(float dt);
     void BeginFrame();
     void UpdateGround();
     void CreateColliders();
     void SetBodyCollider(int flags, int arg, float sx, float sy, float sz);
     void UpdateWheelOffsets();
-    void *GetNode(int index);
-    void SetLamp(bool on);
+    void *GetNode(int index) const;
+    void SetLamp(bool on) const;
     void GetOff();
     bool SweepWheel(Vec3f *ground, Vec3f *normal, TVehicleBase *vehicle, Vec3f *position, Vec3f *velocity,
                     u32 *flags, const Vec3f *up, float radius);
@@ -705,10 +705,10 @@ class TVehicleCarMove {
     Body *GetBody() {
         return &m_body;
     }
-    const CarModelDesc &ModelDesc() {
+    const CarModelDesc &ModelDesc() const {
         return lbl_804CDAF8[m_type];
     }
-    const CarParam &Param() {
+    const CarParam &Param() const {
         return s_params[m_type];
     }
     UnkCarPad_80051734 &Pad(int index) {
@@ -822,7 +822,7 @@ void TVehicleCarMove::SetCamera(int mode, int arg) {
         UnkCarPads_80051734 *pads = fn_80051734();
         m_pad = pads->m_ports[arg];
         m_camera = boost::shared_ptr<TVehicleCamera>(new TVehicleCamera(
-            &V(m_target.m_position), &V(m_states[0].m_rotation), Param().m_cameraOffset));
+            &V(m_target.m_position), &V(m_states[0].m_rotation), s_params[m_type].m_cameraOffset));
         SetMotion(6);
         SetBodyCollider(0x200, 2, 1.25f, 1.25f, Param().field_0x7C);
         fn_801B4DAC(m_attack, &m_bodyCollider);
@@ -1195,8 +1195,8 @@ void TVehicleCarMove::ReadInput(float dt) {
 }
 
 void TVehicleCarMove::UpdateBoost(float dt) {
-    const CarParam &param = Param();
     State &state = m_states[0];
+    const CarParam &param = s_params[m_type];
     if (!IsOnGround(state, state.m_wheels[0]) && !IsOnGround(state, state.m_wheels[1])) {
         state.m_boost.m_time = 0.0f;
         state.m_boost.m_charge = 0.0f;
@@ -1441,8 +1441,8 @@ void TVehicleCarMove::Run(float dt) {
 }
 
 void TVehicleCarMove::UpdateMotion(float dt) {
-    const CarParam &param = Param();
     State &state = m_states[0];
+    const CarParam &param = s_params[m_type];
     for (int i = 0; i < 4; i++) {
         state.m_model.m_spin[i] += param.field_0x14 * (m_drive.m_speed * dt);
     }
@@ -1572,9 +1572,9 @@ void TVehicleCarMove::PushWheel(UnkSphere_80021C04 &sphere, CarVector &delta, Un
 }
 
 void TVehicleCarMove::Move(float dt) {
-    State &state = m_states[0];
     State &previous = m_states[1];
-    const CarParam &param = Param();
+    State &state = m_states[0];
+    const CarParam &param = s_params[m_type];
     if (state.m_wait != 0) {
         state.m_wait--;
     }
@@ -1720,9 +1720,10 @@ void TVehicleCarMove::UpdateSpring() {
     const CarParam &param = Param();
     for (int i = 0; i < 2; i++) {
         float spring = state.m_wheels[i].m_spring;
-        float old = state.m_wheels[i].m_springOld;
+        float speed = spring - state.m_wheels[i].m_springOld;
+        float force = speed * s_springDamp + -spring * s_springPull;
         state.m_wheels[i].m_springOld = spring;
-        state.m_wheels[i].m_spring = (spring - old) * s_springDamp + -spring * s_springPull;
+        state.m_wheels[i].m_spring = force;
     }
     state.m_lift = 0.5f * (state.m_wheels[0].m_spring + state.m_wheels[1].m_spring);
     Vec3f tilt(0.0f, state.m_wheels[0].m_spring - state.m_wheels[1].m_spring, 2.0f * -param.field_0x94);
@@ -1731,7 +1732,7 @@ void TVehicleCarMove::UpdateSpring() {
     state.m_pitch = angles.x;
 }
 
-int TVehicleCarMove::GetDamage() {
+int TVehicleCarMove::GetDamage() const {
     int damage = 0;
     const CarParam &param = Param();
     if (m_states[0].m_mode == 2) {
@@ -1883,7 +1884,7 @@ void TVehicleCarMove::UpdateGround() {
 }
 
 void TVehicleCarMove::SetPlacement(const Vec3f *position, const Vec3f *rotation) {
-    const CarParam &param = Param();
+    const CarParam &param = s_params[m_type];
     if (position != 0) {
         AssignVector(V(m_states[0].m_position), *position);
         AssignVector(V(m_states[0].m_model.m_position), *position);
@@ -1964,7 +1965,7 @@ void TVehicleCarMove::UpdateWheelOffsets() {
     fn_800091D0(&V(m_states[0].m_wheels[1].m_offset), &(const Vec3f &)fn_8040B67C(&M(matrix), &Vec3f(0.0f, param.m_radius, param.field_0x94)));
 }
 
-void *TVehicleCarMove::GetNode(int index) {
+void *TVehicleCarMove::GetNode(int index) const {
     const CarModelDesc &desc = ModelDesc();
     RpClump *clump;
     if (desc.m_nodes[index].m_inParts) {
@@ -1978,7 +1979,7 @@ void *TVehicleCarMove::GetNode(int index) {
     return 0;
 }
 
-void TVehicleCarMove::SetLamp(bool on) {
+void TVehicleCarMove::SetLamp(bool on) const {
     const CarModelDesc &desc = ModelDesc();
     RpClump *clump;
     if (desc.m_nodes[10].m_inParts) {

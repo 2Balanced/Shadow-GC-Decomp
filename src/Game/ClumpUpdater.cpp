@@ -383,7 +383,11 @@ float fn_80015D68(float x) {
  * either do not change that choice or disturb the whole float allocation, while the opt_lifetimes
  * and opt_deadassignments pragmas have no effect. Wave 39 (probes/Game_ClumpUpdater_B60.py): with
  * the angle kept alive past the negation GC/2.7 takes f29, the highest free register, not f26, so
- * retail's choice is not a matter of what is live. */
+ * retail's choice is not a matter of what is live. Wave 40: storing -angle into any other dead
+ * local (diff, dd, qa, qb, disc, t, offset) or the angle itself leaves the 3 rows; a negation local
+ * of its own declared after sum or qa does get f26 but moves distance from f31 to f28 (25 rows),
+ * and all locals declared at the top in six orders give 3 to 32 rows
+ * (probes/Game_ClumpUpdater_B60_R2.py, _R3.py). */
 float fn_80015B60(Mtx34f *a, Mtx34f *b, Mtx34f *c, const Vec3f *target, const Mtx34f *base,
                   float length0, float length1, float length2) {
     float distance = fn_80016104(a, target, base, true);
@@ -522,39 +526,41 @@ RpAtomic *fn_80015698(RpAtomic *atomic, void *data) {
     return atomic;
 }
 
-/* Lists the frames of the skin hierarchy that the motion has nodes for.
- *
- * NonMatching (one instruction): retail copies the zeroed loop counter into the byte offset with
- * `mr r27,r30`; GC/2.7 emits an independent `li r27,0`. Explicit byte offsets and cached node
- * pointers change the saved-register set; chained initialization, declaration order, and the
- * opt_propagation/opt_strength_reduction pragmas leave the same residual. So do a counter declared
- * outside the loop, a long counter, a while loop, pre-increment and inline accessors for the node
- * table and the count (wave 39, probes/Game_ClumpUpdater.py). */
+/* Lists the hierarchy's frames that the motion has nodes for (name inferred). An inline
+ * function: a loop inlined from one starts its strength-reduced byte offset with a copy of the
+ * zeroed counter (`mr r27,r30`), as retail has it; the loop written in fn_80015570 itself gets
+ * an independent `li r27,0` (wave 40; the shapes wave 39 tried are in probes/Game_ClumpUpdater.py,
+ * the helper's in probes/Game_ClumpUpdater_R3.py). */
+inline void ListNodes(UnkClumpUpdater_80015A7C *updater, RpHAnimHierarchy *hierarchy) {
+    for (int i = 0; i < hierarchy->numNodes; i++) {
+        if (hierarchy->nodeInfo[i].frame != 0) {
+            Mtx34f *node = fn_80415E70(updater->m_motion, hierarchy->nodeInfo[i].nodeID);
+            if (node != 0) {
+                if (updater->m_head == 0) {
+                    updater->m_head = updater->m_cursor = new UnkClumpUpdaterNode_80015A7C;
+                } else {
+                    updater->m_cursor->m_next = new UnkClumpUpdaterNode_80015A7C;
+                    updater->m_cursor = updater->m_cursor->m_next;
+                }
+                if (updater->m_cursor != 0) {
+                    updater->m_cursor->m_frame = hierarchy->nodeInfo[i].frame;
+                    updater->m_cursor->m_id = hierarchy->nodeInfo[i].nodeID;
+                    updater->m_cursor->m_node = node;
+                    updater->m_cursor->m_parent = 0;
+                    updater->m_cursor->m_next = 0;
+                }
+            }
+        }
+    }
+}
+
+/* Lists the frames of the skin hierarchy that the motion has nodes for. */
 RwFrame *fn_80015570(RwFrame *frame, void *data) {
     UnkClumpUpdater_80015A7C *updater = static_cast<UnkClumpUpdater_80015A7C *>(data);
     if (updater->m_motion != 0) {
         RpHAnimHierarchy *hierarchy = fn_8044757C(frame);
         if (hierarchy != 0) {
-            for (int i = 0; i < hierarchy->numNodes; i++) {
-                if (hierarchy->nodeInfo[i].frame != 0) {
-                    Mtx34f *node = fn_80415E70(updater->m_motion, hierarchy->nodeInfo[i].nodeID);
-                    if (node != 0) {
-                        if (updater->m_head == 0) {
-                            updater->m_head = updater->m_cursor = new UnkClumpUpdaterNode_80015A7C;
-                        } else {
-                            updater->m_cursor->m_next = new UnkClumpUpdaterNode_80015A7C;
-                            updater->m_cursor = updater->m_cursor->m_next;
-                        }
-                        if (updater->m_cursor != 0) {
-                            updater->m_cursor->m_frame = hierarchy->nodeInfo[i].frame;
-                            updater->m_cursor->m_id = hierarchy->nodeInfo[i].nodeID;
-                            updater->m_cursor->m_node = node;
-                            updater->m_cursor->m_parent = 0;
-                            updater->m_cursor->m_next = 0;
-                        }
-                    }
-                }
-            }
+            ListNodes(updater, hierarchy);
         }
     }
     fn_8048752C(frame, fn_80015570, data);

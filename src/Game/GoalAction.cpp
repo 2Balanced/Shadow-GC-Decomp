@@ -635,7 +635,8 @@ inline const UnkStageInfo_804C4A18 *StageInfoAt(UnkObject_800B74B4 *, int index)
  * About 55 source shapes did not change it: locals in either order, const and block-scoped
  * locals, the compare reversed or negated, a ternary, min helpers by value and by reference,
  * inline getters and setters on either side, a pointer to the mission or to the record
- * (probes/Game_GoalAction*.py). Everything else in the unit matches. */
+ * (probes/Game_GoalAction*.py). Everything else in the unit matches. Wave 40: the flag loop or the
+ * all-best count in an inline helper (7 and 57 rows, probes/Game_GoalAction_R6.py). */
 void GoalAction::SaveResult() {
     UnkSaveData_800BB74C *save = fn_800BB74C();
     if (save == 0) {

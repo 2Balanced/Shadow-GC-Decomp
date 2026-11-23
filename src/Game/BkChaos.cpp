@@ -11,13 +11,18 @@
  * Game/CharaColliBaseCharInfo.h and Game/TNumEdit.h supply the RTTI base lists the .data starts
  * with (as in BkSoldier.cpp).
  *
- * NonMatching: 133 of 135 functions match. Left: StretchCallback (13 rows: retail keeps the
+ * NonMatching: 133 of 135 functions match. Left: StretchCallback (15 rows: retail keeps the
  * callback's parameter in r31 and the node index in r27 and tests the index unsigned, GC/2.7 swaps
  * the two registers; it also loads the pitch straight into f29 where GC/2.7 goes through f4) and
- * BkChibiChaos::Update (3 rows: the upper height test compares m_maxY with the position, operands
- * swapped but loaded in the same order, and case 1 sets up r5, r3, r4 for the subtraction where
- * GC/2.7 has r4, r5, r3; about 25 spellings of the two were tried). Retail also pools 2.0 ahead of
- * Update's constants in .sdata2.
+ * BkChibiChaos::Update (2 rows: case 1 sets up r5, r3, r4 for the subtraction where GC/2.7 has r4,
+ * r5, r3; about 25 spellings were tried, and in wave 40 Subtract with pointer or mixed parameters,
+ * its operands swapped, the position through a pointer or an inline helper and the character
+ * pointer in a local, probes/Game_BkChaos_R3.py and _R6.py). The upper height test matches since
+ * wave 40: the position's height is read through the inline PositionY. For StretchCallback,
+ * `u32 index = param->m_id != 0x1774;` gives retail's registers and its unsigned test but adds a
+ * clrlwi (bool to int); the ternary in u32 keeps subfe without it but swaps the registers back
+ * (probes/Game_BkChaos_R4.py, _R5.py). Retail also pools 2.0 ahead of Update's constants in
+ * .sdata2.
  *
  * What matched the other four (wave 39): vfStat_0x98 takes its attacker through a non-const
  * reference and GetChibiLife is defined over a const chaos - GC/2.7 moves a load above the
@@ -537,6 +542,13 @@ void BkChibiChaos::Scatter() {
     m_info->m_rotation.y = angles.y;
 }
 
+/* The character's height (name inferred). Read through an inline function, the position is loaded
+ * before m_maxY in the upper height test below, which compares m_maxY with it as retail does
+ * (wave 40, probes/Game_BkChaos_R2.py). */
+inline float PositionY(CharInfo *info) {
+    return info->m_position.y;
+}
+
 void BkChibiChaos::Update(float dt) {
     if (m_flags & 4) {
         delete this;
@@ -590,7 +602,7 @@ void BkChibiChaos::Update(float dt) {
             m_info->m_position.y = m_owner->m_minY;
             m_info->field_0x18.y = 0.0f;
         }
-        if (m_info->m_position.y > m_owner->m_maxY) {
+        if (m_owner->m_maxY < PositionY(m_info.get())) {
             m_info->m_position.y = m_owner->m_maxY;
             m_info->field_0x18.y = 0.0f;
         }

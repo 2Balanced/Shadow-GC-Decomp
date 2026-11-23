@@ -153,19 +153,34 @@ inline s32 GetResult(int shotType, int symbol) {
     return s_results[shotType][symbol];
 }
 
-/* A random symbol of mask (name inferred). */
-inline int PickSymbol(u32 mask) {
-    s32 symbols[5];
-    int count = 0;
-    for (int i = 0; i < 5; i++) {
-        if (mask & (1 << i)) {
-            symbols[count++] = i;
+/* Picks the next symbol of the two lines, a random one of the line's mask (name inferred). An
+ * inline function: with the loop inlined from one, GC/2.7 numbers the saved registers of both loops
+ * of fn_80313CC0 as retail does (written in place, each loop's counter and entry address swap; wave
+ * 40, probes/Game_EggLastMechSlot*.py). The pick is written out, as an inline call inside it would
+ * not be expanded. */
+inline void PickNextSymbols(UnkSlot_803142C0 *slot) {
+    for (int i = 0; i < 2; i++) {
+        u32 mask = slot->m_symbolMask & slot->m_lineMasks[i];
+        if (mask == 0) {
+            mask = slot->m_lineMasks[i];
         }
+        s32 symbols[5];
+        int count = 0;
+        for (int k = 0; k < 5; k++) {
+            if (mask & (1 << k)) {
+                symbols[count++] = k;
+            }
+        }
+        slot->m_nextSymbols[i] = symbols[fn_8040EA90(count)];
     }
-    return symbols[fn_8040EA90(count)];
 }
 
-/* Runs the slot machine (name inferred). */
+/* Runs the slot machine (name inferred).
+ * NonMatching (6 rows): in case 3 retail loads the shot type into r0 and the symbol into r4 for the
+ * result lookup, GC/2.7 the other way round (same instructions and order). Not changed by a 2D
+ * index, GetResult with its parameters in either order, an inline lookup of the row or of the
+ * value, or locals for the row, the symbol and the shot type in either order (wave 40,
+ * probes/Game_EggLastMechSlot_R3.py). */
 extern "C" void fn_80313CC0(UnkSlot_803142C0 *slot) {
     switch (slot->m_state) {
     case 0:
@@ -175,13 +190,7 @@ extern "C" void fn_80313CC0(UnkSlot_803142C0 *slot) {
     case 1: {
         slot->m_sound.fn_801D455C();
         fn_80313F80(slot);
-        for (int i = 0; i < 2; i++) {
-            u32 mask = slot->m_symbolMask & slot->m_lineMasks[i];
-            if (mask == 0) {
-                mask = slot->m_lineMasks[i];
-            }
-            slot->m_nextSymbols[i] = PickSymbol(mask);
-        }
+        PickNextSymbols(slot);
         fn_80313C34(slot);
         slot->m_result = -1;
         slot->m_state = 2;

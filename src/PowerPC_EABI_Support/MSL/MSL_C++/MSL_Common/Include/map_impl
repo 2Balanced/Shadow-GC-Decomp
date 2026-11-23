@@ -227,7 +227,8 @@ T &__tree<T, C, K>::find_or_insert(const Key &k) {
             leftmost = false;
         }
     }
-    if (last == 0 || comp()(static_cast<node *>(last)->value_, k)) {
+    node *n = static_cast<node *>(last);
+    if (n == 0 || comp()(n->value_, k)) {
         return insert_node(y, left, leftmost, T(k, typename T::second_type()))->value_;
     }
     return static_cast<node *>(last)->value_;

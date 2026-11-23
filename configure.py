@@ -1657,7 +1657,7 @@ config.libs = [
             Object(Matching, "Game/TimerMessage.cpp"),
             Object(Matching, "Game/TimerMission.cpp"),
             Object(Matching, "Game/TimeupAction.cpp"),
-            Object(NonMatching, "Game/TMessageDisp.cpp"),
+            Object(Matching, "Game/TMessageDisp.cpp"),
             Object(Matching, "Game/TOneFileAsync.cpp"),
             Object(Matching, "Game/TMovieManager.cpp"),
             Object(NonMatching, "Game/TObjBGM.cpp"),

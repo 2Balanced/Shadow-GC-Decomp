@@ -14,7 +14,15 @@
  * NonMatching: 96 of 97 functions match. ApplyLink (0x8036A44C) loads MakePatternFrame's float
  * argument before its two integer ones (3 instructions), and the out-of-line
  * CObserver<CNode>::RemoveSubject the destructor takes the address of comes out last instead of
- * before the tree's destroy (0x8036B9FC), which shifts the functions after it. */
+ * before the tree's destroy (0x8036B9FC), which shifts the functions after it.
+ * Wave 40: MakePatternFrame's name and parameter order are inferred (only the registers are fixed:
+ * two integers in r3/r4, the float in f1). Declared as MakePatternFrame(s32 index, s32 pattern,
+ * float frac), with the calls in this unit changed to match, ApplyLink and fn_8036AD14 are both
+ * instruction-identical (probes/Game_csdmNode_R3.py). Not applied: the function is defined in
+ * Game/csdLoader.cpp under the mangled name MakePatternFrame__Q24Chao3CSDFfll, which would have to
+ * be renamed (to ...Fllf) together with its definition and its other call there. Locals in other
+ * orders, an array for the two integers, a pointer to the fraction, a named result and
+ * `#pragma scheduling off` do not change the load order (probes/Game_csdmNode_R2.py). */
 #define CSD_OBJECT_LAYER
 #define CSD_RCOBJECT_DTOR_DECL_ONLY
 #define MSL_TREE_END_NODE_NAME __tree_end_node_csdmNode

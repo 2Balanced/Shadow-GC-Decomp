@@ -411,16 +411,16 @@ inline void EnemyMoveFunc::vfMove_0x34() {}
 inline int EnemyParaFunc::vfPara_0x08() {
     return -1;
 }
-inline int EnemyParaFunc::vfPara_0x0C() {
+inline int EnemyParaFunc::vfPara_0x0C() const {
     return 0;
 }
-inline int EnemyParaFunc::vfPara_0x10() {
+inline int EnemyParaFunc::vfPara_0x10() const {
     return 0;
 }
-inline int EnemyParaFunc::vfPara_0x14() {
+inline int EnemyParaFunc::vfPara_0x14() const {
     return 0;
 }
-inline int EnemyParaFunc::vfPara_0x18() {
+inline int EnemyParaFunc::vfPara_0x18() const {
     return 0;
 }
 inline int EnemyParaFunc::vfPara_0x1C() {
@@ -438,7 +438,7 @@ inline float EnemyParaFunc::vfPara_0x2C() {
 inline float EnemyParaFunc::vfPara_0x30() {
     return 0.0f;
 }
-inline int EnemyParaFunc::vfPara_0x38() {
+inline int EnemyParaFunc::vfPara_0x38() const {
     return 0;
 }
 inline void EnemyParaFunc::vfPara_0x40(int value) {}

@@ -5,11 +5,13 @@
  * name inferred from the class. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 12 of 22 functions and all data match. Two compiler differences remain: in the
- * slots that call out (0x0C to 0x18 and 0x38) retail loads m_enemy's base pointer above the store
- * of the link register (as in Game/EnemyRender.cpp and Game/BkWorm.cpp), and in the float slots
- * that read past a record's first value (0x24 to 0x2C, 0x34 and 0x68) retail loads the base
- * pointer into r3 and the table into r4, where GC/2.7 swaps the two for every source form tried. */
+ * NonMatching: 17 of 22 functions and all data match. The slots that call out (0x0C to 0x18 and
+ * 0x38) match since wave 40 as const members: retail loads m_enemy's base pointer above the store
+ * of the link register, which GC/2.7 does only when the object read is const (EnemyParaFunc's
+ * slots are const too). Left: the float slots that read past a record's first value (0x24 to 0x2C,
+ * 0x34 and 0x68), where retail loads the base pointer into r4 and builds the table's address in
+ * r3, and GC/2.7 swaps the two for every source form tried (probes/Game_EnemyParamCommon*.py; the
+ * same difference as Player::Behavior::HomingAttack::vf_0x0C and Ground::SetSpeedRange). */
 #include "Game/Enemy.h"
 #include "Game/MotionSequenceModule.h"
 #include <dolphin/types.h>
@@ -185,23 +187,26 @@ inline s32 EnemyTypeOf(Enemy *enemy) {
 }
 
 /* The enemy's resource files (names inferred from Game/EnemyTypeData.cpp). */
-int EnemyParamCommon::vfPara_0x0C() {
+int EnemyParamCommon::vfPara_0x0C() const {
     return reinterpret_cast<int>(lbl_804CBF2C[EnemyTypeOf(m_enemy)][0]);
 }
 
-int EnemyParamCommon::vfPara_0x10() {
-    return reinterpret_cast<int>(lbl_804CBF2C[EnemyTypeOf(m_enemy)][1]);
+int EnemyParamCommon::vfPara_0x10() const {
+    s32 type = EnemyTypeOf(m_enemy);
+    return reinterpret_cast<int>(lbl_804CBF2C[type][1]);
 }
 
-int EnemyParamCommon::vfPara_0x14() {
-    return reinterpret_cast<int>(lbl_804CBF2C[EnemyTypeOf(m_enemy)][2]);
+int EnemyParamCommon::vfPara_0x14() const {
+    s32 type = EnemyTypeOf(m_enemy);
+    return reinterpret_cast<int>(lbl_804CBF2C[type][2]);
 }
 
-int EnemyParamCommon::vfPara_0x18() {
-    return reinterpret_cast<int>(lbl_804CBF2C[EnemyTypeOf(m_enemy)][3]);
+int EnemyParamCommon::vfPara_0x18() const {
+    s32 type = EnemyTypeOf(m_enemy);
+    return reinterpret_cast<int>(lbl_804CBF2C[type][3]);
 }
 
-int EnemyParamCommon::vfPara_0x38() {
+int EnemyParamCommon::vfPara_0x38() const {
     return fn_801A04C0(m_enemy->m_type);
 }
 

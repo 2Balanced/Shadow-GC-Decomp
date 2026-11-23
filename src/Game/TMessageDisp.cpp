@@ -6,12 +6,11 @@
  * UnkHintTarget_801FB180. Names other than the class's are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching (18/21; every section's data matches): register allocation only. fn_80049BC0 (99.5%)
- * gives the three saved parameters other registers, fn_8004A684 (99.9%) the saved image path and
- * fn_8004A7B4 (97.5%) swaps the loop counter and the font pointer (a named font pointer, declared
- * before or after the counter, changes nothing). About 10 source shapes were tried for each.
- * fn_8004A074 matches since wave 39: the halves are divisions by 2 (GC/2.7 then multiplies in
- * retail's operand order) and the shadow pass's text pointer is set ahead of its test. */
+ * Matching since wave 40. fn_8004A074 matched in wave 39: the halves are divisions by 2 (GC/2.7
+ * then multiplies in retail's operand order) and the shadow pass's text pointer is set ahead of
+ * its test. Wave 40: fn_8004A684 declares its locals at the top in retail's register order,
+ * fn_80049BC0 copies the branch to a local after the first call and fn_8004A7B4's font loop is an
+ * inline function (probes/Game_TMessageDisp_R*.py). */
 
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -364,8 +363,10 @@ extern "C" bool fn_8004A86C(TMessageDisp *self, const char *name) {
     return true;
 }
 
-/* Frees the fonts, the textures and the messages. */
-extern "C" void fn_8004A7B4(TMessageDisp *self) {
+/* Frees the fonts (name inferred). An inline function: a loop inlined from one copies the loop's
+ * zero into its other zeroed registers (`mr`), as retail has it; written in fn_8004A7B4 itself the
+ * loop swaps the counter and the font pointer (wave 40, probes/Game_TMessageDisp_R4.py). */
+inline void ReleaseFonts(TMessageDisp *self) {
     for (int i = 0; i < 10; i++) {
         if (self->m_fonts[i].m_font != 0) {
             fn_804736CC(self->m_fonts[i].m_font);
@@ -376,6 +377,11 @@ extern "C" void fn_8004A7B4(TMessageDisp *self) {
             }
         }
     }
+}
+
+/* Frees the fonts, the textures and the messages. */
+extern "C" void fn_8004A7B4(TMessageDisp *self) {
+    ReleaseFonts(self);
     if (self->m_currentFont == 0) {
         self->m_currentFont = 0;
     }
@@ -392,7 +398,11 @@ extern "C" void fn_8004A7B4(TMessageDisp *self) {
 /* Loads the messages file name.fnt and makes its texts usable. */
 extern "C" bool fn_8004A684(TMessageDisp *self, const char *name) {
     char path[0x100];
-    char *previous = fn_80051810("./fonts/");
+    UnkMessage_80049D38 *message;
+    char *previous;
+    int i;
+    UnkMessage_80049D38 *messages;
+    previous = fn_80051810("./fonts/");
     fn_80473460();
     fn_80051830(previous);
     sprintf(path, "%s.fnt", name);
@@ -401,9 +411,6 @@ extern "C" bool fn_8004A684(TMessageDisp *self, const char *name) {
         return false;
     }
     fn_80043D0C(self->m_messages, 4);
-    UnkMessage_80049D38 *message;
-    int i;
-    UnkMessage_80049D38 *messages;
     messages = self->m_messages->m_messages;
     for (i = 0; i < self->m_messages->m_count; i++) {
         message = &messages[i];
@@ -669,15 +676,17 @@ extern "C" UnkMessage_80049D38 *fn_80049BC0(TMessageDisp *self, s32 id, s32 bran
         return 0;
     }
     const u16 *text = fn_80049D38(self, id, branch, index, 0, voice);
-    if (text == 0 && branch != 0) {
-        branch = 0;
-        text = fn_80049D38(self, id, branch, index, 0, voice);
+    /* The branch copied to a local of its own after the first call: retail's r31, copied from r5
+     * in the parameters' order (wave 40, probes/Game_TMessageDisp_R5.py). */
+    s32 b = branch;
+    if (text == 0 && b != 0) {
+        b = 0;
+        text = fn_80049D38(self, id, b, index, 0, voice);
     }
 
     if (text == 0) {
         return 0;
     }
     fn_8004A074(self, text, x, y);
-    return self->Find(id, branch, index);
-
+    return self->Find(id, b, index);
 }

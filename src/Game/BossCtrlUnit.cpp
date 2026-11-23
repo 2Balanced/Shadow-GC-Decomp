@@ -13,7 +13,8 @@
  * function order match, but BossCtrlUnit_StageObject::Tick differs in register allocation only
  * (retail keeps both line tests' hits in r27 and the clump moved to world 9 in r28; GC/2.7 picks
  * r30/r29 and r27). About 40 source shapes were tried. Linked as Matching, the DOL differs only in
- * those 8 instructions. */
+ * those 8 instructions. Wave 40: the clump loop in an inline helper (SetClumpWorld written out)
+ * gives 30 rows (probes/Game_BossCtrlUnit_R3.py). */
 #define BOSSCTRLUNIT_HELPERS
 
 #include <boost/bind.hpp>
