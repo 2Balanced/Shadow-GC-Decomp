@@ -6,12 +6,9 @@
  * The bit sets and flags at the end of the unit are out-of-line copies of small inline functions;
  * other units call them by their fn_ names.
  *
- * NonMatching: 26 of 27 functions match. In fn_801E5040 (99.3%) GC/2.7 gives the loaded stage
- * number the volatile register r9 ahead of the two table addresses, retail gives it r12 after them
- * (8 instructions differ only by register numbers); about a dozen source shapes were tried. Wave
- * 39: the comparison's operands swapped, the second test on the table's value and the choice in a
- * local leave it at 8 rows; locals for the entry, the stage or both are worse (11 to 17). Wave 40:
- * the innermost loop in an inline helper is worse too (23 rows, probes/Game_UnkSaveData_800BB74C_R3.py). */
+ * fn_801E5040 matches since wave 41 with both values of its stage comparison read through inline
+ * functions (earlier shapes: probes/Game_UnkSaveData_800BB74C*.py). The route table's symbol is
+ * 0x8EA bytes (326 routes of 7); the 2 bytes after it are the alignment of the next string. */
 #include <dolphin/types.h>
 #include "size_assert.h"
 #include <string.h>
@@ -812,7 +809,20 @@ extern "C" s32 fn_801E5140(int stage, int choice) {
     return lbl_8053D9B0[stage][choice];
 }
 
-/* The story route the history took, or -1 (name inferred). */
+/* The stage played k-th (name inferred). */
+inline s32 EntryOf(UnkPlayHistory_800BB74C *h, int k) {
+    return h->m_route.m_entries[k];
+}
+
+/* fn_801E5140's lookup, inline (name inferred). */
+inline s32 StageOf(int stage, int choice) {
+    return lbl_8053D9B0[stage][choice];
+}
+
+/* The story route the history took, or -1 (name inferred). Both sides of the stage comparison
+ * come through inline functions: GC/2.7 then numbers the volatile registers as retail does
+ * (table r9, routes r10, row r11, entry r12) and compares the entry on the left (wave 41,
+ * probes/Game_UnkSaveData_800BB74C_W41.py). */
 extern "C" int fn_801E5040(UnkSaveData_800BB74C *save) {
     UnkPlayHistory_800BB74C *history = &save->m_history;
     for (int i = 0; i < 0x146; i++) {
@@ -820,8 +830,8 @@ extern "C" int fn_801E5040(UnkSaveData_800BB74C *save) {
         for (int j = 0; j < 7; j++) {
             bool found = false;
             for (int k = 0; k <= history->m_count; k++) {
-                if (lbl_8053D9B0[j][route->m_choices[j]] == history->m_route.m_entries[k]) {
-                    if (history->m_route.m_entries[k] == 0x27) {
+                if (EntryOf(history, k) == StageOf(j, route->m_choices[j])) {
+                    if (EntryOf(history, k) == 0x27) {
                         if (history->m_result == 3 && route->m_choices[j] == 4) {
                             found = true;
                             break;

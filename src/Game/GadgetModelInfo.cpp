@@ -19,7 +19,10 @@
  * iterator initialised before the arguments gives retail's iterator r31 and `this` r30, but
  * begin() then runs before the arguments' constructor and the motion and part iterators take r31
  * (retail r29); declarations at the top or in a block, an inline helper and a while loop change
- * nothing (79 rows: the r30/r31 exchange and r29). */
+ * nothing (79 rows: the r30/r31 exchange and r29). Wave 41: a copy of this with copy propagation
+ * off and the iterator declared first (probes/Game_GadgetModelInfo_W41b.py) stay at 79-80 rows;
+ * SetMaterialAlpha with copies of the material, the data or the alpha, a colour pointer and
+ * propagation off keeps r0 (probes/Game_GadgetModelInfo_W41.py). */
 /* The motions own their work through a shared_ptr with a deleter (see boost/shared_ptr.hpp). */
 #define BOOST_SP_DELETER_CONSTRUCTOR
 /* boost::function's operator() puts a bad_function_call on the stack (see the MSL's stdexcept). */

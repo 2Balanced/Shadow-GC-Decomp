@@ -15,7 +15,9 @@
  * tried in wave 40 (probes/Game_RegularRing_R2.py: a second float declared before the step, the
  * length or the count in locals, the negated step in a local, floats shared between the cases at
  * function level); it looks like the register choice of the original compiler described in
- * docs/research-notes.md. OnCommand matches with loop-invariant code motion off (see there). */
+ * docs/research-notes.md. OnCommand matches with loop-invariant code motion off (see there).
+ * Wave 41 (probes/Game_RegularRing_W41.py): copy propagation off, alone or with copies of the step,
+ * its negation, the length, the count, params or this, costs 78 rows. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <cmath>

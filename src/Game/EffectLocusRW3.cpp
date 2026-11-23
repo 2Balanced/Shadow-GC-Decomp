@@ -95,7 +95,7 @@ namespace RW3 {
 
 EffectLocusRW3::EffectLocusRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                EffectManager *manager)
-    : EffectLocus(desc, info, manager) {
+    : EffectLocus((UnkEffectDesc_801D0AFC *)desc, info, manager) {
     m_vertices = 0;
     m_size -= sizeof(EffectLocus);
     m_size += sizeof(EffectLocusRW3);

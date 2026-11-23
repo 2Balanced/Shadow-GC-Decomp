@@ -11,7 +11,13 @@
  * boost::function1<void, GadgetColliDetectArgs &>, whose destructor (0x800F5B08) and
  * list1<GadgetColliDetectArgs &>::operator[](arg<1>) (0x800F5238) are shared instances. */
 struct GadgetColliDetectArgs : public ColliDetectArgs {
+#ifdef GADGETCHARCOLLISION_IMPL
+    /* Inline: Game/GadgetCharCollision.cpp (the only unit that builds one) emits it among the
+     * inline functions fn_8015BE9C uses, ahead of the constructor. */
+    virtual ~GadgetColliDetectArgs() {}
+#else
     virtual ~GadgetColliDetectArgs();
+#endif
 };
 
 /* The handle fn_8015B8C4 wraps a collider in (see Game/GadgetCharCollision.h). */

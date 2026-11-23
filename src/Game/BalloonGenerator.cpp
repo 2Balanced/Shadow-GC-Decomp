@@ -13,7 +13,11 @@
  * Not yet matching: in Spawn, retail computes 360 / total before the shared pi / 180 and the
  * spawn counter's increment early; GC/2.7 hoists the common subexpression pi / 180 ahead of it,
  * which swaps two divisions, two float registers and a few loads (11 instructions; the constant
- * pool order and everything else match). About 20 source shapes were tried. Every other function
+ * pool order and everything else match). About 20 source shapes were tried; wave 41
+ * (probes/Game_BalloonGenerator_W41.py, 17 more): the spawn count read first into a local (or 360 /
+ * total and pi / 180 in locals) gives retail's float registers but stores the count early (9 rows);
+ * DegToRad for either value, the increment after the use, an inline counter and propagation off
+ * are worse. Every other function
  * and all data match. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>

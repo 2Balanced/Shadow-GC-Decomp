@@ -3,7 +3,14 @@
  * named by RTTI) at a fixed rate, interpolating between samples, lets the points age out, and runs
  * the command stream of its description. Effect::RW3::EffectLocusRW3 draws the points. Member
  * names are inferred. Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first). */
+ * last-defined first).
+ *
+ * NonMatching, though every function matches since wave 41 (the constructor's description is not
+ * const: retail reloads the rate after storing the point count, as EffectParticleRW3 does). The
+ * unit does not link: retail has EffectLocusExecUnit::operator delete's code last in the unit but
+ * its extab record right behind AddPoints' record (AddPoints' DELETEPOINTER actions name it), the
+ * shape docs/research-notes.md records for EffectLensFlareRW3 and EffectManagerRW3. GC/2.7 emits the
+ * inline operator delete behind AddPoints, code and record together. */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -86,7 +93,7 @@ inline UnkLocusDesc_8042C3A0 *MutableLocusDesc(const UnkEffectDesc_801D0AFC *des
     return (UnkLocusDesc_8042C3A0 *)desc;
 }
 
-EffectLocus::EffectLocus(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectLocus::EffectLocus(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                          EffectManager *manager)
     : EffectElement(desc, info, manager), m_head(0), m_tail(0), m_last(0), field_0x108(0),
       m_config(0), m_pointCount(0), m_elapsed(0.0f), m_command(0), m_commandHead(0),

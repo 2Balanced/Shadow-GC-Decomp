@@ -5,7 +5,9 @@
  *
  * NonMatching (1/2): fn_80049778 (86%) has retail's instructions, but GC/2.7 schedules y * z
  * earlier than retail does; about 12 source shapes (temporaries, order of the elements and of the
- * operands) were tried. */
+ * operands) were tried. Wave 41 (probes/Game_UnkAxisRotation_80049778_W41.py, 9 more): the
+ * products or the sine products named at the top, z * y, (y * z) * t, t * y * z, the sine and the
+ * cosine or the axis loaded in another order: 11 rows or more. */
 
 #include "Game/MathTypes.h"
 #include <cmath>

@@ -17,7 +17,8 @@
  *   (as in Game/VehicleColliMove.cpp's Settle).
  * - the range constructor of the list's storage (0x800993CC): its two argument copies are in the
  *   other order (init(i, last), init(first, last), copies of last and of i in several orders were
- *   tried).
+ *   tried; wave 41 also explicit temporaries, a copy of last declared first, this->init and an
+ *   inline forwarder, probes/Game_PlayerCharaColliImpl_W41.py with temporary <list> guards).
  * .sbss: retail places the compiler's iterator-tag object before the bound callbacks' temporaries.
  * The player is read through boost::shared_ptr::px where the game loads it at each use: get() or
  * operator-> are inline calls, which the compiler evaluates before the statement. */

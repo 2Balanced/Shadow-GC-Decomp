@@ -23,9 +23,10 @@
  *   Retail keeps the address of a local vector in a saved register where the source assigns it to
  *   a pointer inside the expression (Run's rearAddress, Move's rearAddress and rearEnd); Move
  *   still differs in the registers after that.
- * - ReadInput: the operands of the smoothing's fadds are swapped (retail adds rate + 1.0f in that
- *   order; a named denominator, 1.0f + rate, the rate taken by const reference or copied to a
- *   local, and `d *= rate; d /= rate + 1.0f` all leave GC/2.7's 1.0f + rate or cost more rows).
+ * - ReadInput: the 1.0f of the smoothing has a name since wave 41, which gives retail's
+ *   rate + 1.0f (16 rows to 10); the first call still has the rate in f2 and the stick in f3
+ *   where retail has them the other way round (the stick declared first, the rate in a local:
+ *   no change; probes/Game_TVehicleCarMove_W41.py).
  * Matched in wave 40 (probes/Game_TVehicleCarMove_R*.py): GetNode, SetLamp and GetDamage are const
  * members (GC/2.7 then loads above the prologue's stores, as retail does), UpdateSpring names the
  * spring's speed and force, and SetCamera, SetPlacement, UpdateBoost, UpdateMotion and Move read
@@ -714,10 +715,12 @@ class TVehicleCarMove {
     UnkCarPad_80051734 &Pad(int index) {
         return *reinterpret_cast<UnkCarPad_80051734 *>(fn_80051734()->field_0x0 + index * 0x28);
     }
-    /* Smooths value towards target (name inferred). */
+    /* Smooths value towards target (name inferred). The 1 has a name: retail adds it after the
+     * rate (wave 41; ReadInput went from 16 rows to 10, probes/Game_TVehicleCarMove_W41.py). */
     static void Smooth(float &value, float target, float rate) {
+        float one = 1.0f;
         float d = value - target;
-        value = target + (d * rate) / (rate + 1.0f);
+        value = target + (d * rate) / (rate + one);
     }
     /* Fills and drains the boost gauge (names inferred). */
     void ChargeGauge(float dt) {

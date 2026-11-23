@@ -19,7 +19,9 @@
  * shapes, none better): const copies of the pointer, helpers taking a reference, a derived class
  * converted to its base, the tilt's address in a local (it takes a third saved register), and the
  * pointer kept untyped and cast at each use (retail's 88 instructions, but then the addresses of
- * the ground's up and of the target tilt are kept in saved registers across the statements). */
+ * the ground's up and of the target tilt are kept in saved registers across the statements).
+ * Wave 41 (probes/Game_PlayerUtil_W41.py): copy propagation off, with per-statement copies of the
+ * fields pointer or inline helpers for the dot product and the slerp: 14 to 19 rows. */
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
 #include "Game/Player.h"

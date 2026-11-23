@@ -59,9 +59,9 @@ class EffectLocus : public EffectElement {
 #ifdef EFFECT_ELEMENT_FULL
     /* A trail effect (Game/EffectLocus.cpp): it samples its matrix at a fixed rate into a list of
      * points that age out, and runs its description's command stream; names inferred. */
-    /* 0x8042C3A0 */
-    EffectLocus(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
-                EffectManager *manager);
+    /* 0x8042C3A0; the description is not const: the constructor reloads its rate after storing
+     * the point count (Game/EffectLocusRW3.cpp casts). */
+    EffectLocus(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info, EffectManager *manager);
     /* Adds the points since the last sample (0x8042B938), and starts the commands that are due
      * (0x8042BD8C). */
     void AddPoints(float dt);

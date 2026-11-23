@@ -1,6 +1,8 @@
 /* csdmProject.cpp (file name from the allocator's records): Chao::CSD::CProject, a loaded project of
- * the Chao CSD library and the scenes made from it, and CSceneList, the list of scenes it hands out
- * (see Game/CsdProject.h). Game code calls most of it through the extern "C" fn_ names.
+ * the Chao CSD library and the scenes made from it (see Game/CsdProject.h). Game code calls most of it
+ * through the extern "C" fn_ names. CSceneList's code (Add, fn_8036F470 and the name map's tree from
+ * 0x8036F410) is a translation unit of its own since wave 41, Game/csdmSceneList.cpp: retail's
+ * .rodata repeats "tree::insert length error\n" and "Memory allocation failure" there, 8-byte aligned.
  *
  * Code generation follows Game/csdmScene.cpp: deferred inlining, so the functions are defined in the
  * reverse of their address order and the trees' template members follow at the end of the unit
@@ -8,12 +10,14 @@
  * in (by name and by frame count); MSL_MAKE_PAIR_BY_VALUE makes make_pair copy its arguments, as the
  * multimaps' equal_range has it; the others are as in Game/csdmScene.cpp.
  *
- * The unit stays NonMatching (160 of 161 functions match; CProject::iterator::operator* matches
- * since wave 39, when it stopped being const, see Game/CsdProject.h):
- * - fn_8036F470: retail gives the key a stack slot above the end() temporary, GC/2.7 below it.
- * - Order: retail places fn_8036F470, CSceneList::Add and the name map's end() between two batches
- *   of tree code (the second with its own copies of two strings), which GC/2.7 does not reproduce;
- *   some inline instances also come early, after functions the linker dropped. */
+ * The unit stays NonMatching though all 144 functions match (CProject::iterator::operator* since
+ * wave 39, when it stopped being const, see Game/CsdProject.h): 14 functions are emitted out of
+ * retail's order (tools/fnorder.py Game/csdmProject), among them Reorder, the
+ * frame-count multimap's begin()/end(), the pair constructors, __rf__/__as__ of the multi_tree
+ * iterator, the tree end node's constructor, and size()/size_ref(); retail emits some of them early,
+ * after functions the linker dropped. UnusedAssign_csdmProject stands for one such function: it puts
+ * the scene list's const_iterator assignment (which Game/csdmSceneList.cpp calls) where retail has
+ * it, between AddListScenes and fn_8036D2FC. */
 #define CSD_OBJECT_LAYER
 #define CSD_PROJECT
 #define CSD_RCPTR_DEALLOC_CTOR
@@ -48,20 +52,6 @@ namespace CSD {
 #define s_noTexList                                                                                   \
     "[%c%c%c%c]\x82\xF0\x8F\x88\x97\x9D\x82\xB7\x82\xE9\x83" "e\x83N\x83X\x83`\x83\x83\x83V\x83X\x83" \
     "e\x83\x80\x82\xAA\x8C\xA9\x82\xC2\x82\xA9\x82\xE8\x82\xDC\x82\xB9\x82\xF1\x81" "B\n"
-
-/* The scene of list named name (game code's fn_8036F470). */
-extern "C" RCPtr<CScene> fn_8036F470(CSceneList *list, const char *name) {
-    CSceneList::SceneMap::const_iterator it;
-    it = list->m_scenes.find(name);
-    if (it != list->m_scenes.end()) {
-        return (*it).second;
-    }
-    return RCPtr<CScene>(0);
-}
-
-void CSceneList::Add(const RCPtr<CScene> &scene) {
-    m_scenes.insert(std::pair<const char *, RCPtr<CScene> >((const char *)scene->GetOwner(), scene));
-}
 
 CProject::~CProject() {
     SceneMap::iterator it;
@@ -291,6 +281,14 @@ extern "C" UnkCsdHandle_80042DF0 fn_8036D2FC(CProject *project, const char *path
     /* (AddListScenes reads the node through a plain pointer: it reloads its fields every pass.) */
     project->AddListScenes((SSceneNode *)node, list, factory);
     return list;
+}
+
+/* Stands for a function the linker dropped (name and body invented; nothing calls it): retail
+ * emits the scene list's const_iterator assignment here, between AddListScenes and fn_8036D2FC,
+ * and Game/csdmSceneList.cpp's fn_8036F470 calls this copy. */
+extern "C" void UnusedAssign_csdmProject(CSceneList::SceneMap::const_iterator *to,
+                                          const CSceneList::SceneMap::iterator &from) {
+    *to = from;
 }
 
 /* Adds the scenes of node and of the nodes under it to list. */

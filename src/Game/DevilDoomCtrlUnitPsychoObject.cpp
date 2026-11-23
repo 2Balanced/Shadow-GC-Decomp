@@ -14,7 +14,9 @@
  * The unit is NonMatching: every function, the data and the function order match except
  * DevilDoomCtrlUnit_PsychoObjectControl::Tick (20/21 functions). Its code matches but for the
  * register assignment: retail keeps the object count in r31 and this in r30, GC/2.7 the other way
- * round (and the group bases one register lower). About 25 source shapes were tried. */
+ * round (and the group bases one register lower). About 25 source shapes were tried; in wave 41
+ * a copy of this with copy propagation off, the total declared first, and both (130 to 132 rows,
+ * probes/Game_DevilDoomCtrlUnitPsychoObject_W41.py). */
 #include <boost/function.hpp>
 
 #include "Effect/System/EffectElement.h"

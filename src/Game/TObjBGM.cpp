@@ -13,7 +13,9 @@
  * retail keeps the sign-extended priority in one register for both CanInterrupt calls where
  * GC/2.7 keeps the loaded byte and extends it twice (an s8 or int local, declared in the loop or
  * at the top, with or without copy propagation, int, const or reference parameters for
- * CanInterrupt, an inline getter and a split declaration do not change that; wave 40). */
+ * CanInterrupt, an inline getter and a split declaration do not change that; wave 40). Wave 41
+ * (probes/Game_TObjBGM_W41.py): propagation off with s8 locals, a copy inside CanInterrupt, and
+ * CanInterrupt as a member of TObjSERIF keep the 12 rows. */
 #include "Game/Task.h"
 #include <dolphin/types.h>
 #include "size_assert.h"

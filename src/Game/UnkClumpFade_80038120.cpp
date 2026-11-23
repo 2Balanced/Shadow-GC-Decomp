@@ -586,7 +586,9 @@ inline RwFrame *FindNodeFrame(RwFrame *frame, UnkNodeSearch_80038D24 *search) {
 /* NonMatching (with fn_80038D24, which inlines it): the loop's volatile registers are allocated in
  * another order in retail (offset r4 and search id r5, here the other way round); ~8 shapes tried,
  * and in wave 40 the counter or the frame declared elsewhere, a node pointer, the comparison turned
- * around and the id in a local (probes/Game_UnkClumpFade_80038120_R4.py). */
+ * around and the id in a local (probes/Game_UnkClumpFade_80038120_R4.py). Wave 41: copy propagation
+ * off keeps 5 rows; inline getters for either id make FindNodeFrame call an inline function, so it
+ * is no longer inlined (probes/Game_UnkClumpFade_80038120_W41.py). */
 extern "C" RwFrame *fn_80038DD8(RwFrame *frame, UnkNodeSearch_80038D24 *search) {
     return FindNodeFrame(frame, search);
 }

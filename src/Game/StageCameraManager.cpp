@@ -12,7 +12,9 @@
  * handle mode's: the mode pointer kept across the first virtual call is in r26 in retail and in
  * r27 here (both registers are free there). Swapping the comparisons' operands (8 rows), the
  * handle's id in a local (26 rows) and get() instead of operator-> (no change) were tried in wave
- * 39. The list allocator's row was only the number of a compiler-generated string. */
+ * 39. The list allocator's row was only the number of a compiler-generated string. Wave 41
+ * (probes/Game_StageCameraManager_W41.py): copy propagation off, alone or with copies of this,
+ * state, area or request, keeps 6 rows; the mode ids through inline functions cost 16 to 26. */
 #define MSL_LIST_ACCESSORS
 #define MSL_LIST_VIBRATION
 #define MSL_FUNCTIONAL_BINDERS

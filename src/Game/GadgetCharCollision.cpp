@@ -6,10 +6,16 @@
 /* boost::function1::operator() puts a bad_function_call on the stack: use the library's
  * runtime_error size (see <stdexcept>). */
 #define MSL_RUNTIME_ERROR_STRING
+/* destroy_all comes out with the vector's last members, not after clear (see <vector_impl>). */
+#define MSL_VECTOR_DESTROY_ALL_LATE
 /* The parts of Game/GadgetCharCollision.h only this unit sees. */
 #define GADGETCHARCOLLISION_IMPL
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
+/* <vector> ahead of boost::function: the vector's members come out before function1's call
+ * operator at the end of the unit. */
+#include <utility>
+#include <vector>
 #include "Game/GadgetCharCollision.h"
 #include "Game/GadgetColliDetectArgs.h"
 #include "Game/GadgetCollision.h"
@@ -68,8 +74,6 @@ GadgetCharCollision::~GadgetCharCollision() {
     }
 }
 
-GadgetColliDetectArgs::~GadgetColliDetectArgs() {}
-
 /* The per-frame update: reports the collider's contacts to the callbacks unless the handle is
  * disabled or every touching character is ignored, and runs the timer. */
 extern "C" void fn_8015BE9C(GadgetCharCollision *handle, float dt) {
@@ -127,14 +131,18 @@ extern "C" void fn_8015BDC4(GadgetCharCollision *handle, int kind, int id) {
     handle->m_ignore.push_back(entry);
 }
 
-/* NonMatching (99.67%): retail colours the two field comparisons' registers the other way round
- * (lwz r0 from the entry, r3 from the character, then cmpw r0,r3); about 35 source shapes tried
- * (operand order, casts, pair copies, inline helpers, enum/int/long types, index forms).
- * Second pass (wave 39, 45 more shapes in probes/Game_GadgetCharCollision*.py): retail's second
- * test loads the character's word before the entry's, so the character side is evaluated first in
- * both and compared on the right. Only a subtraction (`!(entry->first - id)`) gives that order and
- * those registers, with `subf.` for `cmpw` (2 rows); inline comparison helpers, getters through the
- * shared_ptr, locals and references all keep the 6 rows. */
+/* The word at 0x5C of a character (meaning unknown). */
+inline s32 GetId(CharInfo *info) {
+    return info->field_0x5C;
+}
+
+/* Whether every character touching the collider is ignored. Retail colours the two field
+ * comparisons with the entry in r0 and the character in r3 (cmpw r0,r3): both character words come
+ * through inline getters, whose results are evaluated first, and copy propagation is off for the
+ * function so that GC/2.7 does not fold them back into the comparisons (wave 41,
+ * probes/Game_GadgetCharCollision_W41.py; some 80 shapes with propagation on kept 6 rows, see
+ * probes/Game_GadgetCharCollision*.py). */
+#pragma opt_propagation off
 bool GadgetCharCollision::IsAllIgnored(UnkColliContacts_8001EE04 *contacts) {
     UnkColliContactNode_800587A0 *it = fn_8001EE04(contacts);
     boost::weak_ptr<CharaColliBase> collider;
@@ -146,7 +154,7 @@ bool GadgetCharCollision::IsAllIgnored(UnkColliContacts_8001EE04 *contacts) {
             if (boost::shared_ptr<CharInfo> hit = owner.lock()) {
                 bool found = false;
                 for (std::pair<s32, s32> *entry = m_ignore.begin(); entry != m_ignore.end(); entry++) {
-                    if (entry->first == hit->field_0x5C && entry->second == GetKind(hit.get())) {
+                    if (entry->first == GetId(hit.get()) && entry->second == GetKind(hit.get())) {
                         found = true;
                     }
                 }
@@ -158,6 +166,7 @@ bool GadgetCharCollision::IsAllIgnored(UnkColliContacts_8001EE04 *contacts) {
     }
     return true;
 }
+#pragma opt_propagation reset
 
 /* Wraps collider in a new handle. */
 extern "C" boost::shared_ptr<GadgetCharCollision> fn_8015B8C4(boost::shared_ptr<CharaColliBase> collider) {
@@ -165,3 +174,5 @@ extern "C" boost::shared_ptr<GadgetCharCollision> fn_8015B8C4(boost::shared_ptr<
         boost::shared_ptr<GadgetCharCollision>(new GadgetCharCollision(collider));
     return handle;
 }
+
+#include <vector_impl>
