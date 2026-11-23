@@ -7925,9 +7925,11 @@ Game/RwCpp29.cpp:
 
 Game/RwCpp30.cpp:
 	.text       start:0x804683AC end:0x804699F0
+	.sdata2     start:0x805FB200 end:0x805FB210
 
 Game/RwCpp31.cpp:
 	.text       start:0x804699F0 end:0x8046B554
+	.data       start:0x8056DAF8 end:0x8056DB4C
 
 Game/RwCpp32.cpp:
 	.text       start:0x8046B554 end:0x8046CB94
@@ -7937,9 +7939,12 @@ Game/RwCpp33.cpp:
 
 Game/RwCpp34.cpp:
 	.text       start:0x8046E594 end:0x8046FF34
+	.data       start:0x8056DB50 end:0x8056DC7C
 
 Game/RwCpp35.cpp:
 	.text       start:0x8046FF34 end:0x80471A54
+	.data       start:0x8056DC7C end:0x8056DCE4
+	.sdata2     start:0x805FB220 end:0x805FB230
 
 Game/RwCpp36.cpp:
 	.text       start:0x80471A54 end:0x80473584

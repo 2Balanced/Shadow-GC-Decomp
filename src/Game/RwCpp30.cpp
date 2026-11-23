@@ -1,239 +1,216 @@
-/* RenderWare vertex-array element conversion, 0x804683AC..0x804699F0.
- * Structure and names are inferred from the retail instruction streams. */
+/* RenderWare GameCube driver, vertex-array conversion (second part), 0x804683AC..0x804699F0:
+ * packed normals (RpVertexNormal, three signed bytes in 1.7 fixed point) and RwV3d normals
+ * converted to the signed byte (2.6), signed short (2.14) or float normal streams of a display
+ * list. Names are inferred from behaviour. Compiled by CodeWarrior GC 1.3.2 with -O4,p.
+ * All three functions match and the unit is Matching. RwCpp29 and RwCpp30 are one source file
+ * cut in two: its .sdata2 pool is 0x805FB1F0..0x805FB210, of which this unit owns 1/128 and the
+ * int-to-float double (0x805FB200..0x805FB210); the 64.0f and 16384.0f it shares with
+ * fn_80467BC8 (RwCpp29.cpp) are referenced by address. */
 #include <dolphin/types.h>
+#include "Game/rw/r4.h"
 
 extern "C" {
-extern f32 lbl_805FB1F8; /* 64.0f */
-extern f32 lbl_805FB1FC; /* 16384.0f */
-extern f32 lbl_805FB200;
-extern f64 lbl_805FB208;
+/* The literals of fn_80467BC8 (RwCpp29.cpp), which fn_80468ADC shares: see below. */
+extern const f32 lbl_805FB1F8; /* 64.0f */
+extern const f32 lbl_805FB1FC; /* 16384.0f */
 
-#define RW_F32_BYTE(dst, src) do { \
-    (dst)[0] = (u8)(s32)(scale * (src)[0]); \
-    (dst)[1] = (u8)(s32)(scale * (src)[1]); \
-    (dst)[2] = (u8)(s32)(scale * (src)[2]); \
-} while (0)
-#define RW_F32_SHORT(dst, src) do { \
-    *(u16 *)((dst) + 0) = (u16)(s32)(scale * (src)[0]); \
-    *(u16 *)((dst) + 2) = (u16)(s32)(scale * (src)[1]); \
-    *(u16 *)((dst) + 4) = (u16)(s32)(scale * (src)[2]); \
-} while (0)
-#define RW_F32_WORD(dst, src) do { \
-    *(u32 *)((dst) + 0) = ((const u32 *)(src))[0]; \
-    *(u32 *)((dst) + 4) = ((const u32 *)(src))[1]; \
-    *(u32 *)((dst) + 8) = ((const u32 *)(src))[2]; \
-} while (0)
-
-#define RW_S8_BYTE(dst, src) do { \
-    (dst)[0] = (u8)(s32)(normalize * (f32)(src)[0] * scale); \
-    (dst)[1] = (u8)(s32)(normalize * (f32)(src)[1] * scale); \
-    (dst)[2] = (u8)(s32)(normalize * (f32)(src)[2] * scale); \
-} while (0)
-#define RW_S8_SHORT(dst, src) do { \
-    *(u16 *)((dst) + 0) = (u16)(s32)(normalize * (f32)(src)[0] * scale); \
-    *(u16 *)((dst) + 2) = (u16)(s32)(normalize * (f32)(src)[1] * scale); \
-    *(u16 *)((dst) + 4) = (u16)(s32)(normalize * (f32)(src)[2] * scale); \
-} while (0)
-#define RW_S8_WORD(dst, src) do { \
-    value = normalize * (f32)(src)[0]; \
-    *(u32 *)((dst) + 0) = *(u32 *)&value; \
-    value = normalize * (f32)(src)[1]; \
-    *(u32 *)((dst) + 4) = *(u32 *)&value; \
-    value = normalize * (f32)(src)[2]; \
-    *(u32 *)((dst) + 8) = *(u32 *)&value; \
-} while (0)
-
-#define RW_PACK8(PACK) do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    PACK(out, source); \
-    PACK(out1, source + 4); \
-    PACK(out2, source + 8); \
-    PACK(out3, source + 12); \
-    PACK(out4, source + 16); \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
-    PACK(out5, source + 20); \
-    PACK(out6, source + 24); \
-    PACK(out7, source + 28); \
-    out = out7 + stride; \
-    source += 32; \
-} while (0)
-#define RW_PACK_ONE(PACK) do { \
-    PACK(out, source); \
-    out += stride; \
-    source += 4; \
-} while (0)
-#define RW_PACK8_F32(PACK) do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
-    PACK(out, source); \
-    PACK(out1, source + 3); \
-    PACK(out2, source + 6); \
-    PACK(out3, source + 9); \
-    PACK(out4, source + 12); \
-    PACK(out5, source + 15); \
-    PACK(out6, source + 18); \
-    PACK(out7, source + 21); \
-    out = out7 + stride; \
-    source += 24; \
-} while (0)
-#define RW_PACK_ONE_F32(PACK) do { \
-    PACK(out, source); \
-    out += stride; \
-    source += 3; \
-} while (0)
-
-#define RW_CONVERT_S8(wordBytes) \
-    s32 bytes = 0; \
-    switch (type) { \
-    case 1: \
-        if (stride == 0) stride = 3; \
-        { \
-            u8 *out = dest; \
-            const f32 normalize = lbl_805FB200; \
-            const f32 scale = lbl_805FB1F8; \
-            for (s32 i = 0; i < vertices; i++) { \
-                RW_PACK_ONE(RW_S8_BYTE); \
-            } \
-        } \
-        bytes = vertices * 3; \
-        break; \
-    case 3: \
-        if (stride == 0) stride = 6; \
-        { \
-            u8 *out = dest; \
-            const f32 normalize = lbl_805FB200; \
-            const f32 scale = lbl_805FB1FC; \
-            for (s32 i = 0; i < vertices; i++) { \
-                RW_PACK_ONE(RW_S8_SHORT); \
-            } \
-        } \
-        bytes = vertices * 6; \
-        break; \
-    case 4: \
-        if (stride == 0) stride = 0xC; \
-        { \
-            u8 *out = dest; \
-            f32 value; \
-            if (vertices > 0) { \
-                s32 i = 0; \
-                s32 remaining = vertices - 8; \
-                if (vertices > 8) { \
-                    const f32 normalize = lbl_805FB200; \
-                    for (; i < remaining; i += 8) { \
-                        RW_PACK8(RW_S8_WORD); \
-                    } \
-                } \
-                { \
-                    const f32 normalize = lbl_805FB200; \
-                    for (; i < vertices; i++) { \
-                        RW_PACK_ONE(RW_S8_WORD); \
-                    } \
-                } \
-            } \
-        } \
-        bytes = vertices * wordBytes; \
-        break; \
-    case 0: \
-    case 2: \
-        break; \
-    } \
-    return bytes;
-
-#pragma scheduling reset
-s32 fn_804692C0(u8 *dest, const s8 *source, s32 type, s32 vertices, u32 stride) {
-    RW_CONVERT_S8(0x24)
-}
-
-#pragma scheduling off
-s32 fn_80468ADC(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride) {
-    s32 bytes = 0;
+/* Packed normals to a normal stream. `type` is the GX component type; only the signed types
+ * (1 bytes, 3 shorts) and floats (4) are produced. Returns the packed size of the data. */
+s32 fn_804683AC(void *dest, const RpVertexNormal *src, s32 type, s32 num, u32 stride) {
+    s32 size = 0;
+    s32 i;
 
     switch (type) {
-    case 1:
-        if (stride == 0) stride = 3;
-        {
-            u8 *out = dest;
-            if (vertices > 0) {
-                s32 i = 0;
-                s32 remaining = vertices - 8;
-                if (vertices > 8) {
-                    const f32 scale = lbl_805FB1F8;
-                    for (; i < remaining; i += 8) {
-                        RW_PACK8_F32(RW_F32_BYTE);
-                    }
-                }
-                {
-                    const f32 scale = lbl_805FB1F8;
-                    for (; i < vertices; i++) {
-                        RW_PACK_ONE_F32(RW_F32_BYTE);
-                    }
-                }
-            }
-        }
-        bytes = vertices * 3;
-        break;
-    case 3:
-        if (stride == 0) stride = 6;
-        {
-            u8 *out = dest;
-            if (vertices > 0) {
-                s32 i = 0;
-                s32 remaining = vertices - 8;
-                if (vertices > 8) {
-                    const f32 scale = lbl_805FB1FC;
-                    for (; i < remaining; i += 8) {
-                        RW_PACK8_F32(RW_F32_SHORT);
-                    }
-                }
-                {
-                    const f32 scale = lbl_805FB1FC;
-                    for (; i < vertices; i++) {
-                        RW_PACK_ONE_F32(RW_F32_SHORT);
-                    }
-                }
-            }
-        }
-        bytes = vertices * 6;
-        break;
-    case 4:
-        if (stride == 0) stride = 0xC;
-        {
-            u8 *out = dest;
-            if (vertices > 0) {
-                s32 i = 0;
-                s32 remaining = vertices - 8;
-                if (vertices > 8) {
-                    for (; i < remaining; i += 8) {
-                        RW_PACK8_F32(RW_F32_WORD);
-                    }
-                }
-                for (; i < vertices; i++) {
-                    RW_PACK_ONE_F32(RW_F32_WORD);
-                }
-            }
-        }
-        bytes = vertices * 0x24;
-        break;
     case 0:
-    case 2:
+        break;
+    case 1: {
+        if (stride == 0) {
+            stride = 3;
+        }
+        s8 *out = (s8 *)dest;
+        for (i = 0; i < num; i++) {
+            RwV3d normal;
+            normal.x = (1.0f / 128.0f) * (f32)src->x;
+            normal.y = (1.0f / 128.0f) * (f32)src->y;
+            normal.z = (1.0f / 128.0f) * (f32)src->z;
+            out[0] = (s8)(s32)(normal.x * lbl_805FB1F8);
+            out[1] = (s8)(s32)(normal.y * lbl_805FB1F8);
+            out[2] = (s8)(s32)(normal.z * lbl_805FB1F8);
+            out = (s8 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 3;
         break;
     }
-    return bytes;
+    case 2:
+        break;
+    case 3: {
+        if (stride == 0) {
+            stride = 6;
+        }
+        s16 *out = (s16 *)dest;
+        for (i = 0; i < num; i++) {
+            RwV3d normal;
+            normal.x = (1.0f / 128.0f) * (f32)src->x;
+            normal.y = (1.0f / 128.0f) * (f32)src->y;
+            normal.z = (1.0f / 128.0f) * (f32)src->z;
+            out[0] = (s16)(s32)(normal.x * lbl_805FB1FC);
+            out[1] = (s16)(s32)(normal.y * lbl_805FB1FC);
+            out[2] = (s16)(s32)(normal.z * lbl_805FB1FC);
+            out = (s16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 6;
+        break;
+    }
+    case 4: {
+        if (stride == 0) {
+            stride = 12;
+        }
+        RwGameCubeV3d *out = (RwGameCubeV3d *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            RwGameCubeV3d normal;
+            normal.v[0] = (1.0f / 128.0f) * (f32)src->x;
+            normal.v[1] = (1.0f / 128.0f) * (f32)src->y;
+            normal.v[2] = (1.0f / 128.0f) * (f32)src->z;
+            src++;
+            *out = normal;
+            out = (RwGameCubeV3d *)((u32)out + stride);
+        }
+        size = num * 12;
+        break;
+    }
+    }
+    return size;
 }
 
-#pragma scheduling reset
-s32 fn_804683AC(u8 *dest, const s8 *source, s32 type, s32 vertices, u32 stride) {
-    RW_CONVERT_S8(0xC)
+/* RwV3d normals to a normal stream: the twin of fn_80467BC8 (RwCpp29.cpp), instruction for
+ * instruction, so probably the same static function of a second source file. */
+s32 fn_80468ADC(void *dest, const RwV3d *src, s32 type, s32 num, u32 stride) {
+    s32 size = 0;
+    s32 i;
+
+    switch (type) {
+    case 0:
+        break;
+    case 1: {
+        if (stride == 0) {
+            stride = 3;
+        }
+        s8 *out = (s8 *)dest;
+        for (i = 0; i < num; i++) {
+            out[0] = (s8)(s32)(src->x * lbl_805FB1F8);
+            out[1] = (s8)(s32)(src->y * lbl_805FB1F8);
+            out[2] = (s8)(s32)(src->z * lbl_805FB1F8);
+            out = (s8 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 3;
+        break;
+    }
+    case 2:
+        break;
+    case 3: {
+        if (stride == 0) {
+            stride = 6;
+        }
+        s16 *out = (s16 *)dest;
+        for (i = 0; i < num; i++) {
+            out[0] = (s16)(s32)(src->x * lbl_805FB1FC);
+            out[1] = (s16)(s32)(src->y * lbl_805FB1FC);
+            out[2] = (s16)(s32)(src->z * lbl_805FB1FC);
+            out = (s16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 6;
+        break;
+    }
+    case 4: {
+        if (stride == 0) {
+            stride = 12;
+        }
+        RwGameCubeV3d *out = (RwGameCubeV3d *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            *out = *(const RwGameCubeV3d *)src;
+            out = (RwGameCubeV3d *)((u32)out + stride);
+            src++;
+        }
+        size = num * 36;
+        break;
+    }
+    }
+    return size;
 }
-#pragma scheduling reset
+
+/* Packed normals again: the twin of fn_804683AC. */
+s32 fn_804692C0(void *dest, const RpVertexNormal *src, s32 type, s32 num, u32 stride) {
+    s32 size = 0;
+    s32 i;
+
+    switch (type) {
+    case 0:
+        break;
+    case 1: {
+        if (stride == 0) {
+            stride = 3;
+        }
+        s8 *out = (s8 *)dest;
+        for (i = 0; i < num; i++) {
+            RwV3d normal;
+            normal.x = (1.0f / 128.0f) * (f32)src->x;
+            normal.y = (1.0f / 128.0f) * (f32)src->y;
+            normal.z = (1.0f / 128.0f) * (f32)src->z;
+            out[0] = (s8)(s32)(normal.x * lbl_805FB1F8);
+            out[1] = (s8)(s32)(normal.y * lbl_805FB1F8);
+            out[2] = (s8)(s32)(normal.z * lbl_805FB1F8);
+            out = (s8 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 3;
+        break;
+    }
+    case 2:
+        break;
+    case 3: {
+        if (stride == 0) {
+            stride = 6;
+        }
+        s16 *out = (s16 *)dest;
+        for (i = 0; i < num; i++) {
+            RwV3d normal;
+            normal.x = (1.0f / 128.0f) * (f32)src->x;
+            normal.y = (1.0f / 128.0f) * (f32)src->y;
+            normal.z = (1.0f / 128.0f) * (f32)src->z;
+            out[0] = (s16)(s32)(normal.x * lbl_805FB1FC);
+            out[1] = (s16)(s32)(normal.y * lbl_805FB1FC);
+            out[2] = (s16)(s32)(normal.z * lbl_805FB1FC);
+            out = (s16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 6;
+        break;
+    }
+    case 4: {
+        if (stride == 0) {
+            stride = 12;
+        }
+        RwGameCubeV3d *out = (RwGameCubeV3d *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            RwGameCubeV3d normal;
+            normal.v[0] = (1.0f / 128.0f) * (f32)src->x;
+            normal.v[1] = (1.0f / 128.0f) * (f32)src->y;
+            normal.v[2] = (1.0f / 128.0f) * (f32)src->z;
+            src++;
+            *out = normal;
+            out = (RwGameCubeV3d *)((u32)out + stride);
+        }
+        size = num * 36;
+        break;
+    }
+    }
+    return size;
+}
 }

@@ -299,6 +299,20 @@ cflags_rw_c = [
     "-inline noauto",
 ]
 
+# RenderWare units RwCpp29..RwCpp36 (wave 40, agent r4): the unrolled loops of the vertex-array
+# converters at 0x80466B58 only come out of CodeWarrior GC 1.3/1.3.2 with -O4,p (2.x schedules them
+# differently), without lmw/stmw. Used with mw_version="GC/1.3.2".
+# Deferred inlining is left out: GC 1.3.2 emits a unit's functions in reverse order with it.
+cflags_rw_132 = [
+    *cflags_base,
+    "-use_lmw_stmw off",
+    "-str reuse,readonly",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
+]
+# The charset units (RwCpp35, RwCpp36) keep their string literals in .sdata, as retail does.
+cflags_rw_132_sdata = [*cflags_rw_132, "-str reuse,noreadonly"]
+
 # The Chao CSD 2D library (src/Game/csd*.cpp; see Game/csdAccess.cpp): game flags without RTTI and
 # small data, with automatic inlining one level deep and no deferred inlining, so functions come out
 # in definition order.
@@ -1151,14 +1165,14 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp26.cpp"),
             Object(NonMatching, "Game/RwCpp27.cpp"),
             Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp29.cpp", cflags=cflags_rw_no_lmw),
-            Object(NonMatching, "Game/RwCpp30.cpp", cflags=cflags_rw_no_lmw),
-            Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_no_lmw),
-            Object(NonMatching, "Game/RwCpp32.cpp"),
-            Object(NonMatching, "Game/RwCpp33.cpp"),
-            Object(NonMatching, "Game/RwCpp34.cpp"),
-            Object(NonMatching, "Game/RwCpp35.cpp"),
-            Object(NonMatching, "Game/RwCpp36.cpp"),
+            Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp32.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp33.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp34.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp35.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp36.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/RwCpp37.cpp"),
             Object(NonMatching, "Game/RwCpp38.cpp"),
             Object(NonMatching, "Game/RwCpp39.cpp"),

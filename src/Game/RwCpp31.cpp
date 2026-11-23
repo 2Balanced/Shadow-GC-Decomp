@@ -1,25 +1,193 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
-#include <string.h>
+/* RenderWare GameCube driver, vertex-array conversion (third part) and display-list sizing,
+ * 0x804699F0..0x8046B554. Names are inferred from behaviour. Compiled by CodeWarrior GC 1.3.2
+ * with -O4,p. Matching: fn_804699F0, fn_8046A270, fn_8046ACBC, fn_8046B094, fn_8046B0E0.
+ * fn_8046B110 has retail's instructions (273) and all but three of its saved registers: the
+ * geometry, the stream total and the mesh-table size come out in r28/r30/r29 for retail's
+ * r30/r29/r28 (declaration orders searched; the void * object and the typed copy of the stream
+ * count are what brought it there). .data is fn_8046ACBC's jump table (0x8056DAF8, padded to
+ * 0x8056DB50: a source-file boundary in .data). */
 #include <dolphin/types.h>
+#include <string.h>
+#include "Game/rw/r4.h"
 
 extern "C" {
-void fn_8046B0E0(u32 *metadata, u32 unused, u32 size, u8 *buffer) {
-    metadata[0] = (u32)buffer;
-    metadata[1] = size;
-    memset(buffer, 0, size);
+/* RwRGBA colours to a colour stream. `type` is the GX colour format: 0 RGB565, 1 RGB8,
+ * 2 RGBX8, 3 RGBA4, 4 RGBA6, 5 RGBA8. Returns the packed size of the data. */
+s32 fn_804699F0(void *dest, const RwRGBA *src, s32 type, s32 num, u32 stride) {
+    s32 size = 0;
+    s32 i;
+
+    switch (type) {
+    case 0: {
+        if (stride == 0) {
+            stride = 2;
+        }
+        u16 *out = (u16 *)dest;
+        for (i = 0; i < num; i++) {
+            u8 r = src->red, g = src->green, bl = src->blue;
+            *out = ((r << 8) & 0xF800) | ((g << 3) & 0x7E0) | ((bl >> 3) & 0x1F);
+            out = (u16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 2;
+        break;
+    }
+    case 1: {
+        if (stride == 0) {
+            stride = 3;
+        }
+        u8 *out = (u8 *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            out[0] = src->red;
+            out[1] = src->green;
+            out[2] = src->blue;
+            out = (u8 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 3;
+        break;
+    }
+    case 3: {
+        if (stride == 0) {
+            stride = 2;
+        }
+        u16 *out = (u16 *)dest;
+        for (i = 0; i < num; i++) {
+            u8 r = src->red, g = src->green, bl = src->blue;
+            *out = ((r << 8) & 0xF000) | ((g << 4) & 0xF00) | (bl & 0xF0) | ((src->alpha >> 4) & 0xF);
+            out = (u16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 2;
+        break;
+    }
+    case 4: {
+        if (stride == 0) {
+            stride = 3;
+        }
+        u8 *out = (u8 *)dest;
+        for (i = 0; i < num; i++) {
+            out[0] = (src->red & 0xFC) | ((src->green >> 6) & 0x03);
+            out[1] = ((src->green << 2) & 0xF0) | ((src->blue >> 4) & 0x0F);
+            out[2] = ((src->blue << 4) & 0xC0) | ((src->alpha >> 2) & 0x3F);
+            out += stride;
+            src++;
+        }
+        size = num * 3;
+        break;
+    }
+    case 2:
+    case 5: {
+        if (stride == 0) {
+            stride = 4;
+        }
+        u32 *out = (u32 *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            *out = *(const u32 *)src;
+            out = (u32 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 4;
+        break;
+    }
+    }
+    return size;
 }
 
-u32 fn_8046693C(u32 *format);
-u32 fn_804669A0(u32 *format);
-u32 fn_804669EC(u32 *format, u8 channel);
-u32 fn_80466A54(u32 *format, u8 channel);
-
-u32 fn_8046ACBC(u32 *format) {
+/* Texture coordinates to a coordinate stream, scaled by 2^frac for the fixed-point types
+ * (0 u8, 1 s8, 2 u16, 3 s16); 4 copies the floats. */
+s32 fn_8046A270(void *dest, const RwTexCoords *src, s32 type, s32 num, u32 stride, f32 scale) {
+    s32 size = 0;
     s32 i;
-    u32 total = 0;
-    for (i = 0; i < 0x15; i++) {
-        u32 mode;
-        switch (i) {
+
+    switch (type) {
+    case 0: {
+        if (stride == 0) {
+            stride = 2;
+        }
+        u8 *out = (u8 *)dest;
+        for (i = 0; i < num; i++) {
+            out[0] = (u8)(s32)(src->u * scale);
+            out[1] = (u8)(s32)(src->v * scale);
+            out += stride;
+            src++;
+        }
+        size = num * 2;
+        break;
+    }
+    case 1: {
+        if (stride == 0) {
+            stride = 2;
+        }
+        s8 *out = (s8 *)dest;
+        for (i = 0; i < num; i++) {
+            out[0] = (s8)(s32)(src->u * scale);
+            out[1] = (s8)(s32)(src->v * scale);
+            out += stride;
+            src++;
+        }
+        size = num * 2;
+        break;
+    }
+    case 2: {
+        if (stride == 0) {
+            stride = 4;
+        }
+        u16 *out = (u16 *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            out[0] = (u16)(s32)(src->u * scale);
+            out[1] = (u16)(s32)(src->v * scale);
+            out = (u16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 4;
+        break;
+    }
+    case 3: {
+        if (stride == 0) {
+            stride = 4;
+        }
+        s16 *out = (s16 *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            out[0] = (s16)(s32)(src->u * scale);
+            out[1] = (s16)(s32)(src->v * scale);
+            out = (s16 *)((u32)out + stride);
+            src++;
+        }
+        size = num * 4;
+        break;
+    }
+    case 4: {
+        if (stride == 0) {
+            stride = 8;
+        }
+        RwGameCubeV2d *out = (RwGameCubeV2d *)dest;
+        s32 j;
+        for (j = 0; j < num; j++) {
+            *out = *(const RwGameCubeV2d *)src;
+            out = (RwGameCubeV2d *)((u32)out + stride);
+            src++;
+        }
+        size = num * 8;
+        break;
+    }
+    }
+    return size;
+}
+
+/* The size in bytes of one vertex of a display list drawn with `desc`: a byte for each matrix
+ * index and for each attribute indexed by bytes, two for 16-bit indices, the attribute's own
+ * size (from RwCpp28.cpp) when it is direct. Normals count three times with NBT indices. */
+u32 fn_8046ACBC(RwGameCubeVtxDesc *desc) {
+    s32 attr;
+    u32 size = 0;
+
+    for (attr = 0; attr < 21; attr++) {
+        switch (attr) {
         case 0:
         case 1:
         case 2:
@@ -29,595 +197,250 @@ u32 fn_8046ACBC(u32 *format) {
         case 6:
         case 7:
         case 8:
-            if ((1U << i) & format[4]) total++;
-            break;
-        case 9:
-            mode = (format[4] >> 9) & 3;
-            if (mode == 1) {
-                total += fn_8046693C(format);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if ((1 << attr) & desc->vcdLo) {
+                size += 1;
             }
             break;
-        case 10:
-            mode = (format[4] >> 11) & 3;
-            if (((format[1] >> 9) & 1) == 1) {
-                u32 multiplier = 3;
-                if ((format[1] >> 31) == 0) multiplier = 1;
+        case 9:
+            if (RWGAMECUBE_POS_TYPE(desc) == 1) {
+                size += fn_8046693C(desc);
+            } else if (RWGAMECUBE_POS_TYPE(desc) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_POS_TYPE(desc) == 3) {
+                size += 2;
+            }
+            break;
+        case 10: {
+            /* One variable holds the flag and then the mode: only this keeps retail's registers. */
+            u32 mode = (desc->vatA >> 9) & 1;
+            u32 nbt = mode;
+            mode = RWGAMECUBE_NRM_TYPE(desc);
+            if (nbt == 1) {
+                u32 count = 3;
+                if ((desc->vatA >> 31) == 0) {
+                    count = 1;
+                }
                 if (mode == 1) {
-                    total += multiplier * fn_804669A0(format);
+                    size += count * fn_804669A0(desc);
                 } else if (mode == 2) {
-                    total += multiplier;
+                    size += count;
                 } else if (mode == 3) {
-                    total += multiplier * 2;
+                    size += count * 2;
                 }
             } else {
                 if (mode == 1) {
-                    total += fn_804669A0(format);
+                    size += fn_804669A0(desc);
                 } else if (mode == 2) {
-                    total++;
+                    size += 1;
                 } else if (mode == 3) {
-                    total += 2;
+                    size += 2;
                 }
             }
             break;
+        }
         case 11:
         case 12:
-            mode = (format[4] >> (2 * (i - 11) + 13)) & 3;
-            if (mode == 1) {
-                total += fn_804669EC(format, (u8)(i - 11));
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_CLR_TYPE(desc, attr - 11) == 1) {
+                size += fn_804669EC(desc, attr - 11);
+            } else if (RWGAMECUBE_CLR_TYPE(desc, attr - 11) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_CLR_TYPE(desc, attr - 11) == 3) {
+                size += 2;
             }
             break;
         case 13:
-            mode = format[5] & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 0);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 0) == 1) {
+                size += fn_80466A54(desc, 0);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 0) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 0) == 3) {
+                size += 2;
             }
             break;
         case 14:
-            mode = (format[5] >> 2) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 1);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 1) == 1) {
+                size += fn_80466A54(desc, 1);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 1) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 1) == 3) {
+                size += 2;
             }
             break;
         case 15:
-            mode = (format[5] >> 4) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 2);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 2) == 1) {
+                size += fn_80466A54(desc, 2);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 2) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 2) == 3) {
+                size += 2;
             }
             break;
         case 16:
-            mode = (format[5] >> 6) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 3);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 3) == 1) {
+                size += fn_80466A54(desc, 3);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 3) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 3) == 3) {
+                size += 2;
             }
             break;
         case 17:
-            mode = (format[5] >> 8) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 4);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 4) == 1) {
+                size += fn_80466A54(desc, 4);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 4) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 4) == 3) {
+                size += 2;
             }
             break;
         case 18:
-            mode = (format[5] >> 10) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 5);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 5) == 1) {
+                size += fn_80466A54(desc, 5);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 5) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 5) == 3) {
+                size += 2;
             }
             break;
         case 19:
-            mode = (format[5] >> 12) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 6);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 6) == 1) {
+                size += fn_80466A54(desc, 6);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 6) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 6) == 3) {
+                size += 2;
             }
             break;
         case 20:
-            mode = (format[5] >> 14) & 3;
-            if (mode == 1) {
-                total += fn_80466A54(format, 7);
-            } else if (mode == 2) {
-                total++;
-            } else if (mode == 3) {
-                total += 2;
+            if (RWGAMECUBE_TEX_TYPE(desc, 7) == 1) {
+                size += fn_80466A54(desc, 7);
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 7) == 2) {
+                size += 1;
+            } else if (RWGAMECUBE_TEX_TYPE(desc, 7) == 3) {
+                size += 2;
             }
             break;
         }
     }
-    return total;
+    return size;
 }
 
-u32 fn_8046B094(u32 *format, u32 first, u32 second) {
-    u32 product = second * fn_8046ACBC(format);
-    u32 total = first * 3;
-    total += product;
-    return (total + 0x1F) & ~0x1F;
+/* The size of a display list of `numLists` primitives (a command byte and a 16-bit count each)
+ * holding `numIndices` vertices, rounded up to GX's 32 bytes. */
+u32 fn_8046B094(RwGameCubeVtxDesc *desc, u32 numLists, u32 numIndices) {
+    u32 size;
+    u32 dataSize = fn_8046ACBC(desc) * numIndices;
+
+    size = numLists * 3;
+    size += dataSize;
+    size = (size + 31) & ~31;
+    return size;
 }
 
-extern u8 *lbl_805F15B4;
-extern u32 lbl_805F1520;
-void fn_80462E1C(void);
-u32 *fn_80466194(u32 *descriptors, u32 streams, u32 vertices);
-u32 *fn_80465ED4(u32 *descriptors, u8 *inputs, u32 streams, u32 vertices);
-u32 fn_80465CDC(u32 *deduplicated, u32 *assignment, u32 streams, u32 descriptor);
-
-struct RwCpp31Descriptor {
-    u32 data;
-    u32 type;
-    s8 links[0x10];
-};
-
-static inline void rwCpp31InitDescriptor(RwCpp31Descriptor *descriptor, u32 data, u32 type) {
-    descriptor->data = data;
-    descriptor->type = type;
-    descriptor->links[0] = -1;
+/* Records a display-list buffer and its size in `block`, and clears the buffer. */
+void fn_8046B0E0(void **block, u32 unused, u32 size, void *mem) {
+    block[0] = mem;
+    block[1] = (void *)size;
+    memset(mem, 0, size);
 }
 
-#define RW31_STORE_STREAM() \
-    do { \
-        table[stream + tableIndex] = *(u32 *)(source + 0x10); \
-        stream++; \
-    } while (0)
-#define RW31_STORE_STREAM8() \
-    do { \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-        RW31_STORE_STREAM(); \
-    } while (0)
+void *fn_80466194(RwGameCubeVtxStream *streams, s32 numStreams, s32 numVertices);
+void *fn_80465ED4(void *table, RwGameCubeVtxStream *streams, s32 numStreams, s32 numVertices);
+void *fn_80465CDC(void *table, u16 **indices, s32 numStreams, u32 numIndices);
 
-int fn_8046B110(u32 *object, u32 **out1, u32 **out2) {
-    RwCpp31Descriptor descriptors[16];
-    if (*(u32 *)((u8 *)object + lbl_805F1520) == 0) {
+/* Builds the indexed vertex data of a geometry: one stream per attribute array (positions,
+ * normals, prelight colours, texture coordinate sets), merged by the index optimiser into
+ * `*vertexData`, and one index block per mesh in `*meshData`. Returns 0 when out of memory.
+ * The failure path of the last loop leaks as retail does. */
+s32 fn_8046B110(void *object, void **vertexData, void *meshDataOut) {
+    void ***meshData = (void ***)meshDataOut;
+    RwGameCubeVtxStream streams[16];
+    s32 i;
+    u32 total;
+    RpGeometry *geom = (RpGeometry *)object;
+    u32 size;
+    void *table;
+    u16 **indices;
+    s32 numStreams;
+    s32 numMeshes;
+
+    if (RWGAMECUBEGEOMFORMAT(geom) == NULL) {
         fn_80462E1C();
     }
-    s32 count = 1;
-    u32 *inputs = (u32 *)object[0x17];
-    rwCpp31InitDescriptor(&descriptors[0], inputs[5], 8);
-    if ((object[2] & 0x10) != 0) {
-        descriptors[count].data = inputs[6];
-        descriptors[count].type = 8;
-        descriptors[count].links[0] = -1;
-        count++;
+
+    numStreams = 0;
+    streams[numStreams].data = geom->morphTarget->verts;
+    streams[numStreams].type = 8;
+    streams[numStreams].link = -1;
+    numStreams++;
+    if (geom->flags & 0x10) {
+        streams[numStreams].data = geom->morphTarget->normals;
+        streams[numStreams].type = 8;
+        streams[numStreams].link = -1;
+        numStreams++;
     }
-    if ((object[2] & 0x08) != 0) {
-        descriptors[count].data = object[0xC];
-        descriptors[count].type = 4;
-        descriptors[count].links[0] = -1;
-        count++;
+    if (geom->flags & 8) {
+        streams[numStreams].data = geom->preLitLum;
+        streams[numStreams].type = 4;
+        streams[numStreams].link = -1;
+        numStreams++;
     }
-    if ((object[2] & 0x84) != 0) {
-        RwCpp31Descriptor *descriptor = &descriptors[count];
-        u32 *input = object;
-        for (s32 i = 0; i < (s32)object[7]; i++) {
-            rwCpp31InitDescriptor(descriptor, input[0xD], 7);
-            descriptor++;
-            input++;
-            count++;
+    if (geom->flags & 0x84) {
+        for (i = 0; i < geom->numTexCoordSets; i++) {
+            streams[numStreams].data = geom->texCoords[i];
+            streams[numStreams].type = 7;
+            streams[numStreams].link = -1;
+            numStreams++;
         }
     }
-    u32 *deduplicated = fn_80466194((u32 *)descriptors, count, object[5]);
-    if (deduplicated == NULL) {
-        return 0;
-    }
-    *out1 = fn_80465ED4(deduplicated, (u8 *)descriptors, count, object[5]);
-    if (*out1 == NULL) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
-        return 0;
-    }
 
-    s32 entries = *(u16 *)((u8 *)object[0x15] + 4);
-    u32 entryBytes = entries * 4;
-    u32 tableBytes = count * entryBytes;
-    u32 *table = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(tableBytes, 0x1050D);
+    total = numStreams;
+    table = fn_80466194(streams, total, geom->numVertices);
     if (table == NULL) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(*out1);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
         return 0;
     }
-    memset(table, 0, tableBytes);
-    s32 tableIndex = 0;
-    for (s32 entry = 0; entry < entries; entry++) {
-        u8 *source = (u8 *)object[0x15] + entry * 0xC;
-        s32 stream = 0;
-        if (count > 0) {
-            s32 remaining = count - 8;
-            if (count > 8) {
-                for (; stream < remaining; ) {
-                    RW31_STORE_STREAM8();
-                }
-            }
-            s32 index = stream + tableIndex;
-            for (; stream < count; ) {
-                table[index] = *(u32 *)(source + 0x10);
-                index++;
-                stream++;
-            }
-        }
-        tableIndex += count;
+    *vertexData = fn_80465ED4(table, streams, numStreams, geom->numVertices);
+    if (*vertexData == NULL) {
+        RwFree(table);
+        return 0;
     }
 
-    *out2 = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(entryBytes, 0x1050D);
-    if (*out2 == NULL) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(*out1);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
+    numMeshes = geom->mesh->numMeshes;
+    size = numMeshes * 4;
+    indices = (u16 **)RwMalloc(numStreams * size, 0x1050D);
+    if (indices == NULL) {
+        RwFree(*vertexData);
+        RwFree(table);
         return 0;
     }
-    tableIndex = 0;
-    s32 descriptorOffset = 0;
-    for (s32 entry = 0; entry < entries; entry++) {
-        (*out2)[entry] = fn_80465CDC(
-            deduplicated, table + tableIndex, count,
-            *(u32 *)((u8 *)object[0x15] + descriptorOffset + 0x14));
-        if ((*out2)[entry] == 0) {
-            descriptorOffset = entry * 4;
-            while (--entry > 0) {
-                descriptorOffset -= 4;
-                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(
-                    *(u32 **)((u8 *)*out2 + descriptorOffset));
+    memset(indices, 0, numStreams * size);
+    for (i = 0; i < numMeshes; i++) {
+        RpMesh *mesh = &RPMESHES(geom->mesh)[i];
+        s32 j;
+        for (j = 0; j < numStreams; j++) {
+            indices[i * numStreams + j] = mesh->indices;
+        }
+    }
+
+    *meshData = (void **)RwMalloc(size, 0x1050D);
+    if (*meshData == NULL) {
+        RwFree(indices);
+        RwFree(*vertexData);
+        RwFree(table);
+        return 0;
+    }
+    for (i = 0; i < numMeshes; i++) {
+        (*meshData)[i] = fn_80465CDC(table, &indices[i * numStreams], total,
+                                     RPMESHES(geom->mesh)[i].numIndices);
+        if ((*meshData)[i] == NULL) {
+            while (--i > 0) {
+                RwFree((*meshData)[i]);
             }
             return 0;
         }
-        tableIndex += count;
-        descriptorOffset += 0xC;
     }
-    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(deduplicated);
+    RwFree(indices);
+    RwFree(table);
     return 1;
 }
-
-#define RW31_FIRST_PACK_A(dst, src) do { \
-    *(u16 *)(dst) = (u16)(((src)[0] << 8 & 0xF800) | ((src)[1] << 3 & 0x7E0) | ((src)[2] >> 3 & 0x1F)); \
-} while (0)
-#define RW31_FIRST_COPY3(dst, src) do { \
-    (dst)[0] = (src)[0]; \
-    (dst)[1] = (src)[1]; \
-    (dst)[2] = (src)[2]; \
-} while (0)
-#define RW31_FIRST_PACK_B(dst, src) do { \
-    *(u16 *)(dst) = (u16)(((src)[0] << 8 & 0xF000) | ((src)[1] << 4 & 0xF00) | \
-                          ((src)[2] & 0xF0) | ((src)[3] >> 4 & 0xF)); \
-} while (0)
-#define RW31_FIRST_PACK_C(dst, src) do { \
-    (dst)[0] = (u8)(((src)[0] & 0xFC) | ((src)[1] >> 6 & 3)); \
-    (dst)[1] = (u8)(((src)[1] << 2 & 0xF0) | ((src)[2] >> 4 & 0xF)); \
-    (dst)[2] = (u8)(((src)[2] << 4 & 0xC0) | ((src)[3] >> 2 & 0x3F)); \
-} while (0)
-#define RW31_FIRST_WORD(dst, src) do { \
-    *(u32 *)(dst) = ((const u32 *)(src))[0]; \
-} while (0)
-#define RW31_FIRST_UNROLL(PACK) do { \
-    PACK(out, source); \
-    u8 *out1 = out + stride; \
-    PACK(out1, source + 4); \
-    u8 *out2 = out1 + stride; \
-    PACK(out2, source + 8); \
-    u8 *out3 = out2 + stride; \
-    PACK(out3, source + 12); \
-    u8 *out4 = out3 + stride; \
-    PACK(out4, source + 16); \
-    u8 *out5 = out4 + stride; \
-    PACK(out5, source + 20); \
-    u8 *out6 = out5 + stride; \
-    PACK(out6, source + 24); \
-    u8 *out7 = out6 + stride; \
-    PACK(out7, source + 28); \
-    out = out7 + stride; \
-    source += 32; \
-} while (0)
-#define RW31_FIRST_ONE(PACK) do { \
-    PACK(out, source); \
-    out += stride; \
-    source += 4; \
-} while (0)
-#define RW31_FIRST_CONVERT(PACK) do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_FIRST_UNROLL(PACK); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_FIRST_ONE(PACK); \
-        } \
-    } \
-} while (0)
-
-#define RW31_FIRST_PACK_C_UNROLL() do { \
-    RW31_FIRST_PACK_C(out, source); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 4); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 8); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 12); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 16); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 20); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 24); \
-    out += stride; \
-    RW31_FIRST_PACK_C(out, source + 28); \
-    out += stride; \
-    source += 32; \
-} while (0)
-#define RW31_FIRST_PACK_C_CONVERT() do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_FIRST_PACK_C_UNROLL(); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_FIRST_ONE(RW31_FIRST_PACK_C); \
-        } \
-    } \
-} while (0)
-#define RW31_FIRST_PRE_UNROLL(PACK) do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
-    PACK(out, source); \
-    PACK(out1, source + 4); \
-    PACK(out2, source + 8); \
-    PACK(out3, source + 12); \
-    PACK(out4, source + 16); \
-    PACK(out5, source + 20); \
-    PACK(out6, source + 24); \
-    PACK(out7, source + 28); \
-    out = out7 + stride; \
-    source += 32; \
-} while (0)
-#define RW31_FIRST_PRE_CONVERT(PACK) do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_FIRST_PRE_UNROLL(PACK); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_FIRST_ONE(PACK); \
-        } \
-    } \
-} while (0)
-
-#pragma scheduling off
-s32 fn_804699F0(u8 *dest, const u8 *source, s32 type, s32 vertices, u32 stride) {
-    s32 bytes = 0;
-    switch (type) {
-    case 0:
-        if (stride == 0) stride = 2;
-        RW31_FIRST_PRE_CONVERT(RW31_FIRST_PACK_A);
-        bytes = vertices * 2;
-        break;
-    case 1:
-        if (stride == 0) stride = 3;
-        RW31_FIRST_PRE_CONVERT(RW31_FIRST_COPY3);
-        bytes = vertices * 3;
-        break;
-    case 3:
-        if (stride == 0) stride = 2;
-        RW31_FIRST_CONVERT(RW31_FIRST_PACK_B);
-        bytes = vertices * 2;
-        break;
-    case 4:
-        if (stride == 0) stride = 3;
-        RW31_FIRST_PACK_C_CONVERT();
-        bytes = vertices * 3;
-        break;
-    case 2:
-    case 5:
-        if (stride == 0) stride = 4;
-        RW31_FIRST_PRE_CONVERT(RW31_FIRST_WORD);
-        bytes = vertices * 4;
-        break;
-    }
-    return bytes;
-}
-#pragma scheduling reset
-
-#define RW31_PAIR_BYTE(dst, src) do { \
-    (dst)[0] = (u8)(s32)((src)[0] * scale); \
-    (dst)[1] = (u8)(s32)((src)[1] * scale); \
-} while (0)
-#define RW31_PAIR_SHORT(dst, src) do { \
-    *(u16 *)(dst) = (u16)(s32)((src)[0] * scale); \
-    *(u16 *)((dst) + 2) = (u16)(s32)((src)[1] * scale); \
-} while (0)
-#define RW31_PAIR_WORD(dst, src) do { \
-    *(u32 *)(dst) = ((const u32 *)(src))[0]; \
-    *(u32 *)((dst) + 4) = ((const u32 *)(src))[1]; \
-} while (0)
-#define RW31_PAIR_UNROLL(PACK) do { \
-    PACK(out, source); \
-    u8 *out1 = out + stride; \
-    PACK(out1, source + 2); \
-    u8 *out2 = out1 + stride; \
-    PACK(out2, source + 4); \
-    u8 *out3 = out2 + stride; \
-    PACK(out3, source + 6); \
-    u8 *out4 = out3 + stride; \
-    PACK(out4, source + 8); \
-    u8 *out5 = out4 + stride; \
-    PACK(out5, source + 10); \
-    u8 *out6 = out5 + stride; \
-    PACK(out6, source + 12); \
-    u8 *out7 = out6 + stride; \
-    PACK(out7, source + 14); \
-    out = out7 + stride; \
-    source += 16; \
-} while (0)
-#define RW31_PAIR_ONE(PACK) do { \
-    PACK(out, source); \
-    out += stride; \
-    source += 2; \
-} while (0)
-#define RW31_PAIR_SHORT_UNROLL() do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
-    RW31_PAIR_SHORT(out, source); \
-    RW31_PAIR_SHORT(out1, source + 2); \
-    RW31_PAIR_SHORT(out2, source + 4); \
-    RW31_PAIR_SHORT(out3, source + 6); \
-    RW31_PAIR_SHORT(out4, source + 8); \
-    RW31_PAIR_SHORT(out5, source + 10); \
-    RW31_PAIR_SHORT(out6, source + 12); \
-    RW31_PAIR_SHORT(out7, source + 14); \
-    out = out7 + stride; \
-    source += 16; \
-} while (0)
-#define RW31_PAIR_SHORT_CONVERT() do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_PAIR_SHORT_UNROLL(); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_PAIR_ONE(RW31_PAIR_SHORT); \
-        } \
-    } \
-} while (0)
-#define RW31_PAIR_WORD_UNROLL() do { \
-    u8 *out1 = out + stride; \
-    u8 *out2 = out1 + stride; \
-    u8 *out3 = out2 + stride; \
-    u8 *out4 = out3 + stride; \
-    u8 *out5 = out4 + stride; \
-    u8 *out6 = out5 + stride; \
-    u8 *out7 = out6 + stride; \
-    RW31_PAIR_WORD(out, source); \
-    RW31_PAIR_WORD(out1, source + 2); \
-    RW31_PAIR_WORD(out2, source + 4); \
-    RW31_PAIR_WORD(out3, source + 6); \
-    RW31_PAIR_WORD(out4, source + 8); \
-    RW31_PAIR_WORD(out5, source + 10); \
-    RW31_PAIR_WORD(out6, source + 12); \
-    RW31_PAIR_WORD(out7, source + 14); \
-    out = out7 + stride; \
-    source += 16; \
-} while (0)
-#define RW31_PAIR_WORD_CONVERT() do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_PAIR_WORD_UNROLL(); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_PAIR_ONE(RW31_PAIR_WORD); \
-        } \
-    } \
-} while (0)
-#define RW31_PAIR_CONVERT(PACK) do { \
-    u8 *out = dest; \
-    if (vertices > 0) { \
-        s32 i = 0; \
-        s32 remaining = vertices - 8; \
-        if (vertices > 8) { \
-            for (; i < remaining; i += 8) { \
-                RW31_PAIR_UNROLL(PACK); \
-            } \
-        } \
-        for (; i < vertices; i++) { \
-            RW31_PAIR_ONE(PACK); \
-        } \
-    } \
-} while (0)
-
-#pragma scheduling off
-s32 fn_8046A270(u8 *dest, const f32 *source, s32 type, s32 vertices, u32 stride, f32 scale) {
-    s32 bytes = 0;
-    switch (type) {
-    case 0:
-        if (stride == 0) stride = 2;
-        RW31_PAIR_CONVERT(RW31_PAIR_BYTE);
-        bytes = vertices * 2;
-        break;
-    case 1:
-        if (stride == 0) stride = 2;
-        RW31_PAIR_CONVERT(RW31_PAIR_BYTE);
-        bytes = vertices * 2;
-        break;
-    case 2:
-        if (stride == 0) stride = 4;
-        RW31_PAIR_SHORT_CONVERT();
-        bytes = vertices * 4;
-        break;
-    case 3:
-        if (stride == 0) stride = 4;
-        RW31_PAIR_SHORT_CONVERT();
-        bytes = vertices * 4;
-        break;
-    case 4:
-        if (stride == 0) stride = 8;
-        RW31_PAIR_WORD_CONVERT();
-        bytes = vertices * 8;
-        break;
-    }
-    return bytes;
-}
-#pragma scheduling reset
 }
