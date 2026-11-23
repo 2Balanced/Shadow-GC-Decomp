@@ -2,24 +2,19 @@
  * Game/AdvSelectMode.cpp; Game/SavedataAnalyzer.h): what the select-mode screens work out from the
  * save data. For every stage played it marks the stage, and for every line of the story chart that
  * a cleared mission leads along, or that the story went along, it keeps a record in a
- * std::map<std::string, ...> keyed by "line %3d-%3d" (stand-in in MSL_C++). The destructor is
+ * std::map<std::string, ...> keyed by "line%3d-%3d" (stand-in in MSL_C++). The destructor is
  * emitted elsewhere (0x800BBC04). File name from the class's namespace; the other functions keep their
  * address names, which the select-mode units call. Names marked "(name inferred)" are not original.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: 33 of 34 functions and the data match. In fn_801ABDB8's second loop retail keeps the
- * index of the next stage in the register of the previous one (r23); GC/2.7 puts it in r20, for
- * every source form tried (a reused or a new variable, the index as the lookup's argument, a
- * pointer to the element, other declaration orders). Wave 39 added 27 more: passing the element
- * straight to the lookup gives retail's shape with the two registers exchanged (element pointer
- * r23, both indices r20, 6 rows), which says retail's two indices are one live range that overlaps
- * the element pointer's; a named index declared in any scope, a lookup that returns the id, a
- * member lookup on the table's owner, a reference parameter and a walking pointer all stay at 2
- * rows or get worse. */
+ * fn_801ABDB8's second loop keeps the index of the next stage in the register of the previous one
+ * (r23). GC/2.7 only does that when the second assignment stands in a loop (some fifty other
+ * source forms in waves 38 and 39 gave it r20); what the original looked like is unknown. */
 #define MSL_LESS_CAST
 #define MSL_PAIR_COPY_CALL
 #define MSL_STRING_COPY
+#define MSL_STRING_CTOR_EXTERN
 #define MSL_STRING_LESS
 #define MSL_STRING_COMPARE_INLINE
 #define MSL_TREE_END_NODE_NAME __tree_end_node_StoryCheck
@@ -79,6 +74,13 @@ typedef std::map<std::string, UnkStoryLine_801ABDB8> LineMap;
 /* The key of a line (name inferred). */
 static char s_lineName[32];
 
+/* Not called anywhere: the linker strips it from the game. Retail pools the node allocator's
+ * message ahead of the tree's ("tree::insert length error"), GC/2.7 in the order it compiles the
+ * two functions (insert_node first); this function is compiled before both. */
+void UnusedAllocationFailure() {
+    std::__msl_error("Memory allocation failure");
+}
+
 StoryCheck::StoryCheck(UnkSaveData_800BB74C *save) {
     m_save = save;
 }
@@ -111,7 +113,7 @@ bool fn_801ABDB8(StoryCheck *check) {
                     line.m_from = info.m_id;
                     line.m_to = StageInfo(info.m_missions[j].field_0x0).m_id;
                     line.m_flags |= 1;
-                    sprintf(s_lineName, "line %3d-%3d", line.m_from, line.m_to);
+                    sprintf(s_lineName, "line%3d-%3d", line.m_from, line.m_to);
                     std::string name = std::string(s_lineName);
                     LineMap::iterator it = check->m_lines.find(name);
                     if (it == check->m_lines.end()) {
@@ -129,10 +131,15 @@ bool fn_801ABDB8(StoryCheck *check) {
         UnkStoryLine_801ABDB8 line;
         int index = path->m_stages[k];
         line.m_from = StageInfo(index).m_id;
-        index = path->m_stages[k + 1];
+        /* A loop of one pass: assigned in it, the index stays one variable in one register
+         * (r23) as in retail; assigned plainly, GC/2.7 gives the second value a register of its
+         * own (r20). */
+        for (int n = 0; n < 1; n++) {
+            index = path->m_stages[k + 1];
+        }
         line.m_to = StageInfo(index).m_id;
         line.m_flags |= 2;
-        sprintf(s_lineName, "line %3d-%3d", line.m_from, line.m_to);
+        sprintf(s_lineName, "line%3d-%3d", line.m_from, line.m_to);
         std::string name = std::string(s_lineName);
         LineMap::iterator it = check->m_lines.find(name);
         if (it == check->m_lines.end()) {

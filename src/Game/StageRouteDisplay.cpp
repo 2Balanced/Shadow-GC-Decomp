@@ -13,7 +13,11 @@
  * in fn_8036AE70's argument, a const reference, the parameter by value or by reference) the slots
  * are retail's, but GC/2.7 then takes the temporary's address before the cursor's Get() and keeps
  * it in r0 across it (4 rows); inline wrappers for either call are not inlined or call Get() out
- * of line (16 to 36 rows). Ten forms, wave 39. */
+ * of line (16 to 36 rows). Ten forms, wave 39. Wave 40 (probes/Game_StageRouteDisplay_W40.py, 30
+ * forms): the render pointer bound to a const reference in a block also gives retail's slots, but
+ * then its address is formed before the member's (2 rows); loops of one pass around either
+ * statement, the position as u64 or as two words, and the cursor's Get() in a local change
+ * nothing or cost more. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <cstdio>

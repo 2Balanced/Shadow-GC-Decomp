@@ -379,15 +379,14 @@ void ResultTask::Tick(float dt) {
     }
 }
 
-/* NonMatching (96.9%): retail keeps the game state's address in r6 and the format string in r4;
- * GC/2.7 swaps the two registers here. About ten source shapes were tried. Second pass (wave 39,
- * probes/Game_ResultTask*.py, 15 more): inline getters for the language and the suffix, an inline
- * function that takes the format, const and sized declarations of the suffix table and an unsigned
- * index all give the same 4 rows. NowLoadingScreen::Load (Game/NowLoading.cpp) has the same
- * residual on the same expression, so one answer should serve both. */
 bool ResultTask::Init() {
     char path[64];
-    sprintf(path, "CsdFiles/Result%s", lbl_8051D528[lbl_8057D6A0.m_language]);
+    /* A loop of one pass: inside it GC/2.7 keeps the game state's address in r6 and forms the
+     * format's address before it reads the language, as retail does; without the loop the two
+     * registers are exchanged (wave 40, probes/Game_ResultTask_W40b.py). */
+    for (int n = 0; n < 1; n++) {
+        sprintf(path, "CsdFiles/Result%s", lbl_8051D528[lbl_8057D6A0.m_language]);
+    }
     s_request.m_path = fn_800423B8(fn_8003F8D4(), path, 0);
     s_request.m_data = 0;
     s_request.m_size = 0;
@@ -508,8 +507,6 @@ bool ResultTask::Advance(float dt) {
     return false;
 }
 
-/* NonMatching (98.4%): retail keeps type in r29 for the time-based rank (type = 1) and multiplies
- * it; GC/2.7 folds the constant into the offset (+124). About fifteen source shapes were tried. */
 void ResultTask::ShowRank() {
     RCPtr<CNode> node = fn_803666B4(m_rankScene.GetScene().Get(), "rank_alphabet");
     if (node == RCPtr<CNode>(0)) {
@@ -520,7 +517,12 @@ void ResultTask::ShowRank() {
     for (rank = 0; rank < 4; rank++) {
         int type;
         if (lbl_8057D6A0.field_0xB1) {
-            type = 1;
+            /* A loop of one pass: retail keeps type in r29 and multiplies it here, which GC/2.7
+             * does only when the assignment stands in a loop (a plain `type = 1` is folded into
+             * the threshold's offset). What the original loop ran over is unknown. */
+            for (int n = 0; n < 1; n++) {
+                type = 1;
+            }
             if (lbl_8057D6A0.m_total <= fn_800CBAA4()->m_stages[lbl_8057D6A0.m_stage].m_rankThresholds[type][rank]) {
                 break;
             }

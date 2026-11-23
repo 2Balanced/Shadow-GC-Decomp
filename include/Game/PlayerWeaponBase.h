@@ -152,6 +152,11 @@ class PlayerMotion : public Task {
     virtual void vf_0x34();
     virtual void vf_0x38();
 #endif
+    /* Slots 0x3C and 0x40, pure here (their two zero words end PlayerMotion's vtable in retail):
+     * shows and hides the model (names from Player::Shadow::ShadowMotion and Player::Npc::NpcMotion,
+     * which declare them again). */
+    virtual void Show() = 0;
+    virtual void Hide() = 0;
 
     /* Members as Player::Npc::NpcMotion (Game/NpcMotion.cpp) and its subclasses use them (names
      * and meanings inferred). */

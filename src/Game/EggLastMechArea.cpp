@@ -10,7 +10,10 @@
  * of two independent instructions (retail forms 4 - bossRow before the boss's column). About 45
  * shapes in probes/Game_EggLastMechArea_R5.py to _R8.py all compile to the same 16 rows: the
  * declaration order of the locals, inline getters for the areas, inline row/column/opposite
- * helpers, every operand order of the opposite area, locals for its parts.
+ * helpers, every operand order of the opposite area, locals for its parts. Wave 40, 38 more
+ * (probes/Game_EggLastMechArea_W40*.py): the 10 as a variable set in a loop of one pass after the
+ * areas gives the player retail's r5 (12 rows), but the boss (r4) and the 10 (r6) stay exchanged;
+ * locals for the opposite row and column change nothing.
  *
  * fn_80334A70 matched in wave 39 through two levers: SetArea takes its index as a u32 (with an int
  * GC/2.7 keeps &part->m_area[i] in a saved register across the operator-> call, where retail

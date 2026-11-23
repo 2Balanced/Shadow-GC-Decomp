@@ -40,24 +40,11 @@ template <class T> struct equal_to : binary_function<T, T, bool> {
     }
 };
 
-#ifdef MSL_BINDER_OUTLINE
-template <class T> inline const T &__binder_id(const T &x) {
-    return x;
-}
-#endif
-
 template <class Operation>
 class binder2nd
     : public unary_function<typename Operation::first_argument_type, typename Operation::result_type> {
   public:
-#ifdef MSL_BINDER_OUTLINE
-    /* Where MSL_BINDER_OUTLINE is defined before this header (Game/PathData.cpp, whose binder of a
-     * pointer the game constructs out of line), an inline call keeps it out of line. */
-    binder2nd(const Operation &x, const typename Operation::second_argument_type &y)
-        : op(x), value(__binder_id(y)) {}
-#else
     binder2nd(const Operation &x, const typename Operation::second_argument_type &y) : op(x), value(y) {}
-#endif
 
     typename Operation::result_type operator()(const typename Operation::first_argument_type &x) const {
         return op(x, value);
@@ -69,7 +56,15 @@ class binder2nd
 };
 
 template <class Operation, class T> inline binder2nd<Operation> bind2nd(const Operation &op, const T &x) {
+#ifdef MSL_BIND2ND_NAMED_VALUE
+    /* Where MSL_BIND2ND_NAMED_VALUE is defined before this header (Game/PathData.cpp, whose copy of
+     * this function at 0x8001B480 loads the operation into r0 and the value into r4), the converted
+     * value is a named local; as a temporary GC/2.7 exchanges the two registers. */
+    typename Operation::second_argument_type value(x);
+    return binder2nd<Operation>(op, value);
+#else
     return binder2nd<Operation>(op, typename Operation::second_argument_type(x));
+#endif
 }
 #endif
 

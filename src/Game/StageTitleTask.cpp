@@ -80,7 +80,11 @@ SIZE_ASSERT(StageTitleTask, 0x28);
 /* NonMatching: GC/2.7 gives `this` r31 and the string pool base r30; retail has them the other
  * way round (14 register operands differ). About fifteen source shapes were tried (an alias of
  * m_csd by reference or pointer, the strings named ahead of their use). The load's success is
- * the taken branch, as retail has it. */
+ * the taken branch, as retail has it. Wave 40 (probes/Game_StageTitleTask_W40*.py, 18 forms):
+ * the body in an inline function (never inlined), a copy of this, loops of one pass around this,
+ * the format or the whole body, inline accessors for m_csd and m_state, each string through a
+ * comma expression (the lever that flips the same pair the other way in Game/GiGameOver.cpp), the
+ * language suffix through an inline function: 14 rows or more. */
 bool UnkObject_801E67EC::Load(int stage) {
     char path[0x80];
     if (m_state != 0) {

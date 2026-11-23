@@ -4,7 +4,14 @@
  * canopy and the body, the motion attributes and the smoke of the destroyed boss. It also defines
  * the units' base, HeavyDogCtrlUnit. File name inferred from the classes; names marked "(name
  * inferred)" and all member names are not original. Definitions are in reverse address order
- * (deferred inlining emits functions last-defined first). */
+ * (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching: every function matches since wave 40 (105/105), but flipped the unit does not link
+ * (tried in wave 40): .sdata2 has kMaxLaunchers ahead of the float literals (see its definition),
+ * .data is laid out in another order (retail keeps the section whole, with the zero-filled
+ * std::exception, bad_weak_ptr and sp_counted_base vtables and lbl_80548D18 between
+ * HeavyDogCtrlUnit_A's vtable and HeavyDogCtrlUnit's), and .rodata starts with a string (@551)
+ * that retail's does not have there. */
 #define BOSSVARPARAM_CHARA_SHARED_PTR
 #define HEAVYDOGVARPARAM_FULL
 #include <boost/bind.hpp>
@@ -210,7 +217,7 @@ boost::shared_ptr<CharaColliBase> fn_800C7EA8(void *manager, const Vec3f *positi
                                               const Vec3f *offset, float radius);
 boost::shared_ptr<CharaColliBase> fn_800C7F7C(void *manager, const boost::weak_ptr<CharInfo> &owner,
                                               const UnkBossColliShape *shapes, _stMtnPlayWork *motion,
-                                              int arg4, int arg5);
+                                              int type, u16 typeArg);
 boost::weak_ptr<CharaColliAttack> fn_800C4374(void *manager,
                                               boost::shared_ptr<CharaColliBase> collider);
 boost::weak_ptr<CharaColliAttack> fn_800C42D0(void *manager,
@@ -486,11 +493,10 @@ namespace HeavyDog {
 extern const s32 kMaxLaunchers;
 } // namespace HeavyDog
 
-/* NonMatching (99.9%): retail loads m_owner into r5 and &shapes into r6 for fn_800C7F7C, GC/2.7
- * swaps the two registers: retail sets up the address of the weak pointer temporary last, GC/2.7
- * the address of the shapes (Game/BossCharaColli.cpp has the same call and the same difference).
- * Wave 39: the weak pointer passed by value or converted implicitly, the array passed by its
- * name, give the same object; the motion in a local is worse (13 rows). */
+/* Matches since wave 40: fn_800C7F7C's last parameter is a u16, as Game/CharaColliManager.cpp
+ * defines it (and Game/BossCharaColli.cpp declares it). Declared int, GC/2.7 loaded m_owner into r6
+ * and set up &shapes last, where retail uses r5 and sets up the weak pointer's address last (3
+ * rows that the shapes of waves 39 and 40 in probes/Game_HeavyDogCtrlUnit_W40.py did not move). */
 HeavyDogCtrlUnit_RocketLauncher::HeavyDogCtrlUnit_RocketLauncher(HeavyDogVarParam *param,
                                                                  int motion)
     : BossCtrlUnit(param), HeavyDogCtrlUnit(param) {
@@ -1135,7 +1141,10 @@ int HeavyDogCtrlUnit_DestroyEffect::Tick(float dt) {
 
 /* How many rocket launchers the boss carries; read from .sdata2 like a namespace-scope const
  * (see docs/matching-gadgets.md). Retail pools it after the unit's float literals; GC/2.7 puts
- * it first wherever it is defined. */
+ * it first wherever it is defined (wave 40, probes/Game_HeavyDogCtrlUnit_W40c.py: at the top of
+ * the file, at its declaration, after the constructor that reads it, in the middle; volatile; a
+ * definition ahead of the use folds it into the compare, and a class template's static member
+ * goes to .sdata). */
 namespace HeavyDog {
 const s32 kMaxLaunchers = 7;
 } // namespace HeavyDog

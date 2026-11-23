@@ -224,7 +224,11 @@ boost::weak_ptr<Target> fn_801E848C(TargetSearchList *list, const Vec3f *positio
     locked = nearest->lock();
     float nearestDistance;
     if (locked.get() == 0) {
-        nearestDistance = 999999.9f;
+        /* A loop of one pass: retail loads the constant straight into the variable's register
+         * (f31); assigned plainly, GC/2.7 loads it into f1 and copies it at the join. */
+        for (int n = 0; n < 1; n++) {
+            nearestDistance = 999999.9f;
+        }
     } else {
         nearestDistance = fn_8040CF2C(&(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(
             &(const Vec3f &)locked->GetPosition(position), position));

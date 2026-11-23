@@ -4,7 +4,18 @@
  * animation each, keeps four slots of a left and a right hand, follows the player's hand nodes
  * and plays the hands' poses. ShadowMotion (Game/PlayerShadowMotion.cpp) calls the task's
  * functions. File name from the class; other names are inferred. Definitions are in reverse
- * address order (deferred inlining emits functions last-defined first). */
+ * address order (deferred inlining emits functions last-defined first).
+ *
+ * NonMatching (28/34). GetNodeMatrix is down to 2 rows since wave 40: its loop is inlined from
+ * FindNodeMatrix, which gives retail's copy of the zeroed counter into the offset (`mr r31,r29`);
+ * the copy of node (`mr r28,r4`) still comes first under GC/2.7 where retail has it after the
+ * loop's set-up (the helper as a member, its parameters in the other order, the counter or a copy
+ * of node declared in it: probes/Game_PlayerShadowMotionHand_W40.py). UpdatePose matches since
+ * wave 40: the hand's motion id is narrowed to u16 by a cast with the base, less one, added
+ * first (`m_motionBase - 1 + motion`; the other groupings and an if/else leave 1 to 5 rows).
+ * Update (3 rows) loads the player's motion into r3 and copies it to r28 after the null test,
+ * where GC/2.7 loads it into r28 (the first node lookup taking the load itself, inline getters
+ * for it, and the motion declared outside or after the other locals were tried). */
 #define PLAYER_MOTION_MEMBERS
 #include "boost/scoped_ptr.hpp"
 #include "Game/DebugDispShape.h"
@@ -392,7 +403,7 @@ void MotionHandImpl::UpdatePose() {
                     fn_80416148(hand->m_anim, 0, m_blend);
                 }
                 s32 motion = s_poses[m_pose].m_motion[i];
-                fn_80417568(hand->m_anim, motion < 0 ? 0xFFFF : motion - 1 + m_motionBase);
+                fn_80417568(hand->m_anim, motion < 0 ? (u16)0xFFFF : (u16)(m_motionBase - 1 + motion));
                 fn_80416F28(hand->m_anim, 0, 0, 0);
                 fn_80416F28(hand->m_anim, 0, 0xB, 0);
                 if (m_pose == s_poses[m_pose].m_next) {
@@ -517,8 +528,8 @@ void MotionHand::SetTime(float time) {
     m_impl->SetTime(time);
 }
 
-Mtx34f *MotionHand::GetNodeMatrix(int node) {
-    MotionHandImpl *impl = m_impl.get();
+/* The first hand animation that has node (name inferred). */
+inline Mtx34f *FindNodeMatrix(MotionHandImpl *impl, int node) {
     for (u32 i = 0; i < 5; i++) {
         if (impl->m_anims[i] != 0) {
             Mtx34f *matrix = fn_80415E70(impl->m_anims[i], node);
@@ -528,6 +539,10 @@ Mtx34f *MotionHand::GetNodeMatrix(int node) {
         }
     }
     return 0;
+}
+
+Mtx34f *MotionHand::GetNodeMatrix(int node) {
+    return FindNodeMatrix(m_impl.get(), node);
 }
 
 void MotionHand::GetAnims(_stMtnPlayWork **left, _stMtnPlayWork **right) {

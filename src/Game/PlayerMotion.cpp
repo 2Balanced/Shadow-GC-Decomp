@@ -5,7 +5,15 @@
  * with the weapon. File name inferred from the class; other names marked "(inferred)" are not
  * original. Functions other units call by address keep their fn_ names (C functions taking the
  * motion). Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first). */
+ * last-defined first).
+ *
+ * fn_800AA0D4 matches since wave 40: fn_800A29C0 (Game/PlayerEffect.cpp) takes the landing's
+ * kind as a second parameter, and the event's first word is passed to it, which is why retail
+ * switches on that word in r4 (declared with one parameter, GC/2.7 used r0: 3 rows that about 30
+ * spellings of the switch in probes/Game_PlayerMotion_R2.py to _W40.py did not move). The 8 zero
+ * bytes after the vtable in retail's .data are its last two slots: Show and Hide are pure
+ * virtuals of PlayerMotion (Game/PlayerWeaponBase.h), which ShadowMotion overrides and NpcMotion
+ * keeps pure. */
 /* boost::function's operator() puts a bad_function_call on the stack (see the MSL's stdexcept). */
 #define MSL_RUNTIME_ERROR_STRING
 #define PLAYER_MOTION_EVENT_CALL
@@ -92,7 +100,7 @@ void fn_80416014(_stMtnPlayWork *work, int track, float frame);
 void fn_80416E20(_stMtnPlayWork *work, int track, float frame);
 
 /* The player's effects and voices (behaviour inferred). */
-void fn_800A29C0(void *effect);
+void fn_800A29C0(void *effect, int kind);
 void fn_800A2978(void *effect, void *data);
 void fn_80077974(void *voice, s32 id, s32 arg, float volume);
 void fn_8007792C(void *voice);
@@ -379,7 +387,7 @@ void fn_800AA0D4(Player::PlayerMotion *motion) {
             case 4:
             case 5:
             case 6:
-                fn_800A29C0(Fields(motion->m_player.get())->m_effect);
+                fn_800A29C0(Fields(motion->m_player.get())->m_effect, static_cast<s32 *>(data)[0]);
                 break;
             }
             break;

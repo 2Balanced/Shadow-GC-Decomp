@@ -7,7 +7,11 @@
 /* NonMatching: 11 of 12 functions match. fn_804210E4 (78%): its inlined byte swaps test the
  * address of the first half-word twice (two addic.) and do not fold the branches of the second
  * test; GC/2.7 keeps the address in a register and folds them (about fifteen spellings of the
- * temporary and the helper tried). */
+ * temporary and the helper tried). Wave 40, about 60 more variants (probes/Game_MotionLib*.py): a
+ * `for (; count > 0; count--)` loop in the helper gives retail's bne/b shape (40 instructions,
+ * 11 to 16 rows); #pragma auto_inline, a real inline function and the compilers from 1.2.5 to
+ * 3.0a5 at -O1 to -O4 do not. Retail tests r1+8 twice with addic. and hoists r1+10 into a
+ * preheader at the end of the function. */
 #include <dolphin/types.h>
 #include <string.h>
 

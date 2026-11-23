@@ -5,9 +5,18 @@
  * fn_ names. Names marked "(name inferred)" are not original. Definitions are in reverse address
  * order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: the fader's constructor (96%: float and saved-register numbering, one extra move),
- * and GC/2.7 emits FadeTask's RTTI name and "Task" ahead of the string literals, where retail has
- * them after (every section matches symbol by symbol, not in order). The rest matches. */
+ * NonMatching: the fader's constructor differs in 3 rows (an extra move of the saved render
+ * state's previous value, `mr r0,r3` ... `mr r26,r0` where retail has `mr r26,r3`, and the
+ * offset of "FadeLogo.txd" in the string pool), and GC/2.7 emits FadeTask's RTTI name and "Task"
+ * ahead of the string literals, where retail has them after (every section matches symbol by
+ * symbol, not in order; .sdata2's float constants also come out in another order). The rest
+ * matches. Wave 40 (probes/Game_FadeTask_W40*.py) took the constructor from 75 rows to 3: the
+ * strip width has a name (x is added first), one counter serves both loops (its reset is the
+ * zero the logo's alpha is stored from), the file locals are declared ahead of the render state
+ * in retail's register order, and fn_804799C0 takes the state (Game/RwCpp40.cpp). The move
+ * stayed through the state functions' types, an inline helper, a reference, one combined
+ * statement and #pragma peephole off (#pragma scheduling off removes it but costs 108 rows); the
+ * class order, the size checks and the order of the two `new`s leave the RTTI name first. */
 #include "Game/CsdRW.h"
 #include "Game/ScreenFade.h"
 #include "Game/Task.h"
@@ -31,7 +40,7 @@ void fn_80051830(char *path);
 /* RenderWare's file functions (fopen, fread, fclose) and its file system state (behaviours
  * inferred). */
 void *fn_8047A170(void);
-void *fn_804799C0(void);
+void *fn_804799C0(void *state);
 void fn_804799B8(void *a, void *b);
 UnkFile_8047A178 *fn_8047A178(const char *path, const char *mode);
 u32 fn_8047A3E0(void *buffer, u32 size, u32 count, UnkFile_8047A178 *file);
@@ -262,7 +271,10 @@ UnkFader_80044254::UnkFader_80044254() {
     int alpha = (int)(255.0f * m_level);
     float x = 0.0f;
     float y = 0.0f;
-    for (int i = 0; i < 10; i++) {
+    /* Named (retail adds it with x first); i counts both loops. */
+    float width = 64.0f;
+    int i;
+    for (i = 0; i < 10; i++) {
         for (int j = 0; j < 2; j++) {
             m_vertices[k].x = x;
             m_vertices[k].y = y;
@@ -272,7 +284,7 @@ UnkFader_80044254::UnkFader_80044254() {
             m_vertices[k].emissiveColor.blue = m_color.blue;
             m_vertices[k].emissiveColor.alpha = alpha;
             k++;
-            m_vertices[k].x = x + 64.0f;
+            m_vertices[k].x = x + width;
             m_vertices[k].y = y;
             m_vertices[k].z = 0.1f;
             m_vertices[k].emissiveColor.red = m_color.red;
@@ -282,11 +294,11 @@ UnkFader_80044254::UnkFader_80044254() {
             y += 480.0f;
             k++;
         }
-        x += 64.0f;
+        x += width;
         y = 0.0f;
     }
     float scale = 1.0f;
-    for (int i = 0; i < 4; i++) {
+    for (i = 0; i < 4; i++) {
         m_logo[i].x = s_logoPositions[i][0];
         m_logo[i].y = scale * s_logoPositions[i][1];
         m_logo[i].z = 0.1f;
@@ -297,14 +309,21 @@ UnkFader_80044254::UnkFader_80044254() {
         m_logo[i].emissiveColor.blue = 0xFF;
         m_logo[i].emissiveColor.alpha = 0;
     }
-    void *state = fn_8047A170();
-    void *previous = fn_804799C0();
+    /* Declared in the order of retail's saved registers (r31, r29, r28, r27, r26, r25). */
+    u32 size;
+    UnkFile_8047A178 *file;
+    void *buffer;
+    void *state;
+    void *previous;
+    char *path;
+    state = fn_8047A170();
+    previous = fn_804799C0(state);
     fn_804799B8(state, 0);
-    char *path = fn_80051810("FadeLogo.txd");
-    UnkFile_8047A178 *file = fn_8047A178(path, "r");
+    path = fn_80051810("FadeLogo.txd");
+    file = fn_8047A178(path, "r");
     if (file != 0) {
-        u32 size = file->m_size;
-        void *buffer = lbl_805F15B4->fpMalloc(size, 0);
+        size = file->m_size;
+        buffer = lbl_805F15B4->fpMalloc(size, 0);
         RwMemory memory;
         memory.length = size;
         memory.start = buffer;

@@ -8,12 +8,11 @@
  * The file, class and member names are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 3 of 4 functions match. In the constructor GC/2.7 picks other volatile registers
- * for the two table sizes (10 rows of 127), which survived about 20 spellings (local order,
- * separate declarations and assignments, the sizes as locals or an array, member and free
- * functions, shifts, sizeof). fn_8040E4BC matches since wave 39: its file is a pointer to const,
- * which lets the first load move above the copy of name, and it reads the byte order from the
- * file in the loop instead of keeping it in a local. */
+ * The constructor matches since wave 40: Read returns from an if instead of a conditional
+ * expression (with `?:` GC/2.7 gives the read value the register of the table size it is scaled
+ * into, 10 rows; probes/Game_SonicteamRelocatableFile_W40.py). fn_8040E4BC matches since wave 39:
+ * its file is a pointer to const, which lets the first load move above the copy of name, and it
+ * reads the byte order from the file in the loop instead of keeping it in a local. */
 #include <dolphin/types.h>
 #include "size_assert.h"
 
@@ -37,9 +36,10 @@ struct UnkPath_8040E61C {
 
     /* A word of the file in the machine's byte order. */
     u32 Read(u32 value) {
-        return m_bigEndian ? value
-                           : (u32)(((value & 0xFF) << 24) | ((value & 0xFF00) << 8) | ((value >> 8) & 0xFF00) |
-                                   ((value >> 24) & 0xFF));
+        if (m_bigEndian) {
+            return value;
+        }
+        return (u32)(((value & 0xFF) << 24) | ((value & 0xFF00) << 8) | ((value >> 8) & 0xFF00) | ((value >> 24) & 0xFF));
     }
 
     /* 0x00 */ u8 m_owned; /* the blocks below were allocated (never set here) */

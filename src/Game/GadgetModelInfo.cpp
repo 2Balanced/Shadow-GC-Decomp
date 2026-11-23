@@ -11,10 +11,15 @@
  * so the linker keeps that section whole.
  *
  * Not matching yet: the update (fn_80162FB0) gives `this` r31 where retail gives it r30 (and the
- * collider iterator r31); the collider build over a character info (0x80162084) picks r5 for the
- * group table's address where retail picks r3; SetMaterialAlpha loads the alpha into r0 where
- * retail uses r6. Retail's .rodata also ends with "_RefCountedPtr out of memory", whose source is
- * unknown. */
+ * collider iterator r31); SetMaterialAlpha loads the alpha into r0 where retail uses r6. The
+ * collider build over a character info (0x80162084) matches since wave 40: fn_800C81F4's last
+ * parameter is a u16, as Game/CharaColliManager.cpp defines it (declared int, GC/2.7 picked r5 for
+ * the group table's address where retail picks r3). Retail's .rodata also ends with "_RefCountedPtr out of memory", whose source is
+ * unknown. Wave 40, fn_80162FB0 (about 25 forms, probes/Game_GadgetModelInfo_W40*.py): the
+ * iterator initialised before the arguments gives retail's iterator r31 and `this` r30, but
+ * begin() then runs before the arguments' constructor and the motion and part iterators take r31
+ * (retail r29); declarations at the top or in a block, an inline helper and a while loop change
+ * nothing (79 rows: the r30/r31 exchange and r29). */
 /* The motions own their work through a shared_ptr with a deleter (see boost/shared_ptr.hpp). */
 #define BOOST_SP_DELETER_CONSTRUCTOR
 /* boost::function's operator() puts a bad_function_call on the stack (see the MSL's stdexcept). */
@@ -265,7 +270,7 @@ boost::shared_ptr<CharaColliBase> fn_800C7F7C(UnkColliderManager_80021B08 *manag
                                               _stMtnPlayWork *work, int group, int arg5);
 boost::shared_ptr<CharaColliBase> fn_800C81F4(UnkColliderManager_80021B08 *manager,
                                               const boost::weak_ptr<CharInfo> &charInfo, void *file,
-                                              int group, int arg4);
+                                              int group, u16 arg4);
 void fn_800C78B0(UnkColliderManager_80021B08 *manager, boost::shared_ptr<CharaColliBase> *collider);
 boost::weak_ptr<CharaColliAttack> fn_800C4374(UnkColliderManager_80021B08 *manager,
                                               boost::shared_ptr<CharaColliBase> collider);

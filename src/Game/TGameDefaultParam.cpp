@@ -6,12 +6,7 @@
  * object; Game/CenFile.cpp and Game/ResultTask.cpp read its stage records under the placeholder
  * UnkStageTable_800CBAA4). File name from the class. Names marked "(name inferred)" are not
  * original; the option handlers are named after their option. Definitions are in reverse address
- * order (deferred inlining emits functions last-defined first).
- *
- * NonMatching: every function and section matches except ParseLine (0x801DFFB4, 99.6%): in the loop
- * that cuts the stage name at ']' retail keeps the pointer in r3 and the character in r4, GC/2.7
- * swaps them. About 25 source shapes were tried. With the unit linked, those six instructions are
- * the only difference in main.dol. */
+ * order (deferred inlining emits functions last-defined first). */
 /* The library's runtime_error (see <stdexcept>): its size sets boost::function's operator() frame,
  * and its weak copies leave their message in this unit's .rodata. */
 #define MSL_RUNTIME_ERROR_IMPL
@@ -348,8 +343,12 @@ char *TGameDefaultParam::ParseLine() {
     if (self->m_cursor[0] == '[') {
         self->m_stage = -1;
         if (strcmp(self->m_cursor, "[ALL]") != 0) {
-            for (char *p = self->m_cursor; *p != '\0'; p++) {
-                if (*p == ']') {
+            /* The pointer is declared before the character: the scratch registers go to the
+             * locals in declaration order (r3, then r4). */
+            char *p = self->m_cursor;
+            char ch;
+            for (; (ch = *p) != '\0'; p++) {
+                if (ch == ']') {
                     *p = '\0';
                     break;
                 }

@@ -7,18 +7,15 @@
  * classes' are inferred. The functions other units call keep their address names. Definitions are
  * in reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching (38/41; every section and the layout match, and with the unit linked only these
- * three functions differ): HandleUser's constructor, where GC/2.7 loads both halfword constants
- * before storing the vtable pointer (the scheduling difference Game/LandManager.cpp documents for
- * its layer constructor); UpdateLoads (two pairs of callee-saved registers swapped) and fn_8003A380
- * (three registers rotated), register allocation only. About 15 source shapes were tried for each.
- * Wave 39, HandleUser's constructor: retail is `lis r4; addi r0,r4; stw r0,0(r3)` and then
- * `li r4,0; li r0,-1; sth r4; sth r0`, the vtable store finished before the two constants reuse its
- * registers, the constants scheduled as a pair. #pragma scheduling off gives the first half and
- * leaves the pair unscheduled (3 rows, with locals, an inline setter or a comma expression alike);
- * with scheduling on GC/2.7 interleaves everything (7 rows), also with the words as a member struct
- * with an inline constructor or behind an empty inline call. UpdateLoads: id declared in the loop,
- * last, after i or as s16 are all worse (12 to 41 rows). */
+ * Solved in wave 40: HandleUser's constructor clears its handle in a loop of one pass (the loop
+ * ends the basic block behind the vtable store, so the scheduler leaves the two constants below
+ * it), fn_8003A380 takes the manager as a pointer to const and reads m_data in the loop's
+ * condition instead of through a local, and UpdateLoads reads the block id through an inline
+ * function (BlockId): as a named local the id fell behind twice the id (the offset both inlined
+ * IsRequested tests share), r30 against retail's r31 (id declared in the loop, last, after i or
+ * as s16, the counter passed straight to IsRequested, no id at all, the id assigned in the
+ * loop's condition or increment: probes/Game_TBlockManage_W40*.py).
+ */
 #define TBLOCKMANAGE_DEFINE_CLASS
 #include "Game/TBlockManage.h"
 #define UNKHANDLE_DEFAULT_CTOR
@@ -103,7 +100,7 @@ UnkStage_8003A840 *fn_8003A840(void);
 UnkLandBlock_8003A840 *fn_8003A540(TBlockManage *self, int id);
 void fn_8003A52C(TBlockManage *self);
 bool fn_8003A4FC(TBlockManage *self, int id);
-s32 fn_8003A380(TBlockManage *self, s16 **ids, const Vec3f *position);
+s32 fn_8003A380(const TBlockManage *self, s16 **ids, const Vec3f *position);
 }
 
 /* The stage's cached instance (set by fn_8003A840). */
@@ -120,9 +117,16 @@ extern "C" void fn_8003AE90(void) {
     memset(lbl_80571484, 0, sizeof(lbl_80571484));
 }
 
+/* The handle is cleared in a loop of one pass (kHandleCount, name inferred; presumably an array of
+ * one handle in the original): the loop ends the basic block behind the vtable store, which keeps
+ * GC/2.7's scheduler from lifting the two constants above the store, as in retail. */
+const int kHandleCount = 1;
+
 HandleUser::HandleUser() {
-    field_0x4 = 0;
-    field_0x6 = -1;
+    for (int i = 0; i < kHandleCount; i++) {
+        field_0x4 = 0;
+        field_0x6 = -1;
+    }
 }
 
 TBlockManage::TBlockManage(Task *parent, int player, const char *path, const Vec3f *position)
@@ -288,6 +292,13 @@ extern "C" UnkStage_8003A840 *fn_8003A840(void) {
     return lbl_805EDFBC;
 }
 
+/* A block's id from the loop's counter (name inferred): read through an inline function, the id
+ * is a compiler temporary, which takes r31 ahead of the offset the two inlined IsRequested share
+ * (as a named local it falls behind it). */
+inline int BlockId(s16 i) {
+    return i;
+}
+
 void TBlockManage::UpdateLoads() {
     int id;
     s16 i;
@@ -295,7 +306,7 @@ void TBlockManage::UpdateLoads() {
     s32 loaded = 0;
     m_loading = 0;
     for (i = 0; i < kBlockCount; i++) {
-        id = i;
+        id = BlockId(i);
         if (IsRequested(id, 0)) {
             UnkLandBlock_8003A840 *block = m_blocks[id];
             if (block == 0) {
@@ -402,18 +413,20 @@ bool TBlockManage::IsLoading(int id) {
 
 /* The blocks a position lies in: returns their number and an array of their ids (0 if none),
  * which the caller frees. */
-extern "C" s32 fn_8003A380(TBlockManage *self, s16 **ids, const Vec3f *position) {
-    UnkBlockData_8003AB68 *data;
+extern "C" s32 fn_8003A380(const TBlockManage *self, s16 **ids, const Vec3f *position) {
     s16 i;
     UnkBlockBox_8003AB68 *boxes = self->m_data->m_boxes;
     s16 count = 0;
     u8 found[TBlockManage::kBlockCount];
     memset(found, 0, sizeof(found));
-    data = self->m_data;
-    for (i = 0; i < data->m_count; i++) {
+    for (i = 0; i < self->m_data->m_count; i++) {
         UnkBlockBox_8003AB68 *box = &boxes[i];
         s32 id = box->m_id;
-        if (self->IsInside(&box->m_min, &box->m_max, position) && !found[id]) {
+        /* The manager is const here (retail loads m_data above the prologue's register moves and
+         * keeps the loop's copy of it in the first register after the parameters'), which
+         * IsInside's name is not. */
+        if (const_cast<TBlockManage *>(self)->IsInside(&box->m_min, &box->m_max, position) &&
+            !found[id]) {
             found[id] = 1;
             count++;
         }

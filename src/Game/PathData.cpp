@@ -13,7 +13,7 @@
 #define MSL_LIST_MERGE
 #define MSL_LESS_CAST
 #define MSL_FUNCTIONAL_BINDERS
-#define MSL_BINDER_OUTLINE
+#define MSL_BIND2ND_NAMED_VALUE
 #define BOOST_SP_LESS
 #include <functional>
 #include "Game/PathData.h"
@@ -240,10 +240,10 @@ extern "C" inline PtrList *fn_8001B5B8(PtrList *list, short flag) {
     return list;
 }
 
-/* Removes value (the list of the game's pointers, and that of links). NonMatching: the game's binder
- * constructor (fn_8001B480) loads the operation into r0 and the value into r4, GC/2.7 the other way
- * round; and GC/2.7 also emits an unused local copy of bind2nd after this function, which the
- * linker keeps. */
+/* Removes value (the list of the game's pointers, and that of links). The function behind it at
+ * 0x8001B480 is std::bind2nd with the binder's constructor inlined (it loads the operation into r0
+ * and the value into r4, which GC/2.7 does when the converted value is a named local:
+ * MSL_BIND2ND_NAMED_VALUE in <functional>). */
 extern "C" inline void fn_8001B42C(PtrList *list, void *const &value) {
     fn_8001B83C(list, std::bind2nd(std::equal_to<void *>(), value));
 }
@@ -938,8 +938,6 @@ void *UnkPathLink_80017DBC::operator new(size_t size) {
 
 /* ---- Paths ---- */
 
-/* NonMatching: the game loads both flag words before storing them (into r4 and r0); GC/2.7 loads
- * and stores them one after the other. */
 PathData::PathData(const PathPoints *points, bool ownsPoints)
     : m_flags(points->m_flags), field_0x4(points->field_0x1C),
       m_max(ret::fn_800169F8(&points->m_max)), m_min(ret::fn_800169F8(&points->m_min)),

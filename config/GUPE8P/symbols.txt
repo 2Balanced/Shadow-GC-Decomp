@@ -1730,7 +1730,7 @@ __dt__Q23std67__list_base<Q25boost44shared_ptr<Q312SonicteamUSA6System8PathData>
 __dt__Q23std66__list_imp<Q25boost44shared_ptr<Q312SonicteamUSA6System8PathData>>Fv = .text:0x8001B39C; // type:function size:0x70
 fn_8001B40C = .text:0x8001B40C; // type:function size:0x20
 fn_8001B42C = .text:0x8001B42C; // type:function size:0x54
-__ct__Q23std31binder2nd<Q23std12equal_to<Pv>>FRCQ23std12equal_to<Pv>RCPv = .text:0x8001B480; // type:function size:0x14
+bind2nd<Q23std12equal_to<Pv>,Pv>__3stdFRCQ23std12equal_to<Pv>RCPv = .text:0x8001B480; // type:function size:0x14
 fn_8001B494 = .text:0x8001B494; // type:function size:0x34
 fn_8001B4C8 = .text:0x8001B4C8; // type:function size:0x58
 __dt__23UnkPathManager_8001B494Fv = .text:0x8001B520; // type:function size:0x4C

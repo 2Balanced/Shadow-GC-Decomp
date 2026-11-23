@@ -8,9 +8,19 @@
  * than the class's are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * NonMatching (14/15): register allocation only in Setup (88.9%: the loop counter and the
- * dictionary swap registers, the frame address is formed differently, and retail copies the zeroed
- * inner counter into its offset where GC/2.7 emits a second li; about 10 shapes were tried).
+ * NonMatching (14/15): Setup differs in 5 rows, all in the frame loop: retail adds the offset to
+ * the animation and loads the frame's index at +80 (`add r4,r5,r23; lwz r6,80(r4)`) where GC/2.7
+ * adds 80 to the offset and uses an indexed load, and so keeps the animation in r5 where GC/2.7
+ * has r4. Wave 40 fixed the saved registers through the declaration order of the locals (the
+ * dictionary, the entry and the counter declared at the top) and the copy of the zeroed counter
+ * (`mr r23,r22`) by inlining the frame loop from a function (LoadFrames); about 47 forms of the
+ * loop and the frame's address (the counter zeroed in a loop of one pass, a second index or a
+ * byte offset copied from it, the frame through a pointer, a reference or explicit byte
+ * arithmetic, locals for the animation, the frames, the name or the index, a u32 counter, a
+ * while loop, the name buffer outside the loop, the helper as a member of the entry or over
+ * pointers to the entry's members; probes/Game_TTextureChange_W40*.py) leave those 5 rows. The
+ * rest of the unit is ready: .data and .rodata differ only by alignment tails, and the extra
+ * .text is the weak HandleUser and std::string members, which fold.
  * GetFrame matches since wave 39 (the declaration order of its locals, see there).
  * lbl_805E39A0 is defined by the next unit (Game/AdbManager.cpp), which starts its .sdata. */
 #define MSL_STRING_DEFAULT_CTOR
@@ -157,26 +167,38 @@ void TTextureChange::Tick(float dt) {
     }
 }
 
+/* The textures of the animation's frames (name inferred). A loop inlined from a function starts
+ * its strength-reduced offset with a copy of the zeroed counter (`mr r23,r22`), as retail does;
+ * written in place it gets a second `li`. */
+inline void LoadFrames(UnkTextureChangeEntry_8004F0A4 *entry, RwTexDictionary *dict) {
+    for (s32 j = 0; j < entry->m_anim->m_count; j++) {
+        char name[0x40];
+        sprintf(name, "%s.%d", entry->m_anim->m_name, entry->m_anim->m_frames[j].m_index);
+        entry->m_textures[j] = fn_8048CFFC(dict, name);
+    }
+}
+
 bool TTextureChange::Setup(UnkTextureChangeParam_8004F22C *params, s32 count) {
+    /* Declared in the order of retail's saved registers (r31, r30, r29; the counter of the frame
+     * loop inlined from LoadFrames shares r22 with the parameter record). */
+    RwTexDictionary *dict;
+    UnkTextureChangeEntry_8004F0A4 *entry;
+    s32 i;
     m_count = 0;
     m_time = 0.0f;
     memset(m_entries, 0, sizeof(m_entries));
-    for (s32 i = 0; i < count; i++) {
+    for (i = 0; i < count; i++) {
         UnkTextureChangeParam_8004F22C *param = &params[i];
-        UnkTextureChangeEntry_8004F0A4 *entry = &m_entries[m_count];
+        entry = &m_entries[m_count];
         entry->m_material = param->m_material;
-        RwTexDictionary *dict = fn_8048D0D8();
+        dict = fn_8048D0D8();
         if (dict) {
             RwTexture *base = fn_8048CFFC(dict, param->m_holder->m_anim->m_baseName);
             if (base) {
                 entry->m_anim = param->m_holder->m_anim;
                 entry->m_base = base;
                 entry->m_textures = (RwTexture **)fn_80049B90(entry->m_anim->m_count * 4, 2);
-                for (s32 j = 0; j < entry->m_anim->m_count; j++) {
-                    char name[0x40];
-                    sprintf(name, "%s.%d", entry->m_anim->m_name, entry->m_anim->m_frames[j].m_index);
-                    entry->m_textures[j] = fn_8048CFFC(dict, name);
-                }
+                LoadFrames(entry, dict);
                 m_count++;
             }
         }

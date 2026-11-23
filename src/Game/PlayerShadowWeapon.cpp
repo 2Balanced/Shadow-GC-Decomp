@@ -8,17 +8,7 @@
  *
  * Where a shared_ptr's operator-> (or Weapon::WeaponBase::TypeId) is called out of line in retail,
  * the expression is an argument of an inline call (AddVector) or feeds an inline getter returning
- * int; retail's direct fn_800091D0 calls are written as such so that the pointers stay inline.
- *
- * Not yet matching: GiveWeapon (99.4%) keeps the given weapon's type in r4 and the held one's in r0
- * where retail has them the other way round; about 30 source shapes did not change it. Every other
- * function and all data match, and with the unit linked only those three instructions differ.
- * Second pass (wave 39, probes/Game_PlayerShadowWeapon*.py, 25 shapes): retail also passes the
- * given weapon's type to fn_8005B9AC (mr r3,r0), not the held one's. Reading both types through
- * TypeId() and passing the held one's gives retail's two registers but then passes r4 (1 row);
- * every form that passes the given type (the local, a second TypeId() call, the member) swaps the
- * registers back. fn_80206AD4, called by OnIK and Tick, is Player::PlayerTargetBase::GetTurn in
- * symbols.txt now: call it by that name before linking the unit. */
+ * int; retail's direct fn_800091D0 calls are written as such so that the pointers stay inline. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -64,8 +54,6 @@ void fn_80076CC8(u32 *bits, int bit);
  * held weapons, and skeleton node index. */
 void fn_800AA6C0(Player::PlayerMotion *motion, bool raise);
 void *fn_800AA584(Player::PlayerMotion *motion);
-/* The aim's yaw (PlayerTargetBase, 0x80206AD4). */
-float fn_80206AD4(Player::PlayerTargetBase *target);
 /* Entry index of a player's character slots. */
 boost::weak_ptr<CharInfo> fn_800AADA4(Player::UnkCharaSlots_800AADA4 *slots, int index);
 /* A player's direction turned into the world, and its forward direction (behaviour inferred). */
@@ -152,7 +140,7 @@ void ShadowWeapon::Tick(float) {
     if (m_weapon && IsFiring()) {
         Vec3f direction;
         fn_800091EC(&direction,
-                    &(const Vec3f &)fn_8040D0AC(&s_recoilLimit, fn_80206AD4(m_player->m_target)));
+                    &(const Vec3f &)fn_8040D0AC(&s_recoilLimit, m_player->m_target->GetTurn()));
         AddVector(m_recoil, fn_800091A4(&direction, m_weapon->vf_0x24()));
         AddVector(m_recoil, fn_800091A4(&direction, fn_8005B904(m_weapon->TypeId())));
         int pattern = fn_8005B834(GetWeaponType());
@@ -189,9 +177,17 @@ void ShadowWeapon::GiveWeaponType(int type, int ammo) {
 void ShadowWeapon::GiveWeapon(const boost::shared_ptr<Weapon::WeaponBase> &weapon, int ammo) {
     int type = weapon->m_type;
     if (m_weapon) {
-        if (type == m_weapon->m_type) {
+        /* The held weapon's type is read in a loop of one pass: GC/2.7 then keeps the given type
+         * in r0 and the held one in r4 and passes the given one on, as retail does (55 other
+         * shapes in waves 38 and 39 had the two registers exchanged). What the original loop ran
+         * over is unknown. */
+        int held;
+        for (int n = 0; n < 1; n++) {
+            held = m_weapon->m_type;
+        }
+        if (type == held) {
             if (ammo < 0) {
-                ammo = fn_8005B9AC(m_weapon->m_type);
+                ammo = fn_8005B9AC(type);
             }
             AddAmmo(ammo);
             return;
@@ -457,7 +453,7 @@ void ShadowWeapon::OnIK(IKEventArgs &args) {
     float angle = m_sightAngle * (lbl_805FAD38 / 180.0f);
     Vec3f target;
     fn_800091D0(&target,
-                &(const Vec3f &)fn_8040D0AC(&m_sight, angle + fn_80206AD4(m_player->m_target)));
+                &(const Vec3f &)fn_8040D0AC(&m_sight, angle + m_player->m_target->GetTurn()));
     fn_800091D0(&target, &(const Vec3f &)m_player->m_target->ToAimSpace(target));
     AddVector(target, m_player->m_target->ToAimSpace(m_recoil));
     AddVector(target, fn_8040FB08(&frame));

@@ -126,17 +126,18 @@ JumpDash::JumpDash(const boost::shared_ptr<PlayerBase> &player) : Behavior(playe
 
 JumpDash::~JumpDash() {}
 
-/* NonMatching (5 rows): retail keeps the table's address in r3 and the player in r4 (as
- * Player::Behavior::Ground::SetSpeedRange); GC/2.7 gives the player r3, which the test above has
- * just freed, and the table r4. Game/PlayerBehaviorFall.cpp has retail's registers with this same
- * expression where the value is tested instead of returned. Wave 39 tried 25 forms: locals for the
- * player, the kind and the record (pointer or reference: player r4, but then the table's low half
- * goes to r0 and the kind to r3, 4 rows), pointer arithmetic on a table pointer, inline lookups of
- * the record, the kind and the flag (the flag's lookup gives retail's table and kind registers but
- * leaves shared_ptr::get out of line), a ternary, &&, and a result variable. */
+/* The character's kind is read in a loop of one pass: GC/2.7 then keeps the table's address in r3
+ * and the player in r4 as retail does (as Player::Behavior::Ground::SetSpeedRange); read directly
+ * or through a plain local, the player gets r3, which the test above has just freed, and the
+ * table r4 (25 forms in wave 39; probes/Game_PlayerBehaviorJumpDash_W40.py). What the original
+ * loop ran over is unknown. */
 bool JumpDash::vf_0x0C(int prevId, const InitializeArgs &args) {
     if (fn_80014E34(&m_player.get()->m_flags, 2)) {
-        return lbl_804F1834[FieldsOf(m_player.get())->m_kind].m_canJumpDash;
+        int kind;
+        for (int n = 0; n < 1; n++) {
+            kind = FieldsOf(m_player.get())->m_kind;
+        }
+        return lbl_804F1834[kind].m_canJumpDash;
     }
     return false;
 }

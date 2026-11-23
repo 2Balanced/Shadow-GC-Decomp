@@ -10,8 +10,13 @@
  * loop counter r27; GC/2.7 gives the offset r31, the address r30 and this r27 under every form
  * tried (the counter declared before or after the weapon or in the for, a pointer to the weapon,
  * the function written over an explicit self; the two named locals trade places with their
- * declarations, this never moves). vfPara_0x48 (0x80192B68) matches as a function over a const
- * worm (see its definition). */
+ * declarations, this never moves). Wave 40 (probes/Game_BkWorm_W40.py, 12 forms): a copy of
+ * this declared first (plain, const, through void *, through a reference) is merged back into the
+ * parameter (the same 11 rows), and the loop in an inline helper taking the worm is never inlined
+ * (it calls out-of-line template members), not even under #pragma always_inline or inline_depth.
+ * FireShots, which matches, has the same loop shape with this in the last register (r26), as
+ * GC/2.7 gives it here. vfPara_0x48 (0x80192B68) matches as a function over a const worm (see its
+ * definition). */
 
 #include "Effect/System/EffectElement.h"
 #include "Game/BkWorm.h"
