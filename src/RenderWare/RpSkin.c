@@ -1,27 +1,31 @@
-/* RenderWare: RpSkin (plugin 0x116), continued from RwCpp11.cpp.
+/* RenderWare: RpSkin (plugin 0x116), the platform-neutral part: the split data, RpSkinCreate, the
+ * plugin's engine, atomic and geometry callbacks, RpSkinPluginAttach and the skin API.
  *
- * 0x8044BBFC-0x8044D6E8: reading the split data, RpSkinCreate, the plugin's engine, atomic and
- * geometry callbacks and its attach function, and the first part of the GameCube instancing code
- * (resource entries, bone matrices, software skinning entry). Compiled as C.
+ * 0x8044BAB4-0x8044CDC4 (.data 0x8056D708-0x8056D748, .bss 0x805E1538-0x805E1560,
+ * .sdata 0x805EDD80-0x805EDD88). The GameCube back end (RpSkinGameCube.c) follows; the two are
+ * separate files: this file's .bss holds only the skin free list (0x24 bytes) and is padded to
+ * 0x805E1560, where the back end's display-list state starts (one translation unit packs its .bss
+ * objects at 4 bytes, as RpClump.c's two free lists show). The plugin's globals (lbl_8056D708) are
+ * shared with the back end, which also owns the pipelines kept in them.
  *
- * Not written: fn_8044D554 (positions only) sets GQR5/GQR6 in the middle of compiled code, which
- * needs inline assembly. Near misses: fn_8044BDF0 and fn_8044C8C0 (loop registers; the second
- * also has the zeroed-counter copy of docs/research-notes.md) and fn_8044D344 (retail gives each of
- * the three usedBones[i] reads of its first loop an induction pointer of its own; GC/2.7 does so
- * too with `const R2Skin *skin` and skin->usedBones[i] in the loop, probes/Game_RwCpp12_W40.py,
- * but then keeps the zero for boneToWorld.flags in a saved register where retail reloads it).
+ * Built as C with cflags_rw_c (configure.py), the flags the code was matched with in wave 40.
+ * Near misses: fn_8044BDF0 (RpSkinCreate: loop registers) and fn_8044C8C0 (5 rows: the skin
+ * RpSkinCreate returns passes through r0, and the bone-shift counter gets an `li` of its own where
+ * retail copies the zeroed loop counter; probes/RenderWare_RpSkin_W41*.py).
  */
 #include <dolphin/types.h>
 #include "Game/rw/r2.h"
 
-extern R2SkinGlobals lbl_8056D708;
-extern s32 lbl_805F1520; // offset of the R2VertexDesc pointer in RpGeometry
-extern s32 lbl_805F1578; // offset of R2ResGlobals in the engine globals
-extern volatile u16 lbl_805EDF40; // the draw-sync token of the frame being built
-extern u32 lbl_805EDD80;
-extern u32 lbl_805EDD84;
-extern u8 lbl_805E1538[];
-extern R2Matrix lbl_805E31CC; // identity
+extern s32 lbl_805F1520; /* offset of the R2VertexDesc pointer in RpGeometry */
+
+/* The plugin's globals; the back end keeps its pipelines in them. */
+R2SkinGlobals lbl_8056D708 = {0};
+
+/* Parameters of the skin free list. */
+static s32 skinFreeListBlockSize = 20;
+static s32 skinFreeListPreallocBlocks = 1;
+
+static R2FreeList skinFreeList;
 
 R2Matrix *RwFrameGetLTM(void *frame);
 u32 fn_8047D868(void *stream, void *buffer, u32 size);
@@ -79,6 +83,42 @@ void *fn_8044CCC0(R2Geometry *geometry, R2Skin *skin);
 #define SKIN_OF(geometry) R2_PLUGIN(R2Skin, geometry, lbl_8056D708.geometryOffset)
 #define SKIN_ATOMIC(object) ((R2SkinAtomic *)((u8 *)(object) + lbl_8056D708.atomicOffset))
 #define SKIN_HINT 0x30116
+
+/* Frees a skin's split data. */
+u32 fn_8044BAB4(R2Skin *skin) {
+    if (skin->split.remapIndices != NULL) {
+        lbl_805F15B4->memFree(skin->split.remapIndices);
+    }
+    skin->split.boneLimit = 0;
+    skin->split.numMeshes = 0;
+    skin->split.numRLE = 0;
+    skin->split.remapIndices = NULL;
+    skin->split.meshRLECount = NULL;
+    skin->split.meshRLE = NULL;
+    return 1;
+}
+
+/* Writes a skin's split data to a stream. */
+void *fn_8044BB18(void *stream, R2Skin *skin) {
+    R2SkinSplit *split = &skin->split;
+
+    if (!fn_8047D458(stream, &split->boneLimit, sizeof(u32))) {
+        return NULL;
+    }
+    if (!fn_8047D458(stream, &split->numMeshes, sizeof(u32))) {
+        return NULL;
+    }
+    if (!fn_8047D458(stream, &split->numRLE, sizeof(u32))) {
+        return NULL;
+    }
+    if (skin->split.numMeshes != 0) {
+        if (!fn_80480ED0(stream, split->remapIndices,
+                         skin->numBones + split->numMeshes * 2 + split->numRLE * 2)) {
+            return NULL;
+        }
+    }
+    return stream;
+}
 
 /* fn_8044BAB4 as the compiler inlined it into the split data's creation. */
 static inline u32 SkinSplitDestroy(R2Skin *skin) {
@@ -273,7 +313,8 @@ void *fn_8044C174(void *instance) {
         }
         fn_80451D60(flags);
         lbl_8056D708.freeList =
-            fn_8047FC04(sizeof(R2Skin), lbl_805EDD80, 4, lbl_805EDD84, lbl_805E1538, 0x40116);
+            fn_8047FC04(sizeof(R2Skin), skinFreeListBlockSize, 4, skinFreeListPreallocBlocks,
+                        &skinFreeList, 0x40116);
         lbl_8056D708.matrixCacheMemory = lbl_805F15B4->memAlloc(0x400F, 0x40116);
         memset(lbl_8056D708.matrixCacheMemory, 0, 0x400F);
         lbl_8056D708.matrixCache = (void *)(((u32)lbl_8056D708.matrixCacheMemory + 15) & ~15);
@@ -547,8 +588,8 @@ counted:
         weights = skin->weights;
         indices = skin->indices;
         usedBones = skin->usedBones;
-        skin->numUsedBones = 0;
-        for (i = 0; i < numVertices; i++) {
+        skin->numUsedBones = i = 0;
+        for (; i < numVertices; i++) {
             weight = &weights->w[0];
             for (j = 0, shift = 0; j < skin->maxWeights; j++) {
                 if (*weight != 0) {
@@ -646,224 +687,4 @@ void *fn_8044CD4C(R2Skin *skin) {
 /* RpSkinGetVertexBoneIndices */
 const u32 *fn_8044CDBC(R2Skin *skin) {
     return skin->indices;
-}
-
-/* Waits until the graphics processor is done with the arrays of a resource entry: a draw-sync
- * token is sent for the frame being built if the entry was used in it. */
-static inline void SkinWaitForToken(R2SkinResEntry *entry) {
-    if (entry->instance.token == lbl_805EDF40) {
-        fn_8039561C(lbl_805EDF40);
-        lbl_805EDF40 = (lbl_805EDF40 + 1) % 0xE000;
-    }
-    while (!fn_8049A78C(entry->instance.token)) {
-    }
-}
-
-/* Destroy notify of an atomic's or geometry's skinning resource entry. */
-void fn_8044CDC4(R2SkinResEntry *entry) {
-    R2Geometry *owner;
-    u32 flags;
-
-    SkinWaitForToken(entry);
-    if (entry->instance.positions != NULL) {
-        fn_8048071C(((R2ResEntry **)entry->instance.positions)[-1]);
-    }
-    owner = (R2Geometry *)entry->entry.owner;
-    flags = owner->flags;
-    if (owner->object.type == 1) {
-        R2SkinAtomic *data = SKIN_ATOMIC(owner);
-        entry->instance.positions = data->positions;
-        if (flags & 0x10) {
-            entry->instance.normals = data->normals;
-        }
-        data->positions = NULL;
-        data->normals = NULL;
-    } else {
-        R2Skin *skin = SKIN_OF(owner);
-        entry->instance.positions = skin->positions;
-        if (flags & 0x10) {
-            entry->instance.normals = skin->normals;
-        }
-        skin->positions = NULL;
-        skin->normals = NULL;
-    }
-}
-
-/* Destroy notify of the vertex arrays' own resource entry. */
-void fn_8044CEE0(R2SkinResEntry *entry) {
-    SkinWaitForToken(entry);
-}
-
-#define LL_REMOVE(link) \
-    ((link)->prev->next = (link)->next, (link)->next->prev = (link)->prev)
-#define LL_ADD_FRONT(list, link) \
-    ((link)->next = (list)->next, (link)->prev = (list), (list)->next->prev = (link), \
-     (list)->next = (link))
-#define RES_USED (((R2ResGlobals *)((u8 *)lbl_805F15B4 + lbl_805F1578))->usedEntries)
-#define RES_OF(array) (((R2SkinResEntry **)(array))[-1])
-
-/* Bytes per vertex of a position or normal by its GX component type (u8, s8, u16, s16, f32). The
- * source surely had a local array with an initializer; its anonymous .rodata copy (lbl_8051BD10)
- * lies outside this unit's split, so the table is copied from the retail symbol by name. */
-typedef struct R2ComponentSizes {
-    u32 size[5];
-} R2ComponentSizes;
-extern const R2ComponentSizes lbl_8051BD10;
-
-/* Instance step of a skinned atomic: keeps the geometry's resource entry in use and makes sure
- * the skinned position (and normal) arrays exist; they live in a resource entry of their own,
- * whose address is kept in the word in front of the positions. */
-s32 fn_8044CF68(R2Skin *skin, R2Atomic *atomic, R2SkinInstance *instance, R2ResEntry **repEntry) {
-    R2Geometry *geometry = atomic->geometry;
-    R2Geometry *owner;
-    R2ResEntry *entry;
-    void *source;
-    u32 size;
-
-    if ((*repEntry)->link.next != NULL) {
-        LL_REMOVE(&(*repEntry)->link);
-        LL_ADD_FRONT(RES_USED, &(*repEntry)->link);
-    }
-    (*repEntry)->destroyNotify = (void (*)(R2ResEntry *))fn_8044CDC4;
-
-    owner = (R2Geometry *)(*repEntry)->owner;
-    if (owner->object.type == 1) {
-        R2SkinAtomic *data = SKIN_ATOMIC(owner);
-        if (data->positions == NULL) {
-            data->positions = instance->positions;
-            instance->positions = NULL;
-            if (geometry->flags & 0x10) {
-                data->normals = instance->normals;
-                instance->normals = NULL;
-            }
-        }
-    } else {
-        if (skin->positions == NULL) {
-            skin->positions = instance->positions;
-            instance->positions = NULL;
-            if (geometry->flags & 0x10) {
-                skin->normals = instance->normals;
-                instance->normals = NULL;
-            }
-        }
-    }
-
-    if (instance->positions != NULL) {
-        if (!fn_8049A78C(RES_OF(instance->positions)->instance.token)) {
-            RES_OF(instance->positions)->entry.ownerRef = NULL;
-            instance->positions = NULL;
-            if (geometry->flags & 0x10) {
-                instance->normals = NULL;
-            }
-        }
-    }
-
-    if (instance->positions == NULL) {
-        R2VertexDesc *desc = R2_PLUGIN(R2VertexDesc, geometry, lbl_805F1520);
-        if (desc != NULL) {
-            R2ComponentSizes sizes = lbl_8051BD10;
-            size = ((geometry->numVertices * sizes.size[desc->type[0]] + 31) & ~31) + 6;
-            if (geometry->flags & 0x10) {
-                size += (geometry->numVertices *
-                             (sizes.size[desc->type[1]] * (desc->frac[1] != 0 ? 3 : 1)) +
-                         31) &
-                        ~31;
-            }
-        } else {
-            size = ((geometry->numVertices * 12 + 31) & ~31) + 6;
-            if (geometry->flags & 0x10) {
-                size += (geometry->numVertices * 12 + 31) & ~31;
-            }
-        }
-        entry = fn_80480878(atomic, &instance->positions, size, fn_8044CEE0);
-        if (geometry->numMorphTargets == 1) {
-            source = geometry->repEntry;
-        } else {
-            source = atomic->repEntry;
-        }
-        if (entry == NULL || source == NULL) {
-            if (entry != NULL) {
-                fn_8048071C(entry);
-            }
-            return 0;
-        }
-        instance->positions = (void *)(((u32)instance->positions + 0x3D) & ~0x1F);
-        if (geometry->flags & 0x10) {
-            instance->normals = (u8 *)instance->positions +
-                                ((geometry->numVertices * instance->normalStride + 31) & ~31);
-        }
-        RES_OF(instance->positions) = (R2SkinResEntry *)entry;
-    } else {
-        if (RES_OF(instance->positions)->entry.link.next != NULL) {
-            LL_REMOVE(&RES_OF(instance->positions)->entry.link);
-            LL_ADD_FRONT(RES_USED, &RES_OF(instance->positions)->entry.link);
-        }
-    }
-    RES_OF(instance->positions)->instance.token = lbl_805EDF40;
-    return 1;
-}
-
-/* Builds the matrix palette: skin-to-bone times bone matrix for every used bone, in the space the
- * skinning needs (the hierarchy keeps no matrices, local-space matrices or world-space ones). */
-void fn_8044D344(R2Matrix *out, R2Skin *skin, R2Matrix *ltm, R2HAnimHierarchy *hierarchy) {
-    if (hierarchy != NULL) {
-        if (hierarchy->flags & 0x2) {
-            R2Matrix inverse;
-            R2Matrix boneToWorld;
-            const R2Matrix *last;
-            const u8 *usedBones;
-            u32 i;
-            const R2Matrix *matrices;
-            u32 numUsedBones;
-            const R2Matrix *boneLTM;
-
-            if (skin->maxWeights > 1 || skin->unk2C == 3) {
-                inverse.flags = 0;
-                fn_8047F0B0(&inverse, ltm);
-                last = &inverse;
-            } else {
-                last = &lbl_805E31CC;
-            }
-            usedBones = skin->usedBones;
-            matrices = skin->matrices;
-            numUsedBones = skin->numUsedBones;
-            for (i = 0; i < numUsedBones; i++) {
-                boneToWorld.flags = 0;
-                boneLTM = RwFrameGetLTM(hierarchy->nodeInfo[usedBones[i]].frame);
-                fn_8047EBB8(&boneToWorld, &matrices[usedBones[i]], boneLTM);
-                fn_8047EBB8(&out[usedBones[i]], &boneToWorld, last);
-            }
-        } else if (hierarchy->flags & 0x4000) {
-            if (skin->maxWeights > 1 || skin->unk2C == 3) {
-                const u8 *usedBones = skin->usedBones;
-                u32 i;
-                const R2Matrix *matrices = skin->matrices;
-                u32 numUsedBones = skin->numUsedBones;
-
-                for (i = 0; i < numUsedBones; i++) {
-                    u32 bone = usedBones[i];
-                    fn_8047EBB8(&out[bone], &matrices[bone], &hierarchy->matrixArray[bone]);
-                }
-            } else {
-                R2Matrix last;
-                last.flags = 0;
-                fn_8047EBB8(&last, ltm, &lbl_805E31CC);
-                fn_80450D6C(out, skin->matrices, hierarchy->matrixArray, &last, skin->usedBones,
-                            skin->numUsedBones);
-            }
-        } else {
-            R2Matrix inverse;
-            const R2Matrix *last;
-
-            if (skin->maxWeights > 1 || skin->unk2C == 3) {
-                inverse.flags = 0;
-                fn_8047F0B0(&inverse, ltm);
-                last = &inverse;
-            } else {
-                last = &lbl_805E31CC;
-            }
-            fn_80450D6C(out, skin->matrices, hierarchy->matrixArray, last, skin->usedBones,
-                        skin->numUsedBones);
-        }
-    }
 }

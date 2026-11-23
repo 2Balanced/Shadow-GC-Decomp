@@ -28,6 +28,8 @@ typedef struct R2MatrixWeights R2MatrixWeights;
 typedef struct R2SkinGlobals R2SkinGlobals;
 typedef struct R2SkinAtomic R2SkinAtomic;
 typedef struct R2LLLink R2LLLink;
+typedef struct R2FreeList R2FreeList;
+typedef struct R2ModuleInfo R2ModuleInfo;
 typedef struct R2ResEntry R2ResEntry;
 typedef struct R2SkinInstance R2SkinInstance;
 typedef struct R2SkinResEntry R2SkinResEntry;
@@ -44,6 +46,7 @@ typedef struct R2GxNodeData R2GxNodeData;
 typedef struct R2AnimInterpInfo R2AnimInterpInfo;
 typedef struct R2UVAnimation R2UVAnimation;
 typedef struct R2UVKeyFrame R2UVKeyFrame;
+typedef struct R2DictSchema R2DictSchema;
 #endif
 
 /* These units are compiled as C (RenderWare is a C library), where the C++-only MSL stand-in
@@ -280,6 +283,8 @@ struct R2SkinGlobals {
     void *freeList;            // 0x18
     u32 unk1C;
     s32 numInstances;          // 0x20
+    void *pipelines[4];        // 0x24: by skin type (RpSkinGameCube.c)
+    u8 pad34[0xC];
 };
 
 /* RpSkin's per-atomic data (at atomicOffset). */
@@ -292,6 +297,23 @@ struct R2SkinAtomic {
 struct R2LLLink {
     struct R2LLLink *next;
     struct R2LLLink *prev;
+};
+
+/* RwModuleInfo: a module's offset in the engine globals and its open count. */
+struct R2ModuleInfo {
+    s32 globalsOffset;
+    s32 numInstances;
+};
+
+/* RwFreeList (0x24 bytes). */
+struct R2FreeList {
+    u32 entrySize;
+    u32 entriesPerBlock;
+    u32 heapSize;
+    u32 alignment;
+    struct R2LLLink blockList;
+    u32 flags;
+    struct R2LLLink link;
 };
 
 /* RwResEntry */
@@ -391,6 +413,23 @@ struct R2AnimInterpInfo {
     void *keyFrameStreamGetSizeCB;
     s32 customDataSize;
 };
+/* RtDictSchema: a kind of dictionary (chunk types, version) and its entry callbacks. */
+struct R2DictSchema {
+    const char *name;
+    u32 dictChunkType;
+    u32 entryChunkType;
+    u32 compatibilityVersion;
+    void *dicts;
+    void *current;
+    void *addRefCallBack;
+    void *destroyCallBack;
+    void *getNameCallBack;
+    void *streamReadCallBack;
+    void *streamWriteCallBack;
+    void *streamGetSizeCallBack;
+    void *streamReadCompatibilityCallBack;
+};
+
 /* RtAnimAnimation (members used here only). */
 struct R2UVAnimation {
     struct R2AnimInterpInfo *interpInfo;

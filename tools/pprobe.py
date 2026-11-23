@@ -74,7 +74,8 @@ def compile_variant(cmd, unit, name, text, hdrs=None):
             open(os.path.join(inc, h), "w", encoding="utf-8").write(ht)
         pre = ["-i", inc]
     base = os.path.basename(unit)
-    src = os.path.join(d, base + ".cpp")
+    ext = ".c" if os.path.exists(os.path.join(root, "src", unit + ".c")) else ".cpp"
+    src = os.path.join(d, base + ext)
     open(src, "w", encoding="utf-8").write(text)
     obj = os.path.join(d, base + ".o")
     if os.path.exists(obj):

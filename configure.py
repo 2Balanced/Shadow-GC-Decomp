@@ -297,15 +297,14 @@ cflags_rw_no_lmw = [
     "-use_lmw_stmw off",
 ]
 
-# RenderWare as the C library it is (wave 40, RwCpp10-RwCpp13): the base flags (-O4,p) compiled
-# as C without lmw/stmw, with read-only reused strings. In C++ a struct assignment is a
-# member-wise copy (lfs/stfs for a vector) where retail copies words. Retail inlined static
-# helpers defined earlier in a file, two levels deep, so inlining is neither deferred nor limited
-# to one level as in the game code; it is not automatic here because the units are cut by size
-# and hold functions of several original files, which automatic inlining would merge (the helpers
-# are marked `inline` instead, or wrapped in `#pragma auto_inline on` where retail also emits the
-# helper out of line, as RwCpp13's matrix loads). RwCpp14-RwCpp17 keep their C++ drafts' flags:
-# most of their matched functions were matched under them.
+# RenderWare as the C library it is (wave 40, RwCpp10-RwCpp13; since wave 41 the files
+# RenderWare/RpPTankGameCube.c to RenderWare/RpClump.c): the base flags (-O4,p) compiled as C without
+# lmw/stmw, with read-only reused strings. In C++ a struct assignment is a member-wise copy
+# (lfs/stfs for a vector) where retail copies words. Retail inlined static helpers defined earlier
+# in a file, two levels deep, so inlining is neither deferred nor limited to one level as in the
+# game code; it is not automatic (the helpers are marked `inline`, or wrapped in
+# `#pragma auto_inline on` where retail also emits the helper out of line, as RpSkinGameCube.c's
+# matrix loads). GC/2.0-2.7 give the same code for these files; 1.3.2 and 1.2.5n are worse.
 cflags_rw_c = [
     *cflags_base,
     "-use_lmw_stmw off",
@@ -368,8 +367,8 @@ cflags_rw_core = [
 # RpMaterialStreamRead). The sources are C (-lang c): structure assignments copy words, where C++
 # copies float members as floats. GC 2.0-2.7 give the same code, -O3/-O4,s/1.x do not.
 # RenderWare/RpWorldSector.c needs cflags_rw_c instead (no automatic inlining: retail calls
-# RpWorldSectorRender and its recursive sector destroy out of line). Game/RwCpp20 keeps the tail
-# of the clump file (0x80458C28-0x80458CF8) until that file is re-cut.
+# RpWorldSectorRender and its recursive sector destroy out of line). The clump file before them
+# (RenderWare/RpClump.c) ends at 0x80458CF8.
 cflags_rw_r3 = [
     *cflags_base,
     "-use_lmw_stmw off",
@@ -1223,17 +1222,22 @@ config.libs = [
             Object(NonMatching, "Game/EffectLocusRW3.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectLocusUSA.cpp"),
             Object(Matching, "Game/RwObjectUtil.cpp"),
-            Object(NonMatching, "Game/RwCpp10.cpp", cflags=cflags_rw_c),
-            Object(NonMatching, "Game/RwCpp11.cpp", cflags=cflags_rw_c),
-            Object(NonMatching, "Game/RwCpp12.cpp", cflags=cflags_rw_c),
-            Object(NonMatching, "Game/RwCpp13.cpp", cflags=cflags_rw_c),
-            Object(NonMatching, "Game/RwCpp14.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp15.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp16.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp17.cpp"),
-            Object(NonMatching, "Game/RwCpp18.cpp"),
-            Object(NonMatching, "Game/RwCpp19.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(Matching, "Game/RwCpp20.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp02.cpp"),
+            Object(NonMatching, "Game/RwCpp03.cpp"),
+            Object(NonMatching, "Game/RwCpp04.cpp"),
+            Object(NonMatching, "Game/RwCpp05.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp06.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp07.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp08.cpp"),
+            Object(NonMatching, "Game/RwCpp09.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp21.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp22.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp23.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp24.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp25.cpp"),
+            Object(NonMatching, "Game/RwCpp26.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp27.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
@@ -1980,6 +1984,20 @@ config.libs = [
             Object(NonMatching, "RenderWare/RwTexture.c", cflags=cflags_rw_core),
             Object(Matching, "RenderWare/RwObjectHasFrame.c", cflags=cflags_rw_core),
             Object(NonMatching, "RenderWare/RwPaletteQuantize.c", cflags=cflags_rw_core),
+            # 0x804485BC-0x80458CF8 (wave 41, agent q2): C with cflags_rw_c, the flags the code of
+            # these files was matched with in wave 40 (RwCpp10-RwCpp13 as C; RwCpp14-RwCpp19 were C++
+            # drafts and are now C as well). RpUVAnim.c keeps its one string ("UVAnim") in .sdata, as
+            # RenderWare's files with strings do, so its strings are writable.
+            Object(NonMatching, "RenderWare/RpPTankGameCube.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpPTankGameCubeRender.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpSkin.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpSkinGameCube.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpUserData.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpUVAnimKeyFrame.c", cflags=cflags_rw_c),
+            Object(Matching, "RenderWare/RpUVAnimParam.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpUVAnim.c", cflags=[*cflags_rw_c, "-str noreadonly"]),
+            Object(NonMatching, "RenderWare/RpWorldStream.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RpClump.c", cflags=cflags_rw_c),
         ],
     },
 ]

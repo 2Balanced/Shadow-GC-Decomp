@@ -1,26 +1,25 @@
-/* RenderWare: RpPTank (particle tank, plugin 0x12F), GameCube back end, first part.
+/* RenderWare: RpPTank (particle tank, plugin 0x12F), GameCube back end: the tank's pipeline, the
+ * choice of vertex writer, the tank atomic's one-vertex geometry and its render callback.
  *
- * 0x804485BC-0x8044A168. The size cut ends inside the module: its eight remaining vertex writers
- * are in RwCpp11.cpp, and the module itself ends at 0x8044BAB4, where RpSkin's split-data code
- * starts.
+ * 0x804485BC-0x80448D04 (.sbss 0x805F1450, .sdata2 0x805FB068-0x805FB078). The platform-neutral
+ * part of the plugin (0x80447598-0x804485BC) is the file before this one; its callback table at
+ * 0x8056D6F8 names fn_80448850, fn_80448A1C and fn_80448A24. The render file (RpPTankGameCubeRender.c)
+ * follows: its .sdata2 starts on a new 8-byte group at 0x805FB078, behind the 4-byte hole after
+ * this file's -1.0f, which one translation unit would not leave.
  *
- * Not written, because the originals are hand-written paired-single assembly (they save r14-r31,
- * f14-f31 and the condition register themselves): the vertex writers fn_8044920C, fn_804495D0,
- * fn_80449994 and fn_80449D5C. fn_80448D04 (the pipeline's render callback) sets GQR6/GQR7 in the
- * middle of compiled code and is left out for the same reason. fn_80448850 differs only in which
- * saved registers hold the atomic and the two flag words (probes/Game_RwCpp10*.py).
+ * Built as C with cflags_rw_c (configure.py), the flags the code was matched with in wave 40.
+ * fn_80448850 differs only in which saved registers hold its values: with the atomic made from a
+ * `void *` parameter (probes/RenderWare_RpPTankGameCube_W41*.py) the atomic, the geometry flags, the
+ * data flags and the vertex descriptor get retail's r31-r28, but the material and the mesh header
+ * still trade r28/r30 and the atomic RpAtomicSetGeometry returns takes a register of its own
+ * (21 rows in about 250 shapes: declaration orders, block scopes, inline helpers).
  */
 #include <dolphin/types.h>
 #include "Game/rw/r2.h"
 
-extern s32 lbl_805F1448; // offset of the R2PTank pointer in RpAtomic
-extern void *lbl_805F1450; // the tank's render pipeline
-extern s32 lbl_805F14F0; // offset of R2MeshGlobals in the engine globals
-extern const f32 lbl_805FB070; // -1.0f
+extern s32 lbl_805F1448; /* offset of the R2PTank pointer in RpAtomic (the plugin file's) */
+extern s32 lbl_805F14F0; /* offset of R2MeshGlobals in the engine globals */
 
-#ifdef __cplusplus
-extern "C" {
-#endif
 R2Matrix *RwFrameGetLTM(void *frame);
 void *fn_8046335C(u32 pluginId, u32 type, void *a, void *b, void *instance, void *render);
 void fn_8049B800(void *pipeline);
@@ -41,6 +40,7 @@ R2MeshHeader *fn_8045BF30(u32 size);
 u16 fn_8045CA20(void);
 R2Atomic *fn_80456F0C(R2Atomic *atomic, R2Geometry *geometry, u32 flags);
 
+/* The vertex writers of RpPTankGameCubeRender.c. */
 void fn_8044920C(void);
 void fn_804495D0(void);
 void fn_80449994(void);
@@ -56,17 +56,19 @@ void *fn_80448CB0(void *object, s32 *state);
 void *fn_80448D04(void *object, s32 *state);
 void fn_80448658(R2Atomic *atomic);
 
+static void *ptankPipeline;
+
 /* Creates the tank's pipeline. */
 void *fn_804485BC(void *instance) {
-    lbl_805F1450 = fn_8046335C(0x12F, 0, NULL, NULL, (void *)fn_80448CB0, (void *)fn_80448D04);
+    ptankPipeline = fn_8046335C(0x12F, 0, NULL, NULL, (void *)fn_80448CB0, (void *)fn_80448D04);
     return instance;
 }
 
 /* Destroys the tank's pipeline. */
 void *fn_80448610(void *instance) {
-    if (lbl_805F1450 != NULL) {
-        fn_8049B800(lbl_805F1450);
-        lbl_805F1450 = NULL;
+    if (ptankPipeline != NULL) {
+        fn_8049B800(ptankPipeline);
+        ptankPipeline = NULL;
     }
     return instance;
 }
@@ -218,7 +220,7 @@ u32 fn_80448850(R2Atomic *atomic, s32 maxParticles, u32 unused, u32 dataFlags) {
     fn_8045985C(geometry);
     fn_8045B1F4(material);
     fn_80448658(atomic);
-    atomic->pipeline = lbl_805F1450;
+    atomic->pipeline = ptankPipeline;
     return 1;
 }
 
@@ -255,9 +257,9 @@ u32 fn_80448A24(R2Atomic *atomic) {
             axes[1] = ltm->up;
         }
     }
-    axes[1].x = lbl_805FB070 * axes[1].x;
-    axes[1].y = lbl_805FB070 * axes[1].y;
-    axes[1].z = lbl_805FB070 * axes[1].z;
+    axes[1].x = -1.0f * axes[1].x;
+    axes[1].y = -1.0f * axes[1].y;
+    axes[1].z = -1.0f * axes[1].z;
     tank->axes = axes;
 
     if (tank->vertexAlphaBlend) {
@@ -290,6 +292,3 @@ void *fn_80448CB0(void *object, s32 *state) {
     }
     return object;
 }
-#ifdef __cplusplus
-}
-#endif
