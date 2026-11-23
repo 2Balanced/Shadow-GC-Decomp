@@ -1,6 +1,7 @@
-/* Private types of the RenderWare GameCube driver units RwCpp54 and RwCpp56..RwCpp62, inferred
- * from the disassembly (offsets and sizes only where the code shows them). A later pass unifies
- * these with the neighbouring agents' headers. */
+/* Private types of the RenderWare GameCube driver files src/RenderWare/RwGameCube*.c and
+ * RwPowerPipe.c (0x8049043C..0x8049D933; old Game/RwCpp54..RwCpp62), inferred from the disassembly
+ * (offsets and sizes only where the code shows them). A later pass unifies these with the
+ * neighbouring agents' headers. */
 #ifndef GAME_RW_R7_H
 #define GAME_RW_R7_H
 
@@ -97,15 +98,19 @@ typedef struct RwDlImage {
 /* The driver's data in a raster, at the offset in lbl_805F1658 (registered as a raster
  * extension). Only the members these units read are named. */
 typedef struct RwDlRasterExt {
-    u8 unk00[0xC];
+    u8 unk00[0xC];    /* 0x00: the GXTlutObj of a palettised raster */
     s32 texFormat;    /* 0x0C: GXTexFmt */
-    u8 unk10[0xC];
+    s32 tlutFormat;   /* 0x10: GXTlutFmt */
+    u32 flags;        /* 0x14: 1 = the format has alpha */
+    u8 *allocated;    /* 0x18: the image as allocated */
     u8 *pixels;       /* 0x1C: the texture image, in GX's tiled layout */
-    u8 unk20[0xC];
+    u8 *palette;      /* 0x20 */
+    u8 *levelPixels;  /* 0x24: the locked mip level's image */
+    u8 *lockedPixels; /* 0x28: the linear copy a lock hands out */
     void *region;     /* 0x2C: the GXTexRegion of a preloaded texture, else NULL */
-    u8 unk30[2];
+    u16 token;        /* 0x30: the draw-sync token current when the raster was last drawn */
     u8 mipLevels;     /* 0x32: the mip levels made for it less one; 0xFF when not set */
-    u8 sharedPalette; /* 0x33: nonzero when the palette is not this raster's to fill */
+    u8 sharedPalette; /* 0x33: the locked mip level (the palette is level 0's to fill) */
 } RwDlRasterExt;
 
 /* RenderWare's error reporting, as the RWERROR macro expands. An error record is a block-scoped
@@ -292,10 +297,18 @@ typedef struct RwDlMatrix {
 
 /* RwCamera: only the members these units read. */
 typedef struct RwDlCamera {
-    u8 unk00[0x60];
+    u8 unk00[0x4];
+    void *frame;             /* 0x04: the camera's frame (RwObjectHasFrame) */
+    u8 unk08[0xC];
+    RwInt32 projection;      /* 0x14: RwCameraProjection (2 = parallel) */
+    u8 unk18[0x48];
     RwDlRaster *frameBuffer; /* 0x60 */
     RwDlRaster *zBuffer;     /* 0x64 */
-    u8 unk68[0x18];
+    u8 unk68[0x8];
+    f32 recipViewWindowX;    /* 0x70 */
+    f32 recipViewWindowY;    /* 0x74 */
+    f32 viewOffsetX;         /* 0x78 */
+    f32 viewOffsetY;         /* 0x7C */
     f32 nearPlane;           /* 0x80 */
     f32 farPlane;            /* 0x84 */
     f32 fogPlane;            /* 0x88 */
@@ -343,7 +356,8 @@ typedef struct RwDlGlobals {
     RwDlCamera *curCamera;                            /* 0x000 */
     u8 unk004[0xE4];
     RwInt32 (*strcmp)(const char *a, const char *b);  /* 0x0E8: rwstrcmp */
-    u8 unk0EC[0x20];
+    u8 unk0EC[0x1C];
+    void *(*malloc)(RwUInt32 size, RwUInt32 hint);     /* 0x108: RwMalloc */
     void (*free)(void *block);                        /* 0x10C: RwFree */
     u8 unk110[0x8];
     void *(*freeListAlloc)(void *freeList, u32 hint);  /* 0x118: RwFreeListAlloc */

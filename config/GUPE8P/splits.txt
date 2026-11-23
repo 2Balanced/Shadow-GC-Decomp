@@ -8306,32 +8306,68 @@ RenderWare/RwPaletteQuantize.c:
 	.sdata2     start:0x805FB360 end:0x805FB380
 	.sbss2      start:0x805FB560 end:0x805FB564
 
-Game/RwCpp54.cpp:
-	.text       start:0x8049043C end:0x80490E30
+RenderWare/RwGameCubeIm2D.c:
+	.text       start:0x8049043C end:0x80491AB4
+	.data       start:0x8056E060 end:0x8056E0C8
+	.bss        start:0x805E3158 end:0x805E3178
+	.sdata2     start:0x805FB380 end:0x805FB3A8
 
-Game/RwCpp55.cpp:
-	.text       start:0x80490E30 end:0x804929F0
+RenderWare/RwGameCubeRasterConvert.c:
+	.text       start:0x80491AB4 end:0x804939DC
+	.data       start:0x8056E0C8 end:0x8056E348
+	.sdata2     start:0x805FB3A8 end:0x805FB3B0
 
-Game/RwCpp56.cpp:
-	.text       start:0x804929F0 end:0x80493E8C
+RenderWare/RwGameCubeDevice.c:
+	.text       start:0x804939DC end:0x804953F0
+	.rodata     start:0x8051C2E8 end:0x8051C3C0
+	.data       start:0x8056E348 end:0x8056E4F8
+	.bss        start:0x805E3178 end:0x805E3210
+	.sdata      start:0x805EDF28 end:0x805EDF40
+	.sbss       start:0x805F15E0 end:0x805F1658
+	.sdata2     start:0x805FB3B0 end:0x805FB3D0
 
-Game/RwCpp57.cpp:
-	.text       start:0x80493E8C end:0x804959C0
+RenderWare/RwGameCubeRaster.c:
+	.text       start:0x804953F0 end:0x80497198
+	.data       start:0x8056E4F8 end:0x8056E958
+	.sbss       start:0x805F1658 end:0x805F1660
 
-Game/RwCpp58.cpp:
-	.text       start:0x804959C0 end:0x80497474
+RenderWare/RwGameCubeRenderState.c:
+	.text       start:0x80497198 end:0x80497FB4
+	.data       start:0x8056E958 end:0x8056EA90
+	.bss        start:0x805E3210 end:0x805E3260
+	.sbss       start:0x805F1660 end:0x805F1668
+	.sdata2     start:0x805FB3D0 end:0x805FB3E0
 
-Game/RwCpp59.cpp:
-	.text       start:0x80497474 end:0x80498E08
+RenderWare/RwGameCubeRasterRender.c:
+	.text       start:0x80497FB4 end:0x8049952C
+	.data       start:0x8056EA90 end:0x8056EBD0
+	.sbss       start:0x805F1668 end:0x805F1670
+	.sdata2     start:0x805FB3E0 end:0x805FB418
 
-Game/RwCpp60.cpp:
-	.text       start:0x80498E08 end:0x8049A95C
+RenderWare/RwGameCubeNativeTexture.c:
+	.text       start:0x8049952C end:0x80499B24
+	.sdata2     start:0x805FB418 end:0x805FB420
 
-Game/RwCpp61.cpp:
-	.text       start:0x8049A95C end:0x8049C1E0
+RenderWare/RwGameCubeTexture.c:
+	.text       start:0x80499B24 end:0x8049A78C
+	.data       start:0x8056EBD0 end:0x8056EC40
+	.sbss       start:0x805F1670 end:0x805F1678
+	.sdata2     start:0x805FB420 end:0x805FB430
 
-Game/RwCpp62.cpp:
-	.text       start:0x8049C1E0 end:0x8049D934
+RenderWare/RwGameCubeDrawSync.c:
+	.text       start:0x8049A78C end:0x8049A82C
+	.sdata      start:0x805EDF40 end:0x805EDF48
+	.sbss       start:0x805F1678 end:0x805F1680
+
+RenderWare/RwGameCubeIm3D.c:
+	.text       start:0x8049A82C end:0x8049B0CC
+	.sbss       start:0x805F1680 end:0x805F1690
+
+RenderWare/RwPowerPipe.c:
+	.text       start:0x8049B0CC end:0x8049D934
+	.bss        start:0x805E3260 end:0x805E32A0
+	.sdata      start:0x805EDF48 end:0x805EDF60
+	.sbss       start:0x805F1690 end:0x805F16A0
 
 Game/RwCpp63.cpp:
 	.text       start:0x8049D934 end:0x8049EA2C
