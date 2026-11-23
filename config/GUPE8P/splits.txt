@@ -7931,37 +7931,48 @@ Game/RwCpp27.cpp:
 Game/RwCpp28.cpp:
 	.text       start:0x80465ED4 end:0x80466B58
 
-Game/RwCpp29.cpp:
-	.text       start:0x80466B58 end:0x804683AC
+RenderWare/RpWorldGameCubeVertexConvert.c:
+	.text       start:0x80466B58 end:0x8046ACBC
+	.sdata2     start:0x805FB1F0 end:0x805FB210
 
-Game/RwCpp30.cpp:
-	.text       start:0x804683AC end:0x804699F0
-	.sdata2     start:0x805FB200 end:0x805FB210
+RenderWare/RpWorldGameCubeListSize.c:
+	.text       start:0x8046ACBC end:0x8046B110
+	.data       start:0x8056DAF8 end:0x8056DB50
 
-Game/RwCpp31.cpp:
-	.text       start:0x804699F0 end:0x8046B554
-	.data       start:0x8056DAF8 end:0x8056DB4C
+RenderWare/RpGeometryGameCubeInstance.c:
+	.text       start:0x8046B110 end:0x8046C4D0
+	.bss        start:0x805E18A0 end:0x805E18C0
 
-Game/RwCpp32.cpp:
-	.text       start:0x8046B554 end:0x8046CB94
+RenderWare/RpWorldSectorGameCubeInstance.c:
+	.text       start:0x8046C4D0 end:0x8046D8C8
+	.bss        start:0x805E18C0 end:0x805E18E0
 
-Game/RwCpp33.cpp:
-	.text       start:0x8046CB94 end:0x8046E594
+RenderWare/RpWorldGameCubeDisplayList.c:
+	.text       start:0x8046D8C8 end:0x8046EE8C
+	.data       start:0x8056DB50 end:0x8056DBA8
+	.sdata2     start:0x805FB210 end:0x805FB218
 
-Game/RwCpp34.cpp:
-	.text       start:0x8046E594 end:0x8046FF34
-	.data       start:0x8056DB50 end:0x8056DC7C
+RenderWare/RpWorldGameCubeVertexFormat.c:
+	.text       start:0x8046EE8C end:0x80470474
+	.data       start:0x8056DBA8 end:0x8056DCE8
+	.sdata2     start:0x805FB218 end:0x805FB220
 
-Game/RwCpp35.cpp:
-	.text       start:0x8046FF34 end:0x80471A54
-	.data       start:0x8056DC7C end:0x8056DCE4
+RenderWare/Rt2dBrush.c:
+	.text       start:0x80470474 end:0x80470AC4
+	.bss        start:0x805E18E0 end:0x805E1908
+	.sdata      start:0x805EDDF0 end:0x805EDDF8
 	.sdata2     start:0x805FB220 end:0x805FB230
 
-Game/RwCpp36.cpp:
-	.text       start:0x80471A54 end:0x80473584
+RenderWare/Rt2dFont.c:
+	.text       start:0x80470AC4 end:0x80473E9C
+	.data       start:0x8056DCE8 end:0x8056DD68
+	.bss        start:0x805E1908 end:0x805E1950
+	.sdata      start:0x805EDDF8 end:0x805EDE50
+	.sbss       start:0x805F1538 end:0x805F1540
+	.sdata2     start:0x805FB230 end:0x805FB250
 
 Game/RwCpp37.cpp:
-	.text       start:0x80473584 end:0x80474FF8
+	.text       start:0x80473E9C end:0x80474FF8
 	.sdata2     start:0x805FB250 end:0x805FB268
 
 Game/RwCpp38.cpp:

@@ -314,10 +314,15 @@ cflags_rw_c = [
     "-inline noauto",
 ]
 
-# RenderWare units RwCpp29..RwCpp36 (wave 40, agent r4): the unrolled loops of the vertex-array
-# converters at 0x80466B58 only come out of CodeWarrior GC 1.3/1.3.2 with -O4,p (2.x schedules them
-# differently), without lmw/stmw. Used with mw_version="GC/1.3.2".
-# Deferred inlining is left out: GC 1.3.2 emits a unit's functions in reverse order with it.
+# RenderWare 0x80466B58..0x80473E9C (src/RenderWare/RpWorldGameCube*.c, RpGeometryGameCubeInstance.c,
+# RpWorldSectorGameCubeInstance.c, Rt2dBrush.c, Rt2dFont.c; wave 41, agent q4): C built with
+# CodeWarrior GC 1.3.2 at -O4,p without lmw/stmw, automatic inlining (the files call each other's
+# small functions out of line). Measured per file against GC 1.3, 1.3.2, 2.0 and 2.7 (every other
+# RenderWare flag set is a GC 2.7 one): the vertex-array converters (2.7 misses fn_80466B58 by 1342
+# rows) and the brush (2.x misses fn_80470694 by 176) only match under 1.3.2; the size, instancing,
+# display-list and font files give the same code under 1.3.2 and 2.x (1.3 differs in some of them)
+# and stay on 1.3.2 with the rest of the library. Used with mw_version="GC/1.3.2". Deferred inlining is left out:
+# GC 1.3.2 emits a unit's functions in reverse order with it.
 cflags_rw_132 = [
     *cflags_base,
     "-use_lmw_stmw off",
@@ -325,7 +330,7 @@ cflags_rw_132 = [
     "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
     "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
 ]
-# The charset units (RwCpp35, RwCpp36) keep their string literals in .sdata, as retail does.
+# The font file (RenderWare/Rt2dFont.c) keeps its string literals in .data and .sdata, as retail does.
 cflags_rw_132_sdata = [*cflags_rw_132, "-str reuse,noreadonly"]
 
 
@@ -1231,14 +1236,6 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp26.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp27.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp32.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp33.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp34.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp35.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
-            Object(NonMatching, "Game/RwCpp36.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/RwCpp37.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp38.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp39.cpp", cflags=cflags_rw_r5),
@@ -1897,6 +1894,14 @@ config.libs = [
         "cflags": cflags_base,
         "progress_category": "sdk",
         "objects": [
+            Object(Matching, "RenderWare/RpWorldGameCubeVertexConvert.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(Matching, "RenderWare/RpWorldGameCubeListSize.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "RenderWare/RpGeometryGameCubeInstance.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "RenderWare/RpWorldSectorGameCubeInstance.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "RenderWare/RpWorldGameCubeDisplayList.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "RenderWare/RpWorldGameCubeVertexFormat.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(Matching, "RenderWare/Rt2dBrush.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "RenderWare/Rt2dFont.c", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
         ],
     },
 ]

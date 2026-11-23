@@ -1,25 +1,164 @@
-/* RenderWare GameCube driver, world sector instancing into display lists, 0x8046CB94..0x8046E594.
- * Names are inferred from behaviour. Compiled by CodeWarrior GC 1.3.2 with -O4,p.
- * Matching: fn_8046D2B8. fn_8046CB94 and fn_8046D4C8 are the world twins of fn_8046B79C and
- * fn_8046C0D4 (RwCpp32.cpp), written the same way and with the same saved-register difference.
- * fn_8046DA24 is not written yet. */
+/* RenderWare world plugin, GameCube: instancing a world sector into display lists,
+ * 0x8046C4D0..0x8046D8C8. The twin of RpGeometryGameCubeInstance.c for the sectors of a world,
+ * whose format is the world's (plugin data at lbl_805F1524): fn_8046C4D0 merges a sector's
+ * attribute arrays, fn_8046C94C and fn_8046D2B8 fill the file's scratch vertex descriptor (.bss
+ * 0x805E18C0), fn_8046CB94 and fn_8046D4C8 build the instance. Positions are quantised from the
+ * sector's offset (+0x6C). Names are inferred from behaviour.
+ *
+ * Source file: its own scratch descriptor; the small list-size functions are called out of
+ * line as in the geometry file. The display-list file after it starts with the strip counter
+ * fn_8046D8C8, which both instancing files and the skin plugin call. Old units Game/RwCpp32
+ * (end) and RwCpp33 (first part).
+ *
+ * Built as C with CodeWarrior GC 1.3.2, -O4,p, no stmw/lmw (cflags_rw_132).
+ * Matching: fn_8046C4D0 (the sector a typed parameter), fn_8046C94C, fn_8046D2B8. fn_8046CB94
+ * and fn_8046D4C8 have retail's instruction count but other saved-register assignments. */
 #include <dolphin/types.h>
-#include <string.h>
 #include "Game/rw/r4.h"
 
-extern "C" {
-extern RwGameCubeVtxDesc lbl_805E18C0;
-
-/* RwCpp34.cpp and RwCpp35.cpp: the vertex descriptor's setters. */
-void fn_8046FC1C(RwGameCubeVtxDesc *desc);
-void fn_8046FC48(RwGameCubeVtxDesc *desc, u32 value);
-void fn_8046FC50(RwGameCubeVtxDesc *desc, s32 attr, s32 count, u32 type, u32 frac);
-void fn_8046FF34(RwGameCubeVtxDesc *desc, s32 attr, GXAttrType type);
-void fn_8047046C(RwGameCubeVtxDesc *desc, u8 numArrays);
+/* The scratch vertex descriptor of a world sector's instance. */
+static RwGameCubeVtxDesc worldSectorVtxDesc;
 
 /* An array of 255 entries or more needs 16-bit indices (0xFF is not used as a byte index).
  * The enumerators keep the choice a branch, as in retail. */
 #define INDEX_TYPE(num) (((num) >= 0xFF) ? GX_INDEX16 : GX_INDEX8)
+
+/* fn_8046B110 for a world sector: the sector's arrays (its packed normals get their pad byte
+ * cleared first), merged by the index optimiser, and one index block per mesh. */
+s32 fn_8046C4D0(RpWorld *world, RpWorldSector *sector, void **vertexData, void ***meshData) {
+    RwGameCubeVtxStream streams[16];
+    s32 i;
+    u32 total;
+    u32 size;
+    void *table;
+    u16 **indices;
+    s32 numStreams;
+    s32 numMeshes;
+
+    if (RWGAMECUBEWORLDFORMAT(world) == NULL) {
+        fn_80462E1C();
+    }
+
+    numStreams = 0;
+    streams[numStreams].data = sector->vertices;
+    streams[numStreams].type = 8;
+    streams[numStreams].link = -1;
+    numStreams++;
+    if (world->flags & 0x10) {
+        for (i = 0; i < sector->numVertices; i++) {
+            sector->normals[i].pad = 0;
+        }
+        streams[numStreams].data = sector->normals;
+        streams[numStreams].type = 4;
+        streams[numStreams].link = -1;
+        numStreams++;
+    }
+    if (world->flags & 8) {
+        streams[numStreams].data = sector->preLitLum;
+        streams[numStreams].type = 4;
+        streams[numStreams].link = -1;
+        numStreams++;
+    }
+    if (world->flags & 0x84) {
+        for (i = 0; i < world->numTexCoordSets; i++) {
+            streams[numStreams].data = sector->texCoords[i];
+            streams[numStreams].type = 7;
+            streams[numStreams].link = -1;
+            numStreams++;
+        }
+    }
+
+    total = numStreams;
+    table = fn_80466194(streams, total, sector->numVertices);
+    if (table == NULL) {
+        return 0;
+    }
+    *vertexData = fn_80465ED4(table, streams, numStreams, sector->numVertices);
+    if (*vertexData == NULL) {
+        RwFree(table);
+        return 0;
+    }
+
+    numMeshes = sector->mesh->numMeshes;
+    size = numMeshes * 4;
+    indices = (u16 **)RwMalloc(numStreams * size, 0x1050D);
+    if (indices == NULL) {
+        RwFree(*vertexData);
+        RwFree(table);
+        return 0;
+    }
+    memset(indices, 0, numStreams * size);
+    for (i = 0; i < numMeshes; i++) {
+        RpMesh *mesh = &RPMESHES(sector->mesh)[i];
+        s32 j;
+        for (j = 0; j < numStreams; j++) {
+            indices[i * numStreams + j] = mesh->indices;
+        }
+    }
+
+    *meshData = (void **)RwMalloc(size, 0x1050D);
+    if (*meshData == NULL) {
+        RwFree(indices);
+        RwFree(*vertexData);
+        RwFree(table);
+        return 0;
+    }
+    for (i = 0; i < numMeshes; i++) {
+        (*meshData)[i] = fn_80465CDC(table, &indices[i * numStreams], total,
+                                     RPMESHES(sector->mesh)[i].numIndices);
+        if ((*meshData)[i] == NULL) {
+            while (--i > 0) {
+                RwFree((*meshData)[i]);
+            }
+            return 0;
+        }
+    }
+    RwFree(indices);
+    RwFree(table);
+    return 1;
+}
+
+/* The world's version of fn_8046B554 (it has its own scratch descriptor, worldSectorVtxDesc). */
+RwGameCubeVtxDesc *fn_8046C94C(RpWorld *world, RwGameCubeVtxArray *arrays) {
+    RwGameCubeGeomFormat *format = RWGAMECUBEWORLDFORMAT(world);
+    s32 numArrays;
+    s32 i;
+
+    if (format == NULL) {
+        format = fn_80462E1C();
+    }
+    fn_8046FC1C(&worldSectorVtxDesc);
+    fn_8046FC48(&worldSectorVtxDesc, 0);
+    numArrays = 0;
+
+    fn_8046FC50(&worldSectorVtxDesc, GX_VA_POS, 1, format->posType, format->posFrac);
+    fn_8046FF34(&worldSectorVtxDesc, GX_VA_POS, INDEX_TYPE(arrays[numArrays].num));
+    numArrays++;
+    if (world->flags & 0x10) {
+        if (format->nbt) {
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_NBT, 1, format->nrmType, 0);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_NBT, INDEX_TYPE(arrays[numArrays].num));
+        } else {
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_NRM, 0, format->nrmType, 0);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_NRM, INDEX_TYPE(arrays[numArrays].num));
+        }
+        numArrays++;
+    }
+    if (world->flags & 8) {
+        fn_8046FC50(&worldSectorVtxDesc, GX_VA_CLR0, format->clrType > 2, format->clrType, 0);
+        fn_8046FF34(&worldSectorVtxDesc, GX_VA_CLR0, INDEX_TYPE(arrays[numArrays].num));
+        numArrays++;
+    }
+    if (world->flags & 0x84) {
+        for (i = 0; i < world->numTexCoordSets; i++) {
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_TEX0 + i, 1, format->texType[i], format->texFrac[i]);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_TEX0 + i, INDEX_TYPE(arrays[numArrays].num));
+            numArrays++;
+        }
+    }
+    fn_8047046C(&worldSectorVtxDesc, numArrays);
+    return &worldSectorVtxDesc;
+}
 
 /* The attribute arrays of an indexed instance: the merged arrays of fn_8046C4D0, one per
  * attribute the geometry has, in the order fn_8046C94C declares them. */
@@ -183,11 +322,11 @@ RwResEntry *fn_8046CB94(RpWorld *world, RpWorldSector *sector) {
         fn_8046B0E0((void **)&lists[i], i, listSize, data);
         FillWorldIndices(world, sector, (u16 **)meshData[i], indices);
         fn_8046E594(desc, &lists[i], indices, RPMESHES(sector->mesh)[i].numIndices, world->flags & 1,
-                    fn_8046ACBC(desc), 1, primitive, sector->unk6C);
+                    fn_8046ACBC(desc), 1, primitive, &sector->unk6C);
         data += listSize;
     }
     fn_8046F208(desc, header, &arrays, data);
-    fn_8046F6CC(desc, header, &arrays, 1, sector->unk6C);
+    fn_8046F6CC(desc, header, &arrays, 1, &sector->unk6C);
     DCFlushRange(header, size);
     fn_80394F2C();
 
@@ -210,37 +349,37 @@ RwGameCubeVtxDesc *fn_8046D2B8(RpWorld *world, RpWorldSector *sector) {
     if (format == NULL) {
         format = fn_80462E1C();
     }
-    fn_8046FC1C(&lbl_805E18C0);
-    fn_8046FC48(&lbl_805E18C0, 0);
+    fn_8046FC1C(&worldSectorVtxDesc);
+    fn_8046FC48(&worldSectorVtxDesc, 0);
     numArrays = 0;
 
-    fn_8046FC50(&lbl_805E18C0, GX_VA_POS, 1, format->posType, format->posFrac);
-    fn_8046FF34(&lbl_805E18C0, GX_VA_POS, INDEX_TYPE(numVertices));
+    fn_8046FC50(&worldSectorVtxDesc, GX_VA_POS, 1, format->posType, format->posFrac);
+    fn_8046FF34(&worldSectorVtxDesc, GX_VA_POS, INDEX_TYPE(numVertices));
     numArrays++;
     if (world->flags & 0x10) {
         if (format->nbt) {
-            fn_8046FC50(&lbl_805E18C0, GX_VA_NBT, 1, format->nrmType, 0);
-            fn_8046FF34(&lbl_805E18C0, GX_VA_NBT, INDEX_TYPE(numVertices));
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_NBT, 1, format->nrmType, 0);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_NBT, INDEX_TYPE(numVertices));
         } else {
-            fn_8046FC50(&lbl_805E18C0, GX_VA_NRM, 0, format->nrmType, 0);
-            fn_8046FF34(&lbl_805E18C0, GX_VA_NRM, INDEX_TYPE(numVertices));
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_NRM, 0, format->nrmType, 0);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_NRM, INDEX_TYPE(numVertices));
         }
         numArrays++;
     }
     if (world->flags & 8) {
-        fn_8046FC50(&lbl_805E18C0, GX_VA_CLR0, format->clrType > 2, format->clrType, 0);
-        fn_8046FF34(&lbl_805E18C0, GX_VA_CLR0, INDEX_TYPE(numVertices));
+        fn_8046FC50(&worldSectorVtxDesc, GX_VA_CLR0, format->clrType > 2, format->clrType, 0);
+        fn_8046FF34(&worldSectorVtxDesc, GX_VA_CLR0, INDEX_TYPE(numVertices));
         numArrays++;
     }
     if (world->flags & 0x84) {
         for (i = 0; i < world->numTexCoordSets; i++) {
-            fn_8046FC50(&lbl_805E18C0, GX_VA_TEX0 + i, 1, format->texType[i], format->texFrac[i]);
-            fn_8046FF34(&lbl_805E18C0, GX_VA_TEX0 + i, INDEX_TYPE(numVertices));
+            fn_8046FC50(&worldSectorVtxDesc, GX_VA_TEX0 + i, 1, format->texType[i], format->texFrac[i]);
+            fn_8046FF34(&worldSectorVtxDesc, GX_VA_TEX0 + i, INDEX_TYPE(numVertices));
             numArrays++;
         }
     }
-    fn_8047046C(&lbl_805E18C0, numArrays);
-    return &lbl_805E18C0;
+    fn_8047046C(&worldSectorVtxDesc, numArrays);
+    return &worldSectorVtxDesc;
 }
 
 /* fn_8046C0D4 for a world sector drawn with its own arrays. */
@@ -297,11 +436,11 @@ RwResEntry *fn_8046D4C8(RpWorld *world, RpWorldSector *sector, void *owner, RwRe
         entry = (RwResEntry *)RwMalloc(size + sizeof(RwResEntry), 0x3050D);
         entry->link.next = NULL;
         entry->link.prev = NULL;
-        entry->owner = owner;
+        entry->owner = sector;
         entry->size = size;
-        entry->ownerRef = ownerRef;
+        entry->ownerRef = &sector->repEntry;
         entry->destroyNotify = fn_8046288C;
-        *ownerRef = entry;
+        sector->repEntry = entry;
     } else {
         entry = fn_80480878(owner, ownerRef, size, fn_8046288C);
     }
@@ -338,125 +477,12 @@ RwResEntry *fn_8046D4C8(RpWorld *world, RpWorldSector *sector, void *owner, RwRe
             }
         }
         fn_8046E594(desc, &lists[i], indices, RPMESHES(sector->mesh)[i].numIndices, 0, fn_8046ACBC(desc), 1,
-                    primitive, NULL);
+                    primitive, &sector->unk6C);
         data += listSize;
     }
     fn_8046F208(desc, header, &arrays, data);
-    fn_8046F6CC(desc, header, &arrays, 0, 0);
+    fn_8046F6CC(desc, header, &arrays, 1, &sector->unk6C);
     DCFlushRange(header, instSize);
     fn_80394F2C();
     return entry;
-}
-
-#define CLOSE_STRIP()            \
-    do {                         \
-        *numVertices += run + 2; \
-        run = 0;                 \
-        *numStrips += 1;         \
-    } while (0)
-
-/* Counts the strips and strip vertices a triangle strip's index list becomes once it is cut
- * at its degenerate triangles. With `swap` set a strip may only start on an even triangle, so
- * that its winding stays: an odd start takes one index more.
- * NonMatching in its first six instructions only: retail zeroes the two results through r9
- * and loads the counter's zero after them, GC 1.3.2 keeps the counter in r9 from the start
- * and takes r10 for the stores (ten source orders tried). */
-void fn_8046D8C8(u16 *indices, u32 numIndices, s32 *numStrips, s32 *numVertices, s32 swap) {
-    u32 run;
-    u32 i;
-
-    *numStrips = 0;
-    *numVertices = 0;
-    run = 0;
-    for (i = 0; i < numIndices - 2; i++) {
-        if (indices[0] != indices[1] && indices[0] != indices[2] && indices[1] != indices[2]) {
-            if (run == 0 && (i & 1) && swap) {
-                run = 2;
-            } else {
-                run++;
-            }
-        } else if (run != 0) {
-            if (swap && i < numIndices - 3) {
-                if (indices[1] != indices[2] && indices[1] != indices[3] &&
-                    indices[2] != indices[3]) {
-                    if (((i + 1) & 1) == 0) {
-                        CLOSE_STRIP();
-                    } else {
-                        run++;
-                    }
-                } else {
-                    CLOSE_STRIP();
-                }
-            } else {
-                CLOSE_STRIP();
-            }
-        }
-        indices++;
-    }
-    if (run != 0) {
-        CLOSE_STRIP();
-    }
-}
-
-#define WRITE_STRIP()                                              \
-    do {                                                           \
-        u8 *head = &out[numStrips * 3 + numVertices * vertexSize]; \
-        head[0] = command;                                         \
-        *(u16 *)(head + 1) = run + 2;                              \
-    } while (0)
-#define EMIT_STRIP()            \
-    do {                        \
-        WRITE_STRIP();          \
-        numVertices += run + 2; \
-        run = 0;                \
-        numStrips++;            \
-    } while (0)
-
-/* Writes the primitive headers (GX command byte and 16-bit vertex count) of the strips
- * fn_8046D8C8 counts into the display list at `out`, leaving `vertexSize` bytes for each
- * vertex after them. Without `split` the whole list is one primitive.
- * NonMatching by registers only: retail keeps the run and the vertex count in r11 and r10 and
- * the loaded indices in r30 and r31, GC 1.3.2 gives this source the opposite. */
-void fn_8046E3E0(u16 *indices, u32 numIndices, s32 split, u32 vertexSize, u8 command, s32 swap,
-                 u8 *out) {
-    u32 numStrips = 0;
-    u32 numVertices = 0;
-    u32 run = 0;
-    u32 i;
-
-    if (split) {
-        for (i = 0; i < numIndices - 2; i++) {
-            if (indices[0] != indices[1] && indices[0] != indices[2] &&
-                indices[1] != indices[2]) {
-                if (run == 0 && (i & 1) && swap) {
-                    run = 2;
-                } else {
-                    run++;
-                }
-            } else if (run != 0) {
-                if (swap && i < numIndices - 3) {
-                    if (indices[1] != indices[2] && indices[1] != indices[3] &&
-                        indices[2] != indices[3]) {
-                        if (((i + 1) & 1) == 0) {
-                            EMIT_STRIP();
-                        } else {
-                            run++;
-                        }
-                    } else {
-                        EMIT_STRIP();
-                    }
-                } else {
-                    EMIT_STRIP();
-                }
-            }
-            indices++;
-        }
-        if (run != 0) {
-            WRITE_STRIP();
-        }
-    } else {
-        out[0] = command;
-        *(u16 *)(out + 1) = numIndices;
-    }
-}
 }
