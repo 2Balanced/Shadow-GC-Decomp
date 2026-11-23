@@ -6,18 +6,14 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: every function but fn_8000CD64 matches (99.8%: p and its grandparent swap r4 and r5
- * at the loop's top; about 20 source shapes tried), and the functions are in retail's order:
- * retail emits fn_8000CD64 and its helpers after all the tree's template instances
- * (0x8000CD64..0x8000D094). They are friends of a class template (other units call them by these
- * extern "C" names), and the class is instantiated only by the unused UnkTouchTreeBalance (stripped
- * by the linker) through two out-of-line template members, so that GC/2.7 generates the friends
- * after the tree's last instances. With the register swap fixed the unit links (main.dol OK was
- * checked with the swap as the only difference). Wave 39 added 11 shapes, all with the same object
- * (or one row worse for the swapped comparison): locals for the parent, the grandparent, both
- * (declared in the loop, before it, in either order) and the grandparent's left child, and the
- * uncle read through the grandparent local. The named locals are propagated away, so the choice
- * between r4 and r5 is made on the same instructions. */
+ * The functions are in retail's order: retail emits fn_8000CD64 and its helpers after all the
+ * tree's template instances (0x8000CD64..0x8000D094). They are friends of a class template (other
+ * units call them by these extern "C" names), and the class is instantiated only by the unused
+ * UnkTouchTreeBalance (stripped by the linker) through two out-of-line template members, so that
+ * GC/2.7 generates the friends after the tree's last instances. fn_8000CD64 keeps the parent in r4
+ * and the grandparent in r5 at the loop's top only when the grandparent of the first comparison and
+ * of the uncle's load is read through an inline function of its own (Grand); every spelling with
+ * Parent(Parent(x)) or named locals swaps the two (probes/Game_CameraFactory.py). */
 #define MSL_PAIR_CONVERTING_CONSTRUCTOR
 #define MSL_TREE_ITERATOR_ASSIGN_CALL
 #define MSL_TREE_END_NODE_PER_TREE
@@ -69,6 +65,9 @@ void fn_8000D014(TreeNode *node, TreeNode *&root);
 
 inline TreeNode *Parent(const TreeNode *node) {
     return (TreeNode *)(node->parent_ & ~1);
+}
+inline TreeNode *Grand(const TreeNode *node) {
+    return (TreeNode *)(((TreeNode *)(node->parent_ & ~1))->parent_ & ~1);
 }
 
 namespace SonicteamUSA {
@@ -155,8 +154,8 @@ template <class T> struct UnkTreeBalance_8000CD64 {
     friend void fn_8000CD64(T *x, T *root) {
         fn_8000CF6C(x, true);
         while (x != root && fn_8000CF60(Parent(x)) == true) {
-            if (Parent(x) == Parent(Parent(x))->left_) {
-                T *y = Parent(Parent(x))->right_;
+            if (Parent(x) == Grand(x)->left_) {
+                T *y = Grand(x)->right_;
                 if (y != 0 && fn_8000CF60(y) == true) {
                     fn_8000CF6C(Parent(x), false);
                     fn_8000CF6C(y, false);

@@ -279,8 +279,6 @@ GC/2.7 does not expose to the source.
 | Unit | Symbol | Rows left (of) | Shapes tried | Residual |
 | ---- | ------ | -------------- | ------------ | -------- |
 | `Game/MemoryCardCrypt` | `Crypt__7CardDesFPCcPci` | 18 (218) | ~170 | MWCC list-scheduler order in the S-box gather |
-| `Game/EnemyArea` | `Contains__21UnkEnemyArea_8018A374FPv` | 1 (33) | 26 | prologue scheduling |
-| `Game/EnemyArea` | `fn_801A69A0` | 4 (23) | 26 | prologue scheduling |
 | `Game/PadButtons` | `fn_80356190` | 5 (33) | 16 | counter and pad parameter trade saved slots |
 | `Game/PadButtons` | `fn_80356260` | 15 (88) | 28 | saved-register permutation of the loop locals |
 
@@ -418,6 +416,41 @@ build described above):
 - a switch whose arms were still separate blocks when it was lowered and were joined afterwards
   (`MemoryCard::PollOpen`), and two constant returns kept as branches (`fn_801E7094` in
   `Game/Target.cpp`).
+
+## Source levers measured in wave 40
+
+- **Two "floors" were the const lever.** `Game/EnemyArea.cpp`'s `Contains` and `fn_801A69A0` (26
+  shapes each in wave 39, once listed above as prologue scheduling) match with the point and the
+  character declared as pointers to const: the loads then move above the prologue's stores. The
+  other way round, `EffectParticleRW3`'s and `EffectLensFlareRW3`'s constructors need a description
+  that is *not* const in the constructor's own parameter (the callers cast), whatever an inline
+  reader further down takes. Try both const-nesses of every pointer parameter before writing a
+  scheduling floor.
+- **An inline function for a doubly indirect value orders two scratch registers.** The tree
+  rebalancing `fn_8000CD64` (`Game/CameraFactory.cpp`) keeps the parent in r4 and the grandparent
+  in r5 only when the grandparent comes from an inline function of its own (`Grand(x)`), not from
+  `Parent(Parent(x))` or from named locals (31 earlier shapes).
+- **A callee that rounds its own result returns float.** `fn_80016260` ends in `frsp`; declared
+  `float`, `Event::Tick` (`Game/EggLastMechAIState.cpp`) stores the angle unrounded (`stfs f1`) and
+  rounds a second copy for the subtraction, as retail does. `Game/ArkCannon.cpp`'s `Aim` gets the
+  same store with `fn_8040F8FC` as float but then differs in more float registers.
+- **`#pragma pool_data off` around one function** gives a `lis`/`addi` pair per constant where the
+  rest of the unit reaches its constants through one pool base (`EffectParticle3DRW3`'s
+  constructor).
+- **A const local pointer is not merged back into what it copies.** `Impl *const self = this;`
+  with `s32 *const value = data;` gives `ProcessEvents` (`Game/UnkMotion_8022F058.cpp`) retail's
+  saved registers in declaration order (this above the value); the plain copies are merged away.
+  A const copy of an ordinary local is still merged (`fn_8009339C`, `Game/PlayerUtil.cpp`).
+- **Function-local statics show in `.sbss`.** A flip of `Game/EggLastMechAIState.cpp` failed on
+  r13 displacements only: a guarded static of a class type is laid out guard first and numbered
+  two apart (`s_state$417`, `init$419`), a guarded `float` value first and numbered one apart
+  (`s_time$719`, `init$720`), and a 4-byte hole behind an instance means the class has a member
+  nothing reads. `tools/dataorder.py --section .sbss` shows all three.
+- **An exception record out of step with the code.** In `Game/EffectLensFlareRW3.cpp` and
+  `Game/EffectManagerRW3.cpp` retail has one function's code last in the unit and its `extab`
+  record right behind the record of the first function that calls it. GC/2.7 puts both where the
+  function is defined (out of line) or both behind the caller (inline); no shape tried splits
+  them, and it is all that keeps the two units from linking.
 
 ## The C++ runtime library (Runtime.PPCEABI.H)
 

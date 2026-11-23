@@ -5,15 +5,13 @@
  * first class; member names are inferred. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first).
  *
- * NonMatching: 6 of 8 functions match.
- * - EffectParticleRW3's constructor (98%): GC/2.7 loads desc->m_particleKind for the switch above
- *   the three stores to the tank's plugin data before it; retail loads it after them. Every
- *   other instruction matches (a const_cast of desc does not change it).
- * - EffectParticle3DRW3's constructor (77%): retail reloads the address of each corner
- *   constant (-0.5, 0 and 0.5, separate .rodata objects) after each fn_800091D0 call; GC/2.7
- *   keeps one base address for all of them in a saved register (stmw r30 instead of stw r31),
- *   which renumbers the registers of the whole function. Named temporaries, braced blocks and
- *   an inline const-reference wrapper (which calls Vec3f's constructor out of line) were tried. */
+ * Two levers finish the unit (probes/Game_EffectParticleRW3*.py):
+ * - EffectParticleRW3's constructor takes a description that is not const: retail loads
+ *   desc->m_particleKind for the switch after the three stores to the tank's plugin data, and
+ *   GC/2.7 moves the load above them when the parameter points to const (callers cast).
+ * - EffectParticle3DRW3's constructor is compiled with data pooling off (#pragma pool_data):
+ *   retail forms the address of each corner constant (-0.5, 0 and 0.5, separate .rodata objects)
+ *   again after each fn_800091D0 call instead of keeping one pool base in a saved register. */
 #include "Game/EffectRW3.h"
 
 using ::Effect::System::EffectLaunchInfo;
@@ -89,7 +87,7 @@ inline void AssignVector(Vec3f &to, const Vec3f &from) {
 namespace Effect {
 namespace RW3 {
 
-EffectParticleRW3::EffectParticleRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectParticleRW3::EffectParticleRW3(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                      EffectManager *manager)
     : EffectParticle(desc, info, manager) {
     m_model = 0;
@@ -290,6 +288,7 @@ void EffectParticleRW3::Draw() {
     }
 }
 
+#pragma pool_data off
 EffectParticle3DRW3::EffectParticle3DRW3(const UnkEffectDesc_801D0AFC *desc,
                                          EffectLaunchInfo *info, EffectManager *manager)
     : EffectParticle(desc, info, manager), m_model(0), m_clump(0), m_texDict(0), m_world(0) {
@@ -326,6 +325,7 @@ EffectParticle3DRW3::EffectParticle3DRW3(const UnkEffectDesc_801D0AFC *desc,
     m_size += m_count * sizeof(UnkParticleModel_80027DC4);
 }
 
+#pragma pool_data reset
 EffectParticle3DRW3::~EffectParticle3DRW3() {
     if (m_model != 0) {
         for (int i = 0; i < m_count; i++) {

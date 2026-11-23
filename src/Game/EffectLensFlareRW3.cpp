@@ -163,7 +163,17 @@ struct UnkManagerView_804322E0 {
 
 #define View(manager) ((UnkManagerView_804322E0 *)(manager))
 
-inline UnkLensFlareParam_8043232C::UnkLensFlareParam_8043232C(u8 enabled_, u8 alpha_,
+/* NonMatching: every function matches and stands at retail's address; linked as Matching, the DOL
+ * differs only in the order of the unit's extab records. Retail has this constructor's code last
+ * in the unit (0x8043232C) but its exception record fourth, right behind the record of
+ * EffectLensFlareRW3's constructor, which is the first function emitted that calls it: the record
+ * stands where an inline function's weak copy is generated, the code where a function defined
+ * first in the file is. Defined here out of line and first, the code is in place and the record
+ * is last; defined inline (here or at the end of the file) both follow the element's constructor.
+ * Game/EffectManagerRW3.cpp has the same pair for EffectElement's operator delete (record behind
+ * CreateElement's, code last), so it is a property of how this library was built, perhaps a weak
+ * copy here and the kept definition elsewhere (probes/Game_EffectLensFlareRW3_W40b.py). */
+UnkLensFlareParam_8043232C::UnkLensFlareParam_8043232C(u8 enabled_, u8 alpha_,
                                                               u8 whiteout_)
     : enabled(enabled_), alpha(alpha_), whiteout(whiteout_) {
     ::Effect::RW3::UnkLensFlarePosition_8043232C zero = {0.0f, 0.0f, 0.0f};
@@ -536,14 +546,10 @@ struct UnkLensFlareDesc_80430CAC {
     /* 0x40 */ float z;
 };
 
-/* Copies the description's settings.
- * NonMatching (the constructor, 8 rows): retail copies the five fields one after the other, each
- * load directly before its store; GC/2.7 schedules every load above the previous store. It is the
- * scheduling difference of docs/research-notes.md (ScatteringRing: a load GC/2.7 moves above
- * stores and retail does not). Wave 39 tried 12 forms without a change in the object: a
- * non-const description, the copies written in the constructor, reference parameters, the
- * position as one shared struct type on both sides, raw byte and float pointers; a member
- * SetPosition and #pragma scheduling off for the constructor are worse (15 rows each). */
+/* Copies the description's lens flare settings. The element's constructor takes a description that
+ * is not const (wave 40, probes/Game_EffectLensFlareRW3_W40.py): retail copies the five fields one
+ * after the other, each load directly before its store, and GC/2.7 moves every load above the
+ * previous store when the constructor's parameter points to const, whatever this reader takes. */
 inline void ReadLensFlareDesc(UnkLensFlareParam_8043232C *param,
                               const UnkLensFlareDesc_80430CAC *desc) {
     param->alpha = desc->alpha;
@@ -557,9 +563,9 @@ namespace Effect {
 namespace RW3 {
 
 #pragma pool_data on
-EffectLensFlareRW3::EffectLensFlareRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectLensFlareRW3::EffectLensFlareRW3(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                        EffectManager *manager)
-    : EffectLensFlare(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
+    : EffectLensFlare(desc, info, manager) {
     m_size -= sizeof(EffectLensFlare);
     m_size += sizeof(EffectLensFlareRW3);
     if (!(m_flags & 1)) {

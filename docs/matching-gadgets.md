@@ -278,7 +278,7 @@ When one or two symbols are left, `python tools/uprobe.py -u Game/<Name>` compil
 tables of source spellings against the retail object (probe tables in `probes/`, `--keep NAME`
 leaves the winner in the source). Some residuals are GC/2.7's list scheduler or register chooser
 rather than the C, and no spelling fixes them; the floors found so far are documented in the source
-comments and in `docs/research-notes.md` (`MemoryCardCrypt` 18 rows, `EnemyArea` 1 and 4 rows,
+comments and in `docs/research-notes.md` (`MemoryCardCrypt` 18 rows,
 `PadButtons` 5 and 15 rows). Leave such units `NonMatching` with a comment naming the floor.
 
 When every function and section is 100%, change the unit to `Object(Matching, ...)`. Run `ninja`

@@ -101,7 +101,7 @@ EffectElement *EffectManagerRW3::CreateElement(const UnkEffectDesc_801D0AFC *des
     if (launch) {
         switch (desc->m_type) {
         case 2:
-            return new EffectParticleRW3(desc, launch, this);
+            return new EffectParticleRW3(const_cast<UnkEffectDesc_801D0AFC *>(desc), launch, this);
         case 3:
             return new EffectArrangerRW3(desc, launch, this);
         case 4:
@@ -113,7 +113,7 @@ EffectElement *EffectManagerRW3::CreateElement(const UnkEffectDesc_801D0AFC *des
         case 8:
             return new EffectGlobalParamRW3(desc, launch, this);
         case 9:
-            return new EffectLensFlareRW3(desc, launch, this);
+            return new EffectLensFlareRW3(const_cast<UnkEffectDesc_801D0AFC *>(desc), launch, this);
         case 10:
             return new EffectShimmerRW3(desc, launch, this);
         }

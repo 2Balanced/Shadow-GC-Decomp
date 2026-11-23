@@ -5,10 +5,12 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: 22 of 25 functions and all the data match. GC/2.7 numbers the registers of Load's
- * loop counter and table pointer the other way round, and of Tick's variables differently (retail
- * also keeps the address of the side's state for the second test); in the destructor retail
- * copies the loop's zero (mr) where GC/2.7 loads it again (li), as in Game/TGiHdGage.cpp. */
+ * NonMatching: Tick is left. Load matches since wave 40 with the row and the scene declared, in
+ * that order, ahead of the loop (the first local declared gets the highest saved register). Tick
+ * numbers its variables differently: retail keeps the counter in r31 above the player (r30), the
+ * address of the row's state in r24 for both tests, and in the closing branch the side in r24 and
+ * its scene in r23; a counter declared first, a pointer to the state and locals for the side and
+ * the scene in the branches leave 30 rows or more (probes/Game_TGiHissatu.py). */
 #define TGI_NO_NUMBER_COLORS
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -113,15 +115,19 @@ void TGiHissatu::Tick(float dt) {
 }
 
 void TGiHissatu::Load() {
+    const UnkHissatuSide_804B52E4 *side;
+    TPjsCsd *pcsd;
     for (int i = 0; i < 2; i++) {
-        TPjsCsd &csd = m_sides[i].m_csd;
-        const UnkHissatuSide_804B52E4 *side = &s_sides[i];
+        pcsd = &m_sides[i].m_csd;
+        TPjsCsd &csd = *pcsd;
+        side = &s_sides[i];
         fn_8003FA08(csd, side->m_file);
         strcpy(csd.m_sceneName, side->m_scene);
         fn_8003E388(csd, side->m_close, 1);
         fn_8003FB10(csd);
     }
 }
+
 
 void TGiHissatu::Draw(RednerDrawArgs &args) {
     if (lbl_8057D6A0.m_hudVisible) {

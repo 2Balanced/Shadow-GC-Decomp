@@ -8,11 +8,11 @@
  * "(name inferred)" are not original; the state ids are those GetId returns. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: one function is left, Event::Tick (8 rows). For the camera's rotation retail
- * stores the angle straight from the double fn_80016260 returns (stfs f1) and rounds a second copy
- * (frsp) for the subtraction; GC/2.7 rounds once and stores the rounded value, the difference
- * Game/ArkCannon.cpp's Aim has (a float declaration, casts and a separate double local do not
- * change it). Wave 39 matched Pursuit::Tick (see the comment there) and StartPlayerEffect2: its
+ * Event::Tick: for the camera's rotation retail stores the angle straight from fn_80016260's
+ * result (stfs f1) and rounds a second copy (frsp) for the subtraction. That is what GC/2.7 does
+ * when fn_80016260 is declared as returning float (it does: it rounds atan2's result itself); with
+ * a double return GC/2.7 rounds once and stores the rounded value (probes/
+ * Game_EggLastMechAIState.py). Wave 39 matched Pursuit::Tick (see the comment there) and StartPlayerEffect2: its
  * player is a reference to const and the radius a const float behind a static initializer
  * (DynamicFloat), which lets both loads move above the store of the link register. */
 
@@ -98,7 +98,7 @@ void fn_8040CE60(Vec3f *vector);
 void fn_8040E970(Vec3f *angles);
 float fn_8040E99C(float angle);
 Vec3f fn_80016284(const Fn8040CopyVector3 *vector);
-double fn_80016260(float x, float z);
+float fn_80016260(float x, float z);
 
 /* Turns the enemy toward a point (behaviour inferred). */
 void fn_8029EB5C(EnemyCharInfo *info, const Vec3f *target, float rate);
@@ -327,6 +327,8 @@ class Event : public EggLastMechAIStateBase {
     virtual int GetId() {
         return 4;
     }
+
+    /* 0x4 */ s32 field_0x4; /* never read or written; retail's instance is 8 bytes in .sbss */
 };
 
 class EventStart : public EggLastMechAIStateBase {
@@ -803,7 +805,9 @@ void FeverMissile::Tick(EggLastMech *mech) {
     case 1:
         if (fn_801A4810(mech->GetMotion())) {
             if (mech->m_slot->m_line.m_shotType == 0) {
-                static UnkFloat s_time(2.5f);
+                /* A float, not a class object: retail numbers its guard right behind it and
+                 * lays it out ahead of the guard in .sbss. */
+                static float s_time = DynamicFloat(2.5f);
                 mech->ChangeState(fn_80311AE4(), (int)&s_time);
             } else {
                 mech->ChangeState(fn_80311AE4(), 0);

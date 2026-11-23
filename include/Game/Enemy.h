@@ -457,7 +457,7 @@ struct UnkEnemyArea_8018A374 {
         memset(&m_bounds, 0, sizeof(m_bounds));
     }
     /* Whether key is in the area (0x801A68C0; behaviour inferred). */
-    u8 Contains(void *key);
+    u8 Contains(const void *key);
     /* The float at 0x18 (see the other definition below). */
     float GetRange() {
         return *reinterpret_cast<float *>(&m_shape.field_0x18[0]);
@@ -471,7 +471,7 @@ struct UnkEnemyArea_8018A374 {
 struct UnkEnemyArea_8018A374 {
     UnkEnemyArea_8018A374();
     /* Whether key is in the area (0x801A68C0; behaviour inferred). */
-    u8 Contains(void *key);
+    u8 Contains(const void *key);
     /* The float at 0x18 (name inferred: the area's radius). */
     float GetRange() {
         return *reinterpret_cast<float *>(&field_0x0[0x18]);

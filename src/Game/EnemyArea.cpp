@@ -5,9 +5,9 @@
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
  *
- * NonMatching: 3 of 5 functions and all data match. In Contains and fn_801A69A0 retail loads the
- * point's coordinates above the prologue's stores (stw r0 and the saved registers); GC/2.7 keeps
- * them after, for every source form tried. */
+ * In Contains and fn_801A69A0 retail loads the point's coordinates above the prologue's stores
+ * (stw r0 and the saved registers); GC/2.7 does that only when the point and the character are
+ * pointers to const in the parameters' declarations (probes/Game_EnemyArea_R2.py). */
 /* The two halves of the area (Game/Enemy.h). */
 #define ENEMY_AREA_PARTS
 
@@ -68,7 +68,7 @@ extern "C" void fn_801A69FC(UnkEnemyArea_8018A374 *area, const Vec3f *position, 
 }
 
 /* Whether a character is within the area's circle of its home (name inferred). */
-extern "C" u8 fn_801A69A0(UnkEnemyArea_8018A374 *area, CharInfo *chara) {
+extern "C" u8 fn_801A69A0(UnkEnemyArea_8018A374 *area, const CharInfo *chara) {
     Vec3f position(chara->m_position.x, chara->m_position.y, chara->m_position.z);
     return fn_8040D180(&position, &area->m_shape.field_0xC) < MoveRadiusSquared(area);
 }
@@ -79,7 +79,7 @@ extern "C" u8 fn_801A6944(UnkEnemyArea_8018A374 *area, const Vec3f *point) {
     return fn_8040D180(&flat, &area->m_shape.field_0x0) < MoveRadiusSquared(area);
 }
 
-u8 UnkEnemyArea_8018A374::Contains(void *key) {
+u8 UnkEnemyArea_8018A374::Contains(const void *key) {
     const Vec3f *point = static_cast<const Vec3f *>(key);
     if (std::fabs(point->y - m_bounds.field_0xC.y) < m_bounds.field_0x18.z) {
         Vec3f flat(point->x, 0.0f, point->z);

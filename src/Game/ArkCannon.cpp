@@ -8,10 +8,13 @@
  * in reverse address order (deferred inlining emits functions last-defined first).
  *
  * Not yet matching (36 of 38 functions and every data section match):
- * - Aim: retail stores the angle straight from the double that fn_8040F8FC returns (stfs f1) and
- *   rounds a second copy with frsp for the comparison; GC/2.7 rounds once and stores the rounded
- *   value, which shifts three float registers. No source shape tried changes that (see the float
- *   conversion notes in docs/research-notes.md).
+ * - Aim: retail stores the angle straight from fn_8040F8FC's result (stfs f1) and rounds a second
+ *   copy with frsp for the comparison; with the double return declared here GC/2.7 rounds once
+ *   and stores the rounded value, which shifts three float registers. Declared as returning float
+ *   (the lever of Game/Helicopter.cpp and Game/EggLastMechAIState.cpp) GC/2.7 has retail's store
+ *   and frsp, but keeps the rounded angle in f0 and the step in f1 where retail has f4 and f0
+ *   (seven rows instead of three; nine orders of the two declarations and of the comparison in
+ *   probes/Game_ArkCannon.py do not move them), so the double stays.
  * - Fire: every instruction and stack offset matches, but GC/2.7 gives the frame 0x10 more bytes
  *   (0xD0, retail 0xC0) whenever both destructible temporaries (the weak_ptr<Target> passed to
  *   SetTarget and the weak_ptr<CharInfo> passed to the shot's constructor) are present. */

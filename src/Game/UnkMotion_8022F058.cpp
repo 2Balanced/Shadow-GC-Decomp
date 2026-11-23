@@ -10,10 +10,14 @@
  * last-defined first).
  *
  * NonMatching: 57 of 59 functions and all data match; linked as Matching, the DOL differs only
- * inside the two others. LoadParts (0x8022F54C) and ProcessEvents (0x8022F7BC) differ only in
- * callee-saved register numbers: retail gives the part pointer (LoadParts) and this
- * (ProcessEvents) r30, GC/2.7 the lowest register of the set, under every form tried (as
- * CreateLockons in Game/BkWorm.cpp). */
+ * inside the two others. LoadParts (0x8022F54C) differs only in callee-saved register numbers:
+ * retail gives the part pointer r30, above the manager, the stage, the counter and the set, GC/2.7
+ * the lowest register but the table's whatever the declaration order, the scope or the spelling
+ * of the part's address (33 shapes, probes/Game_UnkMotion_8022F058_R4.py; as CreateLockons in
+ * Game/BkWorm.cpp). ProcessEvents (0x8022F7BC) has retail's registers (this in r30, ahead of the
+ * event's value) only with a const copy of this and a const value pointer; three rows of its
+ * prologue are left (retail copies this and then forms the switch's 0xD004 in r3, GC/2.7 forms it
+ * first, in r5), under 50 shapes (probes/Game_UnkMotion_8022F058*.py). */
 /* boost::scoped_array needs it (see boost/checked_delete.hpp). */
 #define BOOST_CHECKED_ARRAY_DELETE
 /* Declares Player::SetExternalMotionCommand's constructor (Game/CharCommand.h). */
@@ -540,38 +544,40 @@ void UnkMotion_8022F058::Impl::UpdateRider() {
 }
 
 void UnkMotion_8022F058::Impl::ProcessEvents(_stMtnPlayWork *work) {
+    Impl *const self = this;
     u16 event;
     s32 *data;
     while (fn_80415854(work, 0, &event, &data, 0) != 0) {
         work = 0;
         switch (event) {
         case 0x5003: {
-            s32 *value = data;
+            s32 *const value = data;
             int index = value[0];
             if (s_sounds[index].m_sound >= 0) {
-                fn_801D54F4(fn_80053164(), s_sounds[index].m_sound, m_owner, 0, 1);
+                fn_801D54F4(fn_80053164(), s_sounds[index].m_sound, self->m_owner, 0, 1);
             }
-            if (s_sounds[value[0]].m_rumble != -1 && !m_owner->GetRider().expired()) {
-                fn_8034DF48(s_sounds[value[0]].m_rumble, m_owner->GetRider().lock()->field_0x54);
+            if (s_sounds[value[0]].m_rumble != -1 && !self->m_owner->GetRider().expired()) {
+                fn_8034DF48(s_sounds[value[0]].m_rumble, self->m_owner->GetRider().lock()->field_0x54);
             }
             break;
         }
         case 0xD004: {
             int index = data[0];
             if (s_sounds[index].m_sound >= 0) {
-                fn_801D53C4(fn_80053164(), s_sounds[index].m_sound, 0, this, 2, 0, 5);
+                fn_801D53C4(fn_80053164(), s_sounds[index].m_sound, 0, self, 2, 0, 5);
             }
             break;
         }
         }
-        if (m_callback.IsSet()) {
+        if (self->m_callback.IsSet()) {
             Vehicle::MotionEventArgs args;
             args.m_event = event;
             args.m_value = data;
-            m_callback.Call(args);
+            self->m_callback.Call(args);
         }
     }
 }
+
 
 void UnkMotion_8022F058::Impl::LoadParts(s32 slot, const BirdMotionTable *table) {
     m_partCount = table->m_setCount;

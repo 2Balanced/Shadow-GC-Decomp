@@ -15,7 +15,11 @@
  * which r31 is reused for the tilt's address), as if each statement read the pointer through
  * something that returns it. Tried in wave 39 without effect: inline helpers for the dot product
  * and the slerp (pointer and named-local forms), an inline function that returns its argument, a
- * cast through the address of the member at offset 0. */
+ * cast through the address of the member at offset 0. Wave 40 (probes/Game_PlayerUtil.py, 29
+ * shapes, none better): const copies of the pointer, helpers taking a reference, a derived class
+ * converted to its base, the tilt's address in a local (it takes a third saved register), and the
+ * pointer kept untyped and cast at each use (retail's 88 instructions, but then the addresses of
+ * the ground's up and of the target tilt are kept in saved registers across the statements). */
 #include "Game/MathConstants.h"
 #include "Game/MathTypes.h"
 #include "Game/Player.h"

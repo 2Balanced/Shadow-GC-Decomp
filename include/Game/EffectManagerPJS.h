@@ -146,7 +146,7 @@ struct UnkLensFlareParam_8043232C {
 
 class EffectLensFlareRW3 : public ::Effect::System::EffectLensFlare {
   public:
-    EffectLensFlareRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+    EffectLensFlareRW3(::Effect::System::UnkEffectDesc_801D0AFC *desc,
                        ::Effect::System::EffectLaunchInfo *info,
                        ::Effect::System::EffectManager *manager);
     virtual ~EffectLensFlareRW3();
@@ -225,7 +225,7 @@ SIZE_ASSERT(EffectArrangerRW3, 0x11C);
 class EffectParticleRW3 : public ::Effect::System::EffectParticle {
   public:
     /* 0x80433CE0. */
-    EffectParticleRW3(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+    EffectParticleRW3(::Effect::System::UnkEffectDesc_801D0AFC *desc,
                       ::Effect::System::EffectLaunchInfo *info,
                       ::Effect::System::EffectManager *manager);
     virtual ~EffectParticleRW3();
@@ -408,7 +408,7 @@ class EffectLensFlarePJS : public ::Effect::RW3::EffectLensFlareRW3 {
     EffectLensFlarePJS(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
                        ::Effect::System::EffectLaunchInfo *info,
                        ::Effect::System::EffectManager *manager)
-        : EffectLensFlareRW3(desc, info, manager) {}
+        : EffectLensFlareRW3(const_cast< ::Effect::System::UnkEffectDesc_801D0AFC *>(desc), info, manager) {}
     virtual ~EffectLensFlarePJS() {}
 };
 SIZE_ASSERT(EffectLensFlarePJS, 0x128);

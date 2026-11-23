@@ -72,7 +72,7 @@ namespace Effect {
 
 EffectParticleUSA::EffectParticleUSA(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                      EffectManager *manager)
-    : EffectParticleRW3(desc, info, manager) {
+    : EffectParticleRW3(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_size -= sizeof(EffectParticleRW3);
     m_size += sizeof(EffectParticleUSA);
     if (!(m_flags & 1)) {
