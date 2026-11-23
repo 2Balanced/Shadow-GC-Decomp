@@ -1,8 +1,15 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare, 0x80446A04..0x804485BC: plugin 0x11E (frame hierarchies, what the game's units call
+ * RpHAnimHierarchy: attach, create/destroy, the frame plugin and stream callbacks) and plugin 0x12F
+ * (the particle tank's lock and callbacks, RpPTankLockStruct in Game/EffectParticleRW3.cpp).
+ * Names are inferred from behavior. 22 of 27 functions match; left: fn_804472AC (6 rows: the key
+ * frame size and the new hierarchy do not share r31), fn_804474D8 (5 rows: the documented
+ * later-compiler floor, the zeroed counter copied into the strength-reduced offset), and the
+ * drafts fn_804476B8, fn_80447AF8, fn_804480C8. */
 #include <string.h>
 #include <dolphin/types.h>
+#include "Game/rw/r1.h"
 
-extern u32 lbl_805F1440;
+extern s32 lbl_805F1440;
 extern u32 lbl_805F1448;
 extern u8 *lbl_805F15B4;
 
@@ -15,31 +22,31 @@ void fn_80446790(float *, const float *);
 void *fn_80446620(void *, u32 *);
 u32 fn_804466DC(void *, u32 *);
 u32 fn_80446780(u32 *);
-void fn_8048722C(u32 *);
-void fn_8048752C(u32 *, void *, u32 *);
-u32 fn_8044758C(u8 *);
+void fn_8048722C(void *);
+void fn_8048752C(void *, void *, void *);
+int fn_8044758C(void *);
 
-void *fn_80446A04(u32 *object, u32 *other) {
-    u32 *entry = (u32 *)other[4];
-    for (u32 i = 0; i < other[1]; i++) {
-        if (fn_8044758C((u8 *)object) == entry[0]) {
-            entry[3] = (u32)object;
+/* Frame callback: points the hierarchy's nodes whose ID is the frame's at the frame, then recurses
+ * into the frame's children. */
+void *fn_80446A04(void *frame, R1Hierarchy *hierarchy) {
+    for (int i = 0; i < hierarchy->m_nodeCount; i++) {
+        if (hierarchy->m_nodes[i].m_id == fn_8044758C(frame)) {
+            hierarchy->m_nodes[i].m_frame = frame;
         }
-        entry += 4;
     }
-    fn_8048722C(object);
-    fn_8048752C(object, (void *)fn_80446A04, other);
-    return object;
+    fn_8048722C(frame);
+    fn_8048752C(frame, (void *)fn_80446A04, hierarchy);
+    return frame;
 }
 
 extern u32 lbl_805EDD70;
 extern u32 lbl_805EDD74;
-extern u32 lbl_805E1510;
-void *fn_8047FC04(u32, void *, void *, u32, void *, u32);
+extern u8 lbl_805E1510[]; // the free list (in .bss) fn_80446AA8 creates
+void *fn_8047FC04(u32, u32, u32, u32, void *, u32);
 void fn_80477344(void *);
 
 void *fn_80446AA8(u32 *object) {
-    void *result = fn_8047FC04(0x24, &lbl_805EDD70, &lbl_805EDD74, 4, &lbl_805E1510, 0x40011E);
+    void *result = fn_8047FC04(0x24, lbl_805EDD70, 4, lbl_805EDD74, lbl_805E1510, 0x4011E);
     ((u32 *)&lbl_805F1440)[1] = (u32)result;
     if (result == NULL) object = NULL;
     u32 callbacks[12];
@@ -69,125 +76,185 @@ void *fn_80446B90(u32 *object) {
     return object;
 }
 
-u32 fn_80447418(u32 *);
-void *fn_804472AC(u32, u32 *, u32 *, u32, u32 *);
+int fn_80447418(R1Hierarchy *);
+R1Hierarchy *fn_804472AC(int, int *, int *, int, int);
 u32 fn_8047D458(void *, void *, u32);
 
-void *fn_80446BFC(u32 *object) {
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
-    if (target[1] != 0) {
-        u32 *list = (u32 *)target[1];
-        u32 *entry = (u32 *)list[4];
-        for (u32 i = 0; i < list[1]; i++) {
-            entry[3] = 0;
-            entry += 4;
+/* Plugin 0x11E's frame destructor: detaches the frame from its hierarchy. */
+void *fn_80446BFC(void *frame, s32 offset, s32 size) {
+    R1FrameHierarchyData *data = (R1FrameHierarchyData *)((u8 *)frame + lbl_805F1440);
+    if (data->m_hierarchy != NULL) {
+        R1Hierarchy *hierarchy = data->m_hierarchy;
+        for (int i = 0; i < hierarchy->m_nodeCount; i++) {
+            hierarchy->m_nodes[i].m_frame = NULL;
         }
-        if (list[5] == (u32)object) fn_80447418(list);
-        target[1] = 0;
+        if (hierarchy->m_parentFrame == frame) {
+            fn_80447418(hierarchy);
+        }
+        data->m_hierarchy = NULL;
     }
-    target[0] = 0xFFFFFFFF;
-    return object;
+    data->m_id = -1;
+    return frame;
 }
 
-void *fn_80446C94(u32 *object, u32 *other) {
-    u32 *otherTarget = (u32 *)((u8 *)other + lbl_805F1440);
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
-    u32 *list = (u32 *)otherTarget[1];
-    target[0] = otherTarget[0];
-    if (list != NULL && (list[0] & 1) == 0) {
-        u32 *source = (u32 *)list[4];
-        fn_804472AC(list[1], (u32 *)NULL, (u32 *)NULL, list[0], (u32 *)list[8]);
-        u32 *entry = (u32 *)list[4];
-        for (u32 i = 0; i < list[1]; i++) {
-            entry[3] = 0;
-            entry[2] = source[2];
-            entry[1] = source[1];
-            entry[0] = source[0];
-            source += 4;
-            entry += 4;
+/* Plugin 0x11E's frame copy callback: copies the node ID and, for a hierarchy root, the
+ * hierarchy. */
+void *fn_80446C94(void *dstFrame, const void *srcFrame, s32 offset, s32 size) {
+    R1Hierarchy *srcHierarchy;
+    R1FrameHierarchyData *dst;
+    const R1FrameHierarchyData *src = (const R1FrameHierarchyData *)((const u8 *)srcFrame + lbl_805F1440);
+    dst = (R1FrameHierarchyData *)((u8 *)dstFrame + lbl_805F1440);
+    srcHierarchy = src->m_hierarchy;
+    dst->m_id = src->m_id;
+    if (srcHierarchy != NULL && (srcHierarchy->m_flags & 1) == 0) {
+        R1Hierarchy *hierarchy = fn_804472AC(srcHierarchy->m_nodeCount, NULL, NULL, srcHierarchy->m_flags,
+                                             *(int *)((u8 *)srcHierarchy->m_interpolator + 0x20));
+        for (int i = 0; i < hierarchy->m_nodeCount; i++) {
+            hierarchy->m_nodes[i].m_frame = NULL;
+            hierarchy->m_nodes[i].m_flags = srcHierarchy->m_nodes[i].m_flags;
+            hierarchy->m_nodes[i].m_index = srcHierarchy->m_nodes[i].m_index;
+            hierarchy->m_nodes[i].m_id = srcHierarchy->m_nodes[i].m_id;
         }
-        target[1] = (u32)list;
-        list[5] = (u32)object;
+        dst->m_hierarchy = hierarchy;
+        hierarchy->m_parentFrame = dstFrame;
     }
-    return object;
+    return dstFrame;
 }
 
-void *fn_80446D84(void *stream, u32 *object, u32 *plugin) {
-    u32 value = 0x100;
-    if (fn_8047D458(stream, &value, 4) == 0) return NULL;
-    u32 *target = (u32 *)((u8 *)plugin + lbl_805F1440);
-    if (fn_8047D458(stream, target, 4) == 0) return NULL;
-    u32 *list = (u32 *)target[1];
-    if (list != NULL && (list[0] & 1) == 0) {
-        if (fn_8047D458(stream, list + 1, 4) == 0) return NULL;
-        if (fn_8047D458(stream, list, 4) == 0) return NULL;
-        if (fn_8047D458(stream, (u32 *)(list[8] + 0x20), 4) == 0) return NULL;
-        u32 *entry = (u32 *)list[4];
-        for (u32 i = 0; i < list[1]; i++) {
-            if (fn_8047D458(stream, entry, 4) == 0) return NULL;
-            if (fn_8047D458(stream, entry + 1, 4) == 0) return NULL;
-            if (fn_8047D458(stream, entry + 2, 4) == 0) return NULL;
-            entry += 4;
+/* Plugin 0x11E's frame stream write callback: the frame's node ID and, for the root of a
+ * hierarchy, the hierarchy's nodes. */
+void *fn_80446D84(void *stream, s32 length, const void *frame, s32 offset, s32 size) {
+    R1FrameHierarchyData *data;
+    int i;
+    R1HierarchyNode *node;
+    R1Hierarchy *hierarchy;
+    u32 version = 0x100;
+    if (fn_8047D458(stream, &version, 4) == 0) {
+        return NULL;
+    }
+    data = (R1FrameHierarchyData *)((const u8 *)frame + lbl_805F1440);
+    if (fn_8047D458(stream, &data->m_id, 4) == 0) {
+        return NULL;
+    }
+    hierarchy = data->m_hierarchy;
+    if (hierarchy != NULL && (hierarchy->m_flags & 1) == 0) {
+        if (fn_8047D458(stream, &hierarchy->m_nodeCount, 4) == 0) {
+            return NULL;
+        }
+        if (fn_8047D458(stream, &hierarchy->m_flags, 4) == 0) {
+            return NULL;
+        }
+        if (fn_8047D458(stream, (u8 *)hierarchy->m_interpolator + 0x20, 4) == 0) {
+            return NULL;
+        }
+        node = hierarchy->m_nodes;
+        for (i = 0; i < hierarchy->m_nodeCount; i++) {
+            if (fn_8047D458(stream, &node->m_id, 4) == 0) {
+                return NULL;
+            }
+            if (fn_8047D458(stream, &node->m_index, 4) == 0) {
+                return NULL;
+            }
+            if (fn_8047D458(stream, &node->m_flags, 4) == 0) {
+                return NULL;
+            }
+            node++;
         }
     } else {
-        value = 0;
-        if (fn_8047D458(stream, &value, 4) == 0) return NULL;
+        u32 none = 0;
+        if (fn_8047D458(stream, &none, 4) == 0) {
+            return NULL;
+        }
     }
     return stream;
 }
 
 u32 fn_8047D868(void *, void *, u32);
-u32 fn_804779DC(u32, u32);
+void *fn_804779DC(int, int);
 
-void *fn_80446F40(void *stream, u32 *plugin) {
-    u32 marker;
-    if (fn_8047D868(stream, &marker, 4) == 0 || marker != 0x100) return NULL;
-    u32 *target = (u32 *)((u8 *)plugin + lbl_805F1440);
-    if (fn_8047D868(stream, target, 4) == 0) return NULL;
-    u32 count;
-    if (fn_8047D868(stream, &count, 4) == 0) return NULL;
-    if ((s32)count <= 0) return stream;
-    u32 first;
-    u32 second;
-    if (fn_8047D868(stream, &first, 4) == 0 || fn_8047D868(stream, &second, 4) == 0) return NULL;
-
-    u32 *list = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x24, 0x3011E);
-    if (list != NULL) {
-        memset(list, 0, 0x24);
-        list[8] = fn_804779DC(count, second);
-        list[0] = first;
-        list[5] = (u32)plugin;
-        list[1] = count;
-        list[6] = (u32)list;
-        if ((list[0] & 2) == 0) {
-            list[2] = 0;
-            list[3] = 0;
-        } else {
-            u32 bytes = (count << 6) + 0xF;
-            void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x3011E);
-            list[2] = ((u32)memory + 0xF) & ~0xF;
-            list[3] = (u32)memory;
-        }
-        list[4] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count << 4, 0x3011E);
-        u32 *entry = (u32 *)list[4];
-        for (u32 i = 0; i < count; i++) {
-            if (fn_8047D868(stream, entry, 4) == 0) return NULL;
-            if (fn_8047D868(stream, entry + 1, 4) == 0) return NULL;
-            if (fn_8047D868(stream, entry + 2, 4) == 0) return NULL;
-            entry[3] = 0;
-            entry += 4;
-        }
+/* Plugin 0x11E's frame stream read callback. */
+void *fn_80446F40(void *stream, s32 length, void *frame, s32 offset, s32 size) {
+    int nodeCount;
+    s32 version;
+    int flags;
+    int keyFrameSize;
+    R1FrameHierarchyData *data = (R1FrameHierarchyData *)((u8 *)frame + lbl_805F1440);
+    if (fn_8047D868(stream, &version, 4) == 0) {
+        return NULL;
     }
-    target[1] = (u32)list;
+    if (version != 0x100) {
+        return NULL;
+    }
+    if (fn_8047D868(stream, &data->m_id, 4) == 0) {
+        return NULL;
+    }
+    if (fn_8047D868(stream, &nodeCount, 4) == 0) {
+        return NULL;
+    }
+    if (nodeCount > 0) {
+        if (fn_8047D868(stream, &flags, 4) == 0) {
+            return NULL;
+        }
+        if (fn_8047D868(stream, &keyFrameSize, 4) == 0) {
+            return NULL;
+        }
+        R1Hierarchy *hierarchy =
+            ((R1Hierarchy *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))((&lbl_805F1440)[1], 0x3011E);
+        memset(hierarchy, 0, sizeof(R1Hierarchy));
+        if (hierarchy != NULL) {
+            hierarchy->m_interpolator = fn_804779DC(nodeCount, keyFrameSize);
+            hierarchy->m_flags = flags;
+            hierarchy->m_parentFrame = frame;
+            hierarchy->m_nodeCount = nodeCount;
+            hierarchy->m_parentHierarchy = hierarchy;
+            if ((hierarchy->m_flags & 2) != 0) {
+                hierarchy->m_matrices = NULL;
+                hierarchy->m_matricesUnaligned = NULL;
+            } else {
+                void *memory =
+                    ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))((nodeCount << 6) + 0xF, 0x3011E);
+                hierarchy->m_matrices = (void *)(((u32)memory + 0xF) & ~0xF);
+                hierarchy->m_matricesUnaligned = memory;
+            }
+            hierarchy->m_nodes =
+                (R1HierarchyNode *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(nodeCount << 4, 0x3011E);
+            int i;
+            R1HierarchyNode *node = hierarchy->m_nodes;
+            for (i = 0; i < hierarchy->m_nodeCount; i++) {
+                if (fn_8047D868(stream, &node->m_id, 4) == 0) {
+                    return NULL;
+                }
+                if (fn_8047D868(stream, &node->m_index, 4) == 0) {
+                    return NULL;
+                }
+                if (fn_8047D868(stream, &node->m_flags, 4) == 0) {
+                    return NULL;
+                }
+                node->m_frame = NULL;
+                node++;
+            }
+        }
+        data->m_hierarchy = hierarchy;
+    }
     return stream;
 }
 
-u32 fn_8044719C(u32 *object) {
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1440);
-    if (target[0] == 0xFFFFFFFF && target[1] == 0) return 0;
-    u32 *list = (u32 *)target[1];
-    if (list == NULL || (list[0] & 1) != 0) return 0xC;
-    return list[1] * 0xC + 0x14;
+/* Plugin 0x11E's frame stream size callback. */
+s32 fn_8044719C(const void *frame, s32 offset, s32 size) {
+    const R1FrameHierarchyData *data = (const R1FrameHierarchyData *)((const u8 *)frame + lbl_805F1440);
+    int used = 0;
+    if (data->m_id != -1 || data->m_hierarchy != NULL) {
+        used = 1;
+    }
+    if (used) {
+        s32 result = 0xC;
+        R1Hierarchy *hierarchy = data->m_hierarchy;
+        if (hierarchy != NULL && (hierarchy->m_flags & 1) == 0) {
+            result = hierarchy->m_nodeCount * 0xC + 0x14;
+        }
+        return result;
+    }
+    return 0;
 }
 
 typedef void (*RwCpp09Callback)(void);
@@ -203,86 +270,97 @@ u32 fn_80447200(void) {
     result = fn_804878D4(8, 0x11E, (RwCpp09Callback)fn_80446BE0,
                          (RwCpp09Callback)fn_80446BFC, (RwCpp09Callback)fn_80446C94);
     lbl_805F1440 = result;
-    if (fn_804836EC(0x11E, (RwCpp09Callback)fn_80446F40,
-                    (RwCpp09Callback)fn_80446D84, (RwCpp09Callback)fn_8044719C) < 0) {
-        return 0;
+    s32 status = fn_804836EC(0x11E, (RwCpp09Callback)fn_80446F40, (RwCpp09Callback)fn_80446D84,
+                             (RwCpp09Callback)fn_8044719C);
+    int success = 0;
+    if (status >= 0 && lbl_805F1440 >= 0) {
+        success = 1;
     }
-    return lbl_805F1440 >= 0;
+    return success;
 }
 
-u32 fn_80477A8C(u32);
+u32 fn_80477A8C(void *);
 
-void *fn_804472AC(u32 count, u32 *first, u32 *second, u32 flags, u32 *owner) {
-    u32 *list = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(0x24, 0x3011E);
-    if (list == NULL) return NULL;
-    list[8] = fn_804779DC(count, (u32)owner);
-    list[0] = flags;
-    list[1] = count;
-    list[5] = 0;
+/* Creates a hierarchy of `count` nodes from the hierarchy free list. */
+R1Hierarchy *fn_804472AC(int count, int *flagsTable, int *ids, int flags, int keyFrameSize) {
+    R1Hierarchy *hierarchy =
+        ((R1Hierarchy *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))((&lbl_805F1440)[1], 0x3011E);
+    hierarchy->m_interpolator = fn_804779DC(count, keyFrameSize);
+    hierarchy->m_flags = flags;
+    hierarchy->m_nodeCount = count;
+    hierarchy->m_parentFrame = NULL;
     if ((flags & 2) == 0) {
-        list[2] = 0;
-        list[3] = 0;
+        void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))((count << 6) + 0xF, 0x3011E);
+        hierarchy->m_matrices = (void *)(((u32)memory + 0xF) & ~0xF);
+        hierarchy->m_matricesUnaligned = memory;
     } else {
-        u32 bytes = (count << 6) + 0xF;
-        void *memory = ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x3011E);
-        list[2] = ((u32)memory + 0xF) & ~0xF;
-        list[3] = (u32)memory;
+        hierarchy->m_matrices = NULL;
+        hierarchy->m_matricesUnaligned = NULL;
     }
-    list[4] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count << 4, 0x3011E);
-    u32 *entry = (u32 *)list[4];
-    for (u32 i = 0; i < count; i++) {
-        entry[3] = 0;
-        if (second != NULL) entry[2] = second[i];
-        entry[1] = 0;
-        if (first != NULL) entry[1] = first[i];
-        entry += 4;
+    hierarchy->m_nodes =
+        (R1HierarchyNode *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count << 4, 0x3011E);
+    for (int i = 0; i < count; i++) {
+        hierarchy->m_nodes[i].m_frame = NULL;
+        if (ids != NULL) {
+            hierarchy->m_nodes[i].m_id = ids[i];
+        }
+        hierarchy->m_nodes[i].m_index = i;
+        if (flagsTable != NULL) {
+            hierarchy->m_nodes[i].m_flags = flagsTable[i];
+        }
     }
-    list[6] = (u32)list;
-    return list;
+    hierarchy->m_parentHierarchy = hierarchy;
+    return hierarchy;
 }
 
-u32 fn_80447418(u32 *list) {
-    u32 *owner = (u32 *)list[5];
-    if ((list[0] & 1) == 0) {
-        if ((list[0] & 2) == 0) {
-            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)list[3]);
+/* Destroys a hierarchy: its node and matrix arrays unless it shares them, its interpolator, the
+ * hierarchy itself (back to the free list), and the parent frame's link to it. */
+int fn_80447418(R1Hierarchy *hierarchy) {
+    void *parentFrame = hierarchy->m_parentFrame;
+    if ((hierarchy->m_flags & 1) == 0) {
+        if ((hierarchy->m_flags & 2) == 0) {
+            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(hierarchy->m_matricesUnaligned);
         }
-        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)list[4]);
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(hierarchy->m_nodes);
     }
-    list[3] = 0;
-    list[2] = 0;
-    list[4] = 0;
-    fn_80477A8C(list[8]);
-    ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x11C))(list);
-    if (owner != NULL) owner[1] = 0;
+    hierarchy->m_matricesUnaligned = NULL;
+    hierarchy->m_matrices = NULL;
+    hierarchy->m_nodes = NULL;
+    fn_80477A8C(hierarchy->m_interpolator);
+    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x11C))((&lbl_805F1440)[1], hierarchy);
+    if (parentFrame != NULL) {
+        ((R1FrameHierarchyData *)((u8 *)parentFrame + lbl_805F1440))->m_hierarchy = NULL;
+    }
     return 0;
 }
 
-void *fn_804474D8(u32 *object) {
-    u32 *owner = (u32 *)object[5];
-    u32 *entry = (u32 *)object[4];
-    for (u32 i = 0; i < object[1]; i++) {
-        if (fn_8044758C((u8 *)owner) == entry[0]) {
-            entry[3] = (u32)owner;
+/* Attaches the hierarchy to its parent frame's tree: points every node at the frame with its ID. */
+R1Hierarchy *fn_804474D8(R1Hierarchy *hierarchy) {
+    void *frame;
+    int i;
+    frame = hierarchy->m_parentFrame;
+    for (i = 0; i < hierarchy->m_nodeCount; i++) {
+        if (hierarchy->m_nodes[i].m_id == fn_8044758C(frame)) {
+            hierarchy->m_nodes[i].m_frame = frame;
         }
-        entry += 4;
     }
-    fn_8048722C(owner);
-    fn_8048752C(owner, (void *)fn_80446A04, object);
-    return object;
+    fn_8048722C(frame);
+    fn_8048752C(frame, (void *)fn_80446A04, hierarchy);
+    return hierarchy;
 }
 
 void fn_8045B270(u32, u32);
 
-void *fn_804475A8(u32 *object) {
-    if (*(u32 *)((u8 *)object + lbl_805F1448) != 0) {
-        u32 *owner = (u32 *)object[6];
-        fn_8045B270(*(u32 *)(owner[8] + 0), 0);
-        if (object[3] != 0) {
-            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)object[3]);
+/* Plugin 0x12F's destructor: frees the object's plugin data. */
+void *fn_804475A8(void *object, s32 offset, s32 size) {
+    if (*(u32 **)((u8 *)object + lbl_805F1448) != NULL) {
+        fn_8045B270(**(u32 **)(*(u8 **)((u8 *)object + 0x18) + 0x20), 0);
+        if ((*(u32 **)((u8 *)object + lbl_805F1448))[3] != 0) {
+            ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(
+                (void *)(*(u32 **)((u8 *)object + lbl_805F1448))[3]);
         }
-        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
-        *(u32 *)((u8 *)object + lbl_805F1448) = 0;
+        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(*(u32 **)((u8 *)object + lbl_805F1448));
+        *(u32 **)((u8 *)object + lbl_805F1448) = NULL;
     }
     return object;
 }
@@ -291,60 +369,97 @@ extern u32 lbl_805F144C;
 void fn_804485BC(void);
 void fn_80448610(void);
 void fn_80447598(u8 *);
-void *fn_804475A8(u32 *);
+void *fn_804475A8(void *, s32, s32);
 s32 fn_80458B6C(u32, u32, RwCpp09Callback, RwCpp09Callback, void *);
 
 u32 fn_80447640(void) {
     s32 result = fn_80485D78(4, 0x12F, (RwCpp09Callback)fn_804485BC,
                              (RwCpp09Callback)fn_80448610);
     lbl_805F144C = result;
-    if (result < 0) return 0;
-    result = fn_80458B6C(4, 0x12F, (RwCpp09Callback)fn_80447598,
-                         (RwCpp09Callback)fn_804475A8, NULL);
-    lbl_805F1448 = result;
-    return ((u32)result >> 31) ^ 1;
+    if (result >= 0) {
+        lbl_805F1448 = fn_80458B6C(4, 0x12F, (RwCpp09Callback)fn_80447598,
+                                   (RwCpp09Callback)fn_804475A8, NULL);
+        return ((u32)lbl_805F1448 >> 31) ^ 1;
+    }
+    return 0;
 }
 
-u32 fn_80447EB4(u32 value) {
-    if ((value & 0x8) != 0 && (value & 0x8000) != 0) value &= 0x8000;
-    if ((value & 0x20) != 0 && (value & 0x20000) != 0) value &= 0x20000;
-    if ((value & 0x40) != 0 && (value & 0x40000) != 0) value &= 0x40000;
-    if ((value & 0x80) != 0 && (value & 0x80000) != 0) value &= 0x80000;
-    if ((value & 0x100) != 0 && (value & 0x100000) != 0) value &= 0x100000;
-    if ((value & 0x8) != 0 && (value & 1) != 0) value &= ~1;
-    if ((value & 0x8) != 0 && (value & 0x4) != 0) value &= 0xF;
-    if ((value & 0x8) != 0 && (value & 0x20) != 0) value &= 0x3F;
-    if ((value & 0x8) == 0 && (value & 1) == 0) value |= 1;
-    if ((value & 0xC) == 0) value |= 0x20000000;
-    return value;
+u32 fn_80447EB4(u32 flags) {
+    int bit0 = flags & 1;
+    int bit2 = (flags >> 2) & 1;
+    int bit3 = (flags >> 3) & 1;
+    int bit5 = (flags >> 5) & 1;
+    int bit6 = (flags >> 6) & 1;
+    int bit7 = (flags >> 7) & 1;
+    int bit8 = (flags >> 8) & 1;
+    int bit15 = (flags >> 15) & 1;
+    int bit17 = (flags >> 17) & 1;
+    int bit18 = (flags >> 18) & 1;
+    int bit19 = (flags >> 19) & 1;
+    int bit20 = (flags >> 20) & 1;
+
+    if (bit3 == 1 && bit15 == 1) {
+        flags &= 0x8000;
+    }
+    if (bit5 == 1 && bit17 == 1) {
+        flags &= 0x20000;
+    }
+    if (bit6 == 1 && bit18 == 1) {
+        flags &= 0x40000;
+    }
+    if (bit7 == 1 && bit19 == 1) {
+        flags &= 0x80000;
+    }
+    if (bit8 == 1 && bit20 == 1) {
+        flags &= 0x100000;
+    }
+    if (bit3 == 1 && bit0 == 1) {
+        flags &= ~1;
+    }
+    if (bit3 == 1 && bit2 == 1) {
+        flags &= ~4;
+    }
+    if (bit3 == 1 && bit5 == 1) {
+        flags &= ~0x20;
+    }
+    if (bit3 == 0 && bit0 == 0) {
+        flags |= 1;
+    }
+    if ((flags & 0x30000000) == 0) {
+        flags |= 0x20000000;
+    }
+    return flags;
 }
 
-void *fn_80447FC0(u32 *object) {
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1448);
-    if ((s32)target[1] <= 0) return object;
-    if (target[7] != 0) {
-        ((void (*)(void *, u32))target[7])(target + 0x12, target[0x10]);
-        target[0x10] = 0;
-    }
-    u32 result = 1;
-    if (target[8] != 0) {
-        result = ((u32 (*)(u32 *, void *, u32))target[8])(object, target + 0x12, target[1]);
-    }
-    if (result == 1 && target[4] != 0) {
-        ((void (*)(u32 *))target[4])(object);
+/* Runs plugin 0x12F's callbacks for the object: the first (then clears its argument), the
+ * second, and the third when the second returned 1 (or there is no second). */
+void *fn_80447FC0(void *object) {
+    int result = 1;
+    u32 *data = *(u32 **)((u8 *)object + lbl_805F1448);
+    if ((s32)data[1] > 0) {
+        if (data[7] != 0) {
+            ((void (*)(void *, void *, u32, u32))data[7])(object, data + 0x12, data[1], data[0x10]);
+            data[0x10] = 0;
+        }
+        if (data[8] != 0) {
+            result = ((int (*)(void *, void *, u32))data[8])(object, data + 0x12, data[1]);
+        }
+        if (result == 1) {
+            ((void (*)(void *))data[4])(object);
+        }
     }
     return object;
 }
 
-extern u32 lbl_8056D6F8;
+extern u8 lbl_8056D6F8[];
 void *fn_804480C8(void *, u32, void *, void *);
 
 extern u32 lbl_8051BCCC;
-extern float lbl_805FB050;
-extern float lbl_805FB054;
-extern float lbl_805FB058;
-extern float lbl_805FB05C;
-extern float lbl_805FB060;
+extern const float lbl_805FB050;
+extern const float lbl_805FB054;
+extern const float lbl_805FB058;
+extern const float lbl_805FB05C;
+extern const float lbl_805FB060;
 extern u32 lbl_805FB550;
 extern u32 lbl_805FB554;
 s32 fn_80456DD8(void);
@@ -355,7 +470,7 @@ u32 fn_80447AF8(u32 *, u32, void *);
 void fn_8045B270(u32, u32);
 
 void *fn_80448074(u32 *object, u32 value, void *argument) {
-    return fn_804480C8(object, fn_80447EB4(value), argument, &lbl_8056D6F8);
+    return fn_804480C8(object, fn_80447EB4(value), argument, lbl_8056D6F8);
 }
 
 extern u32 lbl_8051BCA8;
@@ -491,62 +606,66 @@ void *fn_804480C8(void *parent, u32 flags, void *argument, void *config) {
     return owner;
 }
 
-u32 fn_80448408(u32 *object, u32 *out, u32 flags, u32 arg4) {
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1448);
-    if ((target[0x28] & flags) != 0) {
-        out[0] = 0;
-        out[1] = 0;
+/* A lock of one of the object's arrays: data and stride. Copied as C copies it (see R1BBoxBits). */
+struct R1Pair {
+    u32 m_first;
+    u32 m_second;
+};
+
+struct R1PairBits {
+    u32 w[2];
+};
+
+/* Copies the object's (plugin 0x12F) pair for `type` (one bit) to `out`; with bit 30 of `flags`
+ * set, a present pair also marks the type in the object's flags. 0 when the type is not set. */
+int fn_80448408(void *object, R1Pair *out, u32 type, u32 flags) {
+    u32 *data = *(u32 **)((u8 *)object + lbl_805F1448);
+    if ((data[0x28] & type) == 0) {
+        out->m_first = 0;
+        out->m_second = 0;
         return 0;
     }
-    switch (flags) {
+    switch (type) {
     case 1:
-        out[0] = target[0x13];
-        out[1] = target[0x14];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x13);
         break;
     case 2:
-        out[0] = target[0x1B];
-        out[1] = target[0x1C];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x1B);
         break;
     case 4:
-        out[0] = target[0x19];
-        out[1] = target[0x1A];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x19);
         break;
     case 8:
-        out[0] = target[0x15];
-        out[1] = target[0x16];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x15);
         break;
     case 0x10:
-        out[0] = target[0x17];
-        out[1] = target[0x18];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x17);
         break;
     case 0x20:
-        out[0] = target[0x1F];
-        out[1] = target[0x20];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x1F);
         break;
     case 0x40:
-        out[0] = target[0x1D];
-        out[1] = target[0x1E];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x1D);
         break;
     case 0x80:
-        out[0] = target[0x21];
-        out[1] = target[0x22];
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x21);
         break;
     case 0x100:
-        out[0] = target[0x23];
-        out[1] = target[0x24];
-        break;
-    default:
+        *(R1PairBits *)out = *(R1PairBits *)(data + 0x23);
         break;
     }
-    if (target[0x27] != 0) out[1] = target[0x27];
-    if (out[0] != 0 && (arg4 & 0x40000000) != 0) {
-        target[0xF] |= arg4 | flags;
+    if ((s32)data[0x27] != 0) {
+        out->m_second = data[0x27];
+    }
+    if (out->m_first != 0 && (flags & 0x40000000) == 0x40000000) {
+        (*(u32 **)((u8 *)object + lbl_805F1448))[0xF] |= flags | type;
     }
     return 1;
 }
 
-u32 fn_8044758C(u8 *object) {
-    return *(u32 *)(object + lbl_805F1440);
+/* The frame's node ID (the first word of plugin 0x11E's frame data). */
+int fn_8044758C(void *frame) {
+    return *(int *)((u8 *)frame + lbl_805F1440);
 }
 
 u32 fn_8044757C(u8 *object) {
@@ -570,9 +689,10 @@ void fn_804483E8(void) {
     fn_80456FD8();
 }
 
-void fn_80448598(u8 *object) {
-    u32 *nested = *(u32 **)(object + lbl_805F1448);
-    nested[0x10] |= nested[0x0F];
-    nested[0x0F] = 0;
+void *fn_80448598(void *object) {
+    u32 *data = *(u32 **)((u8 *)object + lbl_805F1448);
+    data[0x10] |= data[0x0F];
+    data[0x0F] = 0;
+    return object;
 }
 }

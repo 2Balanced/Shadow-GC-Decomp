@@ -1,10 +1,14 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare, 0x80443A74..0x80444E7C: plugin 0x122 applied to atomics (morph weights added to the
+ * geometry's vertex arrays) and its engine and copy callbacks. Names are inferred from behavior.
+ * 13 of 18 functions match; left: fn_80443A74 (it compiles far larger under -O4,p: the draft's
+ * shape is wrong), fn_80444088 (dst/src/count registers rotate after the inline allocation),
+ * fn_804443A0, fn_80444630, fn_80444A2C (drafts). */
 #include <string.h>
 #include <dolphin/types.h>
 
 extern u32 lbl_805F1430;
 extern u8 *lbl_805F15B4;
-extern float lbl_805FAFA8;
+extern const float lbl_805FAFA8;
 extern s32 lbl_805F1428;
 extern u32 lbl_805F1578;
 
@@ -159,30 +163,39 @@ void *fn_80443FFC(u8 *base) {
     return base;
 }
 
-void *fn_80444088(u32 *object, u32 *other) {
-    if (other[6] == 0) return object;
-    u32 otherCount = fn_80443A54((u8 *)other[6]);
-    if (otherCount == 0) return object;
-
-    u32 *otherTarget = (u32 *)((u8 *)other + lbl_805F1430);
-    u32 *target = (u32 *)((u8 *)object + lbl_805F1430);
-    u32 bytes = fn_80443A54((u8 *)object[6]) * 4;
-    target[0] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x30122);
-    if (target[0] == 0) {
+static inline void *AllocWeights(u32 *atomic, u32 *data) {
+    u32 bytes = fn_80443A54((u8 *)atomic[6]) * 4;
+    data[0] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes, 0x30122);
+    if (data[0] == 0) {
         u32 error[2];
         error[0] = 0x122;
         error[1] = fn_8047DC28(0x80000013, bytes);
         fn_8047DB84(error);
-    } else {
-        memset((void *)target[0], 0, bytes);
-        if (otherTarget[0] != 0) {
-            memcpy((void *)target[0], (void *)otherTarget[0], otherCount * 4);
-        } else {
-            memset((void *)target[0], 0, otherCount * 4);
+        return NULL;
+    }
+    memset((void *)data[0], 0, bytes);
+    return atomic;
+}
+
+void *fn_80444088(u32 *object, u32 *other) {
+    u32 count;
+    u32 *data;
+    if (other[6] != 0) {
+        count = fn_80443A54((u8 *)other[6]);
+        if (count != 0) {
+            u32 *otherData = (u32 *)((u8 *)other + lbl_805F1430);
+            data = (u32 *)((u8 *)object + lbl_805F1430);
+            if (AllocWeights(object, data) != NULL) {
+                if (otherData[0] != 0) {
+                    memcpy((void *)data[0], (void *)otherData[0], count * 4);
+                } else {
+                    memset((void *)data[0], 0, count * 4);
+                }
+            }
+            data[1] = 0;
+            data[2] = otherData[2];
         }
     }
-    target[1] = 0;
-    target[2] = otherTarget[2];
     return object;
 }
 
@@ -351,7 +364,7 @@ void *fn_80444630(u32 *object, float delta) {
     return object;
 }
 
-extern s32 lbl_805EDD68[];
+extern s32 lbl_805EDD68[2];
 void fn_80445C38(u32);
 void fn_80445C9C(void);
 s32 fn_80485D78(u32, u32, RwCpp07Callback, RwCpp07Callback);
@@ -382,7 +395,7 @@ u32 fn_8044484C(void) {
 }
 
 extern s32 lbl_805F1428;
-extern u16 lbl_805EDF40;
+extern volatile u16 lbl_805EDF40;
 void fn_8048071C(void *);
 void fn_8039561C(u32);
 s32 fn_8049A78C(u32);
@@ -401,8 +414,13 @@ void fn_804448B8(u32 *object) {
     }
 
     u32 *owner = (u32 *)object[3];
-    if (*(u8 *)owner == 1) owner = *(u32 **)((u8 *)owner + 0x18);
-    u32 *tree = *(u32 **)((u8 *)owner + lbl_805F1428);
+    u32 *tree;
+    if (*(u8 *)owner == 1) {
+        owner = *(u32 **)((u8 *)owner + 0x18);
+        tree = *(u32 **)((u8 *)owner + lbl_805F1428);
+    } else {
+        tree = *(u32 **)((u8 *)owner + lbl_805F1428);
+    }
     object[9] = tree[3];
     if ((owner[2] & 0x10) != 0) {
         object[0xB] = tree[4];

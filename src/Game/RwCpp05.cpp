@@ -1,5 +1,10 @@
-/* RenderWare stream object helpers and chunk readers. Names are inferred from behavior. */
+/* RenderWare, 0x80440920..0x80442210: plugin 0x11D (a collision tree for
+ * geometries and world sectors): its attach function, the plugin and stream callbacks, building a
+ * tree from the pre-3.6 stream format, and the line and box queries. Names are inferred from
+ * behavior. 9 of 12 functions match; left: fn_80440920 (40 rows: locals' stack slots and the
+ * flat box copy), fn_80441188 and fn_80441BF8 (drafts). */
 #include <dolphin/types.h>
+#include "Game/rw/r1.h"
 
 extern "C" {
 extern u8 *lbl_805F15B4;
@@ -173,13 +178,16 @@ void *fn_80440920(void *stream, u32 value, u32 count, void *boundsData, s32 *sta
     return node;
 }
 
-void fn_80440D28(void) {
+/* The plugin's engine constructor and destructor (registered with fn_80485D78). */
+void *fn_80440D28(void *instance, s32 offset, s32 size) {
     lbl_805F1410++;
     *(u32 *)(lbl_805F15B4 + lbl_805F1414) = 0;
+    return instance;
 }
 
-void fn_80440D48(void) {
+void *fn_80440D48(void *instance, s32 offset, s32 size) {
     lbl_805F1410--;
+    return instance;
 }
 
 u32 *fn_80440D58(u32 *object, u32 offset) {
@@ -202,53 +210,49 @@ void *fn_80440DB4(const u32 *object, u32 offset) {
     return NULL;
 }
 
-void *fn_80440DEC(void *stream, u32 arg2, u32 *object, u32 offset) {
-    u32 value = *(u32 *)((u8 *)object + offset);
+/* Stream write callback: the engine version, then the collision tree. */
+void *fn_80440DEC(void *stream, s32 length, const void *object, s32 offset, s32 size) {
+    u32 value = *(const u32 *)((const u8 *)object + offset);
     if (value != 0) {
         u32 context = fn_80485D6C();
         if (fn_8047D458(stream, &context, 4) == 0) {
             return NULL;
         }
-        if (fn_80440468(*(u32 *)((u8 *)object + offset), stream) == NULL) {
+        if (fn_80440468(*(const u32 *)((const u8 *)object + offset), stream) == NULL) {
             return NULL;
         }
     }
     return stream;
 }
 
-void *fn_80440E80(void *stream, u32 arg2, u32 *object, u32 offset) {
+/* Stream read callback: a pre-3.6 tree is rebuilt (fn_80440920) inside the object's box, a newer
+ * one read (fn_80440670). */
+void *fn_80440E80(void *stream, s32 length, void *object, s32 offset, s32 size) {
+    u32 version;
     u32 type;
-    u32 value;
-    float values[6];
+    R1BBox box;
     s32 status;
 
-    if (fn_8047D868(stream, &type, 4) == 0) {
+    if (fn_8047D868(stream, &version, 4) == 0) {
         return NULL;
     }
-    if (type < 0x36001) {
-        if (fn_8047D868(stream, &value, 4) == 0) {
+    if (version < 0x36001) {
+        if (fn_8047D868(stream, &type, 4) == 0) {
             return NULL;
         }
-        u8 *bytes = (u8 *)object;
-        if (bytes[0] == 8) {
-            const float *source = *(const float **)(bytes + 0x5C);
-            values[3] = source[1] - source[4];
-            values[0] = source[1] + source[4];
-            values[4] = source[2] - source[4];
-            values[1] = source[2] + source[4];
-            values[5] = source[3] - source[4];
-            values[2] = source[3] + source[4];
+        if (((R1Geometry *)object)->m_type == 8) {
+            R1Sphere *sphere = &((R1Geometry *)object)->m_morphTarget->m_boundingSphere;
+            box.inf.x = sphere->center.x - sphere->radius;
+            box.inf.y = sphere->center.y - sphere->radius;
+            box.inf.z = sphere->center.z - sphere->radius;
+            box.sup.x = sphere->center.x + sphere->radius;
+            box.sup.y = sphere->center.y + sphere->radius;
+            box.sup.z = sphere->center.z + sphere->radius;
         } else {
-            ((u32 *)values)[0] = *(u32 *)(bytes + 0x60);
-            ((u32 *)values)[1] = *(u32 *)(bytes + 0x64);
-            ((u32 *)values)[2] = *(u32 *)(bytes + 0x68);
-            ((u32 *)values)[3] = *(u32 *)(bytes + 0x6C);
-            ((u32 *)values)[4] = *(u32 *)(bytes + 0x70);
-            ((u32 *)values)[5] = *(u32 *)(bytes + 0x74);
+            R1_COPY_BBOX(box, ((R1WorldSector *)object)->m_boundingBox);
         }
         status = 0;
-        *(u32 *)((u8 *)object + offset) =
-            (u32)fn_80440920(stream, value, type - 1, values, &status);
+        *(void **)((u8 *)object + offset) = fn_80440920(stream, type, version - 1, &box, &status);
         if (status != 0) {
             return stream;
         }
@@ -256,9 +260,9 @@ void *fn_80440E80(void *stream, u32 arg2, u32 *object, u32 offset) {
         if (fn_8047CF50(stream, 0x2C, 0, 0) == 0) {
             return NULL;
         }
-        *(u32 *)((u8 *)object + offset) = (u32)fn_80440670(stream);
+        *(void **)((u8 *)object + offset) = fn_80440670(stream);
     }
-    if (*(u32 *)((u8 *)object + offset) != 0) {
+    if (*(void **)((u8 *)object + offset) != NULL) {
         return stream;
     }
     return NULL;
@@ -289,11 +293,11 @@ typedef u32 (*RwCpp05EmitCallback)(u32 *, u32 *, float *, void *, float);
 
 s32 fn_8047BDD0(void *, void *, void *, void *);
 float fn_80482394(float);
-extern float lbl_805FAF88;
-extern float lbl_805FAF8C;
-extern float lbl_805FAF90;
-extern float lbl_805FAF94;
-extern float lbl_805FAF98;
+extern const float lbl_805FAF88;
+extern const float lbl_805FAF8C;
+extern const float lbl_805FAF90;
+extern const float lbl_805FAF94;
+extern const float lbl_805FAF98;
 
 #define RW05_EMIT_TRIANGLES(input, entry, node, baseA, baseB, start, span, extra, callback, user)                 \
     do {                                                                                                         \
@@ -690,41 +694,43 @@ void fn_80441BF8(u32 *owner, u32 *input, RwCpp05EmitCallback callback, void *use
     }
 }
 
-u32 fn_80441028(void) {
-    s32 result = fn_80485D78(4, 0x11D, fn_80440D28, fn_80440D48);
-    lbl_805F1414 = result;
-    result = RwCpp05Positive(result);
-    if (result != 0) {
-        result = fn_80458B6C(4, 0x11D, (RwCpp05Callback)fn_80441018, NULL, NULL);
-        lbl_805F1418 = result;
-        result = RwCpp05Positive(result);
-        if (result != 0) {
-            result = fn_8045F2F8(4, 0x11D, (RwCpp05Callback)fn_80440DA8, (RwCpp05Callback)fn_80440D58, NULL);
-            lbl_805F1420 = result;
-            result = RwCpp05Nonnegative(result);
-            if (result != 0) {
-                result = fn_8045F338(0x11D, (RwCpp05Callback)fn_80440E80,
-                                     (RwCpp05Callback)fn_80440DEC,
-                                     (RwCpp05Callback)fn_80440DB4);
+static inline int RwCpp05Nonzero(int value) {
+    return (u32)(-value | value) >> 0x1F;
+}
+
+int fn_80441028(void) {
+    s32 offset = fn_80485D78(4, 0x11D, (RwCpp05Callback)fn_80440D28, (RwCpp05Callback)fn_80440D48);
+    lbl_805F1414 = offset;
+    int success = RwCpp05Positive(offset);
+    if (success) {
+        offset = fn_80458B6C(4, 0x11D, (RwCpp05Callback)fn_80441018, NULL, NULL);
+        lbl_805F1418 = offset;
+        success = RwCpp05Positive(offset);
+        if (success) {
+            offset = fn_8045F2F8(4, 0x11D, (RwCpp05Callback)fn_80440DA8, (RwCpp05Callback)fn_80440D58, NULL);
+            lbl_805F1420 = offset;
+            success = RwCpp05Nonnegative(offset);
+            if (success) {
+                success = RwCpp05Nonnegative(fn_8045F338(0x11D, (RwCpp05Callback)fn_80440E80,
+                                                         (RwCpp05Callback)fn_80440DEC,
+                                                         (RwCpp05Callback)fn_80440DB4));
             }
-            result = RwCpp05Nonnegative(result);
-            result = result != 0;
-            u32 proceed = result != 0;
-            result = proceed;
-            if (proceed != 0) {
-                result = fn_8045994C(4, 0x11D, (RwCpp05Callback)fn_80440DA8, (RwCpp05Callback)fn_80440D58, NULL);
-                lbl_805F141C = result;
-                result = RwCpp05Nonnegative(result);
-                if (result != 0) {
-                    result = fn_8045998C(0x11D, (RwCpp05Callback)fn_80440E80,
-                                         (RwCpp05Callback)fn_80440DEC,
-                                         (RwCpp05Callback)fn_80440DB4);
-                }
-                result = RwCpp05Nonnegative(result);
-            }
+            success = RwCpp05Nonzero(success);
         }
+        int attached = RwCpp05Nonzero(success);
+        if (attached) {
+            offset = fn_8045994C(4, 0x11D, (RwCpp05Callback)fn_80440DA8, (RwCpp05Callback)fn_80440D58, NULL);
+            lbl_805F141C = offset;
+            success = RwCpp05Nonnegative(offset);
+            if (success) {
+                success = RwCpp05Nonnegative(fn_8045998C(0x11D, (RwCpp05Callback)fn_80440E80,
+                                                         (RwCpp05Callback)fn_80440DEC,
+                                                         (RwCpp05Callback)fn_80440DB4));
+            }
+            attached = RwCpp05Nonzero(success);
+        }
+        success = attached;
     }
-    u32 output = result != 0;
-    return output;
+    return success;
 }
 }

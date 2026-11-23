@@ -1,44 +1,27 @@
-/* RenderWare's 64-entry object pool. Function and member names are inferred from behavior.
- * Definitions are in reverse address order because deferred inlining emits the last one first. */
+/* AX SDLIB, the game's GameCube AX sound library (see include/Game/rw/r1.h), 0x8043AA7C..0x8043B810:
+ * ARAM transfer requests, the library's first-fit heap, sound bank loading and the singly linked
+ * list helpers. Function and member names are inferred from behavior. Definitions are in reverse
+ * address order because deferred inlining emits the last one first. All 19 functions match. */
 #include <string.h>
 #include <dolphin/types.h>
 #include "size_assert.h"
+#include "Game/rw/r1.h"
 
-struct RwCpp01Entry {
-    /* 0x00 */ u8 data[0x20];
-};
-
-struct RwCpp01Node {
-    /* 0x0 */ u16 m_magic;
-    /* 0x2 */ u16 m_flags;
-    /* 0x4 */ RwCpp01Node *m_next;
-};
-
-struct RwCpp01Pool {
-    /* 0x0000 */ u8 field_0x0[0x4854];
-    /* 0x4854 */ void *m_list;
-    /* 0x4858 */ u32 field_0x4858;
-    /* 0x485C */ RwCpp01Entry m_entries[64];
-    /* 0x505C */ u8 m_used[64];
-    /* 0x509C */ u32 field_0x509C;
-    /* 0x50A0 */ void (*m_callbacks[64])(void *);
-    /* 0x51A0 */ void *m_data[64];
-};
-SIZE_ASSERT(RwCpp01Pool, 0x52A0);
-
-extern RwCpp01Pool *lbl_805F1404;
+extern GcaxGlobals *lbl_805F1404;
 extern const char lbl_8051BB28[];
 extern const char lbl_8051BB4C[];
 extern const char lbl_8051BB5C[];
-extern float lbl_805FAE48;
-extern float lbl_805FAE4C;
-extern float lbl_805FAE50;
-extern float lbl_805FAE54;
-extern float lbl_805FAE58;
-extern float lbl_805FAE5C;
-extern float lbl_805FAE60;
-extern float lbl_805FAE64;
-extern float lbl_805FAE68;
+extern const char lbl_8051BB88[]; // "AX SDLIB: gacxSndMalloc(%d) failed (should not happen, rest=%d" + newline
+extern const char lbl_8051BBC8[]; // "AX SDLIB: gcaxNewAramBank(%d,%d) failed (should not happen" + newline
+extern const float lbl_805FAE48;
+extern const float lbl_805FAE4C;
+extern const float lbl_805FAE50;
+extern const float lbl_805FAE54;
+extern const float lbl_805FAE58;
+extern const float lbl_805FAE5C;
+extern const float lbl_805FAE60;
+extern const float lbl_805FAE64;
+extern const float lbl_805FAE68;
 extern float lbl_8056B090[];
 
 extern "C" {
@@ -49,308 +32,150 @@ void fn_803836F4(void *, u32, int, int, void *, int, u32, void (*)(void *));
 void fn_8043BB54(void *);
 void fn_8043BD80(void *);
 void fn_8043BE04(void *);
+void fn_8043AC4C(GcaxArqRequest *entry);
+void fn_8043ACE8(void *param);
+void *fn_8043AD94(u32 size);
+u32 fn_8043AA7C(void *object, int index, u32 unused, void *a, void *b, int wait);
+GcaxListNode *fn_8043B3DC(GcaxListNode **list, GcaxListNode *node);
 
-void fn_8043AC4C(RwCpp01Entry *entry) {
+static inline u32 FindFreeEntry() {
     u32 i;
     for (i = 0; i < 64; i++) {
-        if (&lbl_805F1404->m_entries[i] == entry) {
-            goto found;
-        }
-    }
-    OSReport(lbl_8051BB5C, lbl_8051BB4C, 174);
-    while (1) {
-    }
-found:
-    lbl_805F1404->m_used[i] = 0;
-    if (lbl_805F1404->m_callbacks[i] != NULL) {
-        lbl_805F1404->m_callbacks[i](lbl_805F1404->m_data[i]);
-    }
-}
-
-void fn_8043AB6C(void *object, int index, u32 unused, void *a, void *b) {
-    u32 i;
-    for (i = 0; i < 64; i++) {
-        if (lbl_805F1404->m_used[i] == 0) {
-            goto found;
+        if (lbl_805F1404->m_requestBusy[i] == 0) {
+            return i;
         }
     }
     OSReport(lbl_8051BB28, lbl_8051BB4C, 194);
     while (1) {
     }
-found:
-    lbl_805F1404->m_used[i] = 1;
-    lbl_805F1404->m_callbacks[i] = (void (*)(void *))a;
-    lbl_805F1404->m_data[i] = b;
-    fn_803836F4(&lbl_805F1404->m_entries[i], lbl_805F1404->field_0x509C, 0, 1, object, index, unused, (void (*)(void *))fn_8043AC4C);
-    u8 *used = &lbl_805F1404->m_used[i];
-    while (*used != 0) {
-    }
 }
 
-u32 fn_8043AA7C(void *object, int index, u32 unused, void *a, void *b, int wait) {
-    u32 i;
-    for (i = 0; i < 64; i++) {
-        if (lbl_805F1404->m_used[i] == 0) {
-            goto found;
-        }
-    }
-    OSReport(lbl_8051BB28, lbl_8051BB4C, 194);
-    while (1) {
-    }
-found:
-    lbl_805F1404->m_used[i] = 1;
-    lbl_805F1404->m_callbacks[i] = (void (*)(void *))a;
-    lbl_805F1404->m_data[i] = b;
-    fn_803836F4(&lbl_805F1404->m_entries[i], lbl_805F1404->field_0x509C, 0, 1, object, index, unused, (void (*)(void *))fn_8043AC4C);
-    u8 *used = &lbl_805F1404->m_used[i];
-    if (wait == 0) {
-        while (*used != 0) {
-        }
-    }
-    return i;
-}
-
-void fn_8043ACE8(void *param) {
-    u32 interrupt = OSDisableInterrupts();
-    RwCpp01Node *node = (RwCpp01Node *)((u8 *)param - 0x20);
-    node->m_magic = 0x4D46;
-    RwCpp01Node *next = node->m_next;
-    if (next != NULL && next->m_magic == 0x4D46) {
-        node->m_next = next->m_next;
-    }
-    RwCpp01Node *current = (RwCpp01Node *)lbl_805F1404->m_list;
-    RwCpp01Node *previous = NULL;
+static inline GcaxHeapNode *FindPrevious(GcaxHeapNode *node) {
+    GcaxHeapNode *current = lbl_805F1404->m_heap;
+    GcaxHeapNode *previous = NULL;
     while (current->m_next != NULL) {
         if (current == node) {
-            goto found;
+            return previous;
         }
         previous = current;
         current = current->m_next;
     }
-    previous = NULL;
-found:
-    if (previous != NULL && previous->m_magic == 0x4D46) {
-        previous->m_next = node->m_next;
-    }
-    OSRestoreInterrupts(interrupt);
+    return NULL;
 }
 
-void *fn_8043AD94(u32 size) {
-    RwCpp01Node *current = (RwCpp01Node *)lbl_805F1404->m_list;
+static inline int GetFreeSize() {
+    int remaining = 0;
     u32 interrupt = OSDisableInterrupts();
-    u32 aligned = (size + 0x1F) & 0xFFFFFFE0;
-    RwCpp01Node *next;
-    goto next_check;
-    for (;;) {
-        if (current->m_magic == 0x4D46) {
-            u32 available = (u8 *)next - (u8 *)current - 0x20;
-            if (available >= aligned) {
-                goto found;
+    if (lbl_805F1404 != NULL && lbl_805F1404->m_heap != NULL) {
+        GcaxHeapNode *block = lbl_805F1404->m_heap;
+        while (block->m_next != NULL) {
+            if (block->m_magic == GCAX_HEAP_FREE) {
+                remaining += (u8 *)block->m_next - (u8 *)block - 0x20;
             }
-        }
-        current = next;
-next_check:
-        next = current->m_next;
-        if (next == NULL) {
-            break;
+            block = block->m_next;
         }
     }
-    {
-        int remaining = 0;
-        OSDisableInterrupts();
-        if (lbl_805F1404 != NULL && lbl_805F1404->m_list != NULL) {
-            RwCpp01Node *block = (RwCpp01Node *)lbl_805F1404->m_list;
-            while (block->m_next != NULL) {
-                if (block->m_magic == 0x4D46) {
-                    remaining += (u8 *)block->m_next - (u8 *)block - 0x20;
-                }
-                block = block->m_next;
-            }
-        }
-        OSRestoreInterrupts(0);
-        OSReport("AX SDLIB: gacxSndMalloc(%d) failed (should not happen, rest=%d\n", size, remaining);
-        OSRestoreInterrupts(interrupt);
-        return NULL;
-    }
-found:
-    u32 available = (u8 *)next - (u8 *)current - 0x20;
-    if (available > aligned + 0x20) {
-        RwCpp01Node *split = (RwCpp01Node *)((u8 *)current + aligned + 0x20);
-        split->m_magic = 0x4D46;
-        split->m_flags = 0;
-        split->m_next = next;
-        current->m_next = split;
-    }
-    current->m_magic = 0x4D42;
     OSRestoreInterrupts(interrupt);
-    return (u8 *)current + 0x20;
+    return remaining;
 }
 
-void fn_8043AEBC(u32 base, int size) {
-    u32 interrupt = OSDisableInterrupts();
-    lbl_805F1404->m_list = (void *)((base + 0x1F) & 0xFFFFFFE0);
-    lbl_805F1404->field_0x4858 = (size - (0x20 - (base & 0x1F) & 0x1F)) & 0xFFFFFFFC;
-    OSDisableInterrupts();
-    int blockSize = lbl_805F1404->field_0x4858;
-    RwCpp01Node *first = (RwCpp01Node *)lbl_805F1404->m_list;
-    first->m_magic = 0x4D46;
-    RwCpp01Node *last = (RwCpp01Node *)((u8 *)first + blockSize - 0x20);
+static inline void InitHeapBlocks(GcaxHeapNode *first, u32 size) {
+    GcaxHeapNode *last = (GcaxHeapNode *)((u8 *)first + size) - 1;
+    first->m_magic = GCAX_HEAP_FREE;
     first->m_flags = 0;
     first->m_next = last;
-    last->m_magic = 0x4D42;
+    last->m_magic = GCAX_HEAP_BUSY;
     last->m_flags = 0;
     last->m_next = NULL;
-    OSRestoreInterrupts(0);
-    OSRestoreInterrupts(interrupt);
 }
 
-int fn_8043AF64(int bank, int *header, void (*callback)(void *), void *data, int wait) {
-    if (header[0] != 0x67636178 || header[1] != 0x4D534220) {
-        return -1;
-    }
-    if (callback == (void (*)(void *))-1) {
-        wait = 0;
-        callback = NULL;
-    }
-    bank *= 8;
-    if (*(u32 *)((u8 *)lbl_805F1404 + bank + 0x53F8) != 0) {
-        fn_8043ACE8(*(void **)((u8 *)lbl_805F1404 + bank + 0x53F8));
-    }
-    *(void **)((u8 *)lbl_805F1404 + bank + 0x53F8) = fn_8043AD94(header[3]);
-    if (*(void **)((u8 *)lbl_805F1404 + bank + 0x53F8) == NULL) {
-        return -2;
-    }
-    *(int *)((u8 *)lbl_805F1404 + bank + 0x53FC) = header[3];
-    memcpy(*(void **)((u8 *)lbl_805F1404 + bank + 0x53F8), header + 4, header[3]);
-    if (wait != 0) {
-        callback(data);
-    }
-    return 0;
-}
-
-int fn_8043B05C(int bank, int *header, void (*callback)(void *), void *data, int wait) {
-    if (*(u32 *)((u8 *)header + 0x10) != 0x67636178 ||
-        *(u32 *)((u8 *)header + 0x14) != 0x4D504257) {
-        return -1;
-    }
-    bank *= 8;
-    if (*(u32 *)((u8 *)lbl_805F1404 + bank + 0x52FC) < *(u32 *)((u8 *)header + 0x1C)) {
-        return -2;
-    }
-    if (callback == (void (*)(void *))-1) {
-        wait = 0;
-        callback = NULL;
-    }
-    int result = fn_8043AA7C(header + 8, *(u32 *)((u8 *)lbl_805F1404 + bank + 0x52F8),
-                             *(u32 *)((u8 *)header + 0x1C), callback, data, wait);
-    int *wave = (int *)((u8 *)header + *(u32 *)((u8 *)header + 0x1C) + 0x20);
-    if (wave[0] != 0x67636178 || wave[1] != 0x4D504250) {
-        return -3;
-    }
-    if (*(u32 *)((u8 *)lbl_805F1404 + bank + 0x5378) != 0) {
-        fn_8043ACE8(*(void **)((u8 *)lbl_805F1404 + bank + 0x5378));
-    }
-    *(void **)((u8 *)lbl_805F1404 + bank + 0x5378) = fn_8043AD94(wave[3]);
-    if (*(void **)((u8 *)lbl_805F1404 + bank + 0x5378) == NULL) {
-        return -4;
-    }
-    *(int *)((u8 *)lbl_805F1404 + bank + 0x537C) = wave[3];
-    memcpy(*(void **)((u8 *)lbl_805F1404 + bank + 0x5378), wave + 4, wave[3]);
-    return result;
-}
-
-int fn_8043B1AC(int bank, u32 size) {
-    u32 aligned = (size + 0x1F) & 0xFFFFFFE0;
-    int result = -1;
-    if (bank >= 0 && bank < 0x10 && aligned <= *(u32 *)((u8 *)lbl_805F1404 + 0x52A8)) {
-        result = 0;
-        u32 *entry = (u32 *)((u8 *)lbl_805F1404 + bank * 8 + 0x52F8);
-        entry[0] = *(u32 *)((u8 *)lbl_805F1404 + 0x52AC);
-        entry[1] = aligned;
-        *(u32 *)((u8 *)lbl_805F1404 + 0x52AC) += aligned;
-        *(u32 *)((u8 *)lbl_805F1404 + 0x52A8) -= aligned;
-    }
-    if (result != 0) {
-        OSReport("AX SDLIB: gcaxNewAramBank(%d,%d) failed (should not happen\n", bank);
-    }
-    return result;
-}
-
-void fn_8043B25C(void) {
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52B8) = 0xE1000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52BC) = 0x7D000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52C0) = 0x145000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52C4) = 0x4B000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52C8) = 0x57800;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52CC) = 0x23000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52D0) = 0xC8000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52D4) = 0xFA000;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52D8) = 0x200;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52DC) = 0x200;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52E0) = 0x200;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52E4) = 0x80;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52E8) = 0x80;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52EC) = 0x80;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52F0) = 0x80;
-    *(u32 *)((u8 *)lbl_805F1404 + 0x52F4) = 0x80;
-    f32 f5 = lbl_805FAE48;
-    f32 f4 = lbl_805FAE4C;
-    f32 f3 = lbl_805FAE50;
-    f32 f2 = lbl_805FAE54;
-    f32 f1 = lbl_805FAE58;
-    f32 f0 = lbl_805FAE5C;
-    *(float *)((u8 *)lbl_805F1404 + 0x10128) = f5;
-    *(float *)((u8 *)lbl_805F1404 + 0x10130) = f4;
-    *(float *)((u8 *)lbl_805F1404 + 0x1012C) = f3;
-    *(float *)((u8 *)lbl_805F1404 + 0x10120) = f2;
-    *(float *)((u8 *)lbl_805F1404 + 0x10134) = f1;
-    *(float *)((u8 *)lbl_805F1404 + 0x10124) = f5;
-    *(float *)((u8 *)lbl_805F1404 + 0x13A44) = f0;
-    *(u8 *)((u8 *)lbl_805F1404 + 0x13A38) = 0;
-}
-
-float fn_8043B3A0(float value) {
-    for (int i = 0; i < 1025; i++) {
-        if (lbl_8056B090[i * 2 + 1] > value) {
-            return lbl_8056B090[i * 2];
+void fn_8043B794(GcaxListNode **list) {
+    GcaxListNode *outer = NULL;
+    while ((outer = fn_8043B3DC(list, outer)) != NULL) {
+        GcaxGroup *group = (GcaxGroup *)outer->m_item;
+        if (group != NULL) {
+            GcaxListNode *inner = NULL;
+            while ((inner = fn_8043B3DC(&group->m_voices, inner)) != NULL) {
+                if (inner->m_item != NULL) {
+                    fn_8043BD80(inner->m_item);
+                }
+            }
         }
     }
-    return lbl_805FAE48;
 }
 
-void *fn_8043B3DC(void *first, void *second) {
-    if (second == NULL) {
-        return *(void **)first;
+void fn_8043B6D0(GcaxListNode **list) {
+    GcaxListNode *outer = NULL;
+    while ((outer = fn_8043B3DC(list, outer)) != NULL) {
+        GcaxGroup *group = (GcaxGroup *)outer->m_item;
+        if (group != NULL) {
+            GcaxListNode *inner = NULL;
+            while ((inner = fn_8043B3DC(&group->m_voices, inner)) != NULL) {
+                GcaxVoice *voice = (GcaxVoice *)inner->m_item;
+                if (voice != NULL) {
+                    if (voice->m_state >= 4) {
+                        voice->m_level = lbl_805FAE64;
+                        voice->m_decibels = lbl_805FAE68;
+                        voice->m_state = 5;
+                    } else {
+                        fn_8043BE04(voice);
+                    }
+                }
+            }
+        }
     }
-    return *(void **)second;
 }
 
-void **fn_8043B3F4(void **list, int (*predicate)(void *)) {
-    list = (void **)*list;
-    goto check;
-    for (;;) {
-        if (predicate(list) == 0) {
-            break;
+void fn_8043B5FC(GcaxListNode **list) {
+    int count;
+    GcaxListNode *outer;
+    GcaxGroup *group;
+restart:
+    outer = NULL;
+    while ((outer = fn_8043B3DC(list, outer)) != NULL) {
+        group = (GcaxGroup *)outer->m_item;
+        count = 0;
+        if (group != NULL) {
+            GcaxListNode *inner = NULL;
+            while ((inner = fn_8043B3DC(&group->m_voices, inner)) != NULL) {
+                GcaxVoice *voice = (GcaxVoice *)inner->m_item;
+                if (voice != NULL) {
+                    count++;
+                    if ((voice->m_flags & 0x80000003) == 0x80000002) {
+                        if (voice->field_0x34->field_0x146 == 0 ||
+                            (voice->m_state == 5 && voice->m_level < lbl_805FAE60)) {
+                            count--;
+                        }
+                    }
+                }
+            }
         }
-        list = (void **)*list;
-check:
-        if (list == NULL) {
-            break;
+        if (count == 0) {
+            fn_8043BB54(group);
+            goto restart;
         }
     }
-    return list;
 }
 
-void fn_8043B44C(void **list, void (*callback)(void *)) {
-    void *next;
-    while ((next = *list) != NULL) {
-        void *current = next;
-        if (callback != NULL) {
-            callback(current);
-        }
-        fn_8043ACE8(current);
-        *list = next;
+void *fn_8043B560(u32 size, GcaxListNode **list, void (*callback)(void *)) {
+    GcaxListNode *node = *list;
+    GcaxListNode *memory = (GcaxListNode *)fn_8043AD94(size);
+    if (memory == NULL) {
+        return NULL;
     }
+    memset(memory, 0, size);
+    if (*list == NULL) {
+        *list = memory;
+    } else {
+        while (node->m_next != NULL) {
+            node = node->m_next;
+        }
+        node->m_next = memory;
+    }
+    if (callback != NULL) {
+        callback(memory);
+    }
+    return memory;
 }
 
 void fn_8043B4B0(void *target, void **list, void (*callback)(void *)) {
@@ -387,117 +212,251 @@ previous_check:
     }
 }
 
-void *fn_8043B560(u32 size, void **list, void (*callback)(void *)) {
-    void *current = *list;
-    void *memory = fn_8043AD94(size);
-    if (memory == NULL) {
-        return NULL;
+void fn_8043B44C(GcaxListNode **list, void (*callback)(GcaxListNode *)) {
+    GcaxListNode *next;
+    GcaxListNode *node;
+    while ((node = *list) != NULL) {
+        next = node->m_next;
+        if (callback != NULL) {
+            callback(node);
+        }
+        fn_8043ACE8(node);
+        *list = next;
     }
-    memset(memory, 0, size);
-    if (*list == NULL) {
-        *list = memory;
-    } else {
-        void *next;
-        do {
-            next = current;
-            current = *(void **)next;
-        } while (current != NULL);
-        *(void **)next = memory;
-    }
-    if (callback != NULL) {
-        callback(memory);
-    }
-    return memory;
 }
 
-void fn_8043B5FC(void *param) {
-    void *outer = NULL;
-    goto outer_check;
-    for (;;) {
-        void *owner = *(void **)((u8 *)outer + 4);
-        int count = 0;
-        if (owner != NULL) {
-            void *inner = NULL;
-            goto inner_check;
-            for (;;) {
-                void **object = *(void ***)((u8 *)inner + 4);
-                if (object != NULL) {
-                    count++;
-                    if (((u32)object[0] & 0x80000003) - 0x80000000 == 2) {
-                        if (*(u16 *)((u8 *)object[0xD] + 0x146) == 0) {
-                            count--;
-                        } else if (*(u32 *)((u8 *)object + 0xD8) == 5 &&
-                                   *(float *)((u8 *)object + 0xAC) < lbl_805FAE60) {
-                            count--;
-                        }
-                    }
-                }
-inner_check:
-                inner = fn_8043B3DC((u8 *)owner + 0x10, inner);
-                if (inner == NULL) {
-                    break;
-                }
-            }
-        }
-        if (count == 0) {
-            fn_8043BB54(owner);
-        }
-        outer = fn_8043B3DC(param, outer);
-outer_check:
-        if (outer == NULL) {
+/* Singly linked list helpers: a list is a pointer to its first node, a node starts with its
+ * link. */
+GcaxListNode *fn_8043B3F4(GcaxListNode **list, int (*predicate)(GcaxListNode *)) {
+    GcaxListNode *node = *list;
+    while (node != NULL) {
+        if (predicate(node) == 0) {
             break;
         }
+        node = node->m_next;
+    }
+    return node;
+}
+
+GcaxListNode *fn_8043B3DC(GcaxListNode **list, GcaxListNode *node) {
+    if (node == NULL) {
+        return *list;
+    }
+    return node->m_next;
+}
+
+float fn_8043B3A0(float value) {
+    for (int i = 0; i < 1025; i++) {
+        if (lbl_8056B090[i * 2 + 1] > value) {
+            return lbl_8056B090[i * 2];
+        }
+    }
+    return lbl_805FAE48;
+}
+
+void fn_8043B25C(void) {
+    lbl_805F1404->m_config[0] = 0xE1000;
+    lbl_805F1404->m_config[1] = 0x7D000;
+    lbl_805F1404->m_config[2] = 0x145000;
+
+    lbl_805F1404->m_config[3] = 0x4B000;
+    lbl_805F1404->m_config[4] = 0x57800;
+    lbl_805F1404->m_config[5] = 0x23000;
+    lbl_805F1404->m_config[6] = 0xC8000;
+    lbl_805F1404->m_config[7] = 0xFA000;
+    lbl_805F1404->m_config[8] = 0x200;
+    lbl_805F1404->m_config[9] = 0x200;
+    lbl_805F1404->m_config[10] = 0x200;
+    lbl_805F1404->m_config[11] = 0x80;
+    lbl_805F1404->m_config[12] = 0x80;
+    lbl_805F1404->m_config[13] = 0x80;
+    lbl_805F1404->m_config[14] = 0x80;
+    lbl_805F1404->m_config[15] = 0x80;
+    lbl_805F1404->m_reverbHi.m_time = lbl_805FAE48;
+    lbl_805F1404->m_reverbHi.m_preDelay = lbl_805FAE4C;
+    lbl_805F1404->m_reverbHi.m_damping = lbl_805FAE50;
+    lbl_805F1404->m_reverbHi.m_coloration = lbl_805FAE54;
+    lbl_805F1404->m_reverbHi.m_crosstalk = lbl_805FAE58;
+    lbl_805F1404->m_reverbHi.m_mix = lbl_805FAE48;
+    lbl_805F1404->field_0x13A44 = lbl_805FAE5C;
+    lbl_805F1404->field_0x13A38 = 0;
+}
+
+int fn_8043B1AC(int bank, int size) {
+    int result = -1;
+    size = (size + 0x1F) & 0xFFFFFFE0;
+    if (bank >= 0 && bank < 16 && lbl_805F1404->m_aramFree >= size) {
+        result = 0;
+        lbl_805F1404->m_aramBanks[bank].m_address = lbl_805F1404->m_aramNext;
+        lbl_805F1404->m_aramBanks[bank].m_size = size;
+        lbl_805F1404->m_aramNext += size;
+        lbl_805F1404->m_aramFree -= size;
+    }
+    if (result != 0) {
+        OSReport(lbl_8051BBC8, bank, size);
+    }
+    return result;
+}
+
+int fn_8043B05C(int bank, void *file, GcaxCallback callback, void *data, int wait) {
+    int result;
+    GcaxChunk *program;
+    GcaxChunk *wave = (GcaxChunk *)((u8 *)file + 0x10);
+    if (wave->m_magic != 0x67636178 || wave->m_type != 0x4D504257) {
+        return -1;
+    }
+    if (lbl_805F1404->m_aramBanks[bank].m_size < wave->m_size) {
+        return -2;
+    }
+    if (callback == (GcaxCallback)-1) {
+        wait = 0;
+        callback = NULL;
+    }
+    result = fn_8043AA7C(wave->m_data, lbl_805F1404->m_aramBanks[bank].m_address, wave->m_size,
+                             callback, data, wait);
+    program = (GcaxChunk *)&wave->m_data[wave->m_size];
+    if (program->m_magic != 0x67636178 || program->m_type != 0x4D504250) {
+        return -3;
+    }
+    if (lbl_805F1404->m_programBanks[bank].m_data != NULL) {
+        fn_8043ACE8(lbl_805F1404->m_programBanks[bank].m_data);
+    }
+    lbl_805F1404->m_programBanks[bank].m_data = fn_8043AD94(program->m_size);
+    if (lbl_805F1404->m_programBanks[bank].m_data == NULL) {
+        return -4;
+    }
+    lbl_805F1404->m_programBanks[bank].m_size = program->m_size;
+    memcpy(lbl_805F1404->m_programBanks[bank].m_data, program->m_data, program->m_size);
+    return result;
+}
+
+int fn_8043AF64(int bank, GcaxChunk *chunk, GcaxCallback callback, void *data, int wait) {
+    if (chunk->m_magic != 0x67636178 || chunk->m_type != 0x4D534220) {
+        return -1;
+    }
+    if (callback == (GcaxCallback)-1) {
+        wait = 0;
+        callback = NULL;
+    }
+    if (lbl_805F1404->m_sequenceBanks[bank].m_data != NULL) {
+        fn_8043ACE8(lbl_805F1404->m_sequenceBanks[bank].m_data);
+    }
+    lbl_805F1404->m_sequenceBanks[bank].m_data = fn_8043AD94(chunk->m_size);
+    if (lbl_805F1404->m_sequenceBanks[bank].m_data == NULL) {
+        return -2;
+    }
+    lbl_805F1404->m_sequenceBanks[bank].m_size = chunk->m_size;
+    memcpy(lbl_805F1404->m_sequenceBanks[bank].m_data, chunk->m_data, chunk->m_size);
+    if (wait != 0) {
+        callback(data);
+    }
+    return 0;
+}
+
+void fn_8043AEBC(u32 base, int size) {
+    u32 interrupt = OSDisableInterrupts();
+    lbl_805F1404->m_heap = (GcaxHeapNode *)((base + 0x1F) & 0xFFFFFFE0);
+    size -= (0x20 - (base & 0x1F)) & 0x1F;
+    lbl_805F1404->m_heapSize = size & 0xFFFFFFFC;
+    u32 inner = OSDisableInterrupts();
+    InitHeapBlocks(lbl_805F1404->m_heap, lbl_805F1404->m_heapSize);
+    OSRestoreInterrupts(inner);
+    OSRestoreInterrupts(interrupt);
+}
+
+void *fn_8043AD94(u32 size) {
+    GcaxHeapNode *current = lbl_805F1404->m_heap;
+    GcaxHeapNode *next;
+    u32 interrupt = OSDisableInterrupts();
+    u32 aligned = (size + 0x1F) & 0xFFFFFFE0;
+    u32 available;
+    while ((next = current->m_next) != NULL) {
+        if (current->m_magic == GCAX_HEAP_FREE) {
+            available = (u8 *)next - (u8 *)current - 0x20;
+            if (available >= aligned) {
+                goto found;
+            }
+        }
+        current = next;
+    }
+    OSReport(lbl_8051BB88, size, GetFreeSize());
+    OSRestoreInterrupts(interrupt);
+    return NULL;
+found:
+    if (available > aligned + 0x20) {
+        GcaxHeapNode *split = (GcaxHeapNode *)((u8 *)(current + 1) + aligned);
+        split->m_magic = GCAX_HEAP_FREE;
+        split->m_flags = 0;
+        split->m_next = next;
+        current->m_next = split;
+    }
+    current->m_magic = GCAX_HEAP_BUSY;
+    OSRestoreInterrupts(interrupt);
+    return current + 1;
+}
+
+void fn_8043ACE8(void *param) {
+    u32 interrupt = OSDisableInterrupts();
+    GcaxHeapNode *node = (GcaxHeapNode *)((u8 *)param - 0x20);
+    node->m_magic = GCAX_HEAP_FREE;
+    GcaxHeapNode *next = node->m_next;
+    if (next != NULL && next->m_magic == GCAX_HEAP_FREE) {
+        node->m_next = next->m_next;
+    }
+    GcaxHeapNode *previous = FindPrevious(node);
+    if (previous != NULL && previous->m_magic == GCAX_HEAP_FREE) {
+        previous->m_next = node->m_next;
+    }
+    OSRestoreInterrupts(interrupt);
+}
+
+void fn_8043AC4C(GcaxArqRequest *entry) {
+    u32 i;
+    for (i = 0; i < 64; i++) {
+        if (&lbl_805F1404->m_requests[i] == entry) {
+            goto found;
+        }
+    }
+    OSReport(lbl_8051BB5C, lbl_8051BB4C, 174);
+    while (1) {
+    }
+found:
+    lbl_805F1404->m_requestBusy[i] = 0;
+    if (lbl_805F1404->m_requestCallbacks[i] != NULL) {
+        lbl_805F1404->m_requestCallbacks[i](lbl_805F1404->m_requestData[i]);
     }
 }
 
-void fn_8043B6D0(void *param) {
-    void *outer = NULL;
-    while ((outer = fn_8043B3DC(param, outer)) != NULL) {
-        void *owner = *(void **)((u8 *)outer + 4);
-        if (owner != NULL) {
-            float first = lbl_805FAE64;
-            float second = lbl_805FAE68;
-            void *inner = NULL;
-            while ((inner = fn_8043B3DC((u8 *)owner + 0x10, inner)) != NULL) {
-                void *object = *(void **)((u8 *)inner + 4);
-                if (object != NULL) {
-                    if (*(int *)((u8 *)object + 0xD8) >= 4) {
-                        *(float *)((u8 *)object + 0xAC) = first;
-                        *(float *)((u8 *)object + 0xB0) = second;
-                        *(u32 *)((u8 *)object + 0xD8) = 5;
-                    } else {
-                        fn_8043BE04(object);
-                    }
-                }
-            }
+void fn_8043AB6C(void *object, int index, u32 unused, void *a, void *b) {
+    u32 i;
+    for (i = 0; i < 64; i++) {
+        if (lbl_805F1404->m_requestBusy[i] == 0) {
+            goto found;
         }
+    }
+    OSReport(lbl_8051BB28, lbl_8051BB4C, 194);
+    while (1) {
+    }
+found:
+    lbl_805F1404->m_requestBusy[i] = 1;
+    lbl_805F1404->m_requestCallbacks[i] = (void (*)(void *))a;
+    lbl_805F1404->m_requestData[i] = b;
+    fn_803836F4(&lbl_805F1404->m_requests[i], lbl_805F1404->m_arqOwner, 0, 1, object, index, unused, (void (*)(void *))fn_8043AC4C);
+    while (lbl_805F1404->m_requestBusy[i] != 0) {
     }
 }
 
-void fn_8043B794(void *param) {
-    void *outer = NULL;
-    goto outer_check;
-    for (;;) {
-        void *owner = *(void **)((u8 *)outer + 4);
-        if (owner != NULL) {
-            void *inner = NULL;
-            goto inner_check;
-            for (;;) {
-                if (*(u32 *)((u8 *)inner + 4) != 0) {
-                    fn_8043BD80(*(void **)((u8 *)inner + 4));
-                }
-                inner = fn_8043B3DC((u8 *)owner + 0x10, inner);
-inner_check:
-                if (inner == NULL) {
-                    break;
-                }
-            }
-        }
-        outer = fn_8043B3DC(param, outer);
-outer_check:
-        if (outer == NULL) {
-            break;
+u32 fn_8043AA7C(void *object, int index, u32 unused, void *a, void *b, int wait) {
+    u32 i = FindFreeEntry();
+    lbl_805F1404->m_requestBusy[i] = 1;
+    lbl_805F1404->m_requestCallbacks[i] = (void (*)(void *))a;
+    lbl_805F1404->m_requestData[i] = b;
+    fn_803836F4(&lbl_805F1404->m_requests[i], lbl_805F1404->m_arqOwner, 0, 1, object, index, unused, (void (*)(void *))fn_8043AC4C);
+    volatile u8 *used = &lbl_805F1404->m_requestBusy[i];
+    if (wait == 0) {
+        while (*used != 0) {
         }
     }
+    return i;
 }
 }

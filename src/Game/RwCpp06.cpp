@@ -1,16 +1,22 @@
-/* RenderWare collision-tree serialization and dispatch, 0x80442210..0x80443A73.
- * Names are inferred from behavior; definitions remain in retail address order. */
+/* RenderWare, 0x80442210..0x80443A74: plugin 0x11D's sphere query and the intersection
+ * dispatcher (fn_80442AA4: line, sphere, box and atomic intersections), then plugin 0x122's object
+ * data (named morph targets: vertex, normal, colour and texture-coordinate delta arrays) and its
+ * stream callbacks. Names are inferred from behavior. 11 of 15 functions match; left:
+ * fn_80442210, fn_80442C24, fn_804430B0 (drafts; fn_804430B0 needs one error record per
+ * RWERROR site, its header at sp+0x28 and no NULL test after fn_8044382C) and fn_804436B0
+ * (34 rows: retail's branch-free ternaries and register order). */
 #include <string.h>
 #include <dolphin/types.h>
+#include "Game/rw/r1.h"
 
 extern "C" {
 extern u8 *lbl_805F15B4;
 extern s32 lbl_805F1428;
 
-void *fn_80441188(void *, void *, void *, void *, void *);
-void *fn_80441BF8(void *, void *, void *, void *, void *);
+void *fn_80441188(void *, void *, void *, void *);
+void *fn_80441BF8(void *, void *, void *, void *);
 void *fn_80442210(void *, void *, void *, void *, void *);
-u32 *fn_804566D0(u32);
+R1Sphere *fn_804566D0(void *);
 int fn_8047CF50(void *, u32, void *, void *);
 u32 fn_8047D350(void *, void *, u32);
 u32 fn_8047D458(void *, void *, u32);
@@ -31,9 +37,9 @@ static inline void rwFree(void *memory) {
 }
 
 extern s32 lbl_805F1420;
-extern float lbl_805FAF88;
-extern float lbl_805FAF8C;
-extern float lbl_805FAF9C;
+extern const float lbl_805FAF88;
+extern const float lbl_805FAF8C;
+extern const float lbl_805FAF9C;
 
 struct RwCollisionV3d {
     float x;
@@ -344,36 +350,32 @@ void *fn_80442210(void *worldArg, void *sphereArg, void *intersectionArg, void *
 }
 
 
-void *fn_80442AA4(void *context, u32 *shape, void *a, void *b, void *c) {
-    switch (shape[6]) {
+/* Calls back for every collision triangle of the world the intersection (type at 0x18: 1 line,
+ * 3 sphere, 4 box, 5 an atomic's bounding sphere) touches. */
+void *fn_80442AA4(void *world, u32 *intersection, void *callback, void *data) {
+    switch (intersection[6]) {
     case 1:
-        fn_80441188(context, shape, a, b, c);
-        break;
+        fn_80441188(world, intersection, callback, data);
+        return world;
     case 3:
-        fn_80442210(context, shape, shape, a, b);
-        break;
+        fn_80442210(world, intersection, intersection, callback, data);
+        return world;
     case 4:
-        fn_80441BF8(context, shape, a, b, c);
-        break;
+        fn_80441BF8(world, intersection, callback, data);
+        return world;
     case 5: {
-        u32 *matrix = fn_804566D0(shape[0]);
-        u32 local[4];
-        local[0] = matrix[0];
-        local[1] = matrix[1];
-        local[2] = matrix[2];
-        local[3] = matrix[3];
-        fn_80442210(context, local, shape, a, b);
-        break;
+        R1SphereBits sphere = *(R1SphereBits *)fn_804566D0((void *)intersection[0]);
+        fn_80442210(world, &sphere, intersection, callback, data);
+        return world;
     }
-    default:
-        break;
     }
-    return context;
+    return world;
 }
 
 u32 fn_80442B98(u32 *tree) {
+    u32 i;
     u8 *entries = (u8 *)tree[1];
-    for (u32 i = 0; i < tree[0]; i++) {
+    for (i = 0; i < tree[0]; i++) {
         if (*(u32 *)(entries + 4) != 0) rwFree(*(void **)(entries + 4));
         entries += 8;
     }
@@ -528,41 +530,78 @@ void *fn_804430B0(void *context, void *unused, u8 *owner) {
     return context;
 }
 
-void *fn_80443474(void *context, void *unused, u8 *owner) {
-    u32 *tree = *(u32 **)(owner + lbl_805F1428);
-    if (fn_8047D458(context, tree, 4) == 0) return NULL;
+/* Plugin 0x122's geometry stream write callback: every target's name, header, vertex arrays and
+ * bounding sphere. */
+void *fn_80443474(void *stream, s32 length, const void *object, s32 offset, s32 size) {
+    u32 header[4];
+    u32 nameBytes;
+    u32 *tree = *(u32 **)((const u8 *)object + lbl_805F1428);
+    if (fn_8047D458(stream, tree, 4) == 0) {
+        return NULL;
+    }
     for (u32 i = 0; i < tree[0]; i++) {
         u32 *entry = (u32 *)(tree[1] + i * 0x40);
-        u32 nameBytes = 0;
-        if (entry[1] != 0) nameBytes = ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entry[1]) + 1;
-        if (fn_8047D458(context, &nameBytes, 4) == 0) return NULL;
-        if (entry[1] != 0 && fn_80480ED0(context, (void *)entry[1], nameBytes) == 0) return NULL;
-        u32 local[4] = {entry[2], entry[3], entry[5], entry[6]};
-        if (fn_8047D458(context, local, 0x10) == 0) return NULL;
-        if (fn_80480ED0(context, (void *)entry[4], entry[5]) == 0) return NULL;
-        if (entry[6] != 0) {
-            if ((entry[2] & 2) != 0 && fn_8047D350(context, (void *)entry[8], entry[6] * 0xC) == 0) return NULL;
-            if ((entry[2] & 0x10) != 0 && fn_8047D350(context, (void *)entry[9], entry[6] * 0xC) == 0) return NULL;
-            if ((entry[2] & 8) != 0 && fn_80480ED0(context, (void *)entry[10], entry[6] * 4) == 0) return NULL;
-            if ((entry[2] & 4) != 0 && fn_8047D350(context, (void *)entry[11], entry[6] * 8) == 0) return NULL;
+        nameBytes = entry[1] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entry[1]) + 1 : 0;
+        if (fn_8047D458(stream, &nameBytes, 4) == 0) {
+            return NULL;
         }
-        if (fn_8047D350(context, entry + 12, 0x10) == 0) return NULL;
+        if (entry[1] != 0 && fn_80480ED0(stream, (void *)entry[1], nameBytes) == 0) {
+            return NULL;
+        }
+        header[0] = entry[2];
+        header[1] = entry[3];
+        header[2] = entry[5];
+        header[3] = entry[6];
+        if (fn_8047D458(stream, header, 0x10) == 0) {
+            return NULL;
+        }
+        if (fn_80480ED0(stream, (void *)entry[4], entry[5]) == 0) {
+            return NULL;
+        }
+        if (entry[6] != 0) {
+            if ((entry[2] & 2) != 0 && fn_8047D350(stream, (void *)entry[8], entry[6] * 0xC) == 0) {
+                return NULL;
+            }
+            if ((entry[2] & 0x10) != 0 && fn_8047D350(stream, (void *)entry[9], entry[6] * 0xC) == 0) {
+                return NULL;
+            }
+            if ((entry[2] & 8) != 0 && fn_80480ED0(stream, (void *)entry[10], entry[6] * 4) == 0) {
+                return NULL;
+            }
+            if ((entry[2] & 4) != 0 && fn_8047D350(stream, (void *)entry[11], entry[6] * 8) == 0) {
+                return NULL;
+            }
+        }
+        if (fn_8047D350(stream, entry + 12, 0x10) == 0) {
+            return NULL;
+        }
     }
-    return context;
+    return stream;
 }
 
 u32 fn_804436B0(u8 *owner) {
-    u32 *tree = *(u32 **)(owner + lbl_805F1428);
-    if (tree == NULL) return 0;
-    u32 size = 4;
-    for (u32 i = 0; i < tree[0]; i++) {
-        u32 *entry = (u32 *)(tree[1] + i * 0x40);
-        size += 4;
-        if (entry[1] != 0) size += ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entry[1]) + 1;
-        u32 flags = entry[2];
-        u32 stride = ((flags & 0x10) ? 0xC : 0) + ((flags & 0x8) ? 0x4 : 0) +
-                     ((flags & 0x2) ? 0xC : 0) + ((flags & 0x4) ? 0x8 : 0);
-        size += entry[5] + entry[6] * stride + 0x20;
+    u32 *tree;
+    u32 size;
+    u32 i;
+    u32 *entry;
+    u32 flags;
+    size = 0;
+    tree = *(u32 **)(owner + lbl_805F1428);
+    if (tree != NULL) {
+        size = 4;
+        for (i = 0; i < tree[0]; i++) {
+            entry = (u32 *)(tree[1] + i * 0x40);
+            size += 4;
+            flags = entry[2];
+            if (entry[1] != 0) {
+                size += ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entry[1]) + 1;
+            }
+            size += 0x10;
+            size += entry[5];
+            size += entry[6] * (((flags & 0x10) ? 0xC : 0) + ((flags & 0x8) ? 0x4 : 0) +
+                                ((flags & 0x4) ? 0x8 : 0) + ((flags & 0x2) ? 0xC : 0));
+            size += 0x10;
+        }
     }
     return size;
 }
@@ -574,12 +613,13 @@ u32 fn_804437B0(void) {
 }
 
 void *fn_8044382C(u8 *owner, u32 count) {
-    u32 *tree = (u32 *)rwAlloc(0x1C, 0x30122);
-    *(u32 **)(owner + lbl_805F1428) = tree;
+    s32 offset = lbl_805F1428;
+    u32 bytes;
+    u32 *tree = *(u32 **)(owner + offset) = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(0x1C, 0x30122);
     if (tree == NULL) return NULL;
     memset(tree, 0, 0x1C);
     tree[0] = count;
-    u32 bytes = count * 0x44;
+    bytes = count * 0x44;
     void *entries = rwAlloc(bytes, 0x30122);
     if (entries == NULL) {
         rwFree(tree);
@@ -592,14 +632,16 @@ void *fn_8044382C(u8 *owner, u32 count) {
 }
 
 void *fn_80443908(u8 *owner) {
-    u32 *tree = *(u32 **)(owner + lbl_805F1428);
-    for (u32 i = 0; i < tree[0]; i++) {
+    s32 offset = lbl_805F1428;
+    u32 *tree = *(u32 **)(owner + offset);
+    u32 i;
+    for (i = 0; i < tree[0]; i++) {
         extern void *fn_804439A8(u8 *, u32);
         fn_804439A8(owner, i);
     }
     rwFree((void *)tree[1]);
     rwFree(tree);
-    *(u32 *)(owner + lbl_805F1428) = 0;
+    *(u32 *)(owner + offset) = 0;
     return owner;
 }
 
