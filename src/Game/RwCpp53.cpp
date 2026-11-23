@@ -1,6 +1,8 @@
 /* RenderWare octree color quantization, 0x8048DBEC..0x8048F5CF.
  * Node fields: weight, four color sums, error, index/flags, and sixteen child pointers.
- * Names are inferred from behavior; definitions remain in retail address order. */
+ * Names are inferred from behavior; definitions remain in retail address order.
+ * Agent r6 (wave 40) matched fn_8048F4B4 (four path bits per level, the reached node in a
+ * variable of its own); the other functions are still this draft. */
 #include <string.h>
 #include <dolphin/types.h>
 
@@ -270,24 +272,28 @@ u32 fn_8048F1E4(f32 *node, u8 *out, u32 index, s32 depth) {
     return index;
 }
 
+/* Walks down a tree of 16-way nodes, four bits of the path per level, and returns the byte
+ * at 0x18 of the node reached (retail inlines the recursion eight levels deep). */
 u32 fn_8048F4B4(u32 *node, u32 path, s32 depth) {
+    u32 *child;
+
     if (depth == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[(path & 0xF) + 7];
-    if (depth - 1 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 2) & 0xF) + 7];
-    if (depth - 2 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 6) & 0xF) + 7];
-    if (depth - 3 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 10) & 0xF) + 7];
-    if (depth - 4 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 14) & 0xF) + 7];
-    if (depth - 5 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 18) & 0xF) + 7];
-    if (depth - 6 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 22) & 0xF) + 7];
-    if (depth - 7 == 0) return ((u8 *)node)[0x18];
-    node = (u32 *)node[((path >> 26) & 0xF) + 7];
-    if (depth - 8 == 0) return ((u8 *)node)[0x18];
-    return fn_8048F4B4((u32 *)node[7], 0, depth - 9);
+    child = (u32 *)node[(path & 0xF) + 7];
+    if (depth - 1 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 4) & 0xF) + 7];
+    if (depth - 2 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 8) & 0xF) + 7];
+    if (depth - 3 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 12) & 0xF) + 7];
+    if (depth - 4 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 16) & 0xF) + 7];
+    if (depth - 5 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 20) & 0xF) + 7];
+    if (depth - 6 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 24) & 0xF) + 7];
+    if (depth - 7 == 0) return ((u8 *)child)[0x18];
+    child = (u32 *)child[((path >> 28) & 0xF) + 7];
+    if (depth - 8 == 0) return ((u8 *)child)[0x18];
+    return fn_8048F4B4((u32 *)child[7], 0, depth - 9);
 }
 }

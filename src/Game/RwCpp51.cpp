@@ -1,5 +1,8 @@
 /* RenderWare scene-graph traversal and palette/resource management, 0x8048A96C..0x8048C037.
- * Names are inferred from behavior; recursion replaces the decompiler's unrolled traversals. */
+ * Names are inferred from behavior; recursion replaces the decompiler's unrolled traversals.
+ * Agent r6 (wave 40) matched fn_8048B354 (the dirty frame list walk), fn_8048B5D8 (the matrix
+ * copied as one 64-byte struct, flags & ~5) and fn_8048B6AC (the validity flag set by an if); the
+ * other functions are still this draft. */
 #include <string.h>
 #include <dolphin/types.h>
 
@@ -43,10 +46,13 @@ static inline void rwCallbacks(u8 *node) {
     }
 }
 
+/* The frame's modelling matrix (0x10) copied over its LTM (0x50) as one RwMatrix. */
+struct rwMatrixWords {
+    u32 words[0x10];
+};
+
 static inline void rwCopyTransform(u8 *node) {
-    u32 *source = (u32 *)(node + 0x10);
-    u32 *dest = (u32 *)(node + 0x50);
-    for (u32 i = 0; i < 0x10; i++) dest[i] = source[i];
+    *(rwMatrixWords *)(node + 0x50) = *(rwMatrixWords *)(node + 0x10);
 }
 
 static inline void rwUpdateTransform(u8 *node, u32 inherited) {
@@ -145,13 +151,15 @@ void fn_8048B208(u8 *node) {
 }
 
 u32 fn_8048B354(void) {
-    u8 *base = lbl_805F15B4;
-    u32 *list = (u32 *)(base + 0xBC);
-    for (u32 *link = *(u32 **)list; link != list; link = (u32 *)*link) {
+    u32 *list = (u32 *)(lbl_805F15B4 + 0xBC);
+    u32 *link = *(u32 **)list;
+
+    while (link != list) {
         fn_8048B208((u8 *)(link - 2));
+        link = (u32 *)*link;
     }
-    *(u32 *)(base + 0xBC) = (u32)(base + 0xBC);
-    *(u32 *)(base + 0xC0) = (u32)(base + 0xBC);
+    *(u32 *)(lbl_805F15B4 + 0xBC) = (u32)(lbl_805F15B4 + 0xBC);
+    *(u32 *)(lbl_805F15B4 + 0xC0) = (u32)(lbl_805F15B4 + 0xBC);
     return 1;
 }
 
@@ -171,7 +179,7 @@ void fn_8048B5D8(u8 *node) {
     u8 flags = node[3];
     if ((flags & 4) != 0) rwCopyTransform(node);
     fn_8048B3C0(*(u8 **)(node + 0x98), flags);
-    node[3] = flags & 0xFA;
+    node[3] = flags & ~5;
 }
 
 u32 fn_8048B6AC(void *context, char *name, u8 value) {
@@ -181,7 +189,8 @@ u32 fn_8048B6AC(void *context, char *name, u8 value) {
         u8 terminator;
     } output;
     output.kind = 0x6D;
-    int valid = value != 0 && value < 0x10;
+    int valid = 0;
+    if (value != 0 && value < 0x10) valid = 1;
     output.digit = valid ? lbl_8051C2D0[value] : 0;
     output.terminator = 0;
     if (output.digit != 0) {

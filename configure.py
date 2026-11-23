@@ -313,6 +313,22 @@ cflags_rw_132 = [
 # The charset units (RwCpp35, RwCpp36) keep their string literals in .sdata, as retail does.
 cflags_rw_132_sdata = [*cflags_rw_132, "-str reuse,noreadonly"]
 
+
+# RenderWare built as a C library (agent r6, Game/RwCpp48 and later): the base flags (-O4,p, auto
+# inlining) without stmw/lmw, with the game's read-only pooled strings, and inlining five passes
+# deep without deferral. Functions come out in definition order and only helpers defined before
+# a caller are inlined (RwFrameClone calls RwFrameUpdateObjects, defined after it, out of line,
+# while RwFrameAddChild and RwFrameRemoveChild have it inline); five passes give the frame
+# hierarchy destructor (fn_80486FAC) its five inlined levels. Game/RwCpp45..47 keep
+# cflags_rw_no_lmw with "-O4,p" and "-inline level=2" (deferred, no auto inlining), which their
+# sources were matched with.
+cflags_rw_r6 = [
+    *cflags_base,
+    "-use_lmw_stmw off",
+    "-str reuse,readonly",
+    "-inline auto,level=5",
+]
+
 # The Chao CSD 2D library (src/Game/csd*.cpp; see Game/csdAccess.cpp): game flags without RTTI and
 # small data, with automatic inlining one level deep and no deferred inlining, so functions come out
 # in definition order.
@@ -1184,15 +1200,15 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp42.cpp"),
             Object(NonMatching, "Game/RwCpp43.cpp"),
             Object(NonMatching, "Game/RwCpp44.cpp"),
-            Object(NonMatching, "Game/RwCpp45.cpp"),
-            Object(NonMatching, "Game/RwCpp46.cpp"),
-            Object(NonMatching, "Game/RwCpp47.cpp"),
-            Object(NonMatching, "Game/RwCpp48.cpp"),
-            Object(NonMatching, "Game/RwCpp49.cpp"),
-            Object(NonMatching, "Game/RwCpp50.cpp"),
-            Object(NonMatching, "Game/RwCpp51.cpp"),
+            Object(NonMatching, "Game/RwCpp45.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
+            Object(NonMatching, "Game/RwCpp46.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
+            Object(NonMatching, "Game/RwCpp47.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
+            Object(NonMatching, "Game/RwCpp48.cpp", cflags=cflags_rw_r6),
+            Object(NonMatching, "Game/RwCpp49.cpp", cflags=cflags_rw_r6),
+            Object(NonMatching, "Game/RwCpp50.cpp", cflags=cflags_rw_r6),
+            Object(NonMatching, "Game/RwCpp51.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
             Object(NonMatching, "Game/RwCpp52.cpp"),
-            Object(NonMatching, "Game/RwCpp53.cpp"),
+            Object(NonMatching, "Game/RwCpp53.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
             Object(NonMatching, "Game/RwCpp54.cpp"),
             Object(NonMatching, "Game/RwCpp55.cpp"),
             Object(NonMatching, "Game/RwCpp56.cpp"),

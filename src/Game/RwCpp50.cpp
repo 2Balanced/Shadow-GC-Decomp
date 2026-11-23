@@ -1,351 +1,521 @@
-/* RenderWare texture/resource operations and fixed-point region sampling, 0x8048915C..0x8048A96B.
- * Names are inferred from behavior; definitions remain in retail address order. */
-#include <string.h>
+/* RenderWare core, 0x8048915C..0x8048A96B (a size cut, not a source file):
+ *   0x8048915C  the rest of the image module: depth conversion, copy, gamma correction, gamma
+ *               tables, image from raster and raster from image, raster format search
+ *   0x80489B2C  the raster module: offset, unlock, destroy, plugin registration, levels, show,
+ *               sub-raster, create, lock, module close/open
+ *   0x8048A178  image resampling: one row span, one block of rows, RwImageResample
+ * Functions keep their fn_ names because game code calls them by those; each comment gives the
+ * public RenderWare function the behaviour corresponds to. Compiled as C with cflags_rw_r6
+ * (configure.py), see RwCpp48.cpp.
+ * NonMatching (probes/Game_RwCpp50.py): fn_8048915C, fn_804893B8 and fn_80489830 are register
+ * numbering only; fn_804894B8: retail unrolls the gamma loop by four, GC/2.7 by two for every
+ * loop spelling tried; fn_8048A178 and fn_8048A790: scheduling, and GC/2.7 reassociates
+ * srcY + (yStep - 1). */
+#pragma cplusplus off
 #include <dolphin/types.h>
+#include "Game/rw/r6.h"
 
-extern "C" {
-extern u8 *lbl_805F15B4;
-extern s32 lbl_805F15C0;
-extern s32 lbl_805F15C8;
-extern s32 DAT_805f15cc;
-extern u32 lbl_8056E018;
-extern u32 lbl_805EDEF8;
-extern u32 lbl_805EDEFC;
-extern u32 lbl_805E2CE8;
-extern f32 lbl_805FB328;
-extern f32 lbl_805FB32C;
-extern f32 lbl_805FB330;
-extern f32 lbl_805FB348;
-extern f32 lbl_805FB34C;
-extern f32 lbl_805FB350;
-extern f32 lbl_805FB310;
-extern f32 lbl_805FB314;
-extern f32 lbl_805FB318;
+extern RwModuleInfo lbl_805F15C0;     /* image module */
+extern RwModuleInfo lbl_805F15C8;     /* raster module */
+extern RwPluginRegistry lbl_8056E018; /* raster plugins */
+extern s32 lbl_805EDEF8;
+extern s32 lbl_805EDEFC;
+extern u8 lbl_805E2CE8[];
+extern const f32 lbl_805FB310; /* 1.0f */
+extern const f32 lbl_805FB314; /* 255.0f */
+extern const f32 lbl_805FB318; /* 0.5f */
+extern const f32 lbl_805FB328; /* 1.0f / 65536.0f */
+extern const f32 lbl_805FB32C; /* 1.0f / 255.0f */
+extern const f32 lbl_805FB330; /* 1.0f */
+extern const f32 lbl_805FB348; /* 65536.0f */
+extern const f32 lbl_805FB34C; /* 0.5f */
+extern const f32 lbl_805FB350; /* 255.0f */
 
-u32 fn_8047DC28(u32, ...);
-void fn_8047DB84(void *);
-void fn_80482144(void *, void *);
-void fn_80481DC8(void *, void *, void *, void *, void *, void *);
+double pow(double x, double y);
 void fn_804807CC(void);
-void fn_8048209C(void *, void *);
-void fn_8047FCDC(void *);
-void *fn_8047FC04(u32, u32, u32, u32, u32, u32);
-double pow(double, double);
+RwFreeList *fn_8047FC04(s32 entrySize, s32 entriesPerBlock, s32 alignment, s32 preallocBlocks,
+                        void *inPlace, u32 hint);
+RwBool fn_8047FCDC(RwFreeList *list);
+s32 fn_80481DC8(RwPluginRegistry *reg, s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
+                RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB);
+const RwPluginRegistry *fn_8048209C(const RwPluginRegistry *reg, void *object);
+const RwPluginRegistry *fn_80482144(const RwPluginRegistry *reg, void *object);
 
-#define RW_API(type, offset) ((type)*(u32 *)(lbl_805F15B4 + (offset)))
-#define RW_ERROR(value)                                                                          \
-    do {                                                                                         \
-        u32 error[2];                                                                            \
-        error[0] = 1;                                                                            \
-        error[1] = fn_8047DC28(value);                                                           \
-        fn_8047DB84(error);                                                                      \
-    } while (0)
+#define IMAGEGLOBAL(field) (RWGLOBALAT(rwImageGlobals, lbl_805F15C0.globalsOffset).field)
+#define RASTERGLOBAL(field) (RWGLOBALAT(rwRasterGlobals, lbl_805F15C8.globalsOffset).field)
 
-u32 fn_8048915C(u32 *dest, u32 *source) {
-    u32 kind = (source[3] << 8) | dest[3];
-    if (kind == 0x404 || kind == 0x808 || kind == 0x2020) return 1;
-    u32 width = dest[1];
-    u32 rows = dest[2];
-    u8 *inputPixels = (u8 *)source[5];
-    u8 *outputPixels = (u8 *)dest[5];
-    u32 *palette = (u32 *)source[6];
-    if (kind == 0x408) {
-        for (u32 row = 0; row < rows; row++) {
-            memcpy(outputPixels, inputPixels, width);
-            inputPixels += source[4];
-            outputPixels += dest[4];
+/* Converts the pixels of an image of another depth: 4-bit indices to 8-bit ones, palettised
+ * pixels to 32-bit through the palette. */
+RwBool fn_8048915C(RwImage *destImage, const RwImage *sourceImage) {
+    RwBool result = FALSE;
+    s32 width = destImage->width;
+    s32 height = destImage->height;
+    u8 *dstPixels = destImage->cpPixels;
+    const u8 *srcPixels = sourceImage->cpPixels;
+    const RwRGBA *palette = sourceImage->palette;
+
+    switch ((sourceImage->depth << 8) | destImage->depth) {
+    case 0x404:
+    case 0x808:
+    case 0x2020:
+        result = TRUE;
+        break;
+    case 0x408: {
+        s32 srcStride = sourceImage->stride;
+        s32 y;
+
+        for (y = 0; y < height; y++) {
+            memcpy(dstPixels, srcPixels, width);
+            srcPixels += srcStride;
+            dstPixels += destImage->stride;
         }
-        return 1;
+        result = TRUE;
+        break;
     }
-    if (kind == 0x420 || kind == 0x820) {
-        for (u32 row = 0; row < rows; row++) {
-            u32 *output = (u32 *)outputPixels;
-            for (u32 x = 0; x < width; x++) output[x] = palette[inputPixels[x]];
-            inputPixels += source[4];
-            outputPixels += dest[4];
+    case 0x420:
+    case 0x820: {
+        s32 srcStride = sourceImage->stride;
+        s32 y;
+
+        for (y = 0; y < height; y++) {
+            s32 x;
+
+            for (x = 0; x < width; x++) {
+                ((RwRGBA *)dstPixels)[x] = palette[srcPixels[x]];
+            }
+            srcPixels += srcStride;
+            dstPixels += destImage->stride;
         }
-        return 1;
+        result = TRUE;
+        break;
     }
-    RW_ERROR(0x80000009);
+    case 0x804:
+    case 0x2004:
+    case 0x2008:
+    default:
+        RWERROR((0x80000009));
+        break;
+    }
+    return result;
+}
+
+/* RwImageCopy: the palette and the rows when the depths agree, a conversion otherwise; the
+ * gamma corrected flag follows the source. */
+RwImage *fn_804893B8(RwImage *destImage, const RwImage *sourceImage) {
+    if (destImage->depth == sourceImage->depth) {
+        u8 *dst;
+        const u8 *src;
+        s32 y;
+        s32 srcStride;
+        s32 rowBytes;
+
+        if (destImage->palette && sourceImage->palette && sourceImage->depth <= 8) {
+            memcpy(destImage->palette, sourceImage->palette,
+                   (1 << sourceImage->depth) * sizeof(RwRGBA));
+        }
+        rowBytes = ((destImage->depth + 7) >> 3) * destImage->width;
+        src = sourceImage->cpPixels;
+        dst = destImage->cpPixels;
+        srcStride = sourceImage->stride;
+        for (y = 0; y < destImage->height; y++) {
+            memcpy(dst, src, rowBytes);
+            src += srcStride;
+            dst += destImage->stride;
+        }
+    } else if (!fn_8048915C(destImage, sourceImage)) {
+        destImage = NULL;
+    }
+    destImage->flags &= ~2;
+    destImage->flags |= sourceImage->flags & 2;
+    return destImage;
+}
+
+/* Puts the red, green and blue of count colours through the gamma table. */
+static inline void ImageGammaCorrectColors(RwRGBA *dst, const RwRGBA *src, s32 count) {
+    const u8 *gamma = IMAGEGLOBAL(gammaTable);
+
+    while (count--) {
+        dst->red = gamma[src->red];
+        dst->green = gamma[src->green];
+        dst->blue = gamma[src->blue];
+        dst->alpha = src->alpha;
+        dst++;
+        src++;
+    }
+}
+
+/* RwImageGammaCorrect. */
+RwImage *fn_804894B8(RwImage *image) {
+    switch (image->depth) {
+    case 4:
+    case 8: {
+        RwRGBA *palette = image->palette;
+        s32 count = 1 << image->depth;
+
+        if (!palette) {
+            RWERROR((0x80000016));
+            return NULL;
+        }
+        ImageGammaCorrectColors(palette, palette, count);
+        break;
+    }
+    case 32: {
+        u8 *row = image->cpPixels;
+        s32 width = image->width;
+        s32 height = image->height;
+        s32 y;
+
+        if (!row) {
+            RWERROR((0x80000016));
+            return NULL;
+        }
+        for (y = 0; y < height; y++) {
+            ImageGammaCorrectColors((RwRGBA *)row, (RwRGBA *)row, width);
+            row += image->stride;
+        }
+        break;
+    }
+    default:
+        RWERROR((0x80000008));
+        return NULL;
+    }
+    image->flags |= 2;
+    return image;
+}
+
+/* RwImageSetGamma: the gamma table and its inverse. */
+RwBool fn_80489830(f32 gammaValue) {
+    f32 invGamma = lbl_805FB310 / gammaValue;
+    s32 i;
+
+    IMAGEGLOBAL(gammaVal) = gammaValue;
+    IMAGEGLOBAL(gammaTable)[0] = 0;
+    IMAGEGLOBAL(invGammaTable)[0] = 0;
+    for (i = 1; i < 256; i++) {
+        f32 value = (f32)i / lbl_805FB314;
+
+        f32 scaled;
+
+        scaled = lbl_805FB314 * (f32)pow(value, invGamma);
+        IMAGEGLOBAL(gammaTable)[i] = lbl_805FB318 + scaled;
+        scaled = lbl_805FB314 * (f32)pow(value, gammaValue);
+        IMAGEGLOBAL(invGammaTable)[i] = lbl_805FB318 + scaled;
+    }
+    return TRUE;
+}
+
+/* RwImageSetFromRaster. */
+RwImage *fn_804899A8(RwImage *image, RwRaster *raster) {
+    if (RwEngineInstance->stdFunc[6](image, raster, 0)) {
+        if (raster->privateFlags & 1) {
+            image->flags |= 2;
+        }
+        return image;
+    }
+    return NULL;
+}
+
+/* RwRasterSetFromImage. */
+RwRaster *fn_80489A1C(RwRaster *raster, RwImage *image) {
+    if (RwEngineInstance->stdFunc[7](raster, image, 0)) {
+        if (image->flags & 2) {
+            raster->privateFlags |= 1;
+        }
+        return raster;
+    }
+    return NULL;
+}
+
+/* RwImageFindRasterFormat. */
+RwImage *fn_80489A90(RwImage *image, s32 rasterType, s32 *width, s32 *height, s32 *depth,
+                     s32 *format) {
+    RwRaster raster;
+
+    if (!RwEngineInstance->stdFunc[9](&raster, image, rasterType)) {
+        return NULL;
+    }
+    *format = (raster.cFormat << 8) | raster.cType;
+    *width = raster.width;
+    *height = raster.height;
+    *depth = raster.depth;
+    return image;
+}
+
+/* RwRasterGetOffset. */
+RwRaster *fn_80489B2C(RwRaster *raster, s16 *xOffset, s16 *yOffset) {
+    *xOffset = raster->nOffsetX;
+    *yOffset = raster->nOffsetY;
+    return raster;
+}
+
+/* A raster request through the device's standard function 16. */
+RwRaster *fn_80489B40(RwRaster *raster) {
+    RwEngineInstance->stdFunc[16](NULL, raster, 0);
+    return raster;
+}
+
+/* RwRasterUnlock: the device's standard function 24, then the lock bits go. */
+RwRaster *fn_80489B88(RwRaster *raster) {
+    RwEngineInstance->stdFunc[24](NULL, raster, 0);
+    raster->privateFlags &= ~0x18;
+    return raster;
+}
+
+/* RwRasterDestroy. */
+RwBool fn_80489BDC(RwRaster *raster) {
+    fn_80482144(&lbl_8056E018, raster);
+    RwEngineInstance->stdFunc[5](NULL, raster, 0);
+    RwEngineInstance->memoryFree(RASTERGLOBAL(rasterFreeList), raster);
+    return TRUE;
+}
+
+/* RwRasterRegisterPlugin. */
+s32 fn_80489C54(s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
+                RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB) {
+    return fn_80481DC8(&lbl_8056E018, size, pluginID, constructCB, destructCB, copyCB);
+}
+
+/* A raster query through the device's standard function 23. */
+s32 fn_80489C94(RwRaster *raster, s32 value) {
+    s32 result;
+
+    if (RwEngineInstance->stdFunc[23](&result, raster, value)) {
+        return result;
+    }
     return 0;
 }
 
-void *fn_804893B8(u32 *dest, u32 *source) {
-    if (dest[3] == source[3]) {
-        if (dest[6] != 0 && source[6] != 0 && dest[3] < 9) {
-            memcpy((void *)dest[6], (void *)source[6], (1 << dest[3]) * 4);
-        }
-        u8 *input = (u8 *)source[5];
-        u8 *output = (u8 *)dest[5];
-        for (u32 row = 0; row < dest[2]; row++) {
-            memcpy(output, input, ((dest[3] + 7) >> 3) * dest[1]);
-            input += source[4];
-            output += dest[4];
-        }
-    } else if (fn_8048915C(dest, source) == 0) {
-        dest = NULL;
+/* RwRasterGetNumLevels. */
+s32 fn_80489CE4(RwRaster *raster) {
+    s32 numLevels;
+
+    if (!((raster->cFormat << 8) & 0x8000)) {
+        return 1;
     }
-    if (dest != NULL) dest[0] = (dest[0] & ~2) | (source[0] & 2);
-    return dest;
-}
-
-void fn_804894B8(u32 *texture) {
-    u32 kind = texture[3];
-    if (kind != 4 && kind != 8 && kind != 0x20) {
-        RW_ERROR(0x80000008);
-        return;
+    if (RwEngineInstance->stdFunc[28](&numLevels, raster, 0)) {
+        return numLevels;
     }
-    u8 *table = lbl_805F15B4 + lbl_805F15C0 + 0xC;
-    if (kind == 0x20) {
-        u8 *pixels = (u8 *)texture[5];
-        if (pixels == NULL) {
-            RW_ERROR(0x80000016);
-            return;
-        }
-        for (u32 row = 0; row < texture[2]; row++) {
-            for (u32 x = 0; x < texture[1]; x++) {
-                u8 red = pixels[0];
-                pixels[0] = table[pixels[0]];
-                pixels[1] = table[pixels[1]];
-                pixels[2] = table[pixels[2]];
-                pixels[3] = red;
-                pixels += 4;
-            }
-            pixels += texture[4] - texture[1] * 4;
-        }
-    } else {
-        u8 *palette = (u8 *)texture[6];
-        if (palette == NULL) {
-            RW_ERROR(0x80000016);
-            return;
-        }
-        for (u32 i = 0; i < (1u << kind); i++) {
-            u8 red = palette[0];
-            palette[0] = table[palette[0]];
-            palette[1] = table[palette[1]];
-            palette[2] = table[palette[2]];
-            palette[3] = red;
-            palette += 4;
-        }
-    }
-    texture[0] |= 2;
+    return -1;
 }
 
-u32 fn_80489830(f32 gamma) {
-    u8 *base = lbl_805F15B4 + lbl_805F15C0;
-    *(f32 *)(base + 0x20C) = gamma;
-    base[0xC] = 0;
-    base[0x10C] = 0;
-    f32 inverse = lbl_805FB310 / gamma;
-    for (u32 i = 1; i < 0x100; i++) {
-        f32 value = (f32)i / lbl_805FB314;
-        base[0xC + i] = (u8)(lbl_805FB318 + lbl_805FB314 * (f32)pow(value, inverse));
-        base[0x10C + i] = (u8)(lbl_805FB318 + lbl_805FB314 * (f32)pow(value, gamma));
-    }
-    return 1;
-}
+/* RwRasterShowRaster. */
+RwRaster *fn_80489D44(RwRaster *raster, void *device, u32 flags) {
+    RwStandardFunc showRaster = RwEngineInstance->stdFunc[20];
 
-u32 *fn_804899A8(u32 *object, u8 *resource) {
-    if (RW_API(u32 (*)(void), 0x60)() == 0) return NULL;
-    if ((resource[0x22] & 1) != 0) object[0] |= 2;
-    return object;
-}
-
-void *fn_80489A1C(void *object, u32 *resource) {
-    if (RW_API(u32 (*)(void), 0x64)() == 0) return NULL;
-    if ((resource[0] & 2) != 0) ((u8 *)object)[0x22] |= 1;
-    return object;
-}
-
-void *fn_80489A90(void *context, u32 kind, u32 *width, u32 *height, void **a, u32 *b) {
-    u8 info[0x24];
-    if (RW_API(u32 (*)(void *, void *, u32), 0x6C)(info, context, kind) == 0) return NULL;
-    *b = (u32)info[0x20] | ((u32)info[0x23] << 8);
-    *width = *(u32 *)(info + 0xC);
-    *height = *(u32 *)(info + 0x10);
-    *a = *(void **)(info + 0x14);
-    return context;
-}
-
-void fn_80489B2C(u8 *object, u16 *width, u16 *height) {
-    *width = *(s16 *)(object + 0x1C);
-    *height = *(s16 *)(object + 0x1E);
-}
-
-void *fn_80489B40(void *object) {
-    RW_API(void (*)(u32, void *, u32), 0x88)(0, object, 0);
-    return object;
-}
-
-void *fn_80489B88(void *object) {
-    RW_API(void (*)(u32, void *, u32), 0xA8)(0, object, 0);
-    ((u8 *)object)[0x22] &= 0xE7;
-    return object;
-}
-
-u32 fn_80489BDC(void *object) {
-    fn_80482144(&lbl_8056E018, object);
-    RW_API(void (*)(u32, void *, u32), 0x5C)(0, object, 0);
-    RW_API(void (*)(void *, void *), 0x11C)(*(void **)(lbl_805F15B4 + lbl_805F15C8 + 0x60), object);
-    return 1;
-}
-
-void fn_80489C54(void *a, void *b, void *c, void *d, void *e) {
-    fn_80481DC8(&lbl_8056E018, a, b, c, d, e);
-}
-
-u32 fn_80489C94(void *object, u32 mode) {
-    u32 result[2];
-    if (RW_API(u32 (*)(void *, void *, u32), 0xA4)(result, object, mode) == 0) result[0] = 0;
-    return result[0];
-}
-
-u32 fn_80489CE4(u8 *object) {
-    if ((object[0x23] & 0x80) == 0) return 1;
-    u32 result[2];
-    if (RW_API(u32 (*)(void *, void *, u32), 0xB8)(result, object, 0) == 0) result[0] = 0xFFFFFFFF;
-    return result[0];
-}
-
-void *fn_80489D44(void *a, void *b, void *c) {
-    u32 (*callback)(void *, void *, void *) = RW_API(u32 (*)(void *, void *, void *), 0x98);
     fn_804807CC();
-    return callback(a, b, c) != 0 ? a : NULL;
+    if (showRaster(raster, device, flags)) {
+        return raster;
+    }
+    return NULL;
 }
 
-u32 *fn_80489DC4(u32 *object, u32 *other, u32 *rect) {
-    if ((((u8 *)object)[0x21] & 0x80) == 0) return NULL;
-    object[3] = rect[2];
-    object[4] = rect[3];
-    *(u16 *)(object + 7) = *(u16 *)(other + 7) + (u16)rect[0];
-    *(u16 *)((u8 *)object + 0x1E) = *(u16 *)((u8 *)other + 0x1E) + (u16)rect[1];
-    if (RW_API(u32 (*)(void), 0x78)() == 0) return NULL;
-    object[0] = other[0];
-    return object;
-}
-
-void *fn_80489E74(u32 width, u32 height, void *a, void *b) {
-    u8 *object = (u8 *)RW_API(void *(*)(void *, u32), 0x118)(
-        *(void **)(lbl_805F15B4 + lbl_805F15C8 + 0x60), 0x30407);
-    if (object == NULL) return NULL;
-    object[0x22] = 0;
-    object[0x21] = 0;
-    *(u32 *)(object + 0xC) = width;
-    *(u32 *)(object + 0x10) = height;
-    *(u16 *)(object + 0x1C) = 0;
-    *(u16 *)(object + 0x1E) = 0;
-    *(void **)(object + 0x14) = a;
-    *(u32 *)object = (u32)object;
-    *(u32 *)(object + 4) = 0;
-    *(u32 *)(object + 8) = 0;
-    if (RW_API(u32 (*)(u32, void *, void *), 0x58)(0, object, b) == 0) {
-        RW_API(void (*)(void *, void *), 0x11C)(*(void **)(lbl_805F15B4 + lbl_805F15C8 + 0x60), object);
+/* RwRasterSubRaster. */
+RwRaster *fn_80489DC4(RwRaster *raster, RwRaster *parent, RwRect *rect) {
+    if (!(raster->cFlags & 0x80)) {
         return NULL;
     }
-    fn_8048209C(&lbl_8056E018, object);
-    return object;
-}
-
-u32 fn_80489F70(void *object, u8 group, s32 mode) {
-    u32 result[2];
-    if (RW_API(u32 (*)(void *, void *, u32), 0x84)(result, object, mode + group * 0x100) == 0) {
-        result[0] = 0;
+    raster->width = rect->w;
+    raster->height = rect->h;
+    raster->nOffsetX = parent->nOffsetX + (s16)rect->x;
+    raster->nOffsetY = parent->nOffsetY + (s16)rect->y;
+    if (RwEngineInstance->stdFunc[12](raster, parent, 0)) {
+        raster->parent = parent->parent;
+        return raster;
     }
-    return result[0];
+    return NULL;
 }
 
-void *fn_80489FC0(void *object) {
-    void *memory = *(void **)(lbl_805F15B4 + lbl_805F15C8 + 0x60);
-    if (memory != NULL) {
-        fn_8047FCDC(memory);
-        *(u32 *)(lbl_805F15B4 + lbl_805F15C8 + 0x60) = 0;
+/* RwRasterCreate. */
+RwRaster *fn_80489E74(s32 width, s32 height, s32 depth, s32 flags) {
+    RwRaster *raster =
+        (RwRaster *)RwEngineInstance->memoryAlloc(RASTERGLOBAL(rasterFreeList), 0x30407);
+
+    if (raster) {
+        RwStandardFunc createRaster = RwEngineInstance->stdFunc[4];
+
+        raster->cFlags = raster->privateFlags = 0;
+        raster->width = width;
+        raster->height = height;
+        raster->nOffsetX = 0;
+        raster->nOffsetY = 0;
+        raster->depth = depth;
+        raster->parent = raster;
+        raster->cpPixels = NULL;
+        raster->palette = NULL;
+        if (!createRaster(NULL, raster, flags)) {
+            RwEngineInstance->memoryFree(RASTERGLOBAL(rasterFreeList), raster);
+            return NULL;
+        }
+        fn_8048209C(&lbl_8056E018, raster);
+        return raster;
     }
-    DAT_805f15cc--;
-    return object;
+    return NULL;
 }
 
-void *fn_8048A02C(void *object, s32 offset) {
-    lbl_805F15C8 = offset;
-    memset(lbl_805F15B4 + offset + 0x2C, 0, 0x34);
-    *(u32 *)(lbl_805F15B4 + offset + 0x38) = 0;
-    *(u32 *)(lbl_805F15B4 + offset + 0x3C) = 0;
-    *(u32 *)(lbl_805F15B4 + offset + 0x40) = 0;
-    *(u8 *)(lbl_805F15B4 + offset + 0x4D) = 0x80;
-    *(u32 *)(lbl_805F15B4 + offset + 0x30) = 0;
-    *(u32 *)(lbl_805F15B4 + offset + 0x34) = 0;
-    *(u8 *)(lbl_805F15B4 + offset + 0x4C) = 0;
-    *(u32 *)(lbl_805F15B4 + offset + 0x28) = 0;
-    *(u32 *)(lbl_805F15B4 + offset) = (u32)(lbl_805F15B4 + offset + 0x2C);
-    void *memory = fn_8047FC04(lbl_8056E018, lbl_805EDEF8, 4, lbl_805EDEFC, lbl_805E2CE8, 0x40407);
-    *(void **)(lbl_805F15B4 + offset + 0x60) = memory;
-    if (memory == NULL) return NULL;
-    DAT_805f15cc++;
-    return object;
+/* RwRasterLock. */
+u8 *fn_80489F70(RwRaster *raster, u8 level, s32 lockMode) {
+    u8 *pixels;
+
+    if (RwEngineInstance->stdFunc[15](&pixels, raster, lockMode + (level << 8))) {
+        return pixels;
+    }
+    return NULL;
 }
 
-void fn_8048A178(u32 *texture, u32 xStart, u32 xEnd, u32 y, f32 *out) {
-    s32 first = (s32)xStart >> 16;
-    s32 last = (s32)xEnd >> 16;
-    u8 *pixel = (u8 *)texture[5] + ((s32)y >> 16) * texture[4] + first * 4;
-    f32 width = lbl_805FB328 * (s32)(xEnd - xStart);
+/* _rwRasterClose. */
+void *fn_80489FC0(void *instance, s32 offset, s32 size) {
+    if (RASTERGLOBAL(rasterFreeList)) {
+        fn_8047FCDC(RASTERGLOBAL(rasterFreeList));
+        RASTERGLOBAL(rasterFreeList) = NULL;
+    }
+    lbl_805F15C8.numInstances--;
+    return instance;
+}
+
+/* _rwRasterOpen: the context stack starts with an empty raster. */
+void *fn_8048A02C(void *instance, s32 offset, s32 size) {
+    lbl_805F15C8.globalsOffset = offset;
+    memset(&RASTERGLOBAL(dummyRaster), 0, sizeof(RwRaster));
+    RASTERGLOBAL(dummyRaster).width = 0;
+    RASTERGLOBAL(dummyRaster).height = 0;
+    RASTERGLOBAL(dummyRaster).depth = 0;
+    RASTERGLOBAL(dummyRaster).cFlags = 0x80;
+    RASTERGLOBAL(dummyRaster).cpPixels = NULL;
+    RASTERGLOBAL(dummyRaster).palette = NULL;
+    RASTERGLOBAL(dummyRaster).cType = 0;
+    RASTERGLOBAL(rasterSP) = 0;
+    RASTERGLOBAL(rasterStack)[0] = &RASTERGLOBAL(dummyRaster);
+    RASTERGLOBAL(rasterFreeList) = fn_8047FC04(lbl_8056E018.sizeOfStruct, lbl_805EDEF8, 4,
+                                               lbl_805EDEFC, lbl_805E2CE8, 0x40407);
+    if (!RASTERGLOBAL(rasterFreeList)) {
+        return NULL;
+    }
+    lbl_805F15C8.numInstances++;
+    return instance;
+}
+
+#define RGBAREALFROMPIXEL(o, p)                                                                    \
+    do {                                                                                           \
+        (o).red = lbl_805FB32C * (f32)(p)[0];                                                      \
+        (o).green = lbl_805FB32C * (f32)(p)[1];                                                    \
+        (o).blue = lbl_805FB32C * (f32)(p)[2];                                                     \
+        (o).alpha = lbl_805FB32C * (f32)(p)[3];                                                    \
+    } while (0)
+
+#define RGBAREALSCALE(o, s)                                                                        \
+    do {                                                                                           \
+        (o).red *= (s);                                                                            \
+        (o).green *= (s);                                                                          \
+        (o).blue *= (s);                                                                           \
+        (o).alpha *= (s);                                                                          \
+    } while (0)
+
+#define RGBAREALADD(o, a)                                                                          \
+    do {                                                                                           \
+        (o).red = (o).red + (a).red;                                                               \
+        (o).green = (o).green + (a).green;                                                         \
+        (o).blue = (o).blue + (a).blue;                                                            \
+        (o).alpha = (o).alpha + (a).alpha;                                                         \
+    } while (0)
+
+/* The mean colour of one row of a 32-bit image between two 16.16 x positions, end pixels
+ * weighted by how much of them the span covers. */
+void fn_8048A178(const RwImage *image, s32 x0, s32 x1, s32 y, RwRGBAReal *out) {
+    f32 width = (f32)(x1 - x0) * lbl_805FB328;
+    s32 first = x0 >> 16;
+    s32 last = x1 >> 16;
+    const u8 *pixel = image->cpPixels + (y >> 16) * image->stride + first * 4;
+
     if (first == last) {
-        for (u32 i = 0; i < 4; i++) out[i] = lbl_805FB32C * pixel[i] * width;
+        RGBAREALFROMPIXEL(*out, pixel);
+        RGBAREALSCALE(*out, width);
     } else {
-        s32 next = (first + 1) << 16;
-        f32 weight = lbl_805FB328 * (next - (s32)xStart);
-        for (u32 i = 0; i < 4; i++) out[i] = lbl_805FB32C * pixel[i] * weight;
+        s32 pos = (first + 1) << 16;
+        f32 weight = (f32)(pos - x0) * lbl_805FB328;
+        RwRGBAReal color;
+        s32 i;
+
+        RGBAREALFROMPIXEL(*out, pixel);
+        RGBAREALSCALE(*out, weight);
         pixel += 4;
-        for (s32 x = first + 1; x < last; x++) {
-            for (u32 i = 0; i < 4; i++) out[i] += lbl_805FB32C * pixel[i];
+        for (i = pos >> 16; i != last; i++) {
+            RGBAREALFROMPIXEL(color, pixel);
+            RGBAREALADD(*out, color);
+            pixel += 4;
+            pos += 0x10000;
+        }
+        weight = (f32)(x1 - pos) * lbl_805FB328;
+        RGBAREALFROMPIXEL(color, pixel);
+        RGBAREALSCALE(color, weight);
+        RGBAREALADD(*out, color);
+    }
+    width = lbl_805FB330 / width;
+    RGBAREALSCALE(*out, width);
+}
+
+/* The mean colour of a block of rows between two 16.16 y positions. */
+void fn_8048A50C(const RwImage *image, s32 x0, s32 x1, s32 y0, s32 y1, RwRGBAReal *out) {
+    f32 height = (f32)(y1 - y0) * lbl_805FB328;
+    s32 first = y0 >> 16;
+    s32 last = y1 >> 16;
+
+    if (first == last) {
+        fn_8048A178(image, x0, x1, y0, out);
+        RGBAREALSCALE(*out, height);
+    } else {
+        s32 pos = (first + 1) << 16;
+        RwRGBAReal row;
+        f32 weight;
+
+        fn_8048A178(image, x0, x1, y0, out);
+        weight = (f32)(pos - y0) * lbl_805FB328;
+        RGBAREALSCALE(*out, weight);
+        for (first = pos >> 16; first != last; first++) {
+            fn_8048A178(image, x0, x1, pos, &row);
+            pos += 0x10000;
+            out->red = row.red + out->red;
+            out->green = row.green + out->green;
+            out->blue = row.blue + out->blue;
+            out->alpha = row.alpha + out->alpha;
+        }
+        fn_8048A178(image, x0, x1, pos, &row);
+        weight = (f32)(y1 - pos) * lbl_805FB328;
+        RGBAREALSCALE(row, weight);
+        RGBAREALADD(*out, row);
+    }
+    height = lbl_805FB330 / height;
+    RGBAREALSCALE(*out, height);
+}
+
+/* RwImageResample: each destination pixel is the mean of the source area it covers. */
+RwImage *fn_8048A790(RwImage *destImage, const RwImage *sourceImage) {
+    s32 destWidth = destImage->width;
+    s32 destHeight = destImage->height;
+    s32 srcY = 0;
+    s32 xStep;
+    s32 yStep;
+    s32 y;
+    RwRGBAReal color;
+
+    destImage->flags |= sourceImage->flags & 2;
+    xStep = lbl_805FB348 * ((f32)sourceImage->width / (f32)destWidth);
+    yStep = lbl_805FB348 * ((f32)sourceImage->height / (f32)destHeight);
+    for (y = 0; y < destHeight; y++) {
+        s32 srcYEnd = srcY + (yStep - 1);
+        u8 *pixel = destImage->cpPixels + destImage->stride * y;
+        s32 srcX = 0;
+        s32 x;
+
+        for (x = 0; x < destWidth; x++) {
+            fn_8048A50C(sourceImage, srcX, srcX + (xStep - 1), srcY, srcYEnd, &color);
+            srcX += xStep;
+            pixel[0] = lbl_805FB350 * color.red + lbl_805FB34C;
+            pixel[1] = lbl_805FB350 * color.green + lbl_805FB34C;
+            pixel[2] = lbl_805FB350 * color.blue + lbl_805FB34C;
+            pixel[3] = lbl_805FB350 * color.alpha + lbl_805FB34C;
             pixel += 4;
         }
-        weight = lbl_805FB328 * ((s32)xEnd - (last << 16));
-        for (u32 i = 0; i < 4; i++) out[i] += lbl_805FB32C * pixel[i] * weight;
+        srcY += yStep;
     }
-    f32 scale = lbl_805FB330 / width;
-    for (u32 i = 0; i < 4; i++) out[i] *= scale;
-}
-
-void fn_8048A50C(u32 *texture, u32 xStart, u32 xEnd, u32 yStart, u32 yEnd, f32 *out) {
-    s32 first = (s32)yStart >> 16;
-    s32 last = (s32)yEnd >> 16;
-    if (first == last) {
-        fn_8048A178(texture, xStart, xEnd, yStart, out);
-        return;
-    }
-    f32 total[4] = {0.0f, 0.0f, 0.0f, 0.0f};
-    for (s32 row = first; row <= last; row++) {
-        f32 sample[4];
-        fn_8048A178(texture, xStart, xEnd, (u32)(row << 16), sample);
-        f32 weight = 1.0f;
-        if (row == first) weight = lbl_805FB328 * (((first + 1) << 16) - (s32)yStart);
-        else if (row == last) weight = lbl_805FB328 * ((s32)yEnd - (last << 16));
-        for (u32 i = 0; i < 4; i++) total[i] += sample[i] * weight;
-    }
-    f32 scale = lbl_805FB330 / (lbl_805FB328 * (s32)(yEnd - yStart));
-    for (u32 i = 0; i < 4; i++) out[i] = total[i] * scale;
-}
-
-void *fn_8048A790(u32 *dest, u32 *source) {
-    dest[0] |= source[0] & 2;
-    s32 stepX = (s32)(lbl_805FB348 * ((f32)dest[1] / (f32)source[1]));
-    s32 stepY = (s32)(lbl_805FB348 * ((f32)dest[2] / (f32)source[2]));
-    s32 y = 0;
-    for (u32 row = 0; row < dest[2]; row++) {
-        u8 *output = (u8 *)dest[5] + dest[4] * row;
-        s32 x = 0;
-        for (u32 column = 0; column < dest[1]; column++) {
-            f32 color[4];
-            fn_8048A50C(source, x, x + stepX - 1, y, y + stepY - 1, color);
-            output[0] = (u8)(lbl_805FB350 * color[0] + lbl_805FB34C);
-            output[1] = (u8)(lbl_805FB350 * color[1] + lbl_805FB34C);
-            output[2] = (u8)(lbl_805FB350 * color[2] + lbl_805FB34C);
-            output[3] = (u8)(lbl_805FB350 * color[3] + lbl_805FB34C);
-            output += 4;
-            x += stepX;
-        }
-        y += stepY;
-    }
-    return dest;
-}
+    return destImage;
 }
