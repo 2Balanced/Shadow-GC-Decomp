@@ -6,16 +6,20 @@
  * functions. File name from the class; other names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching (28/34). GetNodeMatrix is down to 2 rows since wave 40: its loop is inlined from
- * FindNodeMatrix, which gives retail's copy of the zeroed counter into the offset (`mr r31,r29`);
- * the copy of node (`mr r28,r4`) still comes first under GC/2.7 where retail has it after the
- * loop's set-up (the helper as a member, its parameters in the other order, the counter or a copy
- * of node declared in it: probes/Game_PlayerShadowMotionHand_W40.py). UpdatePose matches since
- * wave 40: the hand's motion id is narrowed to u16 by a cast with the base, less one, added
- * first (`m_motionBase - 1 + motion`; the other groupings and an if/else leave 1 to 5 rows).
- * Update (3 rows) loads the player's motion into r3 and copies it to r28 after the null test,
- * where GC/2.7 loads it into r28 (the first node lookup taking the load itself, inline getters
- * for it, and the motion declared outside or after the other locals were tried). */
+ * NonMatching (33/34). Wave 41 matched five: GetNodeMatrix (the helper's node parameter unsigned,
+ * which puts the copy of node after the counter's copy, as retail has it), Update (copy propagation
+ * off: the motion is loaded into r3 and copied after the null test), SetSlot (the same, and the
+ * two zero times assigned one by one, which stores them as floats), SetMotion (both motions read
+ * into u16 locals first, right before left, and the loop in the inline RestartHands, which copies
+ * the zeroed counter) and Hand::Attach (the clump put in its world through the inline
+ * SetClumpWorld, whose parameters take the first saved registers). Load (10 rows) has retail's
+ * code with the second loop's hand set up through the inline SetupHand (which reads the
+ * animation before the clump) and the counter declared first; GC/2.7 still gives the loader r31
+ * and the first loop's address r29 where retail has r29 and r23
+ * (probes/Game_PlayerShadowMotionHand_W41d.py, _W41f.py and _W41g.py: declaration orders, a shared
+ * counter, block scopes, the loops in inline helpers, which GC/2.7 does not inline, and copy
+ * propagation off). UpdatePose matches since wave 40: the hand's motion id is narrowed to u16 by a
+ * cast with the base, less one, added first (`m_motionBase - 1 + motion`). */
 #define PLAYER_MOTION_MEMBERS
 #include "boost/scoped_ptr.hpp"
 #include "Game/DebugDispShape.h"
@@ -269,20 +273,24 @@ void MotionHandImpl::Hand::AddTo(UnkClumpList_8006CAE4 *list) {
     }
 }
 
+/* Puts clump in world (name inferred; as in Game/BossCtrlUnit.cpp). */
+inline void SetClumpWorld(RpClump *clump, void *world) {
+    void *current = fn_8046256C(clump);
+    if (current != world) {
+        if (current != 0) {
+            fn_804623EC(current, clump);
+        }
+        fn_804622FC(world, clump);
+    }
+}
+
 void MotionHandImpl::Hand::Attach() {
     if (m_clump != 0) {
         int area = fn_80169350(fn_80169364(m_clump));
         fn_8003A840(area);
         void *world = lbl_8051D208[area].m_world;
         if (world != 0) {
-            RpClump *clump = m_clump;
-            void *current = fn_8046256C(clump);
-            if (current != world) {
-                if (current != 0) {
-                    fn_804623EC(current, clump);
-                }
-                fn_804622FC(world, clump);
-            }
+            SetClumpWorld(m_clump, world);
         }
     }
 }
@@ -304,6 +312,9 @@ MotionHandImpl::~MotionHandImpl() {
     Unload();
 }
 
+/* Copy propagation off: retail loads the player's motion into r3 and copies it to a saved register
+ * after the null test (wave 41). */
+#pragma opt_propagation off
 void MotionHandImpl::Update() {
     if (m_current != 0 && m_player->m_motion != 0) {
         PlayerMotion *motion = m_player->m_motion;
@@ -325,6 +336,7 @@ void MotionHandImpl::Update() {
         }
     }
 }
+#pragma opt_propagation reset
 
 void MotionHandImpl::AddTo(UnkClumpList_8006CAE4 *list) {
     if (m_current != 0) {
@@ -334,6 +346,9 @@ void MotionHandImpl::AddTo(UnkClumpList_8006CAE4 *list) {
     }
 }
 
+/* Copy propagation off and the two times assigned one by one (wave 41): retail stores them as
+ * floats and copies the player's motion to a saved register after the null test. */
+#pragma opt_propagation off
 void MotionHandImpl::SetSlot(int slot) {
     Hand *hands = m_hands[slot];
     if (m_current != hands) {
@@ -347,7 +362,9 @@ void MotionHandImpl::SetSlot(int slot) {
             m_current[1].Attach();
             if (m_player->m_motion != 0) {
                 PlayerMotion *motion = m_player->m_motion;
-                float time[2] = {0.0f, 0.0f};
+                float time[2];
+                time[0] = 0.0f;
+                time[1] = 0.0f;
                 const UnkMotionNode_800AA760 *nodes[2];
                 nodes[0] = fn_800AA760(motion, 5);
                 nodes[1] = fn_800AA760(motion, 3);
@@ -361,22 +378,33 @@ void MotionHandImpl::SetSlot(int slot) {
         }
     }
 }
+#pragma opt_propagation reset
 
-void MotionHandImpl::SetMotion(const UnkHandMotion_800B07FC *motion) {
-    m_pose = 0xE;
-    m_request = 0xE;
-    m_shownPose = m_pose;
-    fn_80417568(m_hands[0][0].m_anim, motion->m_left);
-    fn_80417568(m_hands[0][1].m_anim, motion->m_right);
-    fn_80416F28(m_hands[0][0].m_anim, 0, 0xB, 0);
-    fn_80416F28(m_hands[0][1].m_anim, 0, 0xB, 0);
+/* Restarts the current pose of both hands of slot 0 (name inferred). Retail's loop copies the
+ * zeroed counter into the offset, as GC/2.7 does only for a loop in an inline function
+ * (wave 41). */
+inline void RestartHands(MotionHandImpl *impl) {
     for (int i = 0; i < 2; i++) {
-        Hand *hand = &m_hands[0][i];
+        MotionHandImpl::Hand *hand = &impl->m_hands[0][i];
         if (hand->m_anim != 0) {
             fn_80416F28(hand->m_anim, 0, 0, 0);
             fn_80416F28(hand->m_anim, 0, 1, 0);
         }
     }
+}
+
+/* The two motions are read first, right before left (wave 41). */
+void MotionHandImpl::SetMotion(const UnkHandMotion_800B07FC *motion) {
+    u16 right = motion->m_right;
+    u16 left = motion->m_left;
+    m_pose = 0xE;
+    m_request = 0xE;
+    m_shownPose = m_pose;
+    fn_80417568(m_hands[0][0].m_anim, left);
+    fn_80417568(m_hands[0][1].m_anim, right);
+    fn_80416F28(m_hands[0][0].m_anim, 0, 0xB, 0);
+    fn_80416F28(m_hands[0][1].m_anim, 0, 0xB, 0);
+    RestartHands(this);
 }
 
 void MotionHandImpl::Show() {
@@ -416,14 +444,26 @@ void MotionHandImpl::UpdatePose() {
     }
 }
 
+/* Gives hand its clump and animation and the updater that keeps them in step (name inferred). */
+inline void SetupHand(MotionHandImpl::Hand *hand, RpClump *clump, _stMtnPlayWork *anim) {
+    hand->m_clump = clump;
+    hand->m_anim = anim;
+    if (hand->m_clump != 0 && hand->m_anim != 0) {
+        hand->m_updater = new UnkClumpUpdater_80015A7C(hand->m_clump, hand->m_anim);
+    } else {
+        hand->m_updater = 0;
+    }
+}
+
 void MotionHandImpl::Load() {
+    u32 i;
     void *loader = fn_800122D4();
     fn_80078C4C(m_player.get());
     u32 bones[2];
     bones[0] = fn_80410630("lte.bon");
     bones[1] = fn_80410630("rte.bon");
     m_motionBase = fn_80012608(loader, m_files.m_common1.m_file, m_files.m_common1.m_index);
-    for (u32 i = 0; i < 5; i++) {
+    for (i = 0; i < 5; i++) {
         m_anims[i] = 0;
         if (m_files.m_set1[i].m_index >= 0) {
             m_clumps[i] = fn_8001277C(loader, m_files.m_set1[i].m_file, m_files.m_set1[i].m_index);
@@ -442,13 +482,7 @@ void MotionHandImpl::Load() {
         for (int i = 0; i < 2; i++) {
             Hand *hand = &m_hands[slot][i];
             s32 model = s_slotModels[slot][i];
-            hand->m_clump = m_clumps[model];
-            hand->m_anim = m_anims[model];
-            if (hand->m_clump != 0 && hand->m_anim != 0) {
-                hand->m_updater = new UnkClumpUpdater_80015A7C(hand->m_clump, hand->m_anim);
-            } else {
-                hand->m_updater = 0;
-            }
+            SetupHand(hand, m_clumps[model], m_anims[model]);
         }
     }
 }
@@ -528,8 +562,7 @@ void MotionHand::SetTime(float time) {
     m_impl->SetTime(time);
 }
 
-/* The first hand animation that has node (name inferred). */
-inline Mtx34f *FindNodeMatrix(MotionHandImpl *impl, int node) {
+inline Mtx34f *FindNodeMatrix(MotionHandImpl *impl, u32 node) {
     for (u32 i = 0; i < 5; i++) {
         if (impl->m_anims[i] != 0) {
             Mtx34f *matrix = fn_80415E70(impl->m_anims[i], node);

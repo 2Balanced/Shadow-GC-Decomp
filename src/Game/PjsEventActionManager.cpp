@@ -521,7 +521,13 @@ TPjsEventActionManager::~TPjsEventActionManager() {
  * GC/2.7's registers; only a conversion applied to the counter itself flips them. Wave 40
  * (Game_PjsEventActionManager_R7.py, 14 more): the event number, the format or the counter's start
  * through inline functions, the counter declared first, a while loop, the scene stored through an
- * inline function and casts of the counter that make no code change nothing either. */
+ * inline function and casts of the counter that make no code change nothing either. Wave 41
+ * (probes/Game_PjsEventActionManager_W41.py, 16 more): copy propagation off with a named copy of
+ * this, the format and the counter in every declaration order do not move them. A test file shows
+ * the cause: the same loop in a function of its own gets retail's registers (format r31, counter
+ * r30, this r29) under GC/2.7, and any call ahead of the loop that this stays live across (here
+ * fn_802DFC78) gives this r31 instead, however the calls and stores are written (inline helpers,
+ * a static function over the manager, a do/while). */
 void TPjsEventActionManager::FindScenes() {
     char fileName[0x40];
     m_sceneIndex = 0;

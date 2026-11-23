@@ -11,7 +11,12 @@
  * (r18, r17) and a line's length before its size, where this source gives the two pointers r28 and
  * r23 and colours the size first (111 rows). Every other function and all data match. The same
  * length/size swap is in ReverbSTDCreate, so a change to the shared DLcreate shape probably
- * settles both. */
+ * settles both.
+ *
+ * Wave 41: the two asm functions here are assembly transcriptions, which CONTRIBUTING.md no longer
+ * counts as source (routines that were hand-written assembly in the original stay unwritten), so
+ * this unit cannot become Matching as it stands; copy propagation off for ReverbHICreate gives
+ * more rows, not fewer. */
 #include <dolphin/os.h>
 
 #pragma fp_contract off

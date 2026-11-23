@@ -6,7 +6,15 @@
  * Code generation follows Game/csdLoader.cpp: float constants are addressed on their own
  * (#pragma pool_data off) and the statics through one base register (pool_data on around their
  * definitions and the functions that reach three of them); #pragma dont_inline marks the callers
- * the library's compiler did not inline into. */
+ * the library's compiler did not inline into.
+ *
+ * NonMatching (23/25): InitScene and InitTextCast. Wave 41 (probes/Game_csdMotionPalette_W41.py):
+ * retail's InitScene reaches the three matrix-pool statics through one base register but its two
+ * float constants and the file name each through their own lis/addi; under pool_data on GC/2.7
+ * pools the constants too, and SetMatrixPool and ResetMatrixPool inlined into a pool_data off
+ * InitScene give retail's constants but address the statics one by one. An unused function creating
+ * the constants under pool_data off first and the -pool off option change nothing. The loop over
+ * the layers also differs (retail reloads the layer's cast count after the inner loop). */
 #include <string.h>
 
 #include <dolphin/types.h>

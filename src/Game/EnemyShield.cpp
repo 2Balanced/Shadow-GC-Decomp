@@ -6,10 +6,9 @@
  * original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 29 of 30 functions and all data match. In Setup retail loads the enemy's motion slot
- * into r0 and moves the table from r4 to r5 after it; GC/2.7 moves the table to r0 at the entry and
- * loads the slot straight into r4, for every source form tried (a local, an inline wrapper, a
- * pointer to the table). */
+ * Matching (wave 41): Setup needs copy propagation off, see there, and ~EnemyShield is an ordinary
+ * out-of-line destructor with the checked_delete workaround, which puts the shared_ptr instances,
+ * the destructor and the constructor back in retail's order. */
 #include "Game/CharaColliAttack.h"
 #include "Game/Enemy.h"
 #include "Game/EnemyRender.h"
@@ -114,6 +113,7 @@ struct UnkEnemyShield_801A7E1C {
 class EnemyShield {
   public:
     EnemyShield(Enemy *enemy);
+    ~EnemyShield();
 
     void fn_801A7478();
     void fn_801A74C4();
@@ -122,6 +122,20 @@ class EnemyShield {
 
     /* 0x0 */ boost::scoped_ptr<UnkEnemyShield_801A7E1C> m_impl;
 };
+
+/* Deletes a shield handle (name inferred; see checked_delete below). */
+inline void DeleteEnemyShield(EnemyShield *shield) {
+    delete shield;
+}
+
+/* Retail keeps boost::checked_delete<EnemyShield> out of line and ~EnemyShield at its own place;
+ * GC/2.7 does that only when checked_delete calls an inline function (docs/research-notes.md,
+ * the checked_delete workaround of Game/EnergyCore.cpp). */
+namespace boost {
+template<> inline void checked_delete<EnemyShield>(EnemyShield *x) {
+    DeleteEnemyShield(x);
+}
+} // namespace boost
 
 /* EnemyShieldTask (class name from RTTI): runs the shield until it is gone. */
 class EnemyShieldTask : public Task {
@@ -142,17 +156,11 @@ UnkEnemyShield_801A7E1C::UnkEnemyShield_801A7E1C(Enemy *enemy)
     fn_8040E970(&m_rotation);
 }
 
-/* Loads the model and hangs it from bone of the enemy.
- * NonMatching (6 instructions): register allocation floor. Retail keeps bone in r4, copies it to
- * r5 at the call (mr r5,r4) and loads the model's slot into r0 (lwz r0,36(r3)); GC/2.7 moves bone
- * to r0 in the prologue (mr r0,r4) and reads the slot into r4 (lwz r4,36(r3)). Five shapes tried
- * (a named slot local, the fn_801A3CE4 call written directly, a named EnemyMotionTable pointer, a
- * named model pointer, re-reading the member), all compile byte-identical. Wave 39 added 18: an
- * inline getter for the slot, the loader taking the enemy, the table or a pointer, its parameters
- * in another order, the slot as u32 or through a cast, the table's first member as the argument,
- * locals for the table, the slot, the enemy and the bone in both orders, and a return value for
- * fn_801A3CE4; the object is the same every time. Retail leaves the table parameter in r4 and
- * reads the slot into a scratch register, GC/2.7 moves the parameter out of the way instead. */
+/* Loads the model and hangs it from bone of the enemy. Retail leaves the table parameter in r4 and
+ * reads the slot into r0; with copy propagation on, GC/2.7 moves the parameter to r0 at the entry
+ * and reads the slot into r4 instead (23 shapes in waves 38-39). Copy propagation is off for this
+ * function (wave 41, probes/Game_EnemyShield_W41.py: the pragma alone is enough). */
+#pragma opt_propagation off
 void UnkEnemyShield_801A7E1C::Setup(const EnemyMotionTable &table, int bone) {
     if (m_enemy != 0) {
         LoadModel(&m_model, m_enemy->m_motionBase, table);
@@ -165,6 +173,7 @@ void UnkEnemyShield_801A7E1C::Setup(const EnemyMotionTable &table, int bone) {
         }
     }
 }
+#pragma opt_propagation reset
 
 void UnkEnemyShield_801A7E1C::Update(float dt) {
     switch (m_state) {
@@ -260,6 +269,9 @@ void EnemyShieldTask::Tick(float dt) {
 }
 
 EnemyShield::EnemyShield(Enemy *enemy) : m_impl(new UnkEnemyShield_801A7E1C(enemy)) {}
+
+/* Out of line: retail emits it between the constructor and fn_801A752C. */
+EnemyShield::~EnemyShield() {}
 
 /* Creates the shield of enemy from table and hangs it from bone (name inferred). */
 extern "C" boost::weak_ptr<EnemyShield> fn_801A752C(Enemy *enemy, const EnemyMotionTable &table, int bone) {

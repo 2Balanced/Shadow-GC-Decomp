@@ -17,7 +17,10 @@
  * the entry, the block or the counter declared ahead of the loop in every order, the entry made
  * in two statements or through a 0x38-byte record, the header const or read in the loop (16, 19
  * or 35 rows); without the entry local (header->m_entries[i] at every use) GC/2.7 does add in
- * retail's order, but into two registers, and the header takes r31 (24 rows).
+ * retail's order, but into two registers, and the header takes r31 (24 rows). Wave 41
+ * (probes/Game_StageManager_W41*.py, 25 more): copy propagation off for the function, alone or with
+ * a copy of the manager, of the header, the entry address in bytes or in two statements, and the
+ * header, block and entry declared ahead of the loop in every order, give 16, 31 or 35 rows.
  * Start (0x80178020) matches since wave 40: the fog task is made like the message, with operator
  * new and the constructor called by its symbol on a local of its own, which gives the pointer
  * r28 (`new TFogSet(...)` gives the compiler's temporary r29). */

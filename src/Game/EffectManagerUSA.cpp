@@ -39,7 +39,7 @@ EffectElement *EffectManagerUSA::CreateElement(const UnkEffectDesc_801D0AFC *des
         case 3:
             return new EffectArrangerUSA(desc, usaInfo, this);
         case 4:
-            return new EffectObjectUSA(desc, usaInfo, this);
+            return new EffectObjectUSA(const_cast<UnkEffectDesc_801D0AFC *>(desc), usaInfo, this);
         case 5:
             return new EffectParticle3DUSA(desc, usaInfo, this);
         case 6:

@@ -1,17 +1,9 @@
 /* Player::Npc::BossSonic::Desire::CounterAttack (class name from RTTI): Boss Sonic's desire to
  * counter attack. While the AI's flag bit 1 is set it fills over the stage's counter attack time;
- * starting it clears the flag and asks for mode 4. This unit also holds BossSonicDesireBase's
- * functions (see Game/BossSonic.h). File name inferred from the class. Definitions are in
- * reverse address order (deferred inlining emits functions last-defined first).
- *
- * NonMatching: every function matches. The two macros below remove the local shared_ptr and
- * sp_counted_base bodies and vtable, reducing our .text from 1788 to 1440 bytes against retail's
- * 1196. What remains is that retail's data holds two RTTI chains for BossSonicDesireBase and
- * Boss::Desire::DesireBase, one for BossSonicDesireBase's vtable and one for CounterAttack's base
- * list (with their name strings), where GC/2.7 shares one; the same difference keeps
- * Game/Mission.cpp NonMatching. */
-#define BOOST_SP_EXTERN_BASE_DESTRUCTOR
-#define BOOST_SP_EXTERN_COUNTED_DESTRUCTORS
+ * starting it clears the flag and asks for mode 4. File name inferred from the class. Definitions
+ * are in reverse address order (deferred inlining emits functions last-defined first).
+ * BossSonicDesireBase's functions, which retail has at the start of this range, are a translation
+ * unit of their own (Game/BossSonicDesireBase.cpp, split in wave 41). */
 #include "Game/BossSonic.h"
 #include "boost/shared_ptr.hpp"
 #include "size_assert.h"
@@ -53,13 +45,6 @@ void CounterAttack::Begin() {
 boost::shared_ptr<BossSonicDesireBase> CounterAttack::Instantiate(const boost::shared_ptr<BossSonicWork> &work) {
     return boost::shared_ptr<BossSonicDesireBase>(new CounterAttack(work));
 }
-
-BossSonicDesireBase::BossSonicDesireBase(const boost::shared_ptr<BossSonicWork> &work, const char *name, int arg)
-    : Boss::Desire::DesireBase(name, arg), m_work(work) {}
-
-BossSonicDesireBase::~BossSonicDesireBase() {}
-
-void BossSonicDesireBase::Begin() {}
 
 } // namespace Desire
 } // namespace BossSonic

@@ -6,17 +6,15 @@
  * and vtable, and the clump fade's constructor fn_80027D5C, which other units call by that
  * name.
  *
- * NonMatching: 2 of 4 functions match (the destructor and fn_80027D5C).
- * - The constructor (95%) and Update (99%) convert the four colour bytes to floats through four
- *   stack temporaries. Every instruction matches except which temporary each byte gets: retail
- *   gives alpha the highest slot and red, green and blue the next ones down. Under GC/2.7 that
- *   order only comes with alpha converted after the colour is stored, which puts its load after
- *   the stores; retail loads all four bytes first. About 40 source shapes were tried (argument
- *   orders, locals, inline helpers, separate statements), and ten more in wave 40
- *   (probes/Game_EffectObjectUSA_R2.py: the colour read through pointers to const, inline
- *   functions for a byte or its float, a helper taking the four bytes); probably the
- *   conversion-slot difference of docs/research-notes.md. Game/EffectParticleUSA.cpp has the same
- *   block.
+ * Matching (wave 41). The constructor and Update convert the four colour bytes to floats through
+ * four stack temporaries, which GC/2.7 hands out in the order it evaluates the arguments of
+ * SetFadeColor: right to left, except that a first argument computed in place goes ahead of the
+ * second. Retail's strict right-to-left order (blue, green, red, then alpha in the highest slot)
+ * comes with the alpha byte masked into a local first (`u32 alpha = (m_color[3] >> 22) & 0xFF;`,
+ * probes/Game_EffectObjectUSA_W41.py; the raw word in a local or the converted float give other
+ * registers). The constructor also takes the description as a pointer to non-const (the wave 40
+ * constructor lever: through a pointer to const GC/2.7 schedules the model's load after the
+ * member store), so its callers cast, as for EffectParticleRW3.
  * - fn_80027D5C is written as a C function because other units call it by its fn_ name;
  *   retail's is probably the struct's constructor (it is also passed to __construct_new_array,
  *   Game/EffectParticleUSA.cpp). Its loop stands in an inline function (see FillOnes). */
@@ -78,7 +76,7 @@ namespace SonicteamUSA {
 namespace System {
 namespace Effect {
 
-EffectObjectUSA::EffectObjectUSA(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectObjectUSA::EffectObjectUSA(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                  EffectManager *manager)
     : EffectObjectRW3(desc, info, manager) {
     m_size -= sizeof(EffectObjectRW3);
@@ -105,9 +103,9 @@ EffectObjectUSA::EffectObjectUSA(const UnkEffectDesc_801D0AFC *desc, EffectLaunc
     if (m_clump != 0) {
         m_fade.m_mode = 4;
         float scale = 1.0f / 255.0f;
-        SetFadeColor(&m_fade, ((m_color[3] >> 22) & 0xFF) * scale,
-                     ((m_color[0] >> 22) & 0xFF) * scale, ((m_color[1] >> 22) & 0xFF) * scale,
-                     ((m_color[2] >> 22) & 0xFF) * scale);
+        u32 alpha = (m_color[3] >> 22) & 0xFF;
+        SetFadeColor(&m_fade, alpha * scale, ((m_color[0] >> 22) & 0xFF) * scale,
+                     ((m_color[1] >> 22) & 0xFF) * scale, ((m_color[2] >> 22) & 0xFF) * scale);
         m_fade.field_0x28 = 0.0f;
         fn_80038198(m_clump, &m_fade);
     }
@@ -117,9 +115,9 @@ void EffectObjectUSA::Update(float dt) {
     EffectObjectRW3::Update(dt);
     if ((m_flags & 1) && !(m_flags & 4) && m_clump != 0) {
         float scale = 1.0f / 255.0f;
-        SetFadeColor(&m_fade, ((m_color[3] >> 22) & 0xFF) * scale,
-                     ((m_color[0] >> 22) & 0xFF) * scale, ((m_color[1] >> 22) & 0xFF) * scale,
-                     ((m_color[2] >> 22) & 0xFF) * scale);
+        u32 alpha = (m_color[3] >> 22) & 0xFF;
+        SetFadeColor(&m_fade, alpha * scale, ((m_color[0] >> 22) & 0xFF) * scale,
+                     ((m_color[1] >> 22) & 0xFF) * scale, ((m_color[2] >> 22) & 0xFF) * scale);
         m_fade.field_0x28 = m_time / 60.0f;
     }
 }

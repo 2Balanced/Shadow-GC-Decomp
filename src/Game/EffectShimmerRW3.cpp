@@ -12,7 +12,9 @@
  * NonMatching: 20 of 21 functions match.
  * - EffectShimmerRW3::Draw (914 instructions, 471 rows): GC/2.7 gives the element's 14 floats and
  *   the loop counters other registers than retail's (`this` is r28 in retail, r31 here) and
- *   schedules the uv set-up differently. The levers below have not been run over it yet.
+ *   schedules the uv set-up differently. Wave 41: copy propagation, lifetimes, dead assignments,
+ *   strength reduction, loop invariants, common subexpressions or scheduling off for the function
+ *   do not bring it closer; the declaration-order levers below have not been run over it yet.
  *
  * What matched the other three in wave 39:
  * - The constructor: the loop that gives the strip its depth and colour is an inline function

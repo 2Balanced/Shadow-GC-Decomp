@@ -15,8 +15,12 @@
  * parameter (the same 11 rows), and the loop in an inline helper taking the worm is never inlined
  * (it calls out-of-line template members), not even under #pragma always_inline or inline_depth.
  * FireShots, which matches, has the same loop shape with this in the last register (r26), as
- * GC/2.7 gives it here. vfPara_0x48 (0x80192B68) matches as a function over a const worm (see its
- * definition). */
+ * GC/2.7 gives it here. Wave 41 (probes/Game_BkWorm_W41.py, about 45 forms): with copy
+ * propagation off for the function, this, the offset and the address get retail's r31, r30 and
+ * r29 (11 rows down to 5), and only the counter and the weapon stay swapped (r28 and r27 for
+ * retail's r27 and r28); every declaration order, a pointer or an inline getter for the weapon, a
+ * while loop and the wave 40 self copies under the pragma keep that swap or move the counter to
+ * r31. vfPara_0x48 (0x80192B68) matches as a function over a const worm (see its definition). */
 
 #include "Effect/System/EffectElement.h"
 #include "Game/BkWorm.h"
@@ -340,6 +344,8 @@ void BkWormBase::Shoot(Mtx34f *matrix, boost::shared_ptr<Weapon::LockonTarget> &
     }
 }
 
+/* Copy propagation off: see the unit's header (wave 41). */
+#pragma opt_propagation off
 void BkWormBase::CreateLockons() {
     int i;
     const WormWeapon &weapon = lbl_804C97C0[m_params.WeaponType];
@@ -357,6 +363,7 @@ void BkWormBase::CreateLockons() {
         }
     }
 }
+#pragma opt_propagation reset
 
 void BkWormBase::FireShots() {
     const WormWeapon &weapon = lbl_804C97C0[m_params.WeaponType];

@@ -14,7 +14,11 @@
  * (retail keeps both line tests' hits in r27 and the clump moved to world 9 in r28; GC/2.7 picks
  * r30/r29 and r27). About 40 source shapes were tried. Linked as Matching, the DOL differs only in
  * those 8 instructions. Wave 40: the clump loop in an inline helper (SetClumpWorld written out)
- * gives 30 rows (probes/Game_BossCtrlUnit_R3.py). */
+ * gives 30 rows (probes/Game_BossCtrlUnit_R3.py). Wave 41 (probes/Game_BossCtrlUnit_W41*.py, about
+ * 40 more): the two hits, or the hits and the area's world, as one variable (11 to 17 rows), the
+ * hits declared at every position, one clump variable for both branches, copy propagation,
+ * lifetimes, loop invariants, strength reduction or dead assignments off for the function, and the
+ * release in an inline helper all keep the 8 rows. */
 #define BOSSCTRLUNIT_HELPERS
 
 #include <boost/bind.hpp>

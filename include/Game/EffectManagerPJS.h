@@ -348,7 +348,7 @@ SIZE_ASSERT(EffectParticleUSA, 0x14C);
 
 class EffectObjectUSA : public ::Effect::RW3::EffectObjectRW3 {
   public:
-    EffectObjectUSA(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
+    EffectObjectUSA(::Effect::System::UnkEffectDesc_801D0AFC *desc,
                     ::Effect::System::EffectLaunchInfo *info,
                     ::Effect::System::EffectManager *manager);
     virtual ~EffectObjectUSA() {}

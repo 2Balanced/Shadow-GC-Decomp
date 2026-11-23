@@ -12,7 +12,12 @@
  * where retail stores them right after restoring r28-r31 (between the stores to the fourth and the
  * fifth record). Defining the speeds there instead changes the constant order and the registers;
  * this looks like the scheduling difference of the later compiler described in
- * docs/research-notes.md. Everything else, including the data, matches. */
+ * docs/research-notes.md. Everything else, including the data, matches. Wave 41
+ * (probes/Game_BulletGun_W41.py): with the records moved ahead of the functions (the Create
+ * functions declared first), the speeds defined between the fourth and the fifth record and an
+ * unused function creating the speeds' constants first, GC/2.7 still stores every record ahead of
+ * the lmw and the two speeds after it, whatever their place in the initializer; moving the records
+ * also renumbers .data. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 

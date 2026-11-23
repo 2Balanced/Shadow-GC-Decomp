@@ -33,14 +33,17 @@
  * so GC/2.7 schedules its first load early, as retail does), and fn_80415EA4 (its loop stands in
  * the inline AdvanceLayers) and fn_80420590 (its matrices are pointers to non-const);
  * probes/Game_MotionPlayWork.py.
- * Open (10 of 100 functions):
+ * Wave 41 matched fn_8041FAD8 and fn_8041FB4C: the layer list in a local declared after the entry
+ * pointer, with copy propagation off for the function (either alone keeps the two registers
+ * swapped; probes/Game_MotionPlayWork_W41.py, _W41b.py).
+ * Open (8 of 100 functions):
  * - fn_8041DBD4 and fn_8041ED8C (the blended rotation channels), fn_8041BE30, fn_8041A83C and
  *   fn_80416198 have retail's instructions with other saved registers; no declaration order
- *   reaches retail's (for fn_80416198 not with copy propagation off either);
+ *   reaches retail's (nor copy propagation or lifetimes off, wave 41);
  * - fn_8041CFB0 (const model: 3 rows left) forms the weight scale's address with the base and the
- *   scaled index in each other's registers; fn_8041FAD8 and fn_8041FB4C (the entry array and the
- *   list trade r4 and r5; the entry in one expression, through inline functions, the list in a
- *   local and const pointers do not change that);
+ *   scaled index in each other's registers (wave 41, probes/Game_MotionPlayWork_W41c.py: the
+ *   address as a sum, in two statements, through a named array pointer or inline accessors, with
+ *   and without copy propagation, all keep them swapped);
  * - fn_804165D8 and fn_804175C8 still differ in structure. */
 #include <dolphin/types.h>
 #include <cmath>
@@ -933,34 +936,40 @@ extern "C" void fn_8041FCC0(void *data) {
 }
 
 /* Rotation channel (Euler angles) of a single layer. */
+#pragma opt_propagation off
 extern "C" void fn_8041FB4C(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
     MotionChannelLayer *entry = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f *angles;
     int x;
     int y;
     int z;
 
-    entry += args->m_list->m_order[0];
+    entry += list->m_order[0];
     angles = (Vec3f *)entry->m_data;
     x = 65536.0f * angles->x / 6.2831855f;
     y = 65536.0f * angles->y / 6.2831855f;
     z = 65536.0f * angles->z / 6.2831855f;
     ROTATE_ZYX(x, y, z);
 }
+#pragma opt_propagation reset
 
 /* Scale channel of a single layer. */
+#pragma opt_propagation off
 extern "C" void fn_8041FAD8(void *data) {
     MotionChannelArgs *args = (MotionChannelArgs *)data;
     MotionChannelLayer *entry = args->m_entries;
+    MotionLayerList *list = args->m_list;
     Vec3f *scale;
 
-    entry += args->m_list->m_order[0];
+    entry += list->m_order[0];
     scale = (Vec3f *)entry->m_data;
     if (1.0f != scale->x || 1.0f != scale->y || 1.0f != scale->z) {
         fn_8040B790(TopMatrix(), scale);
     }
 }
+#pragma opt_propagation reset
 
 /* Translation channel of a root frame: also moves the layer matrices. */
 extern "C" void fn_8041FA20(void *data) {

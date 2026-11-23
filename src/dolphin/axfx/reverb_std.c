@@ -13,7 +13,12 @@
  * DLcreate calls, a copy of rv for part of the function, and short-lived extra values. Two extra
  * values that live across the calls do move rv to r31, and a void * parameter cast at each use
  * does too (46 rows left, the addressing changes), so retail's graph has more call-crossing
- * values than this source's. */
+ * values than this source's.
+ *
+ * Wave 41: the asm function here (the filter) is an assembly transcription, which CONTRIBUTING.md
+ * no longer counts as source (routines that were hand-written assembly in the original stay
+ * unwritten), so this unit cannot become Matching as it stands; copy propagation off for
+ * ReverbSTDCreate gives more rows, not fewer. */
 #include <dolphin/os.h>
 
 #pragma fp_contract off

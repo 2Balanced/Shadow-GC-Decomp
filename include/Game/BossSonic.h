@@ -125,7 +125,7 @@ SIZE_ASSERT(BossSonicWork, 0x40);
 namespace Desire {
 
 /* BossSonicDesireBase (class name from RTTI; vtable 0x8055D3EC): a desire of Boss Sonic. Its
- * functions are in Game/BossSonicDesireCounterAttack.cpp (constructor 0x80337BA4, destructor
+ * functions are in Game/BossSonicDesireBase.cpp (constructor 0x80337BA4, destructor
  * 0x80337B3C). */
 class BossSonicDesireBase : public Boss::Desire::DesireBase {
   public:

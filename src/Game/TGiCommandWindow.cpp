@@ -194,7 +194,8 @@ TGiCommandWindowImpl::~TGiCommandWindowImpl() {
  * r31 and the .rodata base in r30; GC/2.7 gives the base r31. Both are used about equally often,
  * and one more use of project in the source gives retail's order (the compilers break the tie
  * differently). Local copies, casts, a const parameter, an inline accessor, named string arrays and
- * using this did not change it. */
+ * using this did not change it, nor (wave 41, probes/Game_TGiCommandWindow_W41.py) copy propagation
+ * off with a copy of project declared first or after the scene (12 to 21 rows). */
 void TGiCommandWindowImpl::InitProject(Chao::CSD::CProject *project) {
     RCPtr<CScene> scene;
 
@@ -372,11 +373,15 @@ TGiCommand TGiCommandWindowImpl::GetCarCommand(UnkPlayerInfo_80178B5C *player) {
     return command;
 }
 
-/* NonMatching (99.3%): the stack layout and every call match; the registers do not. Retail keeps the
- * car command's icon in r26 across the calls that show it and reuses the state's icon from the
- * comparison, and gives `this` r27; GC/2.7 reloads both from memory. Naming the icon in a local makes
- * GC/2.7 move the whole command struct into registers instead (also with two TGiCommand locals, an
- * array, a reference, an inline operator= or operator!=). */
+/* NonMatching (2 rows): the stack layout and every call match. Wave 41: the state's icons are
+ * assigned to a local inside the comparison (`next.m_icon != (icon = state->m_icon)`), which loads
+ * next's icon first and keeps the state's icon in a register for the test against 16, and gives
+ * `this` and the meter flag retail's r27 (15 rows down to 2). What is left: retail keeps the car
+ * command's icon in r26 from the first comparison on, where GC/2.7 reloads it for the test against
+ * 16 (still r26 for the later call); naming next's icon in a local makes GC/2.7 move the whole
+ * command struct into registers instead (also with two TGiCommand locals, an array, a reference,
+ * an inline operator= or operator!=, a bool or an inline predicate for the inner test;
+ * probes/Game_TGiCommandWindow_W41b.py). */
 void TGiCommandWindowImpl::UpdateWindow(Chao::CSD::CProject *project, UnkPlayerInfo_80178B5C *player,
                                         TGiCommandState *state) {
     RCPtr<CScene> scene;
@@ -391,28 +396,33 @@ void TGiCommandWindowImpl::UpdateWindow(Chao::CSD::CProject *project, UnkPlayerI
 
     next.m_weapon = GetWeaponCommand(player);
     scene = fn_8036D660(project, "Weapon");
-    if (scene.Get() != 0 && scene->IsEnd() && next.m_weapon.m_icon != state->m_weapon.m_icon) {
-        if (state->m_weapon.m_icon == 16) {
-            fn_80367140(scene.Get(), 1.0f);
-            fn_803659E4(scene.Get());
-            node = fn_803666B4(scene.Get(), "icon_gun");
-            fn_8036AD14(node.Get(), next.m_weapon.m_icon);
-            node = fn_803666B4(scene.Get(), "button1");
-            fn_8036AD14(node.Get(), next.m_weapon.m_button);
-        } else {
-            fn_80367140(scene.Get(), -1.0f);
-            fn_803659E4(scene.Get());
-            next.m_weapon.m_icon = 16;
+    if (scene.Get() != 0 && scene->IsEnd()) {
+        s32 icon;
+        if (next.m_weapon.m_icon != (icon = state->m_weapon.m_icon)) {
+            if (icon == 16) {
+                fn_80367140(scene.Get(), 1.0f);
+                fn_803659E4(scene.Get());
+                node = fn_803666B4(scene.Get(), "icon_gun");
+                fn_8036AD14(node.Get(), next.m_weapon.m_icon);
+                node = fn_803666B4(scene.Get(), "button1");
+                fn_8036AD14(node.Get(), next.m_weapon.m_button);
+            } else {
+                fn_80367140(scene.Get(), -1.0f);
+                fn_803659E4(scene.Get());
+                next.m_weapon.m_icon = 16;
+            }
+            state->m_weapon = next.m_weapon;
         }
-        state->m_weapon = next.m_weapon;
     }
 
     next.m_car = GetCarCommand(player);
     scene = fn_8036D660(project, "Car_BCom");
     bool meter = false;
     if (scene.Get() != 0 && scene->IsEnd()) {
-        if (next.m_car.m_icon != state->m_car.m_icon || next.m_car.m_button != state->m_car.m_button) {
-            if (next.m_car.m_icon != 16 && state->m_car.m_icon == 16) {
+        s32 icon;
+        if (next.m_car.m_icon != (icon = state->m_car.m_icon) ||
+            next.m_car.m_button != state->m_car.m_button) {
+            if (next.m_car.m_icon != 16 && icon == 16) {
                 fn_80367140(scene.Get(), 1.0f);
                 fn_803659E4(scene.Get());
                 node = fn_803666B4(scene.Get(), "icon_car");

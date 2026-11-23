@@ -65,7 +65,7 @@ namespace PJS {
 
 EffectObjectPJS::EffectObjectPJS(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                  EffectManager *manager)
-    : EffectObjectUSA(desc, info, manager) {
+    : EffectObjectUSA(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_size -= sizeof(EffectObjectUSA);
     m_size += sizeof(EffectObjectPJS);
     if (!(m_flags & 1)) {
