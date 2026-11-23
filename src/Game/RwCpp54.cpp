@@ -1,12 +1,8 @@
-/* RenderWare 0x8048F5D0..0x80490E2F: the end of the palette quantiser (an octree over the image's
- * colours: fn_8048F5D0 resolves the palette, fn_8048FAB0 maps an image's pixels to it,
- * fn_8048FED8/fn_804903F8 set the tree up and free it) and, from 0x8049043C, the start of the
- * GameCube driver's immediate-mode 2D file (GX set-up and restore, RwIm2DRenderTriangle and
- * RwIm2DRenderLine). Names are inferred from behaviour; definitions are in retail address order.
- *
- * Still first drafts (far from retail): fn_8048F5D0 and fn_8048FAB0. The rest match; the
- * quantiser's recursive node free is inlined into itself eight levels deep because it is
- * declared inline (the driver units are built with -inline noauto). */
+/* RenderWare 0x8049043C..0x80490E2F: the start of the GameCube driver's immediate-mode 2D file (GX
+ * set-up and restore, RwIm2DRenderTriangle and RwIm2DRenderLine). Names are inferred from
+ * behaviour; definitions are in retail address order. The palette quantiser's tail that this size
+ * cut used to open with (0x8048F5D0..0x8049043B) moved to RenderWare/RwPaletteQuantize.c in wave 41
+ * (range r6: the quantiser file starts at 0x8048D85C). */
 #include <string.h>
 #include <dolphin/types.h>
 #include <dolphin/gx.h>
@@ -33,125 +29,6 @@ u32 fn_8048F4B4(u32 *, u32, s32);
 extern RwDlGlobals *lbl_805F15B4;     /* RwEngineInstance */
 
 #define RW_API(type, offset) ((type)*(u32 *)((u8 *)lbl_805F15B4 + (offset)))
-
-u32 fn_8048F5D0(u8 *dest, u32 count, u8 *work) {
-    fn_8048EB24(*(f32 **)(work + 0x4000), (const u8 *)&lbl_805FB560, lbl_805EDF20);
-    memset(dest, 0, count);
-    u32 leaves = fn_8048EEFC(*(u32 **)(work + 0x4000), lbl_805EDF20);
-    if (leaves <= count) return fn_8048F1E4(*(f32 **)(work + 0x4000), dest, 0, lbl_805EDF20);
-
-    u32 point[4] = {0, 0, 0, 0};
-    u32 bounds[8] = {0, 0, 0, 0, 0, 0, 0, 0};
-    for (u32 i = 0; i < 4; i++) bounds[i + 4] = 1 << lbl_805EDF20;
-    f32 candidates[256];
-    for (u32 i = 0; i < count; i++) candidates[i] = lbl_805FB368;
-    u32 selected = 0;
-    for (u32 i = 1; i <= count; i++) {
-        s32 best = -1;
-        f32 error = lbl_805FB368;
-        for (u32 j = 0; j < i; j++) {
-            if (candidates[j] > error) {
-                error = candidates[j];
-                best = (s32)j;
-            }
-        }
-        if (best < 0) break;
-        u32 bestBounds[8];
-        if (fn_8048E988(*(f32 **)(work + 0x4000), candidates + best, bounds, bestBounds) != 0) {
-            fn_8048E47C(*(f32 **)(work + 0x4000), point, lbl_805EDF20, bounds, candidates + best);
-            selected++;
-        } else {
-            candidates[best] = lbl_805FB368;
-        }
-    }
-    for (u32 i = 0; i < selected; i++) {
-        fn_8048E300(*(u32 **)(work + 0x4000), point, lbl_805EDF20, bounds, i);
-        fn_8048F1E4(*(f32 **)(work + 0x4000), dest, i, lbl_805EDF20);
-    }
-    return selected;
-}
-
-void fn_8048FAB0(u8 *dest, u32 destStride, u32 kind, u32 pack, u8 *work, u32 *source) {
-    u32 srcStride = source[4];
-    u8 *pixels = (u8 *)source[5];
-    for (u32 row = 0; row < source[2]; row++) {
-        u8 *input = pixels;
-        u8 *output = dest;
-        for (u32 x = 0; x < source[1]; x++) {
-            u8 rgba[4];
-            if (source[3] == 0x20) {
-                rgba[0] = input[0];
-                rgba[1] = input[1];
-                rgba[2] = input[2];
-                rgba[3] = input[3];
-                input += 4;
-            } else {
-                u8 *color = (u8 *)source[6] + *input * 4;
-                rgba[0] = color[0];
-                rgba[1] = color[1];
-                rgba[2] = color[2];
-                rgba[3] = color[3];
-                input++;
-            }
-            u32 path = ((u32)rgba[0] << 24) | ((u32)rgba[1] << 16) |
-                       ((u32)rgba[2] << 8) | rgba[3];
-            u8 index = (u8)fn_8048F4B4(*(u32 **)(work + 0x4000), path, lbl_805EDF20);
-            if (kind == 4 && pack == 1) {
-                if ((x & 1) == 0) {
-                    *output = (*output & 0xF0) | (index & 0xF);
-                } else {
-                    *output = (*output & 0xF) | (index << 4);
-                    output++;
-                }
-            } else {
-                *output++ = index;
-            }
-        }
-        pixels += srcStride;
-        dest += destStride;
-    }
-}
-
-/* Sets the quantiser up: the table that spreads the bits of a colour channel one per nibble
- * (lbl_805E2D58, used to build tree paths), the node free list and an empty root. */
-s32 fn_8048FED8(RwDlPalQuant *pq) {
-    u32 i;
-    u32 bit;
-    u32 count;
-    u32 spread;
-    RwDlPalNode *root;
-    count = 1 << lbl_805EDF20;
-    for (i = 0; i < count; i++) {
-        spread = 0;
-        for (bit = 0; bit < lbl_805EDF20; bit++) {
-            spread |= (i & (1 << bit)) ? (1 << ((lbl_805EDF20 - 1 - bit) * 4)) : 0;
-        }
-        lbl_805E2D58[i] = spread;
-    }
-    pq->nodeFreeList = fn_8047FBD8(sizeof(RwDlPalNode), 0x400, 4, 0x30411);
-    pq->root = (RwDlPalNode *)lbl_805F15B4->freeListAlloc(pq->nodeFreeList, 0x30411);
-    root = pq->root;
-    for (i = 0; i < 16; i++) root->child[i] = NULL;
-    return 1;
-}
-
-/* Frees a subtree of the colour tree. */
-static inline void fn_804900D4(RwDlPalQuant *pq, RwDlPalNode *node, RwInt32 level) {
-    if (node != NULL) {
-        if (level > 0) {
-            RwInt32 i;
-            for (i = 0; i < 16; i++) fn_804900D4(pq, node->child[i], level - 1);
-        }
-        lbl_805F15B4->freeListFree(pq->nodeFreeList, node);
-    }
-}
-
-/* Frees the colour tree and its free list. */
-void fn_804903F8(RwDlPalQuant *pq) {
-    fn_804900D4(pq, pq->root, lbl_805EDF20);
-    pq->root = NULL;
-    fn_8047FCDC(pq->nodeFreeList);
-}
 
 /* ---- 0x8049043C: start of the driver's immediate-mode 2D file (its .sdata2 constants start at
  * 0x805FB380 and its .data, the GX primitive table, at 0x8056E060). ---- */

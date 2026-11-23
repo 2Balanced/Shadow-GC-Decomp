@@ -1,140 +1,71 @@
-/* RenderWare core, 0x80483F8C..0x80485A57 (a size cut): the end of the binary stream code and
- * the camera module without its create function, which opens RwCpp48.
- *   0x80483F8C  texture dictionary stream read (RwTexDictionaryStreamRead) and its callback
- *   0x804842C8  perspective frustum, perspective view matrix, parallel frustum, parallel view
- *               matrix (the camera's sync callback calls them)
- *   0x8048528C  the camera's sync callback, default begin/end update, module open/close
- *   0x804854B4  RwCameraEndUpdate, RwCameraBeginUpdate, view offset, clip planes, sphere test,
- *               clear, show raster, projection, view window, plugin registration, destroy
- * Compiled as C (see RwCpp45.cpp).
- * NonMatching: fn_804842C8 (98.5%: every opcode matches, but GC/2.7 keeps six float values in
- * saved registers where retail keeps seven; the offset vector's place was swept through the
- * first block, probes/Game_RwCpp47.py) and fn_80484C10 (99.4%: float registers of the corner
- * sums; 30 declaration and assignment orders tried). */
-#pragma cplusplus off
-#include <dolphin/types.h>
+/* RenderWare core: the camera module (0x804842C8-0x80485BCC).
+ * The frustum and view matrix of perspective and parallel cameras, the sync callback, the default
+ * begin and end update, module close and open, RwCameraEndUpdate/BeginUpdate, the view offset,
+ * clip planes, RwCameraFrustumTestSphere, RwCameraClear, RwCameraShowRaster, the projection, the
+ * view window, RwCameraRegisterPlugin, RwCameraDestroy and RwCameraCreate. The file owns the module
+ * globals (.sbss), the free list parameters (.sdata), the free list (.bss), the plugin registry
+ * and the projection error message (.data 0x8056DF70-0x8056DFB0) and its constant pool (.sdata2
+ * 0x805FB2E0-0x805FB308).
+ * The depth range helper is a static function defined first: the setters inline it, and its own
+ * copy (dead-stripped in retail) puts its constants at the head of the pool, as in retail.
+ * NonMatching (floors from wave 40, probes/Game_RwCpp47.py): fn_804842C8 (the perspective frustum:
+ * GC/2.7 keeps another count of float values in saved registers and strength-reduces the corner
+ * loop differently) and fn_80484C10 (float registers of the corner sums).
+ * C, cflags_rw_core (configure.py). */
 #include "Game/rw/r6.h"
 
-extern RwModuleInfo lbl_805F15A8; /* camera module */
-extern RwPluginRegistry lbl_8056DF70; /* camera plugins */
-extern RwPluginRegistry lbl_8056E030; /* texture plugins */
-extern RwPluginRegistry lbl_8056E048; /* texture dictionary plugins */
-extern char lbl_8056DF88[];
-extern s32 lbl_805EDED8;
-extern s32 lbl_805EDEDC;
-extern u8 lbl_805E2B20[];
-extern const f32 lbl_805FB2E0;
-extern const f32 lbl_805FB2E4;
-extern const f32 lbl_805FB2E8;
-extern const f32 lbl_805FB2EC; /* 2.0f */
-extern const f32 lbl_805FB2F0;
-
 RwFreeList *fn_8047FC04(s32 entrySize, s32 entriesPerBlock, s32 alignment, s32 preallocBlocks,
-                        void *inPlace, u32 hint);
+                        RwFreeList *inPlace, u32 hint);
 RwBool fn_8047FCDC(RwFreeList *list);
 RwMatrix *fn_8047E990(RwMatrix *matrix, const void *tolerance);
 s32 fn_80481DC8(RwPluginRegistry *reg, s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
                 RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB);
+const RwPluginRegistry *fn_8048209C(const RwPluginRegistry *reg, void *object);
 const RwPluginRegistry *fn_80482144(const RwPluginRegistry *reg, void *object);
-RwBBox *fn_8048349C(RwBBox *box, const RwV3d *verts, s32 numVerts);
-
-RwV3d *fn_804824A4(RwV3d *out, const RwV3d *in, s32 count, const RwMatrix *matrix);
 f32 fn_80482394(f32 value);
+RwV3d *fn_804824A4(RwV3d *out, const RwV3d *in, s32 count, const RwMatrix *matrix);
+RwBBox *fn_8048349C(RwBBox *box, const RwV3d *verts, s32 numVerts);
 RwFrame *fn_8048722C(RwFrame *frame);
 RwRaster *fn_80489D44(RwRaster *raster, void *device, u32 flags);
 void fn_8048B354(void);
-RwBool fn_8048CD8C(RwTexture *texture);
-RwTexDictionary *fn_8048CA64(void);
-RwBool fn_8048CB38(RwTexDictionary *dict);
-const RwTexDictionary *fn_8048CBE0(const RwTexDictionary *dict,
-                                   RwTexture *(*callback)(RwTexture *texture, void *data),
-                                   void *data);
-RwTexture *fn_8048CFAC(RwTexDictionary *dict, RwTexture *texture);
-RwBool fn_8047CF50(RwStream *stream, u32 type, u32 *length, u32 *version);
-u32 fn_80480D4C(RwStream *stream, void *buffer, u32 length);
-void *fn_8047D254(void *mem, u32 size);
-RwBool fn_80485C3C(RwDevice *device, s32 request, void *out, void *inOut, s32 number);
-const RwPluginRegistry *fn_804816AC(const RwPluginRegistry *reg, RwStream *stream, void *object);
 void fn_8048D834(void *object);
 void fn_8049B148(RwCamera *camera);
 
-#define RWCAMERAGLOBAL (RWGLOBALAT(RwFreeList *, lbl_805F15A8.globalsOffset))
+static RwModuleInfo cameraModule;
+RwPluginRegistry cameraTKList = {sizeof(RwCamera), sizeof(RwCamera), 0, 0, NULL, NULL};
+static s32 cameraFreeListBlockSize = 4;
+static s32 cameraFreeListPreallocBlocks = 1;
+static RwFreeList cameraFreeList;
+
+#define RWCAMERAGLOBAL (RWGLOBALAT(RwFreeList *, cameraModule.globalsOffset))
 #define CameraFrame(camera) ((RwFrame *)(camera)->object.object.parent)
 
-/* The texture callback that destroys each texture of a dictionary whose stream read failed. */
-RwTexture *fn_80483F8C(RwTexture *texture, void *data) {
-    fn_8048CD8C(texture);
-    return texture;
-}
+/* Depth range of the device mapped onto the clip planes (their reciprocals in perspective). */
+static void CameraUpdateZShiftAndScale(RwCamera *camera) {
+    f32 zNear = RwEngineInstance->dOpenDevice.zBufferNear;
+    f32 zFar = RwEngineInstance->dOpenDevice.zBufferFar;
+    f32 nearPlane;
+    f32 farPlane;
+    f32 margin;
+    f32 zScale;
 
-static inline void TexDictionaryDestroyAll(RwTexDictionary *texDict) {
-    fn_8048CBE0(texDict, fn_80483F8C, NULL);
-    fn_8048CB38(texDict);
-}
-
-/* RwTexDictionaryStreamRead: the texture count and device id, then each native texture with its
- * plugin data, then the dictionary's plugin data. */
-RwTexDictionary *fn_80483FBC(RwStream *stream) {
-    u32 size;
-    u32 version;
-
-    if (!fn_8047CF50(stream, 1, &size, &version)) {
-        return NULL;
+    switch (camera->projectionType) {
+    case 2:
+        farPlane = camera->farPlane;
+        nearPlane = camera->nearPlane;
+        break;
+    case 1:
+    default:
+        farPlane = 1.0f / camera->farPlane;
+        nearPlane = 1.0f / camera->nearPlane;
+        break;
     }
-    if (version >= 0x35000 && version <= 0x37002) {
-        RwDevice *device = &RwEngineInstance->dOpenDevice;
-        rwStreamTexDictionary binTexDict;
-        RwTexture *texture;
-        RwTexDictionary *texDict;
-        u16 deviceId;
-
-        memset(&binTexDict, 0, sizeof(binTexDict));
-        if (fn_80480D4C(stream, &binTexDict, size) != size) {
-            return NULL;
-        }
-        fn_8047D254(&binTexDict, sizeof(binTexDict));
-        deviceId = 0;
-        fn_80485C3C(device, 0x16, &deviceId, NULL, 0);
-        deviceId &= 0xFF;
-        if (deviceId && binTexDict.deviceId && deviceId != binTexDict.deviceId) {
-            return NULL;
-        }
-        texDict = fn_8048CA64();
-        if (!texDict) {
-            return NULL;
-        }
-        while (binTexDict.numTextures--) {
-            if (!fn_8047CF50(stream, 0x15, &size, &version)) {
-                TexDictionaryDestroyAll(texDict);
-                return NULL;
-            }
-            if (version < 0x35000 || version > 0x37002) {
-                TexDictionaryDestroyAll(texDict);
-                RWERROR((0x80000004));
-                return NULL;
-            }
-            if (!RwEngineInstance->stdFunc[26](stream, &texture, size)) {
-                TexDictionaryDestroyAll(texDict);
-                return NULL;
-            }
-            if (!texture) {
-                TexDictionaryDestroyAll(texDict);
-                return NULL;
-            }
-            if (!fn_804816AC(&lbl_8056E030, stream, texture)) {
-                TexDictionaryDestroyAll(texDict);
-                return NULL;
-            }
-            fn_8048CFAC(texDict, texture);
-        }
-        if (!fn_804816AC(&lbl_8056E048, stream, texDict)) {
-            TexDictionaryDestroyAll(texDict);
-            return NULL;
-        }
-        return texDict;
-    }
-    RWERROR((0x80000004));
-    return NULL;
+    margin = 0.0001f * (zFar - zNear);
+    zFar -= margin;
+    zNear += margin;
+    zScale = (zFar - zNear) / (farPlane - nearPlane);
+    camera->zScale = zScale;
+    camera->zShift = 0.5f * ((zFar + zNear) - zScale * (farPlane + nearPlane));
 }
 
 /* The byte of a frustum plane that picks a bounding box corner: 1 where the normal's component
@@ -190,16 +121,16 @@ void fn_804842C8(RwCamera *camera) {
     offset.y += ltm->up.y * camera->viewOffset.y;
     offset.z += ltm->up.z * camera->viewOffset.y;
     corners[0] = temp;
-    right.x = lbl_805FB2EC * right.x;
-    right.y = lbl_805FB2EC * right.y;
-    right.z = lbl_805FB2EC * right.z;
+    right.x = 2.0f * right.x;
+    right.y = 2.0f * right.y;
+    right.z = 2.0f * right.z;
     temp.x = temp.x - right.x;
     temp.y = temp.y - right.y;
     temp.z = temp.z - right.z;
     corners[1] = temp;
-    up.x = lbl_805FB2EC * up.x;
-    up.y = lbl_805FB2EC * up.y;
-    up.z = lbl_805FB2EC * up.z;
+    up.x = 2.0f * up.x;
+    up.y = 2.0f * up.y;
+    up.z = 2.0f * up.z;
     temp.x = temp.x - up.x;
     temp.y = temp.y - up.y;
     temp.z = temp.z - up.z;
@@ -299,24 +230,24 @@ RwCamera *fn_80484AAC(RwCamera *camera) {
     f32 scale;
     f32 shear;
 
-    scale = lbl_805FB2F0 * camera->recipViewWindow.x;
+    scale = -0.5f * camera->recipViewWindow.x;
     x = ltm->right.x * scale;
     y = ltm->right.y * scale;
     z = ltm->right.z * scale;
-    shear = lbl_805FB2E8 - scale * camera->viewOffset.x;
+    shear = 0.5f - scale * camera->viewOffset.x;
     x = ltm->at.x * shear + x;
     y = ltm->at.y * shear + y;
     z = ltm->at.z * shear + z;
     view->right.x = x;
     view->up.x = y;
     view->at.x = z;
-    view->pos.x = lbl_805FB2E8 - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
+    view->pos.x = 0.5f - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
 
-    scale = lbl_805FB2F0 * camera->recipViewWindow.y;
+    scale = -0.5f * camera->recipViewWindow.y;
     x = ltm->up.x * scale;
     y = ltm->up.y * scale;
     z = ltm->up.z * scale;
-    scale = scale * camera->viewOffset.y + lbl_805FB2E8;
+    scale = scale * camera->viewOffset.y + 0.5f;
     shear = scale;
     x = ltm->at.x * shear + x;
     y = ltm->at.y * shear + y;
@@ -324,7 +255,7 @@ RwCamera *fn_80484AAC(RwCamera *camera) {
     view->right.y = x;
     view->up.y = y;
     view->at.y = z;
-    view->pos.y = lbl_805FB2E8 - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
+    view->pos.y = 0.5f - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
 
     view->right.z = ltm->at.x;
     view->up.z = ltm->at.y;
@@ -355,10 +286,10 @@ void fn_80484C10(RwCamera *camera) {
     offY = camera->viewOffset.y;
     x1 = -x0;
     y1 = -y0;
-    nearX = (lbl_805FB2E0 - nearZ) * -offX;
-    nearY = (lbl_805FB2E0 - nearZ) * offY;
-    farX = (lbl_805FB2E0 - farZ) * -offX;
-    farY = (lbl_805FB2E0 - farZ) * offY;
+    nearX = (1.0f - nearZ) * -offX;
+    nearY = (1.0f - nearZ) * offY;
+    farX = (1.0f - farZ) * -offX;
+    farY = (1.0f - farZ) * offY;
     corners[0].z = corners[1].z = corners[2].z = corners[3].z = nearZ;
     corners[4].z = corners[5].z = corners[6].z = corners[7].z = farZ;
     corners[0].x = corners[3].x = x0 + nearX;
@@ -432,7 +363,7 @@ RwCamera *fn_80485124(RwCamera *camera) {
     f32 scale;
     f32 shear;
 
-    scale = lbl_805FB2F0 * camera->recipViewWindow.x;
+    scale = -0.5f * camera->recipViewWindow.x;
     x = ltm->right.x * scale;
     y = ltm->right.y * scale;
     z = ltm->right.z * scale;
@@ -443,9 +374,9 @@ RwCamera *fn_80485124(RwCamera *camera) {
     view->right.x = x;
     view->up.x = y;
     view->at.x = z;
-    view->pos.x = lbl_805FB2E8 - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
+    view->pos.x = 0.5f - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
 
-    scale = lbl_805FB2F0 * camera->recipViewWindow.y;
+    scale = -0.5f * camera->recipViewWindow.y;
     x = ltm->up.x * scale;
     y = ltm->up.y * scale;
     z = ltm->up.z * scale;
@@ -457,7 +388,7 @@ RwCamera *fn_80485124(RwCamera *camera) {
     view->right.y = x;
     view->up.y = y;
     view->at.y = z;
-    view->pos.y = lbl_805FB2E8 - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
+    view->pos.y = 0.5f - (shear + (ltm->pos.x * x + ltm->pos.y * y + ltm->pos.z * z));
 
     view->right.z = ltm->at.x;
     view->up.z = ltm->at.y;
@@ -508,19 +439,19 @@ void *fn_804853C0(void *instance) {
         fn_8047FCDC(RWCAMERAGLOBAL);
         RWCAMERAGLOBAL = NULL;
     }
-    lbl_805F15A8.numInstances--;
+    cameraModule.numInstances--;
     return instance;
 }
 
 /* _rwCameraOpen. */
 void *fn_80485424(void *instance, s32 offset) {
-    lbl_805F15A8.globalsOffset = offset;
-    RWCAMERAGLOBAL = fn_8047FC04(lbl_8056DF70.sizeOfStruct, lbl_805EDED8, 4, lbl_805EDEDC,
-                                 lbl_805E2B20, 0x40005);
+    cameraModule.globalsOffset = offset;
+    RWCAMERAGLOBAL = fn_8047FC04(cameraTKList.sizeOfStruct, cameraFreeListBlockSize, 4, cameraFreeListPreallocBlocks,
+                                 &cameraFreeList, 0x40005);
     if (!RWCAMERAGLOBAL) {
         return NULL;
     }
-    lbl_805F15A8.numInstances++;
+    cameraModule.numInstances++;
     return instance;
 }
 
@@ -543,33 +474,6 @@ RwCamera *fn_80485504(RwCamera *camera, const RwV2d *offset) {
     return camera;
 }
 
-/* Depth range of the device mapped onto the clip planes (their reciprocals in perspective). */
-static inline void CameraUpdateZShiftAndScale(RwCamera *camera) {
-    f32 zNear = RwEngineInstance->dOpenDevice.zBufferNear;
-    f32 zFar = RwEngineInstance->dOpenDevice.zBufferFar;
-    f32 nearPlane;
-    f32 farPlane;
-    f32 margin;
-    f32 zScale;
-
-    switch (camera->projectionType) {
-    case 2:
-        farPlane = camera->farPlane;
-        nearPlane = camera->nearPlane;
-        break;
-    case 1:
-    default:
-        farPlane = lbl_805FB2E0 / camera->farPlane;
-        nearPlane = lbl_805FB2E0 / camera->nearPlane;
-        break;
-    }
-    margin = lbl_805FB2E4 * (zFar - zNear);
-    zFar -= margin;
-    zNear += margin;
-    zScale = (zFar - zNear) / (farPlane - nearPlane);
-    camera->zScale = zScale;
-    camera->zShift = lbl_805FB2E8 * ((zFar + zNear) - zScale * (farPlane + nearPlane));
-}
 
 /* RwCameraSetNearClipPlane. */
 RwCamera *fn_80485550(RwCamera *camera, f32 nearClip) {
@@ -641,7 +545,7 @@ RwCamera *fn_8048584C(RwCamera *camera, s32 projection) {
         CameraUpdateZShiftAndScale(camera);
         return camera;
     default:
-        RWERROR((0x80000003, lbl_8056DF88));
+        RWERROR((0x80000003, "Invalid projection type specified"));
         return NULL;
     }
 }
@@ -649,8 +553,8 @@ RwCamera *fn_8048584C(RwCamera *camera, s32 projection) {
 /* RwCameraSetViewWindow. */
 RwCamera *fn_80485950(RwCamera *camera, const RwV2d *window) {
     camera->viewWindow = *window;
-    camera->recipViewWindow.x = lbl_805FB2E0 / camera->viewWindow.x;
-    camera->recipViewWindow.y = lbl_805FB2E0 / camera->viewWindow.y;
+    camera->recipViewWindow.x = 1.0f / camera->viewWindow.x;
+    camera->recipViewWindow.y = 1.0f / camera->viewWindow.y;
     if (CameraFrame(camera)) {
         fn_8048722C(CameraFrame(camera));
     }
@@ -660,13 +564,43 @@ RwCamera *fn_80485950(RwCamera *camera, const RwV2d *window) {
 /* RwCameraRegisterPlugin. */
 s32 fn_804859B8(s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
                 RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB) {
-    return fn_80481DC8(&lbl_8056DF70, size, pluginID, constructCB, destructCB, copyCB);
+    return fn_80481DC8(&cameraTKList, size, pluginID, constructCB, destructCB, copyCB);
 }
 
 /* RwCameraDestroy. */
 RwBool fn_804859F8(RwCamera *camera) {
-    fn_80482144(&lbl_8056DF70, camera);
+    fn_80482144(&cameraTKList, camera);
     fn_8048D834(camera);
     RwEngineInstance->memoryFree(RWCAMERAGLOBAL, camera);
     return TRUE;
+}
+
+/* RwCameraCreate: a perspective camera with a unit view window, clip planes 0.05 and 10. */
+RwCamera *fn_80485A58(void) {
+    RwCamera *camera = (RwCamera *)RwEngineInstance->memoryAlloc(RWCAMERAGLOBAL, 0x30005);
+
+    if (!camera) {
+        return NULL;
+    }
+    camera->object.object.type = 4;
+    camera->object.object.subType = 0;
+    camera->object.object.flags = 0;
+    camera->object.object.privateFlags = 0;
+    camera->object.object.parent = NULL;
+    camera->object.sync = fn_8048528C;
+    camera->beginUpdate = fn_80485354;
+    camera->endUpdate = fn_804852F0;
+    camera->viewWindow.x = camera->viewWindow.y = 1.0f;
+    camera->recipViewWindow.x = camera->recipViewWindow.y = 1.0f;
+    camera->viewOffset.x = camera->viewOffset.y = 0.0f;
+    camera->nearPlane = 0.05f;
+    camera->farPlane = 10.0f;
+    camera->fogPlane = 5.0f;
+    camera->frameBuffer = NULL;
+    camera->zBuffer = NULL;
+    camera->projectionType = 1;
+    CameraUpdateZShiftAndScale(camera);
+    camera->viewMatrix.flags = 0;
+    fn_8048209C(&cameraTKList, camera);
+    return camera;
 }

@@ -334,18 +334,30 @@ cflags_rw_132 = [
 cflags_rw_132_sdata = [*cflags_rw_132, "-str reuse,noreadonly"]
 
 
-# RenderWare built as a C library (agent r6, Game/RwCpp48 and later): the base flags (-O4,p, auto
-# inlining) without stmw/lmw, with the game's read-only pooled strings, and inlining five passes
-# deep without deferral. Functions come out in definition order and only helpers defined before
-# a caller are inlined (RwFrameClone calls RwFrameUpdateObjects, defined after it, out of line,
-# while RwFrameAddChild and RwFrameRemoveChild have it inline); five passes give the frame
-# hierarchy destructor (fn_80486FAC) its five inlined levels. Game/RwCpp45..47 keep
-# cflags_rw_no_lmw with "-O4,p" and "-inline level=2" (deferred, no auto inlining), which their
-# sources were matched with.
+# RenderWare built as a C library (agent r6, wave 40, the old size-cut Game/RwCpp48..50): the base
+# flags (-O4,p, auto inlining) without stmw/lmw, with the game's read-only pooled strings, and
+# inlining five passes deep without deferral. Functions come out in definition order and only
+# helpers defined before a caller are inlined (RwFrameClone calls RwFrameUpdateObjects, defined
+# after it, out of line, while RwFrameAddChild and RwFrameRemoveChild have it inline). Wave 41 cut
+# those units into src/RenderWare files built with cflags_rw_core below (the same code generation;
+# writable strings, as the modules' .sdata/.data has them); this set is kept for other units.
 cflags_rw_r6 = [
     *cflags_base,
     "-use_lmw_stmw off",
     "-str reuse,readonly",
+    "-inline auto,level=5",
+]
+
+# The RenderWare core modules of src/RenderWare (wave 41, range r6, 0x80480C6C-0x8049043C): C, built
+# for speed (-O4,p) without stmw/lmw, with automatic inlining in definition order: a function
+# defined before its caller in the same file is inlined, so the file boundaries decide which calls
+# stay calls (compiled together, the plugin chunk readers would inline RwStreamSkip, which retail
+# calls). Five levels deep unless a function sets its own depth (#pragma inline_depth: retail
+# inlines its recursive walks into themselves three to eight levels deep). String literals stay
+# writable, as cflags_base has them: the modules' messages and fopen modes sit in .data/.sdata.
+cflags_rw_core = [
+    *cflags_base,
+    "-use_lmw_stmw off",
     "-inline auto,level=5",
 ]
 
@@ -1237,15 +1249,6 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp42.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp43.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp44.cpp", cflags=cflags_rw_r5),
-            Object(NonMatching, "Game/RwCpp45.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
-            Object(NonMatching, "Game/RwCpp46.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
-            Object(NonMatching, "Game/RwCpp47.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
-            Object(NonMatching, "Game/RwCpp48.cpp", cflags=cflags_rw_r6),
-            Object(NonMatching, "Game/RwCpp49.cpp", cflags=cflags_rw_r6),
-            Object(NonMatching, "Game/RwCpp50.cpp", cflags=cflags_rw_r6),
-            Object(NonMatching, "Game/RwCpp51.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
-            Object(NonMatching, "Game/RwCpp52.cpp"),
-            Object(NonMatching, "Game/RwCpp53.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
             Object(NonMatching, "Game/RwCpp54.cpp", cflags=cflags_rw_driver),
             Object(NonMatching, "Game/RwCpp55.cpp"),
             Object(NonMatching, "Game/RwCpp56.cpp", cflags=cflags_rw_driver),
@@ -1955,6 +1958,28 @@ config.libs = [
             Object(NonMatching, "RenderWare/RpDMorphGameCube.c", cflags=cflags_rw_c),
             Object(NonMatching, "RenderWare/RpHAnim.c", cflags=cflags_rw_c),
             Object(NonMatching, "RenderWare/RpPTank.c", cflags=cflags_rw_c),
+            Object(NonMatching, "RenderWare/RwStreamIo.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwPluginStream.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwPlugin.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwV3d.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwResourcesHeap.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwChunkGroup.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwString.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwOsPath.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwBBox.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwCameraBinary.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwFrameBinary.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwTextureBinary.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwCamera.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwEngine.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwFrame.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwImage.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwRaster.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwImageResample.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwFrameSync.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwTexture.c", cflags=cflags_rw_core),
+            Object(Matching, "RenderWare/RwObjectHasFrame.c", cflags=cflags_rw_core),
+            Object(NonMatching, "RenderWare/RwPaletteQuantize.c", cflags=cflags_rw_core),
         ],
     },
 ]

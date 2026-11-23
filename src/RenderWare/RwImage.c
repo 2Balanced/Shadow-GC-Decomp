@@ -1,120 +1,56 @@
-/* RenderWare core, 0x804875B0..0x8048915B (a size cut, not a source file):
- *   0x804875B0  the end of the frame module: translate, scale, transform, rotate, set identity,
- *               plugin registration
- *   0x80487914  images: module open/close, create, destroy, allocate pixels, free pixels, make
- *               mask, apply mask, image path, path search, masked image read
- *   0x80489118  a raster standard function wrapper (the start of the raster module)
- * Functions keep their fn_ names because game code calls them by those; each comment gives the
- * public RenderWare function the behaviour corresponds to. Compiled as C with cflags_rw_r6
- * (configure.py), see RwCpp48.cpp.
- * NonMatching, every opcode right but registers (probes/Game_RwCpp49.py): fn_80487FA8 (volatile
- * register numbering of the two loops), fn_80488088 (the temporary image and the width trade
- * r30/r31; retail also shifts the mask's palette index with slwi where GC/2.7 masks the byte
- * with rlwinm), fn_804886CC (the directory length and the buffer size trade r27/r28) and
- * fn_80488B94 (the image and the mask name trade r30/r31). */
-#pragma cplusplus off
-#include <dolphin/types.h>
+/* RenderWare core: the image module (0x80487914-0x80489B2C).
+ * Module open and close (the image and image format free lists, the image path and the scratch
+ * buffer), RwImageCreate, RwImageDestroy, RwImageAllocatePixels, RwImageFreePixels, RwImageMakeMask,
+ * RwImageApplyMask, the scratch buffer, RwImageSetPath, the path search and its two callbacks,
+ * RwImageFindFileType, the image read, RwImageReadMaskedImage, RwRGBASetFromPixel, the depth
+ * conversion, RwImageCopy, RwImageGammaCorrect, RwImageSetGamma, then the image/raster
+ * conversions RwImageSetFromRaster, RwRasterSetFromImage and RwImageFindRasterFormat. The file owns
+ * the module globals (.sbss), the free list parameters (.sdata), the two free lists (.bss), the
+ * image plugin registry (.data) and its constant pool (.sdata2 0x805FB310-0x805FB328: the image
+ * open's 1.0f and the gamma tables' constants share it, so the gamma code is this file's).
+ * Boundary: the raster module from 0x80489B2C has its own globals; the image/raster conversions
+ * between them use no data and stay with the images they convert.
+ * NonMatching, every opcode right but registers (probes/Game_RwCpp49.py, Game_RwCpp50.py):
+ * fn_80487FA8 (volatile register numbering of the two loops), fn_80488088 (the temporary image
+ * and the width trade r30/r31; retail also shifts the mask's palette index with slwi where GC/2.7
+ * masks the byte with rlwinm), fn_804886CC (the directory length and the buffer size trade
+ * r27/r28), fn_80488B94 (the image and the mask name trade r30/r31), fn_8048915C and fn_804893B8
+ * (register numbering) and fn_804894B8 (retail unrolls the gamma loop by four, GC/2.7 by two).
+ * C, cflags_rw_core (configure.py). */
 #include "Game/rw/r6.h"
 
-extern RwModuleInfo lbl_805F15C0;     /* image module */
-extern RwPluginRegistry lbl_8056DFE8; /* frame plugins */
-extern RwPluginRegistry lbl_8056E000; /* image plugins */
-extern s32 lbl_805EDEE8;
-extern s32 lbl_805EDEEC;
-extern s32 lbl_805EDEF0;
-extern u8 lbl_805E2CA0[];
-extern u8 lbl_805E2CC4[];
-extern const f32 lbl_805FB308; /* 1.0f */
-extern const f32 lbl_805FB30C; /* 0.0f */
-extern const f32 lbl_805FB310; /* 1.0f */
-
+double pow(double x, double y);
 RwMatrix *fn_8047EFC8(RwMatrix *matrix, const RwV3d *axis, f32 angle, s32 combine);
-RwMatrix *fn_8047F398(RwMatrix *matrix, const RwV3d *scale, s32 combine);
-RwMatrix *fn_8047F59C(RwMatrix *matrix, const RwV3d *translation, s32 combine);
-RwMatrix *fn_8047F72C(RwMatrix *matrix, const RwMatrix *transform, s32 combine);
 RwBool fn_8047A67C(const char *name);
 RwFreeList *fn_8047FC04(s32 entrySize, s32 entriesPerBlock, s32 alignment, s32 preallocBlocks,
-                        void *inPlace, u32 hint);
+                        RwFreeList *inPlace, u32 hint);
 RwBool fn_8047FCDC(RwFreeList *list);
-s32 fn_80481DC8(RwPluginRegistry *reg, s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
-                RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB);
 const RwPluginRegistry *fn_8048209C(const RwPluginRegistry *reg, void *object);
 const RwPluginRegistry *fn_80482144(const RwPluginRegistry *reg, void *object);
 RwBool fn_80483444(const char *path);
 RwBool fn_80489830(f32 gamma);
 RwImage *fn_804893B8(RwImage *dst, const RwImage *src);
 
-#define IMAGEGLOBAL(field) (RWGLOBALAT(rwImageGlobals, lbl_805F15C0.globalsOffset).field)
+static RwModuleInfo imageModule;
+static RwPluginRegistry imageTKList = {sizeof(RwImage), sizeof(RwImage), 0, 0, NULL, NULL};
+static s32 imageFreeListBlockSize = 0x80;
+static s32 imageFreeListPreallocBlocks = 1;
+static s32 imageFormatFreeListPreallocBlocks = 1;
+static RwFreeList imageFreeList;
+static RwFreeList imageFormatFreeList;
 
-static inline RwFrame *FrameUpdateObjects(RwFrame *frame) {
-    u8 oldFlags = frame->root->object.privateFlags;
-
-    if (!(oldFlags & 3)) {
-        frame->root->inDirtyList.next = RwEngineInstance->dirtyFrameList.link.next;
-        frame->root->inDirtyList.prev = &RwEngineInstance->dirtyFrameList.link;
-        RwEngineInstance->dirtyFrameList.link.next->prev = &frame->root->inDirtyList;
-        RwEngineInstance->dirtyFrameList.link.next = &frame->root->inDirtyList;
-    }
-    frame->root->object.privateFlags = oldFlags | 3;
-    frame->object.privateFlags |= 0xC;
-    return frame;
-}
-
-/* RwFrameTranslate. */
-RwFrame *fn_804875B0(RwFrame *frame, const RwV3d *translation, s32 combine) {
-    fn_8047F59C(&frame->modelling, translation, combine);
-    FrameUpdateObjects(frame);
-    return frame;
-}
-
-/* RwFrameScale. */
-RwFrame *fn_8048764C(RwFrame *frame, const RwV3d *scale, s32 combine) {
-    fn_8047F398(&frame->modelling, scale, combine);
-    FrameUpdateObjects(frame);
-    return frame;
-}
-
-/* RwFrameTransform. */
-RwFrame *fn_804876E8(RwFrame *frame, const RwMatrix *transform, s32 combine) {
-    fn_8047F72C(&frame->modelling, transform, combine);
-    FrameUpdateObjects(frame);
-    return frame;
-}
-
-/* RwFrameRotate. */
-RwFrame *fn_80487784(RwFrame *frame, const RwV3d *axis, f32 angle, s32 combine) {
-    fn_8047EFC8(&frame->modelling, axis, angle, combine);
-    FrameUpdateObjects(frame);
-    return frame;
-}
-
-/* RwFrameSetIdentity. */
-RwFrame *fn_80487820(RwFrame *frame) {
-    frame->modelling.right.x = frame->modelling.up.y = frame->modelling.at.z = lbl_805FB308;
-    frame->modelling.right.y = frame->modelling.right.z = frame->modelling.up.x = lbl_805FB30C;
-    frame->modelling.up.z = frame->modelling.at.x = frame->modelling.at.y = lbl_805FB30C;
-    frame->modelling.pos.x = frame->modelling.pos.y = frame->modelling.pos.z = lbl_805FB30C;
-    frame->modelling.flags |= 0x20003;
-    FrameUpdateObjects(frame);
-    return frame;
-}
-
-/* RwFrameRegisterPlugin. */
-s32 fn_804878D4(s32 size, u32 pluginID, RwPluginObjectConstructor constructCB,
-                RwPluginObjectDestructor destructCB, RwPluginObjectCopy copyCB) {
-    return fn_80481DC8(&lbl_8056DFE8, size, pluginID, constructCB, destructCB, copyCB);
-}
+#define IMAGEGLOBAL(field) (RWGLOBALAT(rwImageGlobals, imageModule.globalsOffset).field)
 
 /* _rwImageOpen: the image and image format free lists, the image path and the scratch buffer. */
 void *fn_80487914(void *instance, s32 offset, s32 size) {
-    lbl_805F15C0.globalsOffset = offset;
-    IMAGEGLOBAL(imageFreeList) = fn_8047FC04(lbl_8056E000.sizeOfStruct, lbl_805EDEE8, 4,
-                                             lbl_805EDEEC, lbl_805E2CA0, 0x40018);
+    imageModule.globalsOffset = offset;
+    IMAGEGLOBAL(imageFreeList) = fn_8047FC04(imageTKList.sizeOfStruct, imageFreeListBlockSize, 4,
+                                             imageFreeListPreallocBlocks, &imageFreeList, 0x40018);
     if (!IMAGEGLOBAL(imageFreeList)) {
         return NULL;
     }
-    IMAGEGLOBAL(imageFormatFreeList) = fn_8047FC04(sizeof(rwImageFormat), lbl_805EDEE8, 4,
-                                                   lbl_805EDEF0, lbl_805E2CC4, 0x40406);
+    IMAGEGLOBAL(imageFormatFreeList) = fn_8047FC04(sizeof(rwImageFormat), imageFreeListBlockSize, 4,
+                                                   imageFormatFreeListPreallocBlocks, &imageFormatFreeList, 0x40406);
     if (!IMAGEGLOBAL(imageFormatFreeList)) {
         fn_8047FCDC(IMAGEGLOBAL(imageFreeList));
         IMAGEGLOBAL(imageFreeList) = NULL;
@@ -131,8 +67,8 @@ void *fn_80487914(void *instance, s32 offset, s32 size) {
         return NULL;
     }
     IMAGEGLOBAL(imagePath)[0] = '\0';
-    lbl_805F15C0.numInstances++;
-    fn_80489830(lbl_805FB310);
+    imageModule.numInstances++;
+    fn_80489830(1.0f);
     IMAGEGLOBAL(imageFormats) = NULL;
     IMAGEGLOBAL(scratchMemSize) = 256;
     IMAGEGLOBAL(scratchMem) =
@@ -176,7 +112,7 @@ void *fn_80487BB0(void *instance, s32 offset, s32 size) {
         fn_8047FCDC(IMAGEGLOBAL(imageFreeList));
         IMAGEGLOBAL(imageFreeList) = NULL;
     }
-    lbl_805F15C0.numInstances--;
+    imageModule.numInstances--;
     return instance;
 }
 
@@ -193,7 +129,7 @@ RwImage *fn_80487D08(s32 width, s32 height, s32 depth) {
     image->cpPixels = NULL;
     image->palette = NULL;
     image->flags = 0;
-    fn_8048209C(&lbl_8056E000, image);
+    fn_8048209C(&imageTKList, image);
     return image;
 }
 
@@ -204,7 +140,7 @@ RwBool fn_80487DB0(RwImage *image) {
     if (image->flags & 1) {
         fn_80487F50(image);
     }
-    fn_80482144(&lbl_8056E000, image);
+    fn_80482144(&imageTKList, image);
     RwEngineInstance->memoryFree(IMAGEGLOBAL(imageFreeList), image);
     return TRUE;
 }
@@ -574,4 +510,201 @@ RwImage *fn_80488B94(const char *imageName, const char *maskName) {
 RwRaster *fn_80489118(RwRaster *raster, s32 value, s32 flags) {
     RwEngineInstance->stdFunc[3](raster, &value, flags);
     return raster;
+}
+
+/* Converts the pixels of an image of another depth: 4-bit indices to 8-bit ones, palettised
+ * pixels to 32-bit through the palette. */
+RwBool fn_8048915C(RwImage *destImage, const RwImage *sourceImage) {
+    RwBool result = FALSE;
+    s32 width = destImage->width;
+    s32 height = destImage->height;
+    u8 *dstPixels = destImage->cpPixels;
+    const u8 *srcPixels = sourceImage->cpPixels;
+    const RwRGBA *palette = sourceImage->palette;
+
+    switch ((sourceImage->depth << 8) | destImage->depth) {
+    case 0x404:
+    case 0x808:
+    case 0x2020:
+        result = TRUE;
+        break;
+    case 0x408: {
+        s32 srcStride = sourceImage->stride;
+        s32 y;
+
+        for (y = 0; y < height; y++) {
+            memcpy(dstPixels, srcPixels, width);
+            srcPixels += srcStride;
+            dstPixels += destImage->stride;
+        }
+        result = TRUE;
+        break;
+    }
+    case 0x420:
+    case 0x820: {
+        s32 srcStride = sourceImage->stride;
+        s32 y;
+
+        for (y = 0; y < height; y++) {
+            s32 x;
+
+            for (x = 0; x < width; x++) {
+                ((RwRGBA *)dstPixels)[x] = palette[srcPixels[x]];
+            }
+            srcPixels += srcStride;
+            dstPixels += destImage->stride;
+        }
+        result = TRUE;
+        break;
+    }
+    case 0x804:
+    case 0x2004:
+    case 0x2008:
+    default:
+        RWERROR((0x80000009));
+        break;
+    }
+    return result;
+}
+
+/* RwImageCopy: the palette and the rows when the depths agree, a conversion otherwise; the
+ * gamma corrected flag follows the source. */
+RwImage *fn_804893B8(RwImage *destImage, const RwImage *sourceImage) {
+    if (destImage->depth == sourceImage->depth) {
+        u8 *dst;
+        const u8 *src;
+        s32 y;
+        s32 srcStride;
+        s32 rowBytes;
+
+        if (destImage->palette && sourceImage->palette && sourceImage->depth <= 8) {
+            memcpy(destImage->palette, sourceImage->palette,
+                   (1 << sourceImage->depth) * sizeof(RwRGBA));
+        }
+        rowBytes = ((destImage->depth + 7) >> 3) * destImage->width;
+        src = sourceImage->cpPixels;
+        dst = destImage->cpPixels;
+        srcStride = sourceImage->stride;
+        for (y = 0; y < destImage->height; y++) {
+            memcpy(dst, src, rowBytes);
+            src += srcStride;
+            dst += destImage->stride;
+        }
+    } else if (!fn_8048915C(destImage, sourceImage)) {
+        destImage = NULL;
+    }
+    destImage->flags &= ~2;
+    destImage->flags |= sourceImage->flags & 2;
+    return destImage;
+}
+
+/* Puts the red, green and blue of count colours through the gamma table. */
+static inline void ImageGammaCorrectColors(RwRGBA *dst, const RwRGBA *src, s32 count) {
+    const u8 *gamma = IMAGEGLOBAL(gammaTable);
+
+    while (count--) {
+        dst->red = gamma[src->red];
+        dst->green = gamma[src->green];
+        dst->blue = gamma[src->blue];
+        dst->alpha = src->alpha;
+        dst++;
+        src++;
+    }
+}
+
+/* RwImageGammaCorrect. */
+RwImage *fn_804894B8(RwImage *image) {
+    switch (image->depth) {
+    case 4:
+    case 8: {
+        RwRGBA *palette = image->palette;
+        s32 count = 1 << image->depth;
+
+        if (!palette) {
+            RWERROR((0x80000016));
+            return NULL;
+        }
+        ImageGammaCorrectColors(palette, palette, count);
+        break;
+    }
+    case 32: {
+        u8 *row = image->cpPixels;
+        s32 width = image->width;
+        s32 height = image->height;
+        s32 y;
+
+        if (!row) {
+            RWERROR((0x80000016));
+            return NULL;
+        }
+        for (y = 0; y < height; y++) {
+            ImageGammaCorrectColors((RwRGBA *)row, (RwRGBA *)row, width);
+            row += image->stride;
+        }
+        break;
+    }
+    default:
+        RWERROR((0x80000008));
+        return NULL;
+    }
+    image->flags |= 2;
+    return image;
+}
+
+/* RwImageSetGamma: the gamma table and its inverse. */
+RwBool fn_80489830(f32 gammaValue) {
+    f32 invGamma = 1.0f / gammaValue;
+    s32 i;
+
+    IMAGEGLOBAL(gammaVal) = gammaValue;
+    IMAGEGLOBAL(gammaTable)[0] = 0;
+    IMAGEGLOBAL(invGammaTable)[0] = 0;
+    for (i = 1; i < 256; i++) {
+        f32 value = (f32)i / 255.0f;
+
+        f32 scaled;
+
+        scaled = 255.0f * (f32)pow(value, invGamma);
+        IMAGEGLOBAL(gammaTable)[i] = 0.5f + scaled;
+        scaled = 255.0f * (f32)pow(value, gammaValue);
+        IMAGEGLOBAL(invGammaTable)[i] = 0.5f + scaled;
+    }
+    return TRUE;
+}
+
+/* RwImageSetFromRaster. */
+RwImage *fn_804899A8(RwImage *image, RwRaster *raster) {
+    if (RwEngineInstance->stdFunc[6](image, raster, 0)) {
+        if (raster->privateFlags & 1) {
+            image->flags |= 2;
+        }
+        return image;
+    }
+    return NULL;
+}
+
+/* RwRasterSetFromImage. */
+RwRaster *fn_80489A1C(RwRaster *raster, RwImage *image) {
+    if (RwEngineInstance->stdFunc[7](raster, image, 0)) {
+        if (image->flags & 2) {
+            raster->privateFlags |= 1;
+        }
+        return raster;
+    }
+    return NULL;
+}
+
+/* RwImageFindRasterFormat. */
+RwImage *fn_80489A90(RwImage *image, s32 rasterType, s32 *width, s32 *height, s32 *depth,
+                     s32 *format) {
+    RwRaster raster;
+
+    if (!RwEngineInstance->stdFunc[9](&raster, image, rasterType)) {
+        return NULL;
+    }
+    *format = (raster.cFormat << 8) | raster.cType;
+    *width = raster.width;
+    *height = raster.height;
+    *depth = raster.depth;
+    return image;
 }

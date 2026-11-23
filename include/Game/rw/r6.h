@@ -1,6 +1,7 @@
-/* RenderWare 3.7 structures inferred by agent r6 for src/Game/RwCpp45..51 and RwCpp53.
- * Those units are compiled as C, the language RenderWare is written in (see RwCpp45.cpp).
- * Private to those units: a later pass unifies the RenderWare types of all agents. Layouts come
+/* RenderWare 3.7 structures inferred by agent r6 for the RenderWare core files of range r6
+ * (src/RenderWare/RwStreamIo.c .. RwPaletteQuantize.c, 0x80480C6C-0x8049043C; before wave 41 the
+ * size-cut src/Game/RwCpp45..53). Those files are C, the language RenderWare is written in.
+ * Private to those files: a later pass unifies the RenderWare types of all agents. Layouts come
  * from the retail code's offsets; names follow the public RenderWare API where it documents them. */
 #ifndef GAME_RW_R6_H
 #define GAME_RW_R6_H
@@ -11,7 +12,7 @@
 extern "C" {
 #endif
 
-/* The units that include this are C (#pragma cplusplus off): every tag gets its typedef. */
+/* The files that include this are C: every tag gets its typedef. */
 typedef struct RwError RwError;
 typedef struct RwLLLink RwLLLink;
 typedef struct RwLinkList RwLinkList;
@@ -220,6 +221,59 @@ struct RwObject {
     void *parent;    /* 0x04 */
 };
 
+struct RwTexDictionary {
+    RwObject object;           /* 0x00 */
+    RwLinkList texturesInDict; /* 0x08 */
+    RwLLLink lInInstance;      /* 0x10 */
+};
+
+/* The texture module's globals (registered size 0x34). */
+typedef struct rwTextureGlobals {
+    RwLinkList texDictList;                                        /* 0x00 */
+    RwFreeList *textureFreeList;                                   /* 0x08 */
+    RwFreeList *texDictFreeList;                                   /* 0x0C */
+    RwTexDictionary *currentTexDict;                               /* 0x10 */
+    RwTexture *(*textureReadCallBack)(const char *name, const char *maskName); /* 0x14 */
+    RwTexture *(*textureFindCallBack)(const char *name);           /* 0x18 */
+    RwBool haveTexMipmaps;                                         /* 0x1C */
+    RwBool generateTexMipmaps;                                     /* 0x20 */
+    void *scratchMem;                                              /* 0x24 */
+    u16 scratchMemSize;                                            /* 0x28 */
+    RwRaster *(*mipmapGenerationCallBack)(RwRaster *raster, RwImage *image); /* 0x2C */
+    RwBool (*mipmapNameCallBack)(char *name, char *maskName, u8 mipLevel, s32 format); /* 0x30 */
+} rwTextureGlobals;
+
+/* The palette quantiser: an octree over the colours of the images added to it (four bits of the
+ * colour address per level, one from each channel), then Wu's box cutting over the tree. Callers
+ * keep the quantiser on the stack; its nodes come from a free list of 0x5C-byte entries. */
+typedef struct rwPalQuantLeaf {
+    f32 weight;  /* 0x00 */
+    f32 r;       /* 0x04: red, scaled by its weight 0.509 */
+    f32 g;       /* 0x08 */
+    f32 b;       /* 0x0C: blue, scaled by its weight 0.194 */
+    f32 a;       /* 0x10 */
+    f32 var;     /* 0x14 */
+    u8 index;    /* 0x18 */
+} rwPalQuantLeaf;
+
+typedef struct rwPalQuantNode {
+    rwPalQuantLeaf leaf;                /* 0x00 */
+    struct rwPalQuantNode *child[16];   /* 0x1C */
+} rwPalQuantNode;
+
+typedef struct rwPalQuantBox {
+    s32 col0[4]; /* 0x00: first corner (inclusive) */
+    s32 col1[4]; /* 0x10: second corner (exclusive) */
+} rwPalQuantBox;
+
+typedef struct rwPalQuant {
+    rwPalQuantBox Mbox[256];   /* 0x0000 */
+    f32 Mvv[256];              /* 0x2000 */
+    rwPalQuantLeaf Mvol[256];  /* 0x2400 */
+    rwPalQuantNode *root;      /* 0x4000 */
+    RwFreeList *cubeFreeList;  /* 0x4004 */
+} rwPalQuant;
+
 struct RwFrame {
     RwObject object;      /* 0x00 */
     RwLLLink inDirtyList; /* 0x08 */
@@ -329,12 +383,15 @@ struct RwGlobals {
     u32 resArenaInitSize;                                  /* 0x128 */
 };
 
-/* The head of a free list (the rest of the structure is not used by these units). */
+/* A free list. The modules keep theirs in .bss and hand it to RwFreeListCreate to fill in. */
 struct RwFreeList {
-    u32 entrySize;       /* 0x00 */
-    u32 entriesPerBlock; /* 0x04 */
-    u32 heapSize;        /* 0x08 */
-    u32 alignment;       /* 0x0C */
+    u32 entrySize;        /* 0x00 */
+    u32 entriesPerBlock;  /* 0x04 */
+    u32 heapSize;         /* 0x08 */
+    u32 alignment;        /* 0x0C */
+    RwLinkList blockList; /* 0x10 */
+    u32 flags;            /* 0x18 */
+    RwLLLink link;        /* 0x1C */
 };
 
 extern RwGlobals *lbl_805F15B4;

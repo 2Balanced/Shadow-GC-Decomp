@@ -8168,35 +8168,121 @@ RenderWare/RwResources.c:
 	.text       start:0x8048053C end:0x80480C6C
 	.sbss       start:0x805F1578 end:0x805F1580
 
-Game/RwCpp45.cpp:
-	.text       start:0x80480C6C end:0x804823F0
+RenderWare/RwStreamIo.c:
+	.text       start:0x80480C6C end:0x804815F0
+	.bss        start:0x805E2AA8 end:0x805E2AD0
+	.sdata      start:0x805EDEA8 end:0x805EDEC0
+	.sbss       start:0x805F1580 end:0x805F1588
 
-Game/RwCpp46.cpp:
-	.text       start:0x804823F0 end:0x80483F8C
+RenderWare/RwPluginStream.c:
+	.text       start:0x804815F0 end:0x80481B98
 
-Game/RwCpp47.cpp:
-	.text       start:0x80483F8C end:0x80485A58
+RenderWare/RwPlugin.c:
+	.text       start:0x80481B98 end:0x8048222C
+	.bss        start:0x805E2AD0 end:0x805E2AF8
+	.sdata      start:0x805EDEC0 end:0x805EDEC8
+	.sbss       start:0x805F1588 end:0x805F1598
 
-Game/RwCpp48.cpp:
-	.text       start:0x80485A58 end:0x804875B0
+RenderWare/RwV3d.c:
+	.text       start:0x8048222C end:0x80482984
+	.sbss       start:0x805F1598 end:0x805F15A0
+	.sdata2     start:0x805FB2B0 end:0x805FB2D0
 
-Game/RwCpp49.cpp:
-	.text       start:0x804875B0 end:0x8048915C
+RenderWare/RwResourcesHeap.c:
+	.text       start:0x80482984 end:0x80482BC4
 
-Game/RwCpp50.cpp:
-	.text       start:0x8048915C end:0x8048A96C
+RenderWare/RwChunkGroup.c:
+	.text       start:0x80482BC4 end:0x80482CA4
+	.bss        start:0x805E2AF8 end:0x805E2B20
+	.sdata      start:0x805EDEC8 end:0x805EDED0
+	.sbss       start:0x805F15A0 end:0x805F15A8
 
-Game/RwCpp51.cpp:
-	.text       start:0x8048A96C end:0x8048C038
+RenderWare/RwString.c:
+	.text       start:0x80482CA4 end:0x80483444
+	.sdata2     start:0x805FB2D0 end:0x805FB2D8
 
-Game/RwCpp52.cpp:
-	.text       start:0x8048C038 end:0x8048DBEC
+RenderWare/RwOsPath.c:
+	.text       start:0x80483444 end:0x8048349C
 
-Game/RwCpp53.cpp:
-	.text       start:0x8048DBEC end:0x8048F5D0
+RenderWare/RwBBox.c:
+	.text       start:0x8048349C end:0x80483554
+
+RenderWare/RwCameraBinary.c:
+	.text       start:0x80483554 end:0x804836EC
+
+RenderWare/RwFrameBinary.c:
+	.text       start:0x804836EC end:0x80483AFC
+	.sdata      start:0x805EDED0 end:0x805EDED8
+	.sdata2     start:0x805FB2D8 end:0x805FB2E0
+
+RenderWare/RwTextureBinary.c:
+	.text       start:0x80483AFC end:0x804842C8
+
+RenderWare/RwCamera.c:
+	.text       start:0x804842C8 end:0x80485BCC
+	.data       start:0x8056DF70 end:0x8056DFB0
+	.bss        start:0x805E2B20 end:0x805E2B48
+	.sdata      start:0x805EDED8 end:0x805EDEE0
+	.sbss       start:0x805F15A8 end:0x805F15B0
+	.sdata2     start:0x805FB2E0 end:0x805FB308
+
+RenderWare/RwEngine.c:
+	.text       start:0x80485BCC end:0x80486888
+	.data       start:0x8056DFB0 end:0x8056DFE8
+	.bss        start:0x805E2B48 end:0x805E2C78
+	.sbss       start:0x805F15B0 end:0x805F15B8
+
+RenderWare/RwFrame.c:
+	.text       start:0x80486888 end:0x80487914
+	.data       start:0x8056DFE8 end:0x8056E000
+	.bss        start:0x805E2C78 end:0x805E2CA0
+	.sdata      start:0x805EDEE0 end:0x805EDEE8
+	.sbss       start:0x805F15B8 end:0x805F15C0
+	.sdata2     start:0x805FB308 end:0x805FB310
+
+RenderWare/RwImage.c:
+	.text       start:0x80487914 end:0x80489B2C
+	.data       start:0x8056E000 end:0x8056E018
+	.bss        start:0x805E2CA0 end:0x805E2CE8
+	.sdata      start:0x805EDEE8 end:0x805EDEF8
+	.sbss       start:0x805F15C0 end:0x805F15C8
+	.sdata2     start:0x805FB310 end:0x805FB328
+
+RenderWare/RwRaster.c:
+	.text       start:0x80489B2C end:0x8048A178
+	.data       start:0x8056E018 end:0x8056E030
+	.bss        start:0x805E2CE8 end:0x805E2D10
+	.sdata      start:0x805EDEF8 end:0x805EDF00
+	.sbss       start:0x805F15C8 end:0x805F15D0
+
+RenderWare/RwImageResample.c:
+	.text       start:0x8048A178 end:0x8048ADE0
+	.sdata2     start:0x805FB328 end:0x805FB358
+
+RenderWare/RwFrameSync.c:
+	.text       start:0x8048ADE0 end:0x8048B6AC
+
+RenderWare/RwTexture.c:
+	.text       start:0x8048B6AC end:0x8048D7C0
+	.rodata     start:0x8051C2D0 end:0x8051C2E8
+	.data       start:0x8056E030 end:0x8056E060
+	.bss        start:0x805E2D10 end:0x805E2D58
+	.sdata      start:0x805EDF00 end:0x805EDF20
+	.sbss       start:0x805F15D0 end:0x805F15E0
+	.sdata2     start:0x805FB358 end:0x805FB360
+
+RenderWare/RwObjectHasFrame.c:
+	.text       start:0x8048D7C0 end:0x8048D85C
+
+RenderWare/RwPaletteQuantize.c:
+	.text       start:0x8048D85C end:0x8049043C
+	.bss        start:0x805E2D58 end:0x805E3158
+	.sdata      start:0x805EDF20 end:0x805EDF28
+	.sdata2     start:0x805FB360 end:0x805FB380
+	.sbss2      start:0x805FB560 end:0x805FB564
 
 Game/RwCpp54.cpp:
-	.text       start:0x8048F5D0 end:0x80490E30
+	.text       start:0x8049043C end:0x80490E30
 
 Game/RwCpp55.cpp:
 	.text       start:0x80490E30 end:0x804929F0
