@@ -1,5 +1,6 @@
-/* RenderWare core, 0x80480878..0x804823EF (a size cut, not a source file):
- *   0x80480878  tail of the resource arena (allocate an entry, empty the arena)
+/* RenderWare core, 0x80480C6C..0x804823EF (a size cut, not a source file):
+ *   (the resource arena's tail, 0x80480878..0x80480C6C, moved to src/RenderWare/RwResources.c in
+ *   wave 41: that source file starts in range r5)
  *   0x80480C6C  streams: module open/close, RwStreamRead/Write/Skip/Close/Open
  *   0x804815F0  plugin registry: stream callbacks, chunk read/write/skip, open/close, add plugin,
  *               object init/deinit/copy
@@ -49,93 +50,7 @@ f32 fn_80482340(f32 value);
 f32 fn_80482394(f32 value);
 RwStream *fn_804810FC(RwStream *stream, u32 offset);
 
-#define RWRESOURCESGLOBAL(var) (RWGLOBALAT(RwResourcesGlobals, lbl_805F1578.globalsOffset).var)
 #define RWSTREAMGLOBAL (RWGLOBALAT(RwFreeList *, lbl_805F1580.globalsOffset))
-
-static inline void FreeResEntry(RwResEntry *entry) {
-    if (entry->destroyNotify) {
-        entry->destroyNotify(entry);
-    }
-    if (entry->ownerRef) {
-        *entry->ownerRef = NULL;
-    }
-    if (entry->link.next) {
-        entry->link.prev->next = entry->link.next;
-        entry->link.next->prev = entry->link.prev;
-        RWRESOURCESGLOBAL(currentSize) -= entry->size;
-        fn_804829DC(entry);
-    } else {
-        RwEngineInstance->memoryFuncs.rwfree(entry);
-    }
-}
-
-/* RwResourcesAllocateResEntry: entries are taken from the arena heap; when it is full the oldest
- * entry of last frame's list, then of this frame's, is thrown out and the allocation retried. */
-RwResEntry *fn_80480878(void *owner, RwResEntry **ownerRef, s32 size,
-                        RwResEntryDestroyNotify destroyNotify) {
-    RwResEntry *entry;
-    RwBool failed = FALSE;
-
-    while (!failed) {
-        entry = (RwResEntry *)fn_80482A94(RWRESOURCESGLOBAL(memHeap), sizeof(RwResEntry) + size);
-        if (entry) {
-            entry->link.next = RWRESOURCESGLOBAL(usedEntries)->link.next;
-            entry->link.prev = &RWRESOURCESGLOBAL(usedEntries)->link;
-            RWRESOURCESGLOBAL(usedEntries)->link.next->prev = &entry->link;
-            RWRESOURCESGLOBAL(usedEntries)->link.next = &entry->link;
-            entry->owner = owner;
-            entry->size = size;
-            entry->ownerRef = ownerRef;
-            entry->destroyNotify = destroyNotify;
-            RWRESOURCESGLOBAL(currentSize) += size;
-            if (ownerRef) {
-                *ownerRef = entry;
-            }
-            return entry;
-        } else {
-            RwResourcesGlobals *res = &RWGLOBALAT(RwResourcesGlobals, lbl_805F1578.globalsOffset);
-            RwLLLink *link = res->freeEntries->link.prev;
-            if (link != &res->freeEntries->link) {
-                entry = (RwResEntry *)link;
-                FreeResEntry(entry);
-            } else {
-                entry = (RwResEntry *)res->usedEntries->link.prev;
-                if (&entry->link != &res->usedEntries->link) {
-                    res->reusageSize += entry->size;
-                    FreeResEntry(entry);
-                } else {
-                    failed = TRUE;
-                }
-            }
-        }
-    }
-    if (ownerRef) {
-        *ownerRef = NULL;
-    }
-    RWERROR((0xC, size));
-    return NULL;
-}
-
-/* RwResourcesEmptyArena. */
-RwBool fn_80480B08(void) {
-    RwLLLink *link;
-    RwLLLink *end;
-
-    RWRESOURCESGLOBAL(entriesA).link.prev->next = RWRESOURCESGLOBAL(entriesB).link.next;
-    link = RWRESOURCESGLOBAL(entriesA).link.next;
-    end = &RWRESOURCESGLOBAL(entriesB).link;
-    while (link != end) {
-        RwResEntry *entry = (RwResEntry *)link;
-        link = link->next;
-        FreeResEntry(entry);
-    }
-    RWRESOURCESGLOBAL(entriesA).link.next = &RWRESOURCESGLOBAL(entriesA).link;
-    RWRESOURCESGLOBAL(entriesA).link.prev = &RWRESOURCESGLOBAL(entriesA).link;
-    RWRESOURCESGLOBAL(entriesB).link.next = &RWRESOURCESGLOBAL(entriesB).link;
-    RWRESOURCESGLOBAL(entriesB).link.prev = &RWRESOURCESGLOBAL(entriesB).link;
-    RWRESOURCESGLOBAL(reusageSize) = 0;
-    return TRUE;
-}
 
 /* _rwStreamModuleOpen. */
 void *fn_80480C6C(void *instance, s32 offset) {

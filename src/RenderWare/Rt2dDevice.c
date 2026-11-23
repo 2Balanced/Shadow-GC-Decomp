@@ -1,47 +1,29 @@
-/* RenderWare 2D toolkit (rt2d), part: the toolkit's device and CTM functions from fn_80473E9C
- * on (their float constants start a new .sdata2 group at 0x805FB250). The font functions before
- * them (0x80470AC4..0x80473E9C) are RenderWare/Rt2dFont.c. Written from the retail code; the
- * names are descriptions, the fn_ symbols are kept because game code calls them by address.
- * Built as a C library: -O4,p, no stmw/lmw, automatic inlining. */
+/* RenderWare 2D toolkit (rt2d): Rt2dOpen and Rt2dClose, the current transformation matrix stack
+ * (Rt2dCTMPush/Pop/SetIdentity/Scale/Translate) and the device mapping (Rt2dDeviceGetStep,
+ * Rt2dDeviceSetLayerDepth, the camera hook), 0x80473E9C..0x80474BEC.
+ *
+ * One source file: its functions share one .sdata2 pool (1.0f, 0.0f, 0.5f, 2.0f and the int-to-float
+ * double, 0x805FB250..0x805FB268), and its .bss is the toolkit's global block lbl_805E1950
+ * (0xD54 bytes, 0x805E1950..0x805E26A8 with the link's padding), which lies between the font
+ * file's .bss (0x805E1908) and the path file's (0x805E26A8). It starts after Rt2dFontTexDictionarySet
+ * (fn_80473E8C, the last function of the font file of range r4: it sets the font field 0x160 that
+ * the font functions read) with the camera end-update hook that Rt2dOpen installs.
+ *
+ * Written from the retail code; the fn_ symbols are kept because game code calls them by address.
+ * C, built with cflags_rw_r5 (-O4,p, no stmw/lmw, automatic inlining in definition order). */
 #include "Game/rw/r5.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-extern const f32 lbl_805FB230; /* 0.0f */
-extern const f32 lbl_805FB234; /* 1.0f */
-extern const f32 lbl_805FB250; /* 1.0f */
-extern const f32 lbl_805FB254; /* 0.0f */
-extern const f32 lbl_805FB258; /* 0.5f */
-
-extern const f32 lbl_805FB25C; /* 2.0f */
-extern const f32 lbl_805FB268; /* 0.0f */
-extern const f32 lbl_805FB26C; /* 1.0f */
-extern char lbl_8056DCE8[];    /* the path module's format strings, then "METRICS1\n" .. "METRICS3\n" */
-extern char lbl_805EDE40[5];    /* ".met" */
-extern char lbl_805EDE48[2];    /* "r" */
-
-RwMatrix *fn_8047F994(void);                                            /* RwMatrixCreate */
-RwBool fn_8047F958(RwMatrix *matrix);                                   /* RwMatrixDestroy */
-RwMatrix *fn_8047EBB8(RwMatrix *dst, const RwMatrix *a, const RwMatrix *b); /* RwMatrixMultiply */
-RwMatrix *fn_8047F398(RwMatrix *matrix, const RwV3d *scale, s32 op);    /* RwMatrixScale */
-RwMatrix *fn_8047F59C(RwMatrix *matrix, const RwV3d *offset, s32 op);   /* RwMatrixTranslate */
-RwMatrix *fn_8047F0B0(RwMatrix *dst, const RwMatrix *src);              /* RwMatrixInvert */
+RwMatrix *fn_8047F994(void);                                                 /* RwMatrixCreate */
+RwBool fn_8047F958(RwMatrix *matrix);                                        /* RwMatrixDestroy */
+RwMatrix *fn_8047EBB8(RwMatrix *dst, const RwMatrix *a, const RwMatrix *b);  /* RwMatrixMultiply */
+RwMatrix *fn_8047F398(RwMatrix *matrix, const RwV3d *scale, s32 op);         /* RwMatrixScale */
+RwMatrix *fn_8047F59C(RwMatrix *matrix, const RwV3d *offset, s32 op);        /* RwMatrixTranslate */
+RwMatrix *fn_8047F0B0(RwMatrix *dst, const RwMatrix *src);                   /* RwMatrixInvert */
 RwMatrix *RwFrameGetLTM(RwFrame *frame);
-RwV3d *fn_80482504(RwV3d *out, const RwV3d *in, const RwMatrix *matrix); /* RwV3dTransformVector */
-RwV3d *fn_80482458(RwV3d *out, const RwV3d *in, const RwMatrix *matrix); /* RwV3dTransformPoint */
-f32 fn_80482340(f32 x); /* square root */
-f32 fn_80482394(f32 x); /* inverse square root */
+RwV3d *fn_80482504(RwV3d *out, const RwV3d *in, const RwMatrix *matrix);     /* RwV3dTransformVector */
+RwV3d *fn_80482458(RwV3d *out, const RwV3d *in, const RwMatrix *matrix);     /* RwV3dTransformPoint */
 
-void *fn_8047A178(const char *name, const char *mode);  /* opens a file */
-char *fn_8047A518(char *buffer, s32 size, void *file);  /* reads a line */
-s32 fn_8047A388(void *file);                            /* closes a file */
-Rt2dFont *fn_8047149C(Rt2dFont *font, char *buffer, void *file, char *line);
-Rt2dFont *fn_80471A54(Rt2dFont *font, char *buffer, void *file, char *line);
-Rt2dFont *fn_804724AC(Rt2dFont *font, char *buffer, void *file, char *line);
-void fn_80470C54(void);
-
+/* The toolkit's other modules (open and close). */
 void fn_804772C4(void);
 void fn_80476A58(void);
 void fn_804704D4(void);
@@ -52,19 +34,18 @@ void fn_80473118(void);
 void fn_80470474(void);
 void fn_80476A0C(void);
 void fn_8047726C(void);
-Rt2dPath *fn_80476490(void);          /* Rt2dPathCreate */
-Rt2dPath *fn_80476510(Rt2dPath *path); /* Rt2dPathLock */
 
-RwMatrix *fn_804749CC(void);
-RwBool fn_80474498(void);
+/* The toolkit's global block. */
+Rt2dStatics lbl_805E1950;
 
+/* The camera's end-update function while the toolkit is attached: calls the camera's own. */
 void *fn_80473E9C(void *camera) {
     return lbl_805E1950.cameraBeginUpdate(camera);
 }
 
 #define CTM() (lbl_805E1950.ctm[lbl_805E1950.ctmTop])
 
-/* Makes the current transformation matrix the identity. */
+/* Rt2dCTMSetIdentity. */
 RwBool fn_80473ECC(void) {
     CTM()->at.z = 1.0f;
     CTM()->up.y = 1.0f;
@@ -86,7 +67,7 @@ RwBool fn_80473ECC(void) {
 
 RwMatrix *fn_804749CC(void);
 
-/* The device's step vectors and origin in the current coordinate system. */
+/* Rt2dDeviceGetStep: the device's step vectors and origin in the current coordinate system. */
 RwBool fn_80473FD0(RwV2d *xstep, RwV2d *ystep, RwV2d *origin) {
     RwV3d v;
     RwV2d view;
@@ -144,7 +125,7 @@ f32 fn_80474168(void) {
     return lbl_805E1950.flatDepth;
 }
 
-/* Sets the depth the 2D layer is drawn at. */
+/* Rt2dDeviceSetLayerDepth. */
 RwBool fn_80474228(f32 depth) {
     if (depth > 0.0f) {
         lbl_805E1950.layerDepth = depth;
@@ -168,8 +149,10 @@ static void SetMetric(f32 h, f32 w, f32 y, f32 x) {
     }
 }
 
-/* Attaches the toolkit to a camera: opens the modules, takes the raster and view window sizes
- * and hooks the camera's end-of-update function. */
+RwBool fn_80474498(void);
+
+/* Rt2dOpen: opens the modules, takes the camera's raster and view window sizes and hooks the
+ * camera's end-of-update function. */
 void fn_80474258(RwCamera *camera) {
     lbl_805E1950.field_0x31C = 0;
     fn_804772C4();
@@ -206,7 +189,7 @@ void fn_80474258(RwCamera *camera) {
 
 void fn_804743F0(void);
 
-/* Closes the toolkit's modules and forgets the camera. */
+/* Rt2dClose: closes the toolkit's modules and forgets the camera. */
 void fn_804743AC(void) {
     fn_804743F0();
     fn_804771E0();
@@ -277,7 +260,7 @@ RwBool fn_80474498(void) {
     return 1;
 }
 
-/* Pushes a copy of the current transformation matrix. */
+/* Rt2dCTMPush: pushes a copy of the current transformation matrix. */
 RwBool fn_804747A0(void) {
     RwBool ok = lbl_805E1950.ctmTop < 31;
     if (ok) {
@@ -290,7 +273,7 @@ RwBool fn_804747A0(void) {
     return ok;
 }
 
-/* Pops the current transformation matrix. */
+/* Rt2dCTMPop. */
 RwBool fn_804748C8(void) {
     RwBool ok = 0 < lbl_805E1950.ctmTop;
     if (ok) {
@@ -301,7 +284,7 @@ RwBool fn_804748C8(void) {
     return ok;
 }
 
-/* Scales the current transformation matrix. */
+/* Rt2dCTMScale. */
 RwBool fn_804748FC(f32 x, f32 y) {
     RwV3d scale;
 
@@ -314,7 +297,7 @@ RwBool fn_804748FC(f32 x, f32 y) {
     return 1;
 }
 
-/* Translates the current transformation matrix. */
+/* Rt2dCTMTranslate. */
 RwBool fn_80474964(f32 x, f32 y) {
     RwV3d offset;
 
@@ -365,87 +348,3 @@ RwMatrix *fn_804749CC(void) {
     fn_8047EBB8(&lbl_805E1950.toWorld, &lbl_805E1950.toDevice, RwFrameGetLTM(lbl_805E1950.camera->frame));
     return &lbl_805E1950.toWorld;
 }
-
-/* The path module follows (its constants start a new .sdata2 group at 0x805FB268). */
-
-/* Frees one sub-path and returns the one after it. */
-Rt2dPath *fn_80474BEC(Rt2dPath *path) {
-    Rt2dPath *next = path->next;
-
-    if (path->segments != 0) {
-        if (path->numSegment == -1) {
-            fn_8047DFC8(path->segments);
-        } else {
-            RWSRCGLOBAL(rwfree)(path->segments);
-        }
-    }
-    path->segments = 0;
-    RWSRCGLOBAL(memoryFree)(lbl_805E1950.pathFreeList, path);
-    return next;
-}
-
-/* Starts a sub-path at (x, y): in the current sub-path if it is empty, else in a new one.
- * Retail inlines the recursion three times; GC/2.7 does that at depth 3, and one level more at
- * its default depth for this (probably shorter) source. */
-#pragma inline_depth(3)
-Rt2dPath *fn_80474C7C(Rt2dPath *path, f32 x, f32 y) {
-    if (fn_8047E03C(path->curr->segments) == 0) {
-        Rt2dPathNode *node = (Rt2dPathNode *)fn_8047DDBC(path->curr->segments, 0x30190);
-
-        node->type = 0;
-        node->pos.x = x;
-        node->pos.y = y;
-        node->normal.x = lbl_805FB268;
-        node->normal.y = lbl_805FB268;
-        node->dist = lbl_805FB268;
-    } else {
-        path->curr->next = fn_80476490();
-        fn_80476510(path->curr->next);
-        path->curr = path->curr->next;
-        fn_80474C7C(path, x, y);
-    }
-    return path;
-}
-
-#pragma inline_depth(8)
-
-/* Adds a line to (x, y) and gives the corner before it the bisecting normal. */
-Rt2dPath *fn_80474EA0(Rt2dPath *path, f32 x, f32 y) {
-    s32 count = fn_8047E03C(path->curr->segments);
-    Rt2dPathNode *node = (Rt2dPathNode *)fn_8047DDBC(path->curr->segments, 0x30190);
-    f32 length;
-    f32 dy;
-    f32 dx;
-    f32 squared;
-    f32 inverse;
-
-    node->type = 1;
-    node->pos.x = x;
-    node->pos.y = y;
-    dy = y - node[-1].pos.y;
-    dx = node[-1].pos.x - x;
-    squared = dy * dy + dx * dx;
-    length = fn_80482340(squared);
-    inverse = fn_80482394(squared);
-    node->normal.x = dy * inverse;
-    node->normal.y = dx * inverse;
-    node->dist = node[-1].dist + length;
-    if (count > 1) {
-        f32 sumX;
-        f32 sumY;
-        f32 scale;
-
-        sumY = node[-1].normal.y + node->normal.y;
-        sumX = node[-1].normal.x + node->normal.x;
-        scale = lbl_805FB26C / (node[-1].normal.x * sumX + node[-1].normal.y * sumY);
-        node[-1].normal.x = sumX * scale;
-        node[-1].normal.y = sumY * scale;
-    } else {
-        node[-1].normal = node->normal;
-    }
-    return path;
-}
-
-#ifdef __cplusplus
-}
-#endif

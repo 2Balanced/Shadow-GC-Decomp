@@ -366,12 +366,16 @@ cflags_rw_r3 = [
     "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
 ]
 
-# RenderWare units RwCpp37..RwCpp44 (agent r5): a C library built for speed (-O4,p) without
-# stmw/lmw and with automatic inlining in definition order (no deferred inlining), compiled as C
-# (-lang=c: a test's result kept in a variable is used as it stands, where C++ copies the bool).
-# Retail inlines less than GC/2.7 here (no switch functions, nothing above roughly 90
-# instructions): the units mark those functions `#pragma auto_inline off`; recursion depth is set
-# with `#pragma inline_depth`.
+# RenderWare files of range r5 (src/RenderWare/Rt2dDevice.c .. RwResources.c, 0x80473E9C..0x80480C6C,
+# wave 41; before that the size-cut units RwCpp37..RwCpp44): a C library built for speed (-O4,p)
+# without stmw/lmw and with automatic inlining in definition order (no deferred inlining), compiled
+# as C (-lang=c: a test's result kept in a variable is used as it stands, where C++ copies the
+# bool). Retail inlines less than GC/2.7 here (no switch functions, nothing above roughly 90
+# instructions): the files mark those functions `#pragma auto_inline off`; recursion depth is set
+# with `#pragma inline_depth`. Measured per file in wave 41: GC 2.0-2.7 give the same code for all
+# seventeen files, GC 1.3.2 loses functions in Rt2dDevice, RtAnim and RwMatrix, and -O4,s,
+# stmw/lmw or -inline noauto match fewer; strings stay writable (-str reuse) because retail keeps
+# the DVD file system's and the matrix module's messages in .data and the fopen's modes in .sdata.
 cflags_rw_r5 = [
     *cflags_base,
     "-use_lmw_stmw off",
@@ -1236,7 +1240,14 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp26.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp27.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp37.cpp", cflags=cflags_rw_r5),
+            Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp31.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp32.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp33.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp34.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp35.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
+            Object(NonMatching, "Game/RwCpp36.cpp", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
             Object(NonMatching, "Game/RwCpp38.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp39.cpp", cflags=cflags_rw_r5),
             Object(NonMatching, "Game/RwCpp40.cpp", cflags=cflags_rw_r5),
@@ -1914,6 +1925,23 @@ config.libs = [
             Object(NonMatching, "RenderWare/RpMultiTextureGameCubeRender.c", cflags=cflags_rw_r5),
             Object(NonMatching, "RenderWare/RpMultiTextureGameCube.c", cflags=cflags_rw_r5),
             Object(NonMatching, "RenderWare/RpMultiTexture.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/Rt2dDevice.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/Rt2dPath.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/Rt2dStroke.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/Rt2dFreeLists.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RtAnim.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RtCharset.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RtDict.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RtFSyst.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RtFSystDVD.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RtIntersection.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RwStreamChunk.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RwColor.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RwError.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RwSList.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RwMatrix.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RwFreeList.c", cflags=cflags_rw_r5),
+            Object(Matching, "RenderWare/RwResources.c", cflags=cflags_rw_r5),
         ],
     },
 ]

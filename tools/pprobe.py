@@ -135,6 +135,8 @@ def main():
     hdr = table.get("HDR", {})
     score_syms = table.get("SCORE", list(uprobe.SYMBOLS))
     src = os.path.join(root, "src", args.unit + ".cpp")
+    if not os.path.exists(src):  # C units (src/RenderWare/*.c): their cflags carry -lang=c
+        src = os.path.join(root, "src", args.unit + ".c")
     original = open(src, encoding="utf-8").read()
     retail = os.path.join(root, "build", CFG, "obj", args.unit + ".o")
     cmd = unit_cmd(args.unit)

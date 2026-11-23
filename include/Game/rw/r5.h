@@ -1,5 +1,7 @@
-/* Private types of the RenderWare units RwCpp37..RwCpp44 (agent r5, wave 40).
- * Inferred from the retail code only; a later pass unifies them with the neighbours' headers. */
+/* Private types of the RenderWare files of range r5 (src/RenderWare/Rt2dDevice.c .. RwResources.c,
+ * 0x80473E9C..0x80480C6C; wave 40's size-cut units RwCpp37..RwCpp44, re-cut by source file in
+ * wave 41). Inferred from the retail code only; a later pass unifies them with the neighbours'
+ * headers. */
 #ifndef GAME_RW_R5_H
 #define GAME_RW_R5_H
 
@@ -46,6 +48,9 @@ typedef struct R5RwGlobals {
     /* 0x114 */ void *(*rwcalloc)(u32 num, u32 size, u32 hint);
     /* 0x118 */ void *(*memoryAlloc)(void *freeList, u32 hint);
     /* 0x11C */ void *(*memoryFree)(void *freeList, void *mem);
+    /* 0x120 */ void *metrics;
+    /* 0x124 */ s32 engineStatus;
+    /* 0x128 */ u32 resArenaInitSize; /* the resource arena's size, from RwEngineInit */
 } R5RwGlobals;
 
 extern R5RwGlobals *lbl_805F15B4; /* RwEngineInstance */
@@ -245,7 +250,10 @@ typedef struct Rt2dStatics {
     /* 0x844 */ u8 pad844[0x100];
     /* 0x944 */ void *field_0x944;
     /* 0x948 */ s32 field_0x948;
-} Rt2dStatics;
+    /* 0x94C */ u8 pad94C[0x400];
+    /* 0xD4C */ s32 field_0xD4C; /* the font module's (read by the font file in range r4) */
+    /* 0xD50 */ s32 field_0xD50;
+} Rt2dStatics; /* 0xD54 bytes: the device file's whole .bss (padded to 0xD58 by the link) */
 
 extern Rt2dStatics lbl_805E1950;
 
@@ -524,14 +532,53 @@ typedef struct R5Link {
 
 /* RwFreeList. */
 typedef struct R5FreeList {
-    /* 0x00 */ s32 entrySize;
-    /* 0x04 */ s32 entriesPerBlock;
-    /* 0x08 */ s32 heapSize;
-    /* 0x0C */ s32 alignment;
-    /* 0x10 */ R5Link blockList;
-    /* 0x18 */ u32 flags; /* bit 0: the list lives in caller's memory */
-    /* 0x1C */ R5Link link;
+    /* 0x00 */ u32 entrySize;       /* rounded up to the alignment */
+    /* 0x04 */ u32 entriesPerBlock;
+    /* 0x08 */ u32 heapSize;        /* bytes of the used-entry bitmap at the start of each block */
+    /* 0x0C */ u32 alignment;
+    /* 0x10 */ R5Link blockList;    /* the blocks: an R5Link, the bitmap, then the entries */
+    /* 0x18 */ u32 flags; /* bit 0: the list lives in caller's memory; bit 1: free empty blocks */
+    /* 0x1C */ R5Link link;         /* in the list of all free lists */
 } R5FreeList;
+
+typedef void (*R5FreeListCallBack)(void *entry, void *data);
+
+/* RwMemoryFunctions: the memory vectors at RwEngineInstance + 0x108. */
+typedef struct R5MemoryFunctions {
+    void *(*rwmalloc)(u32 size, u32 hint);
+    void (*rwfree)(void *mem);
+    void *(*rwrealloc)(void *mem, u32 size, u32 hint);
+    void *(*rwcalloc)(u32 num, u32 size, u32 hint);
+} R5MemoryFunctions;
+
+/* The resource arena (RenderWare/RwResources.c). */
+typedef struct R5LinkList {
+    R5Link link;
+} R5LinkList;
+
+typedef struct R5ResEntry R5ResEntry;
+typedef void (*R5ResEntryDestroyNotify)(R5ResEntry *entry);
+
+/* RwResEntry: a block of the arena, the user's data follows it. */
+struct R5ResEntry {
+    /* 0x00 */ R5Link link;
+    /* 0x08 */ s32 size;
+    /* 0x0C */ void *owner;
+    /* 0x10 */ R5ResEntry **ownerRef;
+    /* 0x14 */ R5ResEntryDestroyNotify destroyNotify;
+};
+
+/* The resources module's globals in RwEngineInstance. */
+typedef struct R5ResourcesGlobals {
+    /* 0x00 */ s32 maxSize;
+    /* 0x04 */ s32 currentSize;
+    /* 0x08 */ s32 reusageSize;
+    /* 0x0C */ void *memHeap;
+    /* 0x10 */ R5LinkList entriesA;
+    /* 0x18 */ R5LinkList entriesB;
+    /* 0x20 */ R5LinkList *freeEntries;
+    /* 0x24 */ R5LinkList *usedEntries;
+} R5ResourcesGlobals;
 
 /* RwCpp39. */
 /* The header of a path in a stream, 0x10 bytes. */
