@@ -601,7 +601,10 @@ void Ground::ReleasePath() {
 
 /* The speeds of the run: a top speed from the character's parameters, lower while carrying
  * something (state bit 0x1E).
- * NonMatching (95%): four words, all in this body. Retail materialises the table's address with
+ * Copy propagation is off for this function (wave 41, probes/Game_PlayerBehaviorGround_W41.py):
+ * that alone gives retail's registers for the table's address (r3) and the player (r4). The note
+ * below is what wave 39 recorded with propagation on.
+ * Before: four words, all in this body. Retail materialises the table's address with
  * `lis r3,0` and `addi r3,r3,HA/LO(lbl_804F1834)` in one register, loads the player into r4 and the
  * kind into r0, and scales with `add r3,r3,r0`; GC/2.7 writes the address as `lis r3` plus
  * `addi r4,r3` (r3 only as scratch), keeps it in r4, loads the player into r3 and scales with
@@ -616,6 +619,7 @@ void Ground::ReleasePath() {
  * the kind to unsigned, signed char or masking it, swapping the operands of the multiply, storing
  * both speeds through locals, or the two-step `*=` form.  Only this function builds the table's
  * address in the unit, so the difference cannot come from a shared allocation. */
+#pragma opt_propagation off
 void Ground::SetSpeedRange() {
     if (fn_8006CD78(m_player.get()->m_stateBits, 0x1E)) {
         m_minSpeed = 1000.0f;
@@ -625,6 +629,7 @@ void Ground::SetSpeedRange() {
         m_maxSpeed = 15000.0f * lbl_804F1834[FieldsOf(m_player.get())->m_kind].m_runSpeed;
     }
 }
+#pragma opt_propagation reset
 
 /* The largest share of the top speed the velocity sets (name inferred). */
 static float s_maxRatio = 1.0f;

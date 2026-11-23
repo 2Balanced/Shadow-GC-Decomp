@@ -1,0 +1,11 @@
+"""Wave 41: Screen::UpdateMap (retail: keys r31, this r30, pool bases r29/r28, index r27, x r26,
+y r25) with named copies of the parameters under '#pragma opt_propagation off'."""
+SCORE = ["UpdateMap__Q37AdvReal10SelectMode6ScreenFb"]
+H = "void Screen::UpdateMap(bool keys) {\n"
+P0 = "#pragma opt_propagation off\n"
+B0 = "    m_text.m_mode = 3;\n"
+REPL = {
+  "prag_keys": [(H, P0 + H), (B0, "    bool k = keys;\n" + B0), ("ShowStage(index, info->m_id, chosen, keys);", "ShowStage(index, info->m_id, chosen, k);"), ("ShowStage2(index, info->m_id, chosen, keys);", "ShowStage2(index, info->m_id, chosen, k);"), ("s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, keys);", "s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, k);")],
+  "prag_keys_self": [(H, P0 + H), (B0, "    bool k = keys;\n    Screen *self = this;\n    self->m_text.m_mode = 3;\n"), ("ShowStage(index, info->m_id, chosen, keys);", "self->ShowStage(index, info->m_id, chosen, k);"), ("ShowStage2(index, info->m_id, chosen, keys);", "self->ShowStage2(index, info->m_id, chosen, k);"), ("ShowBoss(index, info->m_id, i,", "self->ShowBoss(index, info->m_id, i,"), ("s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, keys);", "s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, k);"), ("fn_8003CEAC(&m_scenes, s_sceneNames[2])->GetScene().Get(), name);\n                if (icon", "fn_8003CEAC(&self->m_scenes, s_sceneNames[2])->GetScene().Get(), name);\n                if (icon")],
+  "prag_self_keys": [(H, P0 + H), (B0, "    Screen *self = this;\n    bool k = keys;\n    self->m_text.m_mode = 3;\n"), ("ShowStage(index, info->m_id, chosen, keys);", "self->ShowStage(index, info->m_id, chosen, k);"), ("ShowStage2(index, info->m_id, chosen, keys);", "self->ShowStage2(index, info->m_id, chosen, k);"), ("ShowBoss(index, info->m_id, i,", "self->ShowBoss(index, info->m_id, i,"), ("s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, keys);", "s_cursor.m_values.m_bossList && i == s_cursor.m_values.m_boss, k);"), ("fn_8003CEAC(&m_scenes, s_sceneNames[2])->GetScene().Get(), name);\n                if (icon", "fn_8003CEAC(&self->m_scenes, s_sceneNames[2])->GetScene().Get(), name);\n                if (icon")],
+}

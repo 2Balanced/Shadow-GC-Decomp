@@ -6,10 +6,9 @@
  * names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 8 of 10 functions and all the data match. In the constructor and in Update GC/2.7
- * assigns the zeroes that start a loop in another order (which register gets the li and which the
- * copy), and in Update it swaps the registers of the two words the panel's player check compares;
- * the loop shapes, declaration orders and operand orders tried did not change it. */
+ * Matching since wave 41: the loops of the constructor and of Update's end are inline functions
+ * (the zeroes that start them are then copies of one li, as in retail), and Update reads the
+ * mission's player into a named local with copy propagation off. */
 #define TGI_NO_NUMBER_COLORS
 #define TGI_HANDLE_ASSIGN
 #include <dolphin/types.h>
@@ -95,13 +94,20 @@ inline s32 PanelPlayer(int index) {
     return s_players[index];
 }
 
+/* Resets both panels (name inferred). An inline function: inlined, the loop's offset and the
+ * zeroes it stores are copies of the zeroed counter (li r28,0 then mr), as in retail; written in
+ * the constructor, GC/2.7 loads a second zero (wave 41, probes/Game_folderTargetWindow_W41.py). */
+inline void ResetPanels(folderTargetWindow *self) {
+    for (int i = 0; i < 2; i++) {
+        self->m_panels[i].m_scene.Reset();
+        self->m_panels[i].m_state = 0;
+        self->m_panels[i].m_selected = 0;
+    }
+}
+
 folderTargetWindow::folderTargetWindow(Chao::CSD::CProject *project) {
     InitScenes(project);
-    for (int i = 0; i < 2; i++) {
-        m_panels[i].m_scene.Reset();
-        m_panels[i].m_state = 0;
-        m_panels[i].m_selected = 0;
-    }
+    ResetPanels(this);
 }
 
 folderTargetWindow::~folderTargetWindow() {}
@@ -132,6 +138,21 @@ void folderTargetWindow::DrawCount(int index) {
     }
 }
 
+/* Whether a panel's scene is still playing, summed over both panels (name inferred). An inline
+ * function with the counter declared first: inlined, the counter is a copy of the zeroed sum
+ * (li r26,0 ... mr r27,r26), as in retail (wave 41, probes/Game_folderTargetWindow_W41c.py). */
+inline int CountBusyPanels(folderTargetWindow *self) {
+    int i;
+    int busy = 0;
+    for (i = 0; i < 2; i++) {
+        busy += self->m_panels[i].m_scene.Update(false);
+    }
+    return busy;
+}
+
+/* Copy propagation is off for this function: with the mission's player read into a named local,
+ * retail loads the pause player into r0 and the mission's into r3 (wave 41). */
+#pragma opt_propagation off
 bool folderTargetWindow::Update() {
     int i;
     for (i = 0; i < 2; i++) {
@@ -191,7 +212,8 @@ bool folderTargetWindow::Update() {
             case 0:
                 {
                     UnkPlayerManager_8006D6A8 *manager = fn_8006D6A8();
-                    if (manager->m_pausePlayer == mission->m_player) {
+                    s32 player = mission->m_player;
+                    if (manager->m_pausePlayer == player) {
                         panel->m_selected = 1;
                     } else {
                         panel->m_selected = 0;
@@ -210,7 +232,8 @@ bool folderTargetWindow::Update() {
             case 2:
                 {
                     UnkPlayerManager_8006D6A8 *manager = fn_8006D6A8();
-                    if (manager->m_pausePlayer != mission->m_player) {
+                    s32 player = mission->m_player;
+                    if (manager->m_pausePlayer != player) {
                         panel->m_selected = 0;
                     } else {
                         panel->m_selected = 1;
@@ -229,12 +252,9 @@ bool folderTargetWindow::Update() {
             }
         }
     }
-    int busy = 0;
-    for (i = 0; i < 2; i++) {
-        busy += m_panels[i].m_scene.Update(false);
-    }
-    return busy != 0;
+    return CountBusyPanels(this) != 0;
 }
+#pragma opt_propagation reset
 
 void folderTargetWindow::InitNumbers() {
     for (int i = 0; i < 2; i++) {

@@ -9,9 +9,7 @@
  *
  * The eight stage-event callbacks at 0x8016A9E0..0x8016AA90 before Game/CountMission.cpp are not
  * part of these units: only the stage table at 0x804C4A18 (another unit's .rodata) refers to
- * them, so their owner is not clear.
- *
- * NonMatching: OnFailed (see there); the other 22 functions and every data section match. */
+ * them, so their owner is not clear. */
 #include "Game/MissionManager.h"
 #include <stdio.h>
 #include <string.h>
@@ -105,13 +103,12 @@ void Mission::OnCleared() {
     }
 }
 
-/* NonMatching (93.6%), the only open function of the unit (its data matches): retail forms the
- * game state's address in r5 and loads the format string's address last, into r4; GC/2.7 forms
- * the state's address in r4 and the string's in r5 first. About ten source shapes were tried
- * before wave 39 and twenty more in it (probes/Game_Mission.py, probes/Game_Mission_R2.py): the
- * language or the suffix through inline functions or locals, the format as a named array or a
- * local pointer, const and non-const declarations of the table and of the game state. All give
- * the same six instructions. */
+/* Retail forms the game state's address in r5 and loads the format string's address last, into
+ * r4. GC/2.7 does so with the language in a named local and copy propagation off for this
+ * function (as NowLoadingScreen::Load in Game/NowLoading.cpp; wave 41, probes/Game_Mission_W41.py);
+ * with propagation on, about thirty source shapes formed the state's address in r4 and the
+ * string's in r5 first (probes/Game_Mission.py, probes/Game_Mission_R2.py). */
+#pragma opt_propagation off
 void Mission::OnFailed() {
     if (fn_80074470()->m_mode != 9) {
         MissionManager *manager = fn_8006D6A8();
@@ -123,7 +120,8 @@ void Mission::OnFailed() {
         if (!manager->m_allTimed) {
             char path[0x40];
             memset(path, 0, sizeof(path));
-            sprintf(path, "CsdFiles/MissionFailed%s", lbl_8051D528[lbl_8057D6A0.m_language]);
+            s32 language = lbl_8057D6A0.m_language;
+            sprintf(path, "CsdFiles/MissionFailed%s", lbl_8051D528[language]);
             if (m_player == 2) {
                 fn_8035367C(path, "mf", "Hero");
             } else if (m_player == 0) {
@@ -134,6 +132,7 @@ void Mission::OnFailed() {
         manager->CheckAllFailed();
     }
 }
+#pragma opt_propagation reset
 
 void Mission::OnReset() {}
 

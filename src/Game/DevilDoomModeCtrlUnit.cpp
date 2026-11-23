@@ -361,7 +361,13 @@ class DevilDoomModeCtrlUnit_BELOW_HALF : public DevilDoomCtrlUnit {
      * but a word compare instead of retail's byte test, and as s8 the registers with a sign
      * extending test (extsb.); every type whose test is retail's clrlwi. (bool, u8, an s8 masked
      * with 0xFF, s16, an enum) has the registers swapped (probes/Game_DevilDoomModeCtrlUnit.py,
-     * wave 39). Everything else in the unit links. */
+     * wave 39). Everything else in the unit links. Wave 41: `#pragma opt_propagation off` (at the
+     * class, which reaches the deferred constructor, as `#pragma scheduling off` there shows), a
+     * copy of this or of m_owner, moveCamera declared after each of the first three calls or in
+     * a block, and an int tested as (u8), & 0xFF or through u32 all leave the swap; an int tested
+     * as (bool) has retail's registers but cmpwi for the byte test (7 rows;
+     * probes/Game_DevilDoomModeCtrlUnit_W41*.py). DEATH's matching constructor has this in r31,
+     * so the original source of the two must differ. */
     DevilDoomModeCtrlUnit_BELOW_HALF(DevilDoomVarParam *owner) : BossCtrlUnit(owner), DevilDoomCtrlUnit(owner) {
         bool moveCamera = false;
         fn_804165D8(m_owner->m_motion, 0, -1, -1);

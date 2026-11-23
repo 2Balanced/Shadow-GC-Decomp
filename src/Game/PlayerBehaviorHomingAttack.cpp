@@ -159,14 +159,15 @@ HomingAttack::HomingAttack(const boost::shared_ptr<PlayerBase> &player)
 
 HomingAttack::~HomingAttack() {}
 
-/* NonMatching (96%): retail keeps the table's address in r3 and the player in r4; GC/2.7 hoists the
- * address above the player's load and swaps the two (as Player::Behavior::Ground::SetSpeedRange;
- * the forms tried are listed there). Wave 39: the lookup as an inline member of the table or of
- * the player, and as a free inline function with the table and the player in either order, give
- * the player r4 but split the table's address over r3 and r0 (4 rows). */
+/* Copy propagation is off for this function: retail keeps the table's address in r3 and the player
+ * in r4, which GC/2.7 gives only without propagation (with it, the player takes r3, which this has
+ * just freed, and the table r4; as Player::Behavior::Ground::SetSpeedRange). The source forms that
+ * did not help with propagation on are listed there (wave 41, probes/Game_PlayerBehaviorHomingAttack_W41.py). */
+#pragma opt_propagation off
 bool HomingAttack::vf_0x0C(int prevId, const InitializeArgs &args) {
     return lbl_804F1834[FieldsOf(m_player.get())->m_kind].m_canHomingAttack;
 }
+#pragma opt_propagation reset
 
 void HomingAttack::Enter(int prevId, const InitializeArgs &args) {
     m_target = dynamic_cast<const InitializeArgsHomingAttack *>(&args)->m_target;

@@ -15,7 +15,12 @@
  * as GC/2.7 does for an external const object whose initializer it has not seen), while it still
  * pools the file's static variables. No flag (-pool, -opt, -str, compiler 1.0..3.0a5) reproduces
  * that, and const objects defined after use land in .data. The same blocker affects 9 functions
- * of the library. */
+ * of the library. Wave 41 (probes/Game_csdAccess_W41*.py): `#pragma pool_data off` around
+ * InitCast gives retail's constant loads exactly (lis/addi/lfs 0 for three of the four, lfs @l
+ * for the last), but it also stops pooling the statics, which retail pools here as in
+ * GetAttribute (38 rows); the state is read per function, so the inlined SetDefaults cannot keep
+ * it, and the statics in one struct (19 rows) address the defaults off the struct's base where
+ * retail adds 4 first. Namespace-scope const floats are pooled like literals (33 rows). */
 #include <string.h>
 
 #include <dolphin/types.h>

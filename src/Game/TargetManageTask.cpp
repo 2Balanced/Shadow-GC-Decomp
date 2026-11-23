@@ -19,7 +19,11 @@
  * - HasFlags (0x801E8FBC), LacksFlags (0x801E8F5C): the operands of one and are swapped.
  * - fn_801E848C: retail loads 999999.9 straight into f31 on the null branch.
  * Forms tried for each are in the history of this unit; they look like the compiler differences of
- * docs/research-notes.md. */
+ * docs/research-notes.md. Wave 41: the shared pointers of IsNotOfKind in a block with the
+ * comparison after it does compare after the destructors, but lays the null path out first and
+ * swaps kind and the owner's kind (r30/r31); HasFlags with the operands of & swapped, a ternary,
+ * a named lock or `#pragma opt_propagation off` with named copies keeps the and's operand order
+ * (probes/Game_TargetManageTask_W41*.py). */
 #define MSL_ALGORITHM_FOR_EACH
 #define MSL_ALGORITHM_REMOVE_IF
 #define MSL_LIST_ACCESSORS

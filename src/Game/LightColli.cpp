@@ -17,7 +17,9 @@
  * NonMatching (203 of 204 functions match, in retail's order; .data, .rodata, .sbss, .sdata2 and
  * .ctors match, .sdata up to the RTTI record of checked_deleter<CharCommandUnit>, which retail does
  * not keep). Left: fn_801EEB2C, the label function: retail keeps the pooled .data address in r4 and
- * the guards' string in r5, GC/2.7 the other way round (declaration orders of the statics tried).
+ * the guards' string in r5, GC/2.7 the other way round (declaration orders of the statics tried;
+ * wave 41: `#pragma opt_propagation off` and the query pointer declared first, between the check
+ * and the guards, or with its value in a local leave all 22 rows, probes/Game_LightColli_W41.py).
  * Matched in wave 40: the three find_or_insert instances (map::operator[]) take the last node as a
  * local of their own in <map_impl>, and Behave reads the contact list through the inline
  * ContactsOf (a compiler temporary, coloured after this). */

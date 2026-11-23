@@ -12,7 +12,9 @@
  * NonMatching (7 of 9 functions match; every instruction of the two others is in place, what
  * differs is register choice):
  * - fn_800221A8 (97%): GC/2.7 gives the radius and the corner's saved contact other float registers
- *   than the game (radius f28 instead of f31; scoping the locals moved it from f24).
+ *   than the game (radius f28 instead of f31; scoping the locals moved it from f24). Wave 41: a
+ *   copy of the radius declared first, with or without `#pragma opt_propagation off`, gives 208
+ *   to 250 rows (probes/Game_UnkSphereSweep_800221A8_W41.py).
  * - fn_80023B28 (97%): the game loads seg again for the cross product although the values it loaded
  *   for seg's squared length stay live (no source shape tried reproduces that), and keeps the cross
  *   product in memory unread; the unused pointer to n is a fake that reproduces only the latter.

@@ -387,7 +387,11 @@ float fn_80015D68(float x) {
  * local (diff, dd, qa, qb, disc, t, offset) or the angle itself leaves the 3 rows; a negation local
  * of its own declared after sum or qa does get f26 but moves distance from f31 to f28 (25 rows),
  * and all locals declared at the top in six orders give 3 to 32 rows
- * (probes/Game_ClumpUpdater_B60_R2.py, _R3.py). */
+ * (probes/Game_ClumpUpdater_B60_R2.py, _R3.py). Wave 41: `#pragma opt_propagation off` alone
+ * leaves the 3 rows, and with it a named negation declared at each of eleven places gives 3 (at
+ * the top) or 25 to 27 rows (probes/Game_ClumpUpdater_B60_W41.py); so do the negation written as
+ * fn_80015EC8 writes it (`flip ? -angle : angle` with a constant flip, or `true ? ...`) and an
+ * inline negation (probes/Game_ClumpUpdater_B60_W41b.py). */
 float fn_80015B60(Mtx34f *a, Mtx34f *b, Mtx34f *c, const Vec3f *target, const Mtx34f *base,
                   float length0, float length1, float length2) {
     float distance = fn_80016104(a, target, base, true);

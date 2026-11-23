@@ -272,7 +272,11 @@ void EggShadowAndroid::vfStat_0x38() {
  * call before the declarations, the file name through a local or a comma expression and inline
  * helpers for the two loads do not put this first. Wave 40: a copy of this declared first, after
  * the loader or with every local declared first and assigned later is merged back into this
- * (probes/Game_EggShadowAndroid_R5.py). */
+ * (probes/Game_EggShadowAndroid_R5.py). Wave 41: with `#pragma opt_propagation off` (the lever
+ * that matched fn_8029EB5C) the copy of this is still merged into this, declared first, const,
+ * after the loader or assigned twice, and the pragma alone reorders the call set-up (16 rows);
+ * the body as an inline function of the android is not inlined (it calls inline functions)
+ * (probes/Game_EggShadowAndroid_W41.py, _W41b.py). */
 void EggShadowAndroid::vfDisp_0x64() {
     void *loader = fn_800122D4();
     void *model = fn_80012684(loader, m_enemy->m_motionBase, 5);

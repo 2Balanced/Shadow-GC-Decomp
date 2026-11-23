@@ -594,7 +594,13 @@ void Screen::Select() {
     }
 }
 
-/* Shows every stage of the maps and the boss list, the one under the cursor chosen. */
+/* Shows every stage of the maps and the boss list, the one under the cursor chosen.
+ * NonMatching (98.5%): retail gives keys r31, this r30, the two pool bases r29 and r28, index r27,
+ * x r26 and y r25; GC/2.7 gives the parameters the lowest registers. Wave 41: under
+ * `#pragma opt_propagation off` a copy of keys (`bool k = keys;`) gives x, y and the pool bases
+ * one register closer but keys only r27 (34 rows); a copy of this is merged into it, and the
+ * copy as u8, as a const or after the x and y declarations is worse (68 to 79 rows;
+ * probes/Game_AdvSelectMode_W41*.py). */
 void Screen::UpdateMap(bool keys) {
     m_text.m_mode = 3;
     for (int x = 0; x < 6; x++) {

@@ -12,7 +12,15 @@
  * slot r23, for every source form tried). Separate loop counters, the counter and count declared
  * in other places and the second bound read in the condition all leave slot and table in r23/r24
  * (wave 39); so do the entries declared first or last, the count set in one statement with
- * m_frameCount and either loop moved into an inline function (wave 40, 31 to 72 rows).
+ * m_frameCount and either loop moved into an inline function (wave 40, 31 to 72 rows). Wave 41:
+ * `#pragma opt_propagation off` gives the parameters retail's r27..r30, and with count declared
+ * first and the first loop's index declared in the for statement (`int count = table->count;`
+ * ... `for (int i = 0; ...)` ... `int i;` for the second loop) only 9 rows are left: without
+ * propagation the new[] expression keeps its count in a copy of its own (mr r25,r24) for
+ * __construct_new_array, which retail passes straight from count's register, and that shifts n
+ * and the frame by one register. Count spelled as long, u32, a const, assigned inside the new[]
+ * or read back from m_frameCount, the array in a named pointer, and the pragma placed inside the
+ * body do not remove the copy (probes/Game_EnemyModel_W41*.py).
  * Part::SetAlpha matches since wave 40: its second branch reads m_area into a local and compares
  * that with m_baseArea (`int area = m_area; if (area != m_baseArea)`), which loads m_area into r3
  * and m_baseArea into r0; the members compared directly, two locals, or an inline setter swap

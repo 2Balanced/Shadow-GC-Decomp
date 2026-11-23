@@ -630,13 +630,14 @@ inline const UnkStageInfo_804C4A18 *StageInfoAt(UnkObject_800B74B4 *, int index)
     return &lbl_804C4A18[index];
 }
 
-/* NonMatching (99.9%, 4 rows): one register swap is left. Retail loads the mission's saved rank
- * into r3 and the result's rank into r0 (GC/2.7: the other way round, whichever is loaded first).
- * About 55 source shapes did not change it: locals in either order, const and block-scoped
- * locals, the compare reversed or negated, a ternary, min helpers by value and by reference,
- * inline getters and setters on either side, a pointer to the mission or to the record
- * (probes/Game_GoalAction*.py). Everything else in the unit matches. Wave 40: the flag loop or the
- * all-best count in an inline helper (7 and 57 rows, probes/Game_GoalAction_R6.py). */
+/* Retail loads the mission's saved rank into r3 and the result's rank into r0. GC/2.7 does so only
+ * with the saved rank read into a named local and copy propagation off for this function, which
+ * keeps the local from being folded back into the comparison (wave 41,
+ * probes/Game_GoalAction_W41.py). With propagation on, about 55 source shapes left the two
+ * registers swapped (locals in either order, const and block-scoped locals, the compare reversed
+ * or negated, a ternary, min helpers, inline getters and setters, a pointer to the mission or to
+ * the record; probes/Game_GoalAction*.py). */
+#pragma opt_propagation off
 void GoalAction::SaveResult() {
     UnkSaveData_800BB74C *save = fn_800BB74C();
     if (save == 0) {
@@ -672,7 +673,8 @@ void GoalAction::SaveResult() {
         UnkStageSave_800BB74C *stage = &save->m_stages[lbl_8057D6A0.m_stageRecord.m_index];
         stage->m_missions[mission].m_cleared = 1;
         stage->m_plays++;
-        if (stage->m_missions[mission].m_rank > lbl_8057D6A0.m_stageRecord.m_rank) {
+        s32 old = stage->m_missions[mission].m_rank;
+        if (old > lbl_8057D6A0.m_stageRecord.m_rank) {
             stage->m_missions[mission].m_rank = lbl_8057D6A0.m_stageRecord.m_rank;
         }
         if (stage->m_missions[mission].m_score < lbl_8057D6A0.m_stageRecord.m_total) {
@@ -715,5 +717,6 @@ void GoalAction::SaveResult() {
     }
     save->field_0x28 = lbl_8057D6A0.field_0x8C;
 }
+#pragma opt_propagation reset
 
 } // namespace StageAction

@@ -12,7 +12,10 @@
  * in the comparison or stored back to the parameter, a u16 key, an inline finder (not inlined
  * into the loop the same way, 16 rows) and a walking pointer (20 rows); the rest stay at 5 rows.
  * Wave 40: the entry declared first, the locals declared without initializers and assigned in
- * either order, and a u16 key after the entry also stay at 5 rows (probes/Game_AudioDataBank_R3.py). */
+ * either order, and a u16 key after the entry also stay at 5 rows (probes/Game_AudioDataBank_R3.py).
+ * Wave 41: `#pragma opt_propagation off` with the three locals in all six declaration orders (5 or
+ * 13 rows), a u16 key, a copy of the id, and the masked id in the comparison in four spellings
+ * with and without the pragma all stay at 5 rows or more (probes/Game_AudioDataBank_W41*.py). */
 #include "Game/SoundManager.h"
 #include <dolphin/types.h>
 #include "size_assert.h"

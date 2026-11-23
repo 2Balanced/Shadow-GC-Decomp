@@ -22,7 +22,13 @@
  * `u32 index = param->m_id != 0x1774;` gives retail's registers and its unsigned test but adds a
  * clrlwi (bool to int); the ternary in u32 keeps subfe without it but swaps the registers back
  * (probes/Game_BkChaos_R4.py, _R5.py). Retail also pools 2.0 ahead of Update's constants in
- * .sdata2.
+ * .sdata2. Wave 41: StretchCallback under `#pragma opt_propagation off` with
+ * `u32 index = param->m_id != 0x1774;` (or an int cast, or the id in a local) has retail's
+ * saved registers and pitch load, leaving the bool's clrlwi and the yaw loaded through f3 and
+ * added after (6 rows; the yaw update in four spellings, the ternary or an if in u32, a bool or s32
+ * index: 6 to 41 rows, probes/Game_BkChaos_W41b.py to _W41d.py). Update's case 1 as a direct call
+ * of fn_8040CD74, through m_info.px or through a named reference stays at 2 or 3 rows
+ * (probes/Game_BkChaos_W41.py).
  *
  * What matched the other four (wave 39): vfStat_0x98 takes its attacker through a non-const
  * reference and GetChibiLife is defined over a const chaos - GC/2.7 moves a load above the
