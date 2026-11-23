@@ -1,6 +1,7 @@
 /* RenderWare container and resource helpers. Function and member names are inferred from behavior.
  * Definitions are in reverse address order because deferred inlining emits the last one first.
- * Remaining: register allocation in fn_804A8B08, fn_804A9274, and fn_804A9914.
+ * Remaining: register allocation in fn_804A8B08 and fn_804A9914 (fn_804A9274 matched by declaring
+ * its loop locals current, list, target).
  * Compiler profile: GC 2.7 -O4,p with use_lmw_stmw off. */
 #include <string.h>
 #include <dolphin/types.h>
@@ -70,7 +71,9 @@ extern RwCpp70Callbacks *lbl_805F15B4;
 extern int lbl_805EDF68;
 extern void *lbl_805F16D0;
 
+#ifdef __cplusplus
 extern "C" {
+#endif
 void fn_8048CD8C(void *);
 void *fn_8047DC28(u32, ...);
 void fn_8047DB84(void *);
@@ -360,9 +363,12 @@ int fn_804A9274(void) {
         *(void **)((u8 *)lbl_805F15B4 + lbl_805EDF68 + 0x14) = NULL;
         *(void **)((u8 *)lbl_805F15B4 + lbl_805EDF68 + 0xC) = NULL;
     }
-    void *list = (u8 *)lbl_805F15B4 + lbl_805EDF68;
-    void *target = lbl_805F16D0;
-    void *current = *(void **)list;
+    void *current;
+    void *list;
+    void *target;
+    list = (u8 *)lbl_805F15B4 + lbl_805EDF68;
+    target = lbl_805F16D0;
+    current = *(void **)list;
     while (current != list) {
         if ((u8 *)current - 8 == target) {
             fn_804A9468(target);
@@ -578,4 +584,6 @@ allocated:
     *(void **)((u8 *)destination + (u32)context) = result;
     return stream;
 }
+#ifdef __cplusplus
 }
+#endif

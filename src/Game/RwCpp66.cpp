@@ -1,376 +1,362 @@
-/* RenderWare immediate-mode resource and render-state helpers, 0x804A29A8..0x804A3DAF.
- * Names are inferred from behavior; definitions remain in retail address order. */
+/* RenderWare material effects plugin (rpmatfx), 0x804A29A8..0x804A3DB0: the last accessors of the
+ * plugin's main file (environment map coefficient, dual pass, UV transform) and, from 0x804A2C90,
+ * the start of its GameCube render file: the channel colour set-up shared by the per-mesh render
+ * callbacks and the dual pass, dual pass with UV transform and environment map callbacks (the
+ * bump map ones follow in RwCpp67).  Functions keep their fn_ symbols; comments give the public
+ * API name where the behaviour fits.
+ * This cut has no .sdata2 split, so float constants that are spelled as literals reference the
+ * compiler's @N instead of retail's lbl_; where the extern spelling keeps the instructions they
+ * are named (lbl_805FB470/478/47C).  fn_804A2C90 (int to float constant) and fn_804A388C (-0.5f
+ * and 0.5f: naming them swaps f1/f2) are instruction-identical with those relocations left. */
 #include <dolphin/types.h>
+#include "Game/rw/r8.h"
 
+#ifdef __cplusplus
 extern "C" {
-extern u8 *lbl_805F15B4;
-extern s32 lbl_805F16A8;
-extern s32 lbl_805F1658;
-extern struct RwRenderState {
-    s32 m0;
-    s32 m1;
-    s32 m2;
-} lbl_805E32C8;
-#define lbl_805E32CC lbl_805E32C8.m1
-#define lbl_805E32D0 lbl_805E32C8.m2
-extern u32 lbl_805FB450;
-extern u32 lbl_805FB454;
-extern u32 lbl_805FB470;
-extern u32 lbl_805FB474;
-extern f32 lbl_805FB478;
-extern f32 lbl_805FB47C;
-extern f32 lbl_805FB468;
-extern f32 lbl_805FB46C;
-extern f32 lbl_805E31CC[16];
+#endif
+extern const GXColor lbl_805FB450; /* opaque white */
+extern const GXColor lbl_805FB454; /* black */
+extern const GXColor lbl_805FB474; /* the environment pass's initial colour */
+/* Float constants of this file's .sdata2, which no split of this cut covers yet. */
+extern const f32 lbl_805FB470; /* 0.0f */
+extern const f32 lbl_805FB478; /* 1.0f */
+extern const f32 lbl_805FB47C; /* 255.9f */
 
-void fn_8048CD8C(void *);
-void fn_804A55A4(u32 *, u32);
-void fn_80499C38(void *, u32);
-void fn_80497778(u32);
-void fn_80396B54(u32, void *);
-void fn_80396A6C(u32, void *);
-void fn_80396C3C(u32);
-void fn_80396C78(u32, u32, u32, u32, u32, u32, u32);
-void fn_803989A0(u32);
-void fn_803951BC(u32);
-void fn_80398804(u32, u32, u32, u32);
-void fn_803982A8(u32, u32);
-void fn_80394F3C(u32, u32, u32, u32, u32, u32);
-void fn_80399000(u32, u32);
-void fn_803992BC(void *, u32, u32);
-void *RwFrameGetLTM(void *);
-void fn_8047F0B0(void *, const void *);
-void fn_8047ECB4(void *, const void *);
-void fn_8047EBB8(void *, const void *, const void *);
+void fn_804A55A4(MatFXEffectData *effect, s32 renderState);
 
-static inline u32 *rwSlot(u8 *object, u8 index, int state) {
-    u32 *entries = *(u32 **)(object + lbl_805F16A8);
-    u32 *entry;
-    u8 i;
-    for (i = 0; i < 2; i++) {
-        entry = entries + i * 6;
-        if ((s32)entry[5] == state) goto found;
+/* RpMatFXMaterialGetEnvMapCoefficient */
+f32 fn_804A29A8(const RpMaterial *material) {
+    return MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTENVMAP)->u.env.coef;
+}
+
+/* RpMatFXMaterialSetDualTexture */
+RpMaterial *fn_804A29F0(RpMaterial *material, RwTexture *texture) {
+    MatFXEffectData *effect = MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTDUAL);
+    texture->refCount++;
+    if (effect->u.dual.texture != NULL) {
+        fn_8048CD8C(effect->u.dual.texture);
+        effect->u.dual.texture = NULL;
     }
-    entry = NULL;
-found:
-    return entry;
+    effect->u.dual.texture = texture;
+    fn_804A55A4(effect, 2);
+    fn_804A55A4(effect, 1);
+    return material;
 }
 
-f32 fn_804A29A8(u8 *object) {
-    u32 *entry = rwSlot(object, 0, 2);
-    return *(f32 *)(entry + 2);
+/* RpMatFXMaterialSetDualBlendModes */
+RpMaterial *fn_804A2AB0(RpMaterial *material, s32 srcBlendMode, s32 dstBlendMode) {
+    MatFXEffectData *effect = MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTDUAL);
+    effect->u.dual.srcBlendMode = srcBlendMode;
+    effect->u.dual.dstBlendMode = dstBlendMode;
+    fn_804A55A4(effect, 10);
+    fn_804A55A4(effect, 11);
+    return material;
 }
 
-void *fn_804A29F0(u8 *object, u8 *resource) {
-    u32 *entry = rwSlot(object, 0, 4);
-    *(u32 *)(resource + 0x54) += 1;
-    if (entry[0] != 0) {
-        fn_8048CD8C((void *)entry[0]);
-        entry[0] = 0;
-    }
-    entry[0] = (u32)resource;
-    fn_804A55A4(entry, 2);
-    fn_804A55A4(entry, 1);
-    return object;
+/* RpMatFXMaterialGetDualTexture */
+RwTexture *fn_804A2B44(const RpMaterial *material) {
+    return MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTDUAL)->u.dual.texture;
 }
 
-void *fn_804A2AB0(u8 *object, u32 a, u32 b) {
-    u32 *entry = rwSlot(object, 0, 4);
-    entry[1] = a;
-    entry[2] = b;
-    fn_804A55A4(entry, 10);
-    fn_804A55A4(entry, 11);
-    return object;
+/* RpMatFXMaterialGetDualBlendModes */
+RpMaterial *fn_804A2B8C(RpMaterial *material, s32 *srcBlendMode, s32 *dstBlendMode) {
+    MatFXEffectData *effect = MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTDUAL);
+    *srcBlendMode = effect->u.dual.srcBlendMode;
+    *dstBlendMode = effect->u.dual.dstBlendMode;
+    return material;
 }
 
-u32 fn_804A2B44(u8 *object) {
-    return rwSlot(object, 0, 4)[0];
+/* RpMatFXMaterialSetUVTransformMatrices */
+RpMaterial *fn_804A2BE0(RpMaterial *material, RwMatrix *baseTransform, RwMatrix *dualTransform) {
+    MatFXEffectData *effect =
+        MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTUVTRANSFORM);
+    effect->u.uv.baseTransform = baseTransform;
+    effect->u.uv.dualTransform = dualTransform;
+    return material;
 }
 
-void fn_804A2B8C(u8 *object, u32 *a, u32 *b) {
-    u32 *entry = rwSlot(object, 0, 4);
-    *a = entry[1];
-    *b = entry[2];
+/* RpMatFXMaterialGetUVTransformMatrices */
+RpMaterial *fn_804A2C2C(RpMaterial *material, RwMatrix **baseTransform, RwMatrix **dualTransform) {
+    MatFXEffectData *effect =
+        MatFXFindEffect(MATFXMATERIALGETDATA(material), rpMATFXEFFECTUVTRANSFORM);
+    if (baseTransform != NULL) *baseTransform = effect->u.uv.baseTransform;
+    if (dualTransform != NULL) *dualTransform = effect->u.uv.dualTransform;
+    return material;
 }
 
-void fn_804A2BE0(u8 *object, u32 a, u32 b) {
-    u32 *entry = rwSlot(object, 0, 5);
-    entry[0] = a;
-    entry[1] = b;
-}
+/* ---- GameCube render callbacks ---- */
 
-void fn_804A2C2C(u8 *object, u32 *a, u32 *b) {
-    u32 *entry = rwSlot(object, 0, 5);
-    if (a != NULL) *a = entry[0];
-    if (b != NULL) *b = entry[1];
-}
+/* Sets the channel colours of a material for the lighting set-up in `state`. */
+void fn_804A2C90(RwGameCubeLightState *state, RpMaterial *material) {
+    GXColor color;
 
-void fn_804A2C90(u8 *object, u8 *resource) {
-    u32 color;
-    if (*(s32 *)(object + 0x24) <= 0) {
-        if ((*(u32 *)(object + 8) & 8) == 0) {
-            if (*(s32 *)(object + 0x1C) == 0) {
-                if ((*(u32 *)(object + 8) & 0x40) != 0) {
-                    color = resource[7];
-                    fn_80396B54(4, &color);
-                }
-            } else {
-                f32 intensity = *(f32 *)(resource + 0xC);
-                if ((*(u32 *)(object + 8) & 0x40) == 0) {
-                    intensity *= 255.0f;
-                    ((u8 *)&color)[0] = (u8)(intensity * *(f32 *)(object + 0xC));
-                    ((u8 *)&color)[1] = (u8)(intensity * *(f32 *)(object + 0x10));
-                    ((u8 *)&color)[2] = (u8)(intensity * *(f32 *)(object + 0x14));
-                    ((u8 *)&color)[3] = 0xFF;
-                } else {
-                    u32 red = resource[4];
-                    u32 green = resource[5];
-                    u32 blue = resource[6];
-                    ((u8 *)&color)[0] = (u8)(red * intensity * *(f32 *)(object + 0xC));
-                    ((u8 *)&color)[1] = (u8)(green * intensity * *(f32 *)(object + 0x10));
-                    ((u8 *)&color)[2] = (u8)(blue * intensity * *(f32 *)(object + 0x14));
-                    ((u8 *)&color)[3] = resource[7];
-                }
-                fn_80396B54(4, &color);
-            }
-        } else if ((*(u32 *)(object + 8) & 0x40) != 0) {
-            color = *(u32 *)(resource + 4);
-            fn_80396B54(4, &color);
+    if (state->numLights > 0) {
+        if (state->ambientLit && !(state->flags & 8)) {
+            f32 scale = 255.0f * material->surfaceProps.ambient;
+            color.r = (u8)(scale * state->ambient.red);
+            color.g = (u8)(scale * state->ambient.green);
+            color.b = (u8)(scale * state->ambient.blue);
+            color.a = 0xFF;
+            fn_80396A6C(4, color);
         }
-    } else {
-        if (*(s32 *)(object + 0x1C) != 0 && (*(u32 *)(object + 8) & 8) == 0) {
-            f32 intensity = 255.0f * *(f32 *)(resource + 0xC);
-            ((u8 *)&color)[0] = (u8)(intensity * *(f32 *)(object + 0xC));
-            ((u8 *)&color)[1] = (u8)(intensity * *(f32 *)(object + 0x10));
-            ((u8 *)&color)[2] = (u8)(intensity * *(f32 *)(object + 0x14));
-            ((u8 *)&color)[3] = 0xFF;
-            fn_80396A6C(4, &color);
+        if (state->flags & 0x40) {
+            fn_80396B54(4, *(GXColor *)&material->color);
         }
-        if ((*(u32 *)(object + 8) & 0x40) != 0) {
-            color = *(u32 *)(resource + 4);
-            fn_80396B54(4, &color);
+    } else if (state->flags & 8) {
+        if (state->flags & 0x40) {
+            fn_80396B54(4, *(GXColor *)&material->color);
         }
+    } else if (state->ambientLit) {
+        f32 ambient = material->surfaceProps.ambient;
+        if (state->flags & 0x40) {
+            color.r = (u8)(material->color.red * (ambient * state->ambient.red));
+            color.g = (u8)(material->color.green * (ambient * state->ambient.green));
+            color.b = (u8)(material->color.blue * (ambient * state->ambient.blue));
+            color.a = material->color.alpha;
+        } else {
+            ambient *= 255.0f;
+            color.r = (u8)(ambient * state->ambient.red);
+            color.g = (u8)(ambient * state->ambient.green);
+            color.b = (u8)(ambient * state->ambient.blue);
+            color.a = 0xFF;
+        }
+        fn_80396B54(4, color);
+    } else if (state->flags & 0x40) {
+        color.r = color.g = color.b = 0;
+        color.a = material->color.alpha;
+        fn_80396B54(4, color);
     }
 }
 
+/* Forgets what the callbacks below have set, so the next mesh sets everything again. */
 void fn_804A2F08(void) {
-    lbl_805E32C8.m2 = 0;
-    lbl_805E32C8.m0 = 0;
-    lbl_805E32C8.m1 = 0;
+    lbl_805E32C8.tevSet = 0;
+    lbl_805E32C8.lightingSet = 0;
+    lbl_805E32C8.material = NULL;
 }
 
-#define RW_RENDER_SETUP(object, rootObject)                                                       \
-    do {                                                                                          \
-        u32 color;                                                                                \
-        if (lbl_805E32C8.m0 == 0) {                                                                  \
-            u32 flags = *(u32 *)((object) + 8);                                                    \
-            if (*(s32 *)((object) + 0x24) < 1) {                                                   \
-                if ((flags & 8) == 0) {                                                            \
-                    if (*(s32 *)((object) + 0x1C) == 0 && (flags & 0x40) == 0) {                  \
-                        color = lbl_805FB454;                                                       \
-                        fn_80396B54(4, &color);                                                     \
-                    }                                                                             \
-                    fn_80396C3C(1);                                                                \
-                    fn_80396C78(4, 0, 0, 0, 0, 0, 2);                                             \
-                } else if ((flags & 0x40) == 0) {                                                  \
-                    fn_80396C3C(1);                                                                \
-                    fn_80396C78(4, 0, 0, 1, 0, 0, 2);                                             \
-                } else {                                                                          \
-                    fn_80396C3C(1);                                                                \
-                    fn_80396C78(4, 1, 1, 0, 0, 0, 2);                                             \
-                }                                                                                 \
-            } else {                                                                              \
-                u32 mode;                                                                         \
-                if ((flags & 8) == 0) {                                                            \
-                    mode = 0;                                                                     \
-                    if (*(s32 *)((object) + 0x1C) == 0) {                                          \
-                        color = lbl_805FB454;                                                       \
-                        fn_80396A6C(4, &color);                                                     \
-                    }                                                                             \
-                } else {                                                                          \
-                    mode = 1;                                                                     \
-                }                                                                                 \
-                fn_80396C3C(1);                                                                    \
-                fn_80396C78(4, 1, mode, 0, *(u32 *)((object) + 0x20), 2, 1);                      \
-                if ((flags & 0x40) == 0) {                                                         \
-                    color = lbl_805FB450;                                                           \
-                    fn_80396B54(4, &color);                                                         \
-                }                                                                                 \
-            }                                                                                     \
-            lbl_805E32C8.m0 = 1;                                                                     \
-        }                                                                                         \
-        if (lbl_805E32CC != *(s32 *)((rootObject) + 8)) {                                         \
-            fn_804A2C90((object), (rootObject));                                                   \
-            lbl_805E32CC = *(s32 *)((rootObject) + 8);                                            \
-        }                                                                                         \
-        if (lbl_805E32D0 == 0) {                                                                  \
-            fn_803989A0(1);                                                                       \
-            if ((*(u32 *)((object) + 8) & 0x84) == 0) {                                            \
-                fn_803951BC(0);                                                                   \
-                fn_80398804(0, 0xFF, 0xFF, 4);                                                    \
-                fn_803982A8(0, 4);                                                                \
-            } else {                                                                              \
-                fn_803951BC(1);                                                                   \
-                fn_80394F3C(0, 1, 4, 0x3C, 0, 0x7D);                                              \
-                fn_80398804(0, 0, 0, 4);                                                          \
-                fn_803982A8(0, 0);                                                                \
-            }                                                                                     \
-            lbl_805E32D0 = 1;                                                                     \
-        }                                                                                         \
+static inline void MatFXSetLighting(const RwGameCubeLightState *state) {
+    if (!lbl_805E32C8.lightingSet) {
+        u32 flags = state->flags;
+        if (state->numLights > 0) {
+            s32 ambSrc;
+            if (flags & 8) {
+                ambSrc = 1;
+            } else {
+                ambSrc = 0;
+                if (!state->ambientLit) {
+                    fn_80396A6C(4, lbl_805FB454);
+                }
+            }
+            fn_80396C3C(1);
+            fn_80396C78(4, 1, ambSrc, 0, state->lightMask, 2, 1);
+            if (!(flags & 0x40)) {
+                fn_80396B54(4, lbl_805FB450);
+            }
+        } else if (flags & 8) {
+            if (flags & 0x40) {
+                fn_80396C3C(1);
+                fn_80396C78(4, 1, 1, 0, 0, 0, 2);
+            } else {
+                fn_80396C3C(1);
+                fn_80396C78(4, 0, 0, 1, 0, 0, 2);
+            }
+        } else {
+            if (!state->ambientLit && !(flags & 0x40)) {
+                fn_80396B54(4, lbl_805FB454);
+            }
+            fn_80396C3C(1);
+            fn_80396C78(4, 0, 0, 0, 0, 0, 2);
+        }
+        lbl_805E32C8.lightingSet = 1;
+    }
+}
+
+#define MatFXSetMaterial(state, mesh) \
+    do { \
+        if (lbl_805E32C8.material != (mesh)->material) { \
+            fn_804A2C90((state), (mesh)->material); \
+            lbl_805E32C8.material = (mesh)->material; \
+        } \
     } while (0)
 
-static inline void rwDrawVertices(u32 *vertices) {
-    fn_80399000(vertices[0], vertices[1]);
+static inline void MatFXSetTev(const RwGameCubeLightState *state) {
+    if (!lbl_805E32C8.tevSet) {
+        fn_803989A0(1);
+        if (state->flags & 0x84) {
+            fn_803951BC(1);
+            fn_80394F3C(0, 1, 4, 0x3C, 0, 0x7D);
+            fn_80398804(0, 0, 0, 4);
+            fn_803982A8(0, 0);
+        } else {
+            fn_803951BC(0);
+            fn_80398804(0, 0xFF, 0xFF, 4);
+            fn_803982A8(0, 4);
+        }
+        lbl_805E32C8.tevSet = 1;
+    }
 }
 
-static inline void rwRestoreTexture(u32 *root) {
-    fn_80499C38(root, 0);
-    if (root != NULL && root[0] != 0) {
-        u32 *child = (u32 *)root[0];
-        fn_80497778((*(u32 *)(*(u32 *)child + lbl_805F1658 + 0x14) & 1) ^ 1);
+static inline void MatFXSetTexture(RwTexture *texture) {
+    fn_80499C38(texture, 0);
+    if (texture != NULL && texture->raster != NULL) {
+        fn_80497778((RWGAMECUBERASTEREXT(texture->raster->parent)->flags & 1) ^ 1);
     } else {
         fn_80497778(1);
     }
 }
 
-void fn_804A2F24(u8 *param1, u32 *vertices, u8 *object) {
-    u8 *rootObject = *(u8 **)(param1 + 8);
-    u32 *slots = *(u32 **)(rootObject + lbl_805F16A8);
-    RW_RENDER_SETUP(object, rootObject);
-    rwRestoreTexture(**(u32 ***)(param1 + 8));
-    rwDrawVertices(vertices);
-    u32 saved10;
-    u32 saved11;
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(10, &saved10);
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(11, &saved11);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, slots[1]);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, slots[2]);
-    if ((*(u32 *)(object + 8) & 0x80) != 0) {
-        fn_80394F3C(0, 1, 5, 0x3C, 0, 0x7D);
-        lbl_805E32D0 = 0;
-    }
-    rwRestoreTexture((u32 *)slots[0]);
-    rwDrawVertices(vertices);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, saved10);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, saved11);
+static inline void MatFXLoadUVTransform(f32 mtx[3][4], const RwMatrix *matrix, s32 texGenSrc) {
+    mtx[0][0] = matrix->right.x;
+    mtx[0][1] = matrix->up.x;
+    mtx[0][2] = lbl_805FB470;
+    mtx[0][3] = matrix->pos.x;
+    mtx[1][0] = matrix->right.y;
+    mtx[1][1] = matrix->up.y;
+    mtx[1][2] = lbl_805FB470;
+    mtx[1][3] = matrix->pos.y;
+    fn_803992BC(mtx, 0x1E, 1);
+    fn_80394F3C(0, 1, texGenSrc, 0x1E, 0, 0x7D);
 }
 
-#define RW_TEXTURE_PACKET(packet, texture, mode)                                                  \
-    do {                                                                                          \
-        (packet)[0] = (texture)[0];                                                                \
-        (packet)[1] = (texture)[4];                                                                \
-        (packet)[2] = lbl_805FB470;                                                                \
-        (packet)[3] = (texture)[0xC];                                                              \
-        (packet)[4] = (texture)[1];                                                                \
-        (packet)[5] = (texture)[5];                                                                \
-        (packet)[6] = lbl_805FB470;                                                                \
-        (packet)[7] = (texture)[0xD];                                                              \
-        fn_803992BC((packet), 0x1E, 1);                                                            \
-        fn_80394F3C(0, 1, (mode), 0x1E, 0, 0x7D);                                                 \
-    } while (0)
+/* Loads the texture matrix that turns normals into environment map coordinates. */
+static inline void MatFXLoadEnvMapMatrix(RwMatrix *objectMatrix, RwFrame *frame) {
+    RwMatrix objectFrameMatrix;
+    RwMatrix frameMatrix;
+    f32 mtx[3][4];
+    RwMatrix *matrix;
 
-void fn_804A3308(u8 *param1, u32 *vertices, u8 *object) {
-    u8 *rootObject = *(u8 **)(param1 + 8);
-    u32 *slots = *(u32 **)(rootObject + lbl_805F16A8);
-    RW_RENDER_SETUP(object, rootObject);
-    u32 packet[8];
-    u32 *texture = (u32 *)slots[0];
-    if (texture != NULL) RW_TEXTURE_PACKET(packet, texture, 4);
-    rwRestoreTexture(**(u32 ***)(param1 + 8));
-    rwDrawVertices(vertices);
-    texture = (u32 *)slots[1];
-    if ((*(u32 *)(object + 8) & 0x80) == 0) {
-        if (texture == NULL) {
-            if (slots[0] != 0) fn_80394F3C(0, 1, 4, 0x3C, 0, 0x7D);
+    if (frame != NULL) {
+        fn_8047F0B0(&frameMatrix, RwFrameGetLTM(frame));
+        fn_8047ECB4(&frameMatrix, &frameMatrix);
+        matrix = &frameMatrix;
+    } else {
+        matrix = &lbl_805E31CC;
+    }
+    if (objectMatrix != NULL) {
+        fn_8047EBB8(&objectFrameMatrix, objectMatrix, matrix);
+        fn_8047ECB4(&objectFrameMatrix, &objectFrameMatrix);
+        matrix = &objectFrameMatrix;
+    }
+    mtx[0][0] = -0.5f * matrix->right.x;
+    mtx[0][1] = -0.5f * matrix->up.x;
+    mtx[0][2] = -0.5f * matrix->at.x;
+    mtx[0][3] = 0.5f;
+    mtx[1][0] = -0.5f * matrix->right.y;
+    mtx[1][1] = -0.5f * matrix->up.y;
+    mtx[1][2] = -0.5f * matrix->at.y;
+    mtx[1][3] = 0.5f;
+    fn_803992BC(mtx, 0x1E, 1);
+}
+
+/* Dual pass: the mesh with its own texture, then again with the second texture and blend modes. */
+void fn_804A2F24(RwGameCubeMesh *mesh, RwGameCubeDisplayList *list, RwGameCubeLightState *state) {
+    MatFXMaterialData *data = MATFXMATERIALGETDATA(mesh->material);
+    s32 srcBlend;
+    s32 dstBlend;
+
+    MatFXSetLighting(state);
+    MatFXSetMaterial(state, mesh);
+    MatFXSetTev(state);
+    MatFXSetTexture(mesh->material->texture);
+    fn_80399000(list->data, list->size);
+    RwEngineInstance->renderStateGet(10, &srcBlend);
+    RwEngineInstance->renderStateGet(11, &dstBlend);
+    RwEngineInstance->renderStateSet(10, (void *)data->data[0].u.dual.srcBlendMode);
+    RwEngineInstance->renderStateSet(11, (void *)data->data[0].u.dual.dstBlendMode);
+    if (state->flags & 0x80) {
+        fn_80394F3C(0, 1, 5, 0x3C, 0, 0x7D);
+        lbl_805E32C8.tevSet = 0;
+    }
+    MatFXSetTexture(data->data[0].u.dual.texture);
+    fn_80399000(list->data, list->size);
+    RwEngineInstance->renderStateSet(10, (void *)srcBlend);
+    RwEngineInstance->renderStateSet(11, (void *)dstBlend);
+}
+
+/* Dual pass with UV transforms: slot 0 holds the two matrices, slot 1 the second texture. */
+void fn_804A3308(RwGameCubeMesh *mesh, RwGameCubeDisplayList *list, RwGameCubeLightState *state) {
+    MatFXMaterialData *data = MATFXMATERIALGETDATA(mesh->material);
+    s32 srcBlend;
+    s32 dstBlend;
+    f32 mtx[3][4];
+
+    MatFXSetLighting(state);
+    MatFXSetMaterial(state, mesh);
+    MatFXSetTev(state);
+    if (data->data[0].u.uv.baseTransform != NULL) {
+        MatFXLoadUVTransform(mtx, data->data[0].u.uv.baseTransform, 4);
+    }
+    MatFXSetTexture(mesh->material->texture);
+    fn_80399000(list->data, list->size);
+    if (state->flags & 0x80) {
+        if (data->data[0].u.uv.dualTransform != NULL) {
+            MatFXLoadUVTransform(mtx, data->data[0].u.uv.dualTransform, 5);
+            lbl_805E32C8.tevSet = 0;
         } else {
-            RW_TEXTURE_PACKET(packet, texture, 4);
-            lbl_805E32D0 = 0;
+            fn_80394F3C(0, 1, 5, 0x3C, 0, 0x7D);
+            lbl_805E32C8.tevSet = 0;
         }
     } else {
-        if (texture == NULL) {
-            fn_80394F3C(0, 1, 5, 0x3C, 0, 0x7D);
-            lbl_805E32D0 = 0;
-        } else {
-            RW_TEXTURE_PACKET(packet, texture, 5);
-            lbl_805E32D0 = 0;
+        if (data->data[0].u.uv.dualTransform != NULL) {
+            MatFXLoadUVTransform(mtx, data->data[0].u.uv.dualTransform, 4);
+            lbl_805E32C8.tevSet = 0;
+        } else if (data->data[0].u.uv.baseTransform != NULL) {
+            fn_80394F3C(0, 1, 4, 0x3C, 0, 0x7D);
         }
     }
-    u32 saved10;
-    u32 saved11;
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(10, &saved10);
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(11, &saved11);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, slots[7]);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, slots[8]);
-    rwRestoreTexture((u32 *)slots[6]);
-    rwDrawVertices(vertices);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, saved10);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, saved11);
+    RwEngineInstance->renderStateGet(10, &srcBlend);
+    RwEngineInstance->renderStateGet(11, &dstBlend);
+    RwEngineInstance->renderStateSet(10, (void *)data->data[1].u.dual.srcBlendMode);
+    RwEngineInstance->renderStateSet(11, (void *)data->data[1].u.dual.dstBlendMode);
+    MatFXSetTexture(data->data[1].u.dual.texture);
+    fn_80399000(list->data, list->size);
+    RwEngineInstance->renderStateSet(10, (void *)srcBlend);
+    RwEngineInstance->renderStateSet(11, (void *)dstBlend);
 }
 
-void fn_804A388C(u8 *param1, u32 *vertices, u8 *object, void *frame) {
-    u8 *rootObject = *(u8 **)(param1 + 8);
-    u32 *slots = *(u32 **)(rootObject + lbl_805F16A8);
-    u32 color = lbl_805FB474;
-    RW_RENDER_SETUP(object, rootObject);
-    fn_80499C38(**(u32 ***)(param1 + 8), 0);
+/* Environment map: the mesh untextured, then the environment texture added over it with texture
+ * coordinates generated from the normals in the environment frame's space. */
+void fn_804A388C(RwGameCubeMesh *mesh, RwGameCubeDisplayList *list, RwMatrix *objectMatrix,
+                 RwGameCubeLightState *state) {
+    MatFXMaterialData *data = MATFXMATERIALGETDATA(mesh->material);
+    s32 srcBlend;
+    s32 dstBlend;
+    GXColor color = lbl_805FB474;
+
+    MatFXSetLighting(state);
+    MatFXSetMaterial(state, mesh);
+    MatFXSetTev(state);
+    fn_80499C38(mesh->material->texture, 0);
     fn_80497778(1);
-    rwDrawVertices(vertices);
-    u32 saved10;
-    u32 saved11;
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(10, &saved10);
-    ((void (*)(u32, void *))*(u32 *)(lbl_805F15B4 + 0x24))(11, &saved11);
-    u32 mode = slots[3] != 0 ? 7 : 2;
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, mode);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, 2);
+    fn_80399000(list->data, list->size);
+    RwEngineInstance->renderStateGet(10, &srcBlend);
+    RwEngineInstance->renderStateGet(11, &dstBlend);
+    RwEngineInstance->renderStateSet(10, (void *)(data->data[0].u.env.useFrameBufferAlpha ? 7 : 2));
+    RwEngineInstance->renderStateSet(11, (void *)2);
     fn_80396C78(4, 0, 0, 0, 0, 2, 2);
     fn_80396C78(5, 0, 0, 0, 0, 2, 2);
-    f32 fade = *(f32 *)(slots + 2);
-    if (lbl_805FB478 <= fade) {
-        color = 0xFFFFFFFF;
+    if (data->data[0].u.env.coef < lbl_805FB478) {
+        color.r = color.g = color.b = (u8)(lbl_805FB47C * data->data[0].u.env.coef);
+        color.a = 0xFF;
     } else {
-        u8 intensity = (u8)(lbl_805FB47C * fade);
-        ((u8 *)&color)[0] = intensity;
-        ((u8 *)&color)[1] = intensity;
-        ((u8 *)&color)[2] = intensity;
-        ((u8 *)&color)[3] = 0xFF;
+        color.r = color.g = color.b = color.a = 0xFF;
     }
-    fn_80396B54(4, &color);
+    fn_80396B54(4, color);
     fn_803951BC(1);
     fn_80394F3C(0, 1, 1, 0x1E, 0, 0x7D);
     fn_803989A0(1);
     fn_803982A8(0, 0);
     fn_80398804(0, 0, 0, 4);
-    lbl_805E32CC = 0;
-    lbl_805E32C8.m0 = 0;
-    lbl_805E32D0 = 0;
-    fn_80499C38((void *)slots[1], 0);
-    f32 matrixA[16];
-    f32 matrixB[16];
-    f32 *matrix;
-    if (slots[0] == 0) {
-        matrix = lbl_805E31CC;
-    } else {
-        fn_8047F0B0(matrixA, RwFrameGetLTM((void *)slots[0]));
-        fn_8047ECB4(matrixA, matrixA);
-        matrix = matrixA;
-    }
-    if (frame != NULL) {
-        fn_8047EBB8(matrixB, frame, matrix);
-        fn_8047ECB4(matrixB, matrixB);
-        matrix = matrixB;
-    }
-    f32 packet[8];
-    packet[0] = lbl_805FB468 * matrix[0];
-    packet[1] = lbl_805FB468 * matrix[4];
-    packet[2] = lbl_805FB468 * matrix[8];
-    packet[3] = lbl_805FB46C;
-    packet[4] = lbl_805FB468 * matrix[1];
-    packet[5] = lbl_805FB468 * matrix[5];
-    packet[6] = lbl_805FB468 * matrix[9];
-    packet[7] = lbl_805FB46C;
-    fn_803992BC(packet, 0x1E, 1);
-    rwDrawVertices(vertices);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(10, saved10);
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x20))(11, saved11);
+    lbl_805E32C8.material = NULL;
+    lbl_805E32C8.lightingSet = 0;
+    lbl_805E32C8.tevSet = 0;
+    fn_80499C38(data->data[0].u.env.texture, 0);
+    MatFXLoadEnvMapMatrix(objectMatrix, data->data[0].u.env.frame);
+    fn_80399000(list->data, list->size);
+    RwEngineInstance->renderStateSet(10, (void *)srcBlend);
+    RwEngineInstance->renderStateSet(11, (void *)dstBlend);
 }
+#ifdef __cplusplus
 }
+#endif

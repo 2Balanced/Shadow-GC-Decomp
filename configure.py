@@ -1199,13 +1199,18 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp60.cpp"),
             Object(NonMatching, "Game/RwCpp61.cpp"),
             Object(NonMatching, "Game/RwCpp62.cpp"),
-            Object(NonMatching, "Game/RwCpp63.cpp"),
-            Object(NonMatching, "Game/RwCpp64.cpp"),
-            Object(NonMatching, "Game/RwCpp65.cpp"),
-            Object(NonMatching, "Game/RwCpp66.cpp"),
-            Object(NonMatching, "Game/RwCpp67.cpp"),
-            Object(NonMatching, "Game/RwCpp68.cpp"),
-            Object(NonMatching, "Game/RwCpp69.cpp"),
+            # RwCpp63..RwCpp69 (wave 40, r8): RenderWare was a C library, so these build as C
+            # (-lang=c; the sources wrap their declarations in #ifdef __cplusplus extern "C").
+            # -O4,p and -use_lmw_stmw off: retail saves registers with _savegpr_N and unrolls
+            # loops by eight.  RwCpp63 also needs inline depth 2: _rxHeapReset and RxHeapFree
+            # expand a helper that itself expands the free-entry allocation.
+            Object(NonMatching, "Game/RwCpp63.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c", "-inline noauto,level=2,deferred"]),
+            Object(NonMatching, "Game/RwCpp64.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
+            Object(NonMatching, "Game/RwCpp65.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
+            Object(NonMatching, "Game/RwCpp66.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
+            Object(NonMatching, "Game/RwCpp67.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
+            Object(NonMatching, "Game/RwCpp68.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
+            Object(NonMatching, "Game/RwCpp69.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
             Object(NonMatching, "Game/RwCpp70.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
