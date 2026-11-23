@@ -1262,19 +1262,11 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp60.cpp", cflags=cflags_rw_driver),
             Object(NonMatching, "Game/RwCpp61.cpp", cflags=cflags_rw_driver),
             Object(NonMatching, "Game/RwCpp62.cpp", cflags=cflags_rw_driver),
-            # RwCpp63..RwCpp69 (wave 40, r8): RenderWare was a C library, so these build as C
-            # (-lang=c; the sources wrap their declarations in #ifdef __cplusplus extern "C").
-            # -O4,p and -use_lmw_stmw off: retail saves registers with _savegpr_N and unrolls
-            # loops by eight.  RwCpp63 also needs inline depth 2: _rxHeapReset and RxHeapFree
-            # expand a helper that itself expands the free-entry allocation.
+            # RwCpp63 (wave 41, r8): only 0x8049D934..0x8049EA2C is left here, the tail of the
+            # PowerPipe dependency-chase file that starts at 0x8049D408 in range r7 (its helpers
+            # fn_8049D408/43C/4B8 are inlined into fn_8049D4FC and fn_8049D934).  Built as C with
+            # deferred inlining two levels deep, as the old cut was matched.
             Object(NonMatching, "Game/RwCpp63.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c", "-inline noauto,level=2,deferred"]),
-            Object(NonMatching, "Game/RwCpp64.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp65.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp66.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp67.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp68.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp69.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-lang=c"]),
-            Object(NonMatching, "Game/RwCpp70.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/EffectManager.cpp", cflags=cflags_effect),
             Object(Matching, "Game/EffectManagerPJS.cpp"),
             Object(NonMatching, "Game/EffectManagerRW3.cpp", cflags=cflags_effect_lib),
@@ -1902,6 +1894,26 @@ config.libs = [
             Object(NonMatching, "RenderWare/RpWorldGameCubeVertexFormat.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(Matching, "RenderWare/Rt2dBrush.c", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(NonMatching, "RenderWare/Rt2dFont.c", cflags=cflags_rw_132_sdata, mw_version="GC/1.3.2"),
+            # Range r8 (wave 41), 0x8049EA2C..0x804A9BF8.  PowerPipe and Im3D files (RxHeap, RxRenderStateVector,
+            # RxKeySort, RwIm3DGameCubePipes) build with cflags_rw_driver: C, -O4,p, no lmw/stmw, writable
+            # strings (the Im3D node names sit in .data) and only functions declared inline are inlined (the
+            # dependency chase they serve calls small earlier functions out of line).  The plugin files
+            # (RpMatFX*, RpMultiTexture*) build with cflags_rw_r5: the same with automatic inlining, which
+            # expands their small static helpers and earlier API functions (fn_804A0C50 in the stream
+            # callbacks, fn_804A55CC in the effect write, fn_804A932C in fn_804A95D4) and whose absence across
+            # a call marks the file boundaries at 0x804A6128 and 0x804A6C74.  Measured on RxHeap.c and
+            # RpMultiTextureGameCubeEffect.c: GC 2.5..2.7 give retail's code; 1.3.2/2.0 break the effect
+            # stream write and 3.0a3/a5 and 1.2.5 break nearly everything.
+            Object(NonMatching, "RenderWare/RxHeap.c", cflags=cflags_rw_driver),
+            Object(Matching, "RenderWare/RxRenderStateVector.c", cflags=cflags_rw_driver),
+            Object(NonMatching, "RenderWare/RxKeySort.c", cflags=cflags_rw_driver),
+            Object(NonMatching, "RenderWare/RwIm3DGameCubePipes.c", cflags=cflags_rw_driver),
+            Object(NonMatching, "RenderWare/RpMatFX.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RpMatFXGameCube.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RpMultiTextureGameCubeEffect.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RpMultiTextureGameCubeRender.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RpMultiTextureGameCube.c", cflags=cflags_rw_r5),
+            Object(NonMatching, "RenderWare/RpMultiTexture.c", cflags=cflags_rw_r5),
         ],
     },
 ]

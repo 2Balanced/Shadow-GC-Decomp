@@ -8051,28 +8051,55 @@ Game/RwCpp62.cpp:
 	.text       start:0x8049C1E0 end:0x8049D934
 
 Game/RwCpp63.cpp:
-	.text       start:0x8049D934 end:0x8049F3F8
+	.text       start:0x8049D934 end:0x8049EA2C
 
-Game/RwCpp64.cpp:
-	.text       start:0x8049F3F8 end:0x804A0DEC
+RenderWare/RxHeap.c:
+	.text       start:0x8049EA2C end:0x8049F2A4
 
-Game/RwCpp65.cpp:
-	.text       start:0x804A0DEC end:0x804A29A8
+RenderWare/RxRenderStateVector.c:
+	.text       start:0x8049F2A4 end:0x8049F3F8
+	.sdata2     start:0x805FB430 end:0x805FB438
 
-Game/RwCpp66.cpp:
-	.text       start:0x804A29A8 end:0x804A3DB0
+RenderWare/RxKeySort.c:
+	.text       start:0x8049F3F8 end:0x8049F8AC
 
-Game/RwCpp67.cpp:
-	.text       start:0x804A3DB0 end:0x804A560C
+RenderWare/RwIm3DGameCubePipes.c:
+	.text       start:0x8049F8AC end:0x804A076C
+	.data       start:0x8056EC40 end:0x8056ED00
+	.sbss       start:0x805F16A0 end:0x805F16A8
 
-Game/RwCpp68.cpp:
-	.text       start:0x804A560C end:0x804A6F8C
+RenderWare/RpMatFX.c:
+	.text       start:0x804A076C end:0x804A2C90
+	.rodata     start:0x8051C3C0 end:0x8051C400
+	.data       start:0x8056ED00 end:0x8056ED28
+	.bss        start:0x805E32A0 end:0x805E32C8
+	.sdata      start:0x805EDF60 end:0x805EDF68
+	.sbss       start:0x805F16A8 end:0x805F16B8
+	.sdata2     start:0x805FB438 end:0x805FB450
 
-Game/RwCpp69.cpp:
-	.text       start:0x804A6F8C end:0x804A8B08
+RenderWare/RpMatFXGameCube.c:
+	.text       start:0x804A2C90 end:0x804A55CC
+	.bss        start:0x805E32C8 end:0x805E32D8
+	.sbss       start:0x805F16B8 end:0x805F16C8
+	.sdata2     start:0x805FB450 end:0x805FB488
 
-Game/RwCpp70.cpp:
-	.text       start:0x804A8B08 end:0x804A9BF8
+RenderWare/RpMultiTextureGameCubeEffect.c:
+	.text       start:0x804A55CC end:0x804A6128
+
+RenderWare/RpMultiTextureGameCubeRender.c:
+	.text       start:0x804A6128 end:0x804A6C74
+	.sbss       start:0x805F16C8 end:0x805F16D0
+	.sdata2     start:0x805FB488 end:0x805FB498
+
+RenderWare/RpMultiTextureGameCube.c:
+	.text       start:0x804A6C74 end:0x804A869C
+	.sdata2     start:0x805FB498 end:0x805FB4C0
+
+RenderWare/RpMultiTexture.c:
+	.text       start:0x804A869C end:0x804A9BF8
+	.bss        start:0x805E32D8 end:0x805E3440
+	.sdata      start:0x805EDF68 end:0x805EDF70
+	.sbss       start:0x805F16D0 end:0x805F16D4
 
 Runtime.PPCEABI.H/__mem.c:
 	.init       start:0x8000540C end:0x80005544

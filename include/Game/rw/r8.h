@@ -1,9 +1,10 @@
 #ifndef GAME_RW_R8_H
 #define GAME_RW_R8_H
 
-/* Private types of the RenderWare units RwCpp63..RwCpp70 (0x8049D934..0x804A9BF8), inferred from
- * the disassembly and the public RenderWare 3.7 object model.  A later pass unifies these with the
- * neighbouring agents' headers; nothing outside those units should include this file. */
+/* Private types of range r8's RenderWare files (0x8049D934..0x804A9BF8: Game/RwCpp63.cpp and
+ * src/RenderWare/Rx*.c, RwIm3DGameCubePipes.c, RpMatFX*.c, RpMultiTexture*.c), inferred from the
+ * disassembly and the public RenderWare 3.7 object model.  A later pass unifies these with the
+ * neighbouring agents' headers; nothing outside those files should include this one. */
 #include <dolphin/types.h>
 
 #ifdef __cplusplus
@@ -104,7 +105,15 @@ typedef struct RwGlobals {
     u8 pad08[0x18];
     s32 (*renderStateSet)(s32 state, void *value); /* 0x20 */
     s32 (*renderStateGet)(s32 state, void *value); /* 0x24 */
-    u8 pad28[0x108 - 0x28];
+    u8 pad28[0xCC - 0x28];
+    /* 0xC4..0x108: the string functions; only the ones these files call are named. */
+    char *(*strcpy)(char *dst, const char *src);           /* 0xCC */
+    char *(*strncpy)(char *dst, const char *src, u32 n);   /* 0xD0 */
+    u32 padD4;
+    char *(*strncat)(char *dst, const char *src, u32 n);   /* 0xD8 */
+    u32 padDC[3];
+    s32 (*strcmp)(const char *a, const char *b);           /* 0xE8 */
+    u32 padEC[7];
     void *(*memAlloc)(u32 size, u32 hint);              /* 0x108: RwMalloc */
     void (*memFree)(void *block);                       /* 0x10C: RwFree */
     void *(*memRealloc)(void *block, u32 size, u32 hint); /* 0x110: RwRealloc */
@@ -189,12 +198,9 @@ typedef struct MatFXInfo {
     void *materialDataFreeList;
 } MatFXInfo;
 
-extern MatFXInfo lbl_8056ED00;
-extern s32 lbl_805F16A8; /* plugin data offset in RpMaterial */
-extern s32 lbl_805F16AC; /* plugin data offset in RpAtomic */
-extern s32 lbl_805F16B0; /* plugin data offset in RpWorldSector */
+extern s32 MatFXMaterialDataOffset; /* plugin data offset in RpMaterial (RpMatFX.c) */
 
-#define MATFXMATERIALGETDATA(material) (*(MatFXMaterialData **)((u8 *)(material) + lbl_805F16A8))
+#define MATFXMATERIALGETDATA(material)     (*(MatFXMaterialData **)((u8 *)(material) + MatFXMaterialDataOffset))
 
 /* ---- GameCube driver ---- */
 #ifndef DOLPHIN_GX_H
@@ -264,7 +270,6 @@ typedef struct MatFXRenderState {
     s32 tevSet;
 } MatFXRenderState;
 
-extern MatFXRenderState lbl_805E32C8;
 extern RwMatrix lbl_805E31CC; /* identity */
 
 void fn_80499C38(struct RwTexture *texture, s32 stage); /* driver: select the texture */
@@ -650,27 +655,41 @@ typedef struct GcnMatInstance {
 
 u8 *fn_804A60D0(u8 *object);
 
-/* Two helpers of the plugin's source file that the compiler expanded in most of its functions.
- * The file is cut over RwCpp64..RwCpp66, so they are shared from here. */
-static inline MatFXEffectData *MatFXFindEffect(MatFXMaterialData *data, s32 type) {
-    u8 i;
-    for (i = 0; i < 2; i++) {
-        if (data->data[i].flag == type) return &data->data[i];
-    }
-    return NULL;
-}
+/* The packed TEV indirect settings of the effect's stream data, unpacked (fn_804A60D8). */
+typedef struct GcnMatSettings {
+    u32 field0; /* 0x00: bits 0..1 */
+    u32 field1; /* 0x04: bits 2..3 */
+    u32 field2; /* 0x08: bits 4..6 */
+    u32 field3; /* 0x0C: bits 7..10 */
+    u32 field4; /* 0x10: bits 11..13 */
+    u32 field5; /* 0x14: bits 14..16 */
+    u8 field6;  /* 0x18: bit 17 */
+    u8 field7;  /* 0x19: bit 18 */
+    u32 field8; /* 0x1C: bits 19..20 */
+} GcnMatSettings;
 
-static inline MatFXMaterialData *MatFXMaterialDataCreate(RpMaterial *material) {
-    MatFXMaterialData *data = MATFXMATERIALGETDATA(material);
-    if (data == NULL) {
-        data = (MatFXMaterialData *)RwEngineInstance->freeListAlloc(
-            lbl_8056ED00.materialDataFreeList, 0x30120);
-        if (data == NULL) return NULL;
-        memset(data, 0, sizeof(MatFXMaterialData));
-        MATFXMATERIALGETDATA(material) = data;
-    }
-    return data;
-}
+/* ---- the multi-texture plugin (plugin id 0x12C) ---- */
+
+/* What a platform registered with fn_804A8EFC: its material plugin and the size of its extra data. */
+typedef struct MTPlatformInfo {
+    u32 platform;  /* 0x00: written to the stream as one byte */
+    u32 pluginId;  /* 0x04 */
+    s32 offset;    /* 0x08: the plugin data offset in RpMaterial */
+    u32 extraSize; /* 0x0C: bytes of extra data behind MTData */
+} MTPlatformInfo;
+
+/* A material's multi-texture data for one platform: up to eight textures with a texture
+ * coordinate set each, the effect (a resource of the effect table) and the platform's extra data. */
+typedef struct MTData {
+    MTPlatformInfo *def;    /* 0x00 */
+    u32 numTextures;        /* 0x04 */
+    RwTexture *textures[8]; /* 0x08 */
+    u8 textureCoords[8];    /* 0x28 */
+    u8 *effect;             /* 0x30 */
+    void *extra;            /* 0x34 */
+} MTData;
+
+void *fn_804A90C8(void *object, s32 platform); /* a material's MTData for a platform, or NULL */
 
 #ifdef __cplusplus
 }
