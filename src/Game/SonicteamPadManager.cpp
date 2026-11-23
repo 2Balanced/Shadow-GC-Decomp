@@ -10,7 +10,10 @@
  * registers and stack layout, but GC/2.7 gives the state pointer r3 and the previous status r4
  * where retail has r6 and r3 (14 rows of 96). About 20 spellings tried (pad and state as locals,
  * references or indexing, declaration orders, the switch value as a local); reading the default
- * case's status through states[i] is what brought the saved registers into line. */
+ * case's status through states[i] is what brought the saved registers into line. Wave 41
+ * (probes/Game_SonicteamPadManager_W41.py, 7 shapes): copy propagation off, with the pad, state
+ * and status declared in every order at the top of the loop or a copy of the manager, keeps the
+ * 14 rows. */
 #include <algorithm>
 
 #include "Game/SonicteamPeripheral.h"

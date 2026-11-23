@@ -22,7 +22,12 @@
  *   compiler did by generating it before the string's definition; here it names the retail address
  *   (lbl_805F4C60, left undefined) and Camera::Load uses its own literal.
  * - Register or stack-slot allocation differs in UnkEventModel's Show, Update and destructor, the
- *   character list's Find and LinkParts, the camera's Update and fn_80170C58. */
+ *   character list's Find and LinkParts, the camera's Update and fn_80170C58. Wave 41
+ *   (probes/Game_PjsEventActionScene_W41.py): copy propagation off for each of them alone changes
+ *   nothing in five and makes StartLoad and Find worse; fn_80170C58 goes from 24 rows to 22.
+ * - The duplicate constants (and the @N numbering of the character table's strings in .sdata2)
+ *   suggest the range holds several translation units (one per class), as Game/Mission.cpp did;
+ *   not split yet. */
 #include <cstdio>
 #include <cstring>
 

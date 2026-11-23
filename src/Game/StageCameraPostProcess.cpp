@@ -13,6 +13,11 @@
  * the for statement or not at all (without it the iterator does get r29, but the player keeps
  * r30 in the loop), int, long and unsigned counters, a while loop, the erase's arguments as
  * locals, and the loop as an inline function (which GC/2.7 does not inline: 128 rows).
+ * Wave 41 (probes/Game_StageCameraPostProcess_W41*.py, 19 shapes): with copy propagation off for
+ * Tick the copy takes the register below the iterator, as in retail, but the remove_if line then
+ * keeps the predicate copy's address in a saved register and loads the member pointer without
+ * lwzu (35 rows whatever the predicate and erase spellings); the copy as a const local or through
+ * an inline identity function leaves the 8 rows.
  * The order of the functions matches since wave 40: the vector members that grow and shrink the
  * vector (reserve, insert_n, erase) belong to the class between the vector and its storage
  * (MSL_VECTOR_MIDDLE_MEMBERS in <vector>), which is declared ahead of the storage, so GC/2.7

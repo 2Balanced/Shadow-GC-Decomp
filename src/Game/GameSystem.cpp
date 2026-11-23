@@ -20,7 +20,8 @@
  * table, as do/while or while, with a long counter, the counter declared or set ahead of the
  * store, the count stored as m_first[i + 1] and the count re-read for the store give the same
  * row; the loop or the store in static inline members of the index give 41 rows, and
- * `#pragma scheduling off` 7. */
+ * `#pragma scheduling off` 7. Wave 41 (probes/Game_GameSystem_W41.py): copy propagation off,
+ * with the table through a pointer local or the counter declared apart, keeps the row. */
 #include "Effect/System/EffectSystem.h"
 #include "Game/GameSystem.h"
 #include "Game/NowLoading.h"

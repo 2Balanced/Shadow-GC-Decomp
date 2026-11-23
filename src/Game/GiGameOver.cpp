@@ -164,7 +164,11 @@ extern "C" void fn_802E3AEC(void) {
  * the name: that also flips it, so it looks like a weight, not the string). Every such shape
  * gives retail's r31/r30 and then differs in the scratch registers instead, because that value is
  * numbered before the constants: the name takes r4 from the zero (7 rows left), the motion name
- * takes r4 from the scene pointer (9 rows). Nothing found gives both. */
+ * takes r4 from the scene pointer (9 rows). Nothing found gives both. Wave 41
+ * (probes/Game_GiGameOver_W41.py, 20 shapes): copy propagation off, with or without a named copy of
+ * this (plain or const), and with the strings through locals, gives 20 to 41 rows (it also turns
+ * the member pointer's copy into lwzu); the name through a local declared anywhere ahead of its
+ * store keeps the 7 rows. */
 GiGameOver::GiGameOver(Task *parent) : Task(parent) {
     m_timer = 0.0f;
     m_yes = 0;

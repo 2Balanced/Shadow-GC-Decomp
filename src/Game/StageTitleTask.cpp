@@ -84,7 +84,10 @@ SIZE_ASSERT(StageTitleTask, 0x28);
  * the body in an inline function (never inlined), a copy of this, loops of one pass around this,
  * the format or the whole body, inline accessors for m_csd and m_state, each string through a
  * comma expression (the lever that flips the same pair the other way in Game/GiGameOver.cpp), the
- * language suffix through an inline function: 14 rows or more. */
+ * language suffix through an inline function: 14 rows or more. Wave 41
+ * (probes/Game_StageTitleTask_W41.py, 14 shapes): copy propagation off, alone or with a named
+ * copy of this (plain or const, before or after the buffer) or of stage, and each string through
+ * a local with and without it: 14 rows or more. */
 bool UnkObject_801E67EC::Load(int stage) {
     char path[0x80];
     if (m_state != 0) {

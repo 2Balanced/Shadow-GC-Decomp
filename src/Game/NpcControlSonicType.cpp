@@ -7,8 +7,8 @@
  * holds the NPC managers' accessor (fn_8006F754) and the clamp, min and max of floats that other
  * units call by their addresses. File name from the RTTI name; function and member names are
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
- * last-defined first). NonMatching: 85 of 87 functions match (UpdateTargets and UpdateAttack differ
- * in registers only; see there); the rest of the unit links byte for byte (checked as Matching). */
+ * last-defined first). NonMatching: 86 of 87 functions match (UpdateAttack differs in the place of
+ * one instruction; see there); the rest of the unit links byte for byte (checked as Matching). */
 #define CHARCOMMAND_IMPLEMENTATION
 #define CHARCOMMAND_PLAYER_COMMANDS
 #define CHARCOMMAND_INLINE_BASE
@@ -159,9 +159,10 @@ inline Vec3f Scaled(const Vec3f *v, float scale) {
     return fn_8040CDA8(v, scale);
 }
 
-/* The parameters of a player's character. */
+/* The parameters of a player's character (the table through a local: see UpdateAttack). */
 inline const UnkCharaParam_804F1834 &CharaParam(PlayerBase *player) {
-    return lbl_804F1834[Fields(player)->m_kind];
+    const UnkCharaParam_804F1834 *table = lbl_804F1834;
+    return table[Fields(player)->m_kind];
 }
 
 /* Returns x (an inline call, so that the accessors below are not inlined themselves; deferred
@@ -491,15 +492,15 @@ void NpcSonicType::vf_0x14(float dt) {
     fn_8006F754()->SetActive(true);
 }
 
-/* NonMatching (28 instructions): with kind set at the top, GC/2.7 gives retail's registers but
- * keeps the li of 0 at the top; retail has it after the target's flags are loaded (in the block
- * that uses it). Setting it there instead gives other registers. Probably the newer compiler's
- * scheduling (see docs/research-notes.md). */
+/* kind is declared in the block that uses it, which puts its li of 0 after the target's flags are
+ * loaded as in retail, and copy propagation is off for the function, which keeps retail's
+ * registers with it there (wave 41, probes/Game_NpcControlSonicType_W41.py). */
+#pragma opt_propagation off
 void NpcSonicType::UpdateTargets(float dt) {
-    int kind = 0;
     shared_ptr<Target> target = Fields(m_npc.get())->m_aim->vf_0x28().lock();
     fn_8006127C(&m_flags, 2);
     if (target && m_state != 3) {
+        int kind = 0;
         if (target->m_flags & 0x18) {
             float distance =
                 fn_8040D180(&(const Vec3f &)target->GetPosition(&m_npc->m_position), &m_npc->m_position);
@@ -543,6 +544,8 @@ void NpcSonicType::UpdateTargets(float dt) {
         DecayTimers(dt);
     }
 }
+
+#pragma opt_propagation reset
 
 void NpcSonicType::DecayTimers(float dt) {
     for (int i = 0; i < 3; i++) {
@@ -635,8 +638,13 @@ void NpcSonicType::UpdateState(float dt) {
     }
 }
 
-/* NonMatching (8 instructions): retail computes the character table's address in r3 and the
- * offset in r0 (both homing-attack checks); GC/2.7 swaps them (about 15 source shapes tried). */
+/* NonMatching (2 instructions): retail computes the character table's address in r3 and the
+ * offset in r0 (both homing-attack checks), which GC/2.7 does only with the table in a local of
+ * CharaParam and copy propagation off for the function (about 15 earlier shapes, and some 30 in
+ * wave 41, probes/Game_NpcControlSonicType_W41.py, swap them: 8 instructions). With propagation
+ * off, the address of the empty weak_ptr passed to WatchJump is set before the other arguments
+ * (addi r5 two rows early), where retail sets it last. */
+#pragma opt_propagation off
 void NpcSonicType::UpdateAttack(float dt) {
     Vec3f offset;
     fn_800091EC(&offset, &(const Vec3f &)Sub(&m_destination, &m_npc->m_position));
@@ -707,6 +715,8 @@ void NpcSonicType::UpdateAttack(float dt) {
         break;
     }
 }
+
+#pragma opt_propagation reset
 
 void NpcSonicType::UpdateFollow(float dt) {
     shared_ptr<PlayerBase> leader = fn_8007363C(m_npc.get()).lock();

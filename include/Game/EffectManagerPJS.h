@@ -368,7 +368,7 @@ class EffectParticle3DUSA : public ::Effect::RW3::EffectParticle3DRW3 {
 
     /* 0x17C */ s32 m_shownDrawPass;        /* as EffectParticleUSA's */
     /* 0x180 */ UnkClumpFade_80027D5C *m_fades; /* one colour fade per particle */
-    /* 0x184 */ bool *m_fadeSet;            /* whether each fade is applied to its clump */
+    /* 0x184 */ s8 *m_fadeSet;              /* whether each fade is applied to its clump (extsb.) */
 };
 SIZE_ASSERT(EffectParticle3DUSA, 0x188);
 

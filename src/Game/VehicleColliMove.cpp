@@ -20,7 +20,9 @@
  * at the top of the function all leave 20 rows (probes/Game_VehicleColliMove_settle_c.py), and so
  * do all 720 orders of those with the clear flag declared at the top too, with and without copy
  * propagation (wave 40, probes/Game_VehicleColliMove_settle_d.py); the residual is the lowest
- * saved registers, as in Game/VehicleSweep.cpp. */
+ * saved registers, as in Game/VehicleSweep.cpp. Wave 41 (probes/Game_VehicleColliMove_W41.py):
+ * copy propagation off for Sweep or Settle alone makes Sweep worse (90 to 100 rows) and leaves
+ * Settle's 20. */
 #define BOOST_SP_NOT_EQUAL
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"

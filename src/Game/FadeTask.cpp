@@ -16,7 +16,9 @@
  * in retail's register order, and fn_804799C0 takes the state (Game/RwCpp40.cpp). The move
  * stayed through the state functions' types, an inline helper, a reference, one combined
  * statement and #pragma peephole off (#pragma scheduling off removes it but costs 108 rows); the
- * class order, the size checks and the order of the two `new`s leave the RTTI name first. */
+ * class order, the size checks and the order of the two `new`s leave the RTTI name first. Wave 41
+ * (probes/Game_FadeTask_W41.py): copy propagation off for the constructor keeps the move and
+ * renumbers the strip loop's float registers (42 rows). */
 #include "Game/CsdRW.h"
 #include "Game/ScreenFade.h"
 #include "Game/Task.h"

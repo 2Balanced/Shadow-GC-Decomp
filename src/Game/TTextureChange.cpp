@@ -8,19 +8,12 @@
  * than the class's are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * NonMatching (14/15): Setup differs in 5 rows, all in the frame loop: retail adds the offset to
- * the animation and loads the frame's index at +80 (`add r4,r5,r23; lwz r6,80(r4)`) where GC/2.7
- * adds 80 to the offset and uses an indexed load, and so keeps the animation in r5 where GC/2.7
- * has r4. Wave 40 fixed the saved registers through the declaration order of the locals (the
- * dictionary, the entry and the counter declared at the top) and the copy of the zeroed counter
- * (`mr r23,r22`) by inlining the frame loop from a function (LoadFrames); about 47 forms of the
- * loop and the frame's address (the counter zeroed in a loop of one pass, a second index or a
- * byte offset copied from it, the frame through a pointer, a reference or explicit byte
- * arithmetic, locals for the animation, the frames, the name or the index, a u32 counter, a
- * while loop, the name buffer outside the loop, the helper as a member of the entry or over
- * pointers to the entry's members; probes/Game_TTextureChange_W40*.py) leave those 5 rows. The
- * rest of the unit is ready: .data and .rodata differ only by alignment tails, and the extra
- * .text is the weak HandleUser and std::string members, which fold.
+ * Setup matches since wave 41: the frame loop's frame is reached by a byte offset from the
+ * frames' start (see LoadFrames). Wave 40 fixed its saved registers through the declaration order
+ * of the locals (the dictionary, the entry and the counter declared at the top) and the copy of
+ * the zeroed counter (`mr r23,r22`) by inlining the frame loop from a function (LoadFrames).
+ * .data and .rodata differ only by alignment tails, and the extra .text is the weak HandleUser
+ * and std::string members, which fold.
  * GetFrame matches since wave 39 (the declaration order of its locals, see there).
  * lbl_805E39A0 is defined by the next unit (Game/AdbManager.cpp), which starts its .sdata. */
 #define MSL_STRING_DEFAULT_CTOR
@@ -169,11 +162,15 @@ void TTextureChange::Tick(float dt) {
 
 /* The textures of the animation's frames (name inferred). A loop inlined from a function starts
  * its strength-reduced offset with a copy of the zeroed counter (`mr r23,r22`), as retail does;
- * written in place it gets a second `li`. */
+ * written in place it gets a second `li`. The frame is reached by a byte offset from the frames'
+ * start: GC/2.7 then adds the offset to the animation and loads the index at +80 (`add r4,r5,r23;
+ * lwz r6,80(r4)`) as retail does, where indexing the frames adds 80 to the offset first (wave 41,
+ * probes/Game_TTextureChange_W41.py). */
 inline void LoadFrames(UnkTextureChangeEntry_8004F0A4 *entry, RwTexDictionary *dict) {
     for (s32 j = 0; j < entry->m_anim->m_count; j++) {
         char name[0x40];
-        sprintf(name, "%s.%d", entry->m_anim->m_name, entry->m_anim->m_frames[j].m_index);
+        u8 *frame = (u8 *)entry->m_anim->m_frames + j * sizeof(UnkTextureFrame_8004F0A4);
+        sprintf(name, "%s.%d", entry->m_anim->m_name, ((UnkTextureFrame_8004F0A4 *)frame)->m_index);
         entry->m_textures[j] = fn_8048CFFC(dict, name);
     }
 }

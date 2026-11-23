@@ -15,7 +15,10 @@
  * - fn_8003CEF8: retail computes the scene comparison into a register before the GetScene
  *   temporary's destructor; GC/2.7 compares after it (one more saved register). Wave 40: the
  *   comparison in an inline function of the scene or of the tour, as `Get() != Get()` and with
- *   `return pa != pb` give 25 to 46 rows.
+ *   `return pa != pb` give 25 to 46 rows. Wave 41 (probes/Game_TPjsCsd_W41.py): with copy
+ *   propagation off the comparison is made before the destructor as in retail, and with the
+ *   counter declared ahead of ok and `ok &= ...` 8 rows are left: the new expression's result
+ *   then gets its own register and a copy into tour (wherever tour is declared).
  * - allocator<Motion>::destroy: retail calls Motion's destructor out of line, GC/2.7 inlines it.
  * - list<SReorder>::erase (and its operator-> helper): retail calls operator-> out of line for this
  *   trivially destructible list only; <list>'s MSL_LIST_TRIVIAL_VALUES fixes it but breaks the

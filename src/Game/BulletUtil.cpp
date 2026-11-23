@@ -16,7 +16,12 @@
  * the contact list last (in player's). GC/2.7 puts the contact list first and the object last;
  * with the list taken from an inline function (LineContacts in the probe table) it moves below the
  * parameters (7 rows for 16), but the object stays last whatever is done to it (declared or zeroed
- * at the top, inline getters of the node or the iterator), so that is not applied here. */
+ * at the top, inline getters of the node or the iterator), so that is not applied here.
+ * Wave 41 (probes/Game_BulletUtil_W41.py, 27 shapes on fn_8005B2F0): const named copies of to and
+ * from (`const Vec3f *const end = to;`, to's first) give retail's to r31, from r30 and result r29,
+ * and with LineContacts 11 rows are left (the contact list in r28 and the object in r24, retail
+ * r24 and r28, and the copy of to scheduled first); copy propagation off, plain copies and the
+ * object, node and list declared at the top in any order do not move the last two. */
 #define ATTACK_IGNORE_LIST_MEMBERS
 #define CHARA_COLLI_ATTACK_MEMBERS
 #include "Game/AttackIgnoreList.h"

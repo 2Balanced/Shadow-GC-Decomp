@@ -7,9 +7,14 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first). The unit also emits EffectParticleUSA's inline destructor and both vtables.
  *
- * NonMatching: 5 of 6 functions match. EffectParticle3DUSA::Update (98.6%) has the colour
- * conversion of Game/EffectObjectUSA.cpp: the four stack temporaries come out in another order
- * (blocker described there). */
+ * NonMatching: 5 of 6 functions match. EffectParticle3DUSA::Update differs in 5 rows (two scratch
+ * registers): retail gives the alpha byte r7 and the clump's offset r8, GC/2.7 the other way
+ * round. Wave 41 (probes/Game_EffectParticleUSA_W41.py, about 45 shapes) took it from 23 rows:
+ * the fade flags are signed bytes (extsb.), the alpha byte is read into a local ahead of the
+ * colour and converted after it (retail's stack slots: blue, green, red, then alpha from the
+ * bottom up), and the fade's address is a local. The alpha local declared anywhere from the
+ * function's top to the store, through inline readers, as unsigned long, a const or with copy
+ * propagation off, and the clump's address through a local, leave the two registers swapped. */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define RESOURCEONEFILE_POLYMORPHIC
 
@@ -192,7 +197,7 @@ EffectParticle3DUSA::EffectParticle3DUSA(const UnkEffectDesc_801D0AFC *desc,
     m_fades = static_cast<UnkClumpFade_80027D5C *>(__construct_new_array(
         operator new[](count * sizeof(UnkClumpFade_80027D5C) + 0x10), (void *)fn_80027D5C, 0,
         sizeof(UnkClumpFade_80027D5C), count));
-    m_fadeSet = new bool[m_count];
+    m_fadeSet = new s8[m_count];
     if (m_fadeSet != 0) {
         for (int i = 0; i < m_count; i++) {
             m_fadeSet[i] = false;
@@ -221,11 +226,14 @@ void EffectParticle3DUSA::Update(float dt) {
             UnkParticleModel_80027DC4 *model = static_cast<UnkParticleModel_80027DC4 *>(m_model);
             if (model[i].m_clump != 0 && m_fades != 0 && m_fadeSet != 0) {
                 float scale = 1.0f / 255.0f;
-                float alpha = ((particle->m_color[3] >> 22) & 0xFF) * scale;
-                SetFadeColor(&m_fades[i], ((particle->m_color[0] >> 22) & 0xFF) * scale,
+                /* The alpha byte is read first and converted after the colour (retail's stack
+                 * slots: blue, green, red, then alpha from the bottom up). */
+                u32 alpha = (particle->m_color[3] >> 22) & 0xFF;
+                UnkClumpFade_80027D5C *fade = &m_fades[i];
+                SetFadeColor(fade, ((particle->m_color[0] >> 22) & 0xFF) * scale,
                              ((particle->m_color[1] >> 22) & 0xFF) * scale,
                              ((particle->m_color[2] >> 22) & 0xFF) * scale);
-                m_fades[i].m_color[3] = alpha;
+                m_fades[i].m_color[3] = alpha * scale;
                 m_fades[i].m_mode = 4;
                 if (!m_fadeSet[i]) {
                     fn_80038198(static_cast<UnkParticleModel_80027DC4 *>(m_model)[i].m_clump,

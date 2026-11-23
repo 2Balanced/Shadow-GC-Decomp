@@ -7,12 +7,14 @@
  * original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * The unit is NonMatching (254/256 functions): IronBall::GetThrowVelocity (retail has the
+ * The unit is NonMatching (255/256 functions): IronBall::GetThrowVelocity (retail has the
  * difference's temporary above the two flat points on the stack and builds the second point
  * first; an out-pointer call over named points built by an inline setter gets within 4 rows, two
- * float registers apart, and is not kept) and FixLookCharCamera::IsEnabled (float register
- * numbering in its two interpolations: retail numbers the constants before the difference; naming
- * the ratio or the constants, operand order and inline helpers all leave it). Matched in wave 39:
+ * float registers apart, and is not kept; wave 41, probes/Game_EggMecaCtrlUnit_W41.py: the points
+ * as temporaries call Vec2f's constructor out of line, an inline helper that builds them is not
+ * inlined, and the second point declared first gets 9 rows with the temporary still lowest).
+ * FixLookCharCamera::IsEnabled matches since wave 41 (the ratios named, with copy propagation
+ * off). Matched in wave 39:
  * the ShockWave constructor (fn_800C7EA8 declared with its radius ahead of the offset),
  * Laser::GetAngles (m_index read as volatile for the second test) and AcceptIronBallHit (a const
  * candidate, which is what lets GC/2.7 load above the prologue's stores). .data also differs in the zero-filled
@@ -596,6 +598,9 @@ inline boost::weak_ptr<ExternalCameraRequest> GetCameraRequest(BossCtrlUnit_FixL
         reinterpret_cast<u8 *>(&camera) + 0x28);
 }
 
+/* Each interpolation names its ratio, and copy propagation is off for the function: that numbers
+ * the constants before the difference, as retail does (wave 41, probes/Game_EggMecaCtrlUnit_W41.py). */
+#pragma opt_propagation off
 bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
     s32 stage = lbl_8057D6A0.m_stage;
     if (stage == 0x136) {
@@ -614,7 +619,8 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
                         field_0x8 = 60.0f + m_owner->m_settings.m_cameraDistance;
                         camera->m_distance = field_0x8;
                     } else if (250.0f < distance) {
-                        field_0x8 = 60.0f * ((distance - 250.0f) / 100.0f) + m_owner->m_settings.m_cameraDistance;
+                        float t = (distance - 250.0f) / 100.0f;
+                        field_0x8 = 60.0f * t + m_owner->m_settings.m_cameraDistance;
                         camera->m_distance = field_0x8;
                     }
                 }
@@ -652,7 +658,8 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
                     field_0xC = 12.0f + m_owner->m_settings.m_cameraHeight;
                     camera->m_height = field_0xC;
                 } else {
-                    field_0xC = 12.0f * (1.0f - (distance - 225.0f) / 25.0f) + m_owner->m_settings.m_cameraHeight;
+                    float t = (distance - 225.0f) / 25.0f;
+                    field_0xC = 12.0f * (1.0f - t) + m_owner->m_settings.m_cameraHeight;
                     camera->m_height = field_0xC;
                 }
             }
@@ -660,6 +667,8 @@ bool EggMecaCtrlUnit_FixLookCharCamera::IsEnabled() {
     }
     return true;
 }
+
+#pragma opt_propagation reset
 
 void EggMecaCtrlUnit_CheckMotionAttribute::OnAttribute(u16 attribute, int value) {
     switch (attribute) {

@@ -12,18 +12,14 @@
  * .data, so the linker keeps that section whole: the orphan RTTI base lists of the two first
  * headers lead it, and zeroed copies of weak vtables close it.
  *
- * Not yet matching (two functions; everything else, including the data, matches):
- * - OnCameraUpdate: retail loads m_chara's pointer into a saved register before each
- *   fn_8040B67C call and passes it to fn_8040CDD0 afterwards; GC/2.7 loads it after the call
- *   (also when it is first copied to a local, which the compiler propagates past the call). No
- *   source shape tried reproduces retail's order; probably the newer compiler of
- *   docs/research-notes.md. Wave 39 (probes/Game_Coaster.py) added: a pointer or reference local
- *   read through px, get() or operator->, the same through inline free and member functions (a
- *   second inline level is called out of line, at retail's position but as a call), and
- *   fn_8040B67C declared with non-const parameters. All keep the load after the call.
+ * Not yet matching (one function; everything else, including the data, matches):
  * - Behave: in the running-back case retail keeps the stage record's pointer in r5 and loads
  *   its flag before m_backward; GC/2.7 uses r8 and loads the flag last (4 instructions, register
- *   allocation only).
+ *   allocation only). Wave 41 (probes/Game_Coaster_W41.py, 17 shapes): copy propagation off for
+ *   the function (38 rows), the record or the flag in a local or through inline functions, casts
+ *   of the flag, the callee's parameter as u8, s8, bool, u16 or u32, and the record pointer to
+ *   non-const leave it.
+ * OnCameraUpdate matches since wave 41 with copy propagation off (see there).
  * The zeroed vtables at the end of .data keep placeholder names in symbols.txt while the unit is
  * not linked: with their real names the assembly of this range would resolve the live
  * sp_counted_base vtable to its own zeroed copy. Give them their names (scope:local) when the unit
@@ -758,6 +754,10 @@ void Coaster::UpdateModel() {
     }
 }
 
+/* Copy propagation is off for this function: retail loads m_chara's pointer (the second argument
+ * of fn_8040CDD0, evaluated first) into a saved register before each fn_8040B67C call, where
+ * GC/2.7 with propagation on loads it after the call (wave 41, probes/Game_Coaster_W41.py). */
+#pragma opt_propagation off
 void Coaster::OnCameraUpdate(CameraModeUser::UpdateEventArgs &args) {
     Mtx34f matrix;
 
@@ -789,6 +789,8 @@ void Coaster::OnCameraUpdate(CameraModeUser::UpdateEventArgs &args) {
     AssignVector(up, fn_8040B67C(&matrix, &up));
     fn_8000ACE4(m_camera.get(), &up);
 }
+
+#pragma opt_propagation reset
 
 void Coaster::Hang(boost::shared_ptr<CharInfo> rider) {
     fn_800494F8(&m_seatRotation, &m_seatMatrix);

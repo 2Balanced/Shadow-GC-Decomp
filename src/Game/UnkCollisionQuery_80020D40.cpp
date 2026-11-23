@@ -17,6 +17,8 @@
  * - fn_8001EE0C and fn_800201D4: the code is the game's, but GC/2.7 gives the variables other
  *   callee-saved registers (fn_8001EE0C: the game puts the function's own locals in r31 down and
  *   the arguments below them; fn_800201D4: the game has the shape in r31 and the triangle in r30).
+ *   Wave 41: copy propagation off makes both worse (178 and 268 rows; 213 and 283 with the pragma,
+ *   probes/Game_UnkCollisionQuery_80020D40_W41.py).
  * - Data: the function-local statics are written out here (their constructors and destructors have C names); the game's are real
  *   ones, which puts the pools' storage after AttackIgnorePoolObject's in .bss, and without
  *   that object's destructor record (this unit sees no destructor for it). */

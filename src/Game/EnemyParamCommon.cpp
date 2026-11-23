@@ -5,13 +5,13 @@
  * name inferred from the class. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 17 of 22 functions and all data match. The slots that call out (0x0C to 0x18 and
- * 0x38) match since wave 40 as const members: retail loads m_enemy's base pointer above the store
- * of the link register, which GC/2.7 does only when the object read is const (EnemyParaFunc's
- * slots are const too). Left: the float slots that read past a record's first value (0x24 to 0x2C,
- * 0x34 and 0x68), where retail loads the base pointer into r4 and builds the table's address in
- * r3, and GC/2.7 swaps the two for every source form tried (probes/Game_EnemyParamCommon*.py; the
- * same difference as Player::Behavior::HomingAttack::vf_0x0C and Ground::SetSpeedRange). */
+ * The slots that call out (0x0C to 0x18 and 0x38) match since wave 40 as const members: retail
+ * loads m_enemy's base pointer above the store of the link register, which GC/2.7 does only when
+ * the object read is const (EnemyParaFunc's slots are const too). The float slots that read past a
+ * record's first value (0x24 to 0x2C, 0x34 and 0x68) match since wave 41: retail keeps the enemy
+ * in r4 and builds the table's address in r3, which GC/2.7 does with the enemy in a named copy and
+ * copy propagation off for the slot (probes/Game_EnemyParamCommon_W41.py; every earlier form,
+ * probes/Game_EnemyParamCommon*.py, swapped the two). */
 #include "Game/Enemy.h"
 #include "Game/MotionSequenceModule.h"
 #include <dolphin/types.h>
@@ -222,29 +222,44 @@ float EnemyParamCommon::vfPara_0x20() {
     return lbl_804CC424[m_enemy->m_type].field_0x0;
 }
 
+#pragma opt_propagation off
 float EnemyParamCommon::vfPara_0x24() {
-    return lbl_804CC424[m_enemy->m_type].field_0x4;
+    Enemy *enemy = m_enemy;
+    return lbl_804CC424[enemy->m_type].field_0x4;
 }
+#pragma opt_propagation reset
 
+#pragma opt_propagation off
 float EnemyParamCommon::vfPara_0x28() {
-    return lbl_804CC424[m_enemy->m_type].field_0x8;
+    Enemy *enemy = m_enemy;
+    return lbl_804CC424[enemy->m_type].field_0x8;
 }
+#pragma opt_propagation reset
 
+#pragma opt_propagation off
 float EnemyParamCommon::vfPara_0x2C() {
-    return lbl_804CC424[m_enemy->m_type].field_0xC;
+    Enemy *enemy = m_enemy;
+    return lbl_804CC424[enemy->m_type].field_0xC;
 }
+#pragma opt_propagation reset
 
 float EnemyParamCommon::vfPara_0x30() {
     return lbl_804CC424[m_enemy->m_type].field_0x0;
 }
 
+#pragma opt_propagation off
 float EnemyParamCommon::vfPara_0x34() {
-    return lbl_804CC424[m_enemy->m_type].field_0x14;
+    Enemy *enemy = m_enemy;
+    return lbl_804CC424[enemy->m_type].field_0x14;
 }
+#pragma opt_propagation reset
 
+#pragma opt_propagation off
 float EnemyParamCommon::vfPara_0x68() {
-    return lbl_804CC424[m_enemy->m_type].m_gravity;
+    Enemy *enemy = m_enemy;
+    return lbl_804CC424[enemy->m_type].m_gravity;
 }
+#pragma opt_propagation reset
 
 float EnemyParamCommon::vfPara_0x6C() {
     return s_values[m_enemy->m_type];
