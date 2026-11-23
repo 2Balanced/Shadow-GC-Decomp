@@ -7844,35 +7844,72 @@ Game/EffectLocusRW3.cpp:
 	.rodata     start:0x8051BA60 end:0x8051BB28
 	.data       start:0x8056B028 end:0x8056B090
 
-Game/RwCpp01.cpp:
-	.text       start:0x8043AA7C end:0x8043B810
+Game/gcaxSndMemory.c:
+	.text       start:0x8043AA7C end:0x8043B25C
+	.rodata     start:0x8051BB28 end:0x8051BC08
+
+Game/gcaxSndUtil.c:
+	.text       start:0x8043B25C end:0x8043B810
+	.data       start:0x8056B090 end:0x8056D098
+	.sdata2     start:0x805FAE48 end:0x805FAE70
 
 Game/RwObjectUtil.cpp:
 	.text       start:0x8043B810 end:0x8043B954
 
-Game/RwCpp02.cpp:
-	.text       start:0x8043B954 end:0x8043D4D8
+Game/gcaxSndVoice.c:
+	.text       start:0x8043B954 end:0x8043D7B4
+	.rodata     start:0x8051BC08 end:0x8051BC40
+	.data       start:0x8056D098 end:0x8056D6F8
+	.sdata2     start:0x805FAE70 end:0x805FAF28
 
-Game/RwCpp03.cpp:
-	.text       start:0x8043D4D8 end:0x8043EFF0
+Game/gcaxSndPlayer.c:
+	.text       start:0x8043D7B4 end:0x8043E2B4
+	.sdata2     start:0x805FAF28 end:0x805FAF40
 
-Game/RwCpp04.cpp:
-	.text       start:0x8043EFF0 end:0x80440920
+Game/gcaxSnd.c:
+	.text       start:0x8043E2B4 end:0x8043FB58
+	.rodata     start:0x8051BC40 end:0x8051BCA8
+	.sbss       start:0x805F1400 end:0x805F1410
+	.sdata2     start:0x805FAF40 end:0x805FAF68
 
-Game/RwCpp05.cpp:
-	.text       start:0x80440920 end:0x80442210
+Game/gcaxSndSequence.c:
+	.text       start:0x8043FB58 end:0x80440410
+	.sdata2     start:0x805FAF68 end:0x805FAF88
 
-Game/RwCpp06.cpp:
-	.text       start:0x80442210 end:0x80443A74
+RenderWare/RpCollision.c:
+	.text       start:0x80440410 end:0x80442B98
+	.sbss       start:0x805F1410 end:0x805F1428
+	.sdata2     start:0x805FAF88 end:0x805FAFA0
 
-Game/RwCpp07.cpp:
-	.text       start:0x80443A74 end:0x80444E7C
+RenderWare/RpDMorphGeometry.c:
+	.text       start:0x80442B98 end:0x80443A74
+	.sbss       start:0x805F1428 end:0x805F1430
 
-Game/RwCpp08.cpp:
-	.text       start:0x80444E7C end:0x80446A04
+RenderWare/RpDMorph.c:
+	.text       start:0x80443A74 end:0x804448B8
+	.sdata      start:0x805EDD68 end:0x805EDD70
+	.sbss       start:0x805F1430 end:0x805F1438
+	.sdata2     start:0x805FAFA0 end:0x805FAFB0
 
-Game/RwCpp09.cpp:
-	.text       start:0x80446A04 end:0x804485BC
+RenderWare/RpDMorphGameCube.c:
+	.text       start:0x804448B8 end:0x80445CF4
+	.sbss       start:0x805F1438 end:0x805F1440
+	.sdata2     start:0x805FAFB0 end:0x805FAFE8
+
+RenderWare/RpHAnim.c:
+	.text       start:0x80445CF4 end:0x80447598
+	.bss        start:0x805E1510 end:0x805E1538
+	.sdata      start:0x805EDD70 end:0x805EDD78
+	.sbss       start:0x805F1440 end:0x805F1448
+	.sdata2     start:0x805FAFE8 end:0x805FB050
+
+RenderWare/RpPTank.c:
+	.text       start:0x80447598 end:0x804485BC
+	.rodata     start:0x8051BCA8 end:0x8051BCF0
+	.data       start:0x8056D6F8 end:0x8056D708
+	.sbss       start:0x805F1448 end:0x805F1450
+	.sdata2     start:0x805FB050 end:0x805FB068
+	.sbss2      start:0x805FB550 end:0x805FB558
 
 Game/RwCpp10.cpp:
 	.text       start:0x804485BC end:0x8044A168
