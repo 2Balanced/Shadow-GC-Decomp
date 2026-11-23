@@ -1885,6 +1885,17 @@ config.libs = [
             Object(Matching, "Game/Weight.cpp"),
         ],
     },
+    {
+        # RenderWare 3.7.0.2 and its toolkits/plugins, re-cut from the size-cut Game/RwCpp*.cpp units into
+        # one unit per real source file (wave 41). RenderWare was a C library: its files are C, and each
+        # object names the flag set it was matched with. Middleware, so counted with the SDK.
+        "lib": "RenderWare",
+        "mw_version": "GC/2.7",
+        "cflags": cflags_base,
+        "progress_category": "sdk",
+        "objects": [
+        ],
+    },
 ]
 
 
