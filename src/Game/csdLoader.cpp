@@ -790,8 +790,8 @@ s32 FindMotionIndex(const SScene2 *owner, const char *name) {
     return -1;
 }
 
-void UpdateScene(float frame, SSceneState *state, const SSceneInfo *info, const SMotion *motion, void *texList,
-                 SCast *parent) {
+void UpdateScene(SSceneState *state, const SSceneInfo *info, const SMotion *motion, void *texList, SCast *parent,
+                 float frame) {
     if (frame < 0.0f) {
         frame = 0.0f;
     }

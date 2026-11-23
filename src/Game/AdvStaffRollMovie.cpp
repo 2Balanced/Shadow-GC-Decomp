@@ -51,49 +51,56 @@ static Position s_moviePositions[5] = {{32, 128}, {32, 128}, {336, 128}, {336, 1
 
 /* The context is const in Movie's constructor, Draw and BuildList: retail reads it above stores
  * that GC/2.7 only lets a load through a pointer to const pass (docs/research-notes.md, wave 39).
- * NonMatching (96%, 3 instructions): retail stores the two null pointers from the register that
- * holds movie, already zero; GC/2.7 keeps a separate zero in r5 wherever movie is cleared, also
- * with the stores chained or movie initialised first (probes/Game_AdvStaffRollMovie.py). */
-Movie::Movie(const Context *context) {
-    u32 i;
-    u32 movie;
-    MovieEntry *entry;
-    Page *page;
+ *
+ * The list of a type 4 staff roll, one entry for each run of pages with the same movie (name
+ * inferred). An inline function with its locals declared last first: only so does GC/2.7 store
+ * the constructor's two null pointers from the register that holds movie, already zero, and give
+ * the counter r28 down to the file r24 as retail does (wave 40,
+ * probes/Game_AdvStaffRollMovie_R2.py; written in the constructor a separate zero stays in r5, and
+ * the locals of an inline function take the saved registers in the reverse of their order). */
+inline void BuildFromPages(Movie *self, const Context *context) {
     File *file;
+    Page *page;
+    MovieEntry *entry;
+    u32 movie = 0;
+    u32 i;
+    file = context->m_file;
+    page = file->m_pages;
+    entry = new MovieEntry;
+    entry->m_movie = 6;
+    entry->m_firstPage = 0;
+    entry->m_lastPage = 1000;
+    entry->m_next = 0;
+    self->m_current = entry;
+    self->m_entries = entry;
+    s32 shown = page->m_movie;
+    page++;
+    for (i = 1; i < file->m_pageCount; i++, page++) {
+        if (page->m_movie != shown) {
+            entry->m_lastPage = i - 1;
+            entry->m_next = new MovieEntry;
+            entry = entry->m_next;
+            entry->m_movie = movie;
+            entry->m_firstPage = i;
+            entry->m_lastPage = 1000;
+            entry->m_next = 0;
+            shown = page->m_movie;
+            if (movie < 7) {
+                movie++;
+            }
+        }
+    }
+}
+
+Movie::Movie(const Context *context) {
     m_time = -1.0f;
     m_entries = 0;
     m_current = 0;
     m_brightness = 1.0f;
-    movie = 0;
     if (context->m_type != 4) {
         BuildList(context);
     } else {
-        file = context->m_file;
-        page = file->m_pages;
-        entry = new MovieEntry;
-        entry->m_movie = 6;
-        entry->m_firstPage = 0;
-        entry->m_lastPage = 1000;
-        entry->m_next = 0;
-        m_current = entry;
-        m_entries = entry;
-        s32 shown = page->m_movie;
-        page++;
-        for (i = 1; i < file->m_pageCount; i++, page++) {
-            if (page->m_movie != shown) {
-                entry->m_lastPage = i - 1;
-                entry->m_next = new MovieEntry;
-                entry = entry->m_next;
-                entry->m_movie = movie;
-                entry->m_firstPage = i;
-                entry->m_lastPage = 1000;
-                entry->m_next = 0;
-                shown = page->m_movie;
-                if (movie < 7) {
-                    movie++;
-                }
-            }
-        }
+        BuildFromPages(this, context);
     }
     fn_80036E78(s_movieFiles[m_current->m_movie], 0, 0, 0);
     m_time = fn_80036464(0.0f);
@@ -162,10 +169,9 @@ void Movie::UpdateMovie(Context *context) {
     }
 }
 
-/* NonMatching (99.5%): retail keeps scale in f26 and the outer bottom edge in f27; GC/2.7 swaps
- * them for every declaration order tried, also with the last edges declared where they are
- * first set or scale copied to a local (the float parameter residual of
- * docs/research-notes.md). */
+/* The edges are declared left, top, right, bottom: retail keeps scale in f26 and the outer
+ * bottom edge in f27, which six of the 24 orders of the last four declarations give (wave 40,
+ * probes/Game_AdvStaffRollMovie_R3.py). */
 void Movie::DrawFrame(s32 x, s32 y, float scale) {
     /* The frame around the movie, outer and inner edges, at scale 1. */
     float frameX[4] = {-1.0f, 641.0f, 8.0f, 632.0f};
@@ -196,10 +202,10 @@ void Movie::DrawFrame(s32 x, s32 y, float scale) {
     float innerLeft;
     float outerTop;
     float innerTop;
-    float outerBottom;
     float outerRight;
-    float innerBottom;
     float innerRight;
+    float outerBottom;
+    float innerBottom;
     outerLeft = frameX[0] * scale + x;
     outerTop = frameY[0] * scale + y;
     innerLeft = frameX[2] * scale + x;

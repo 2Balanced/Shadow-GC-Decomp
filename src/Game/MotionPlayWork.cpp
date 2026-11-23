@@ -28,16 +28,19 @@
  * The functions that reach two or more of the .bss work areas address them from one base, which
  * the compiler names "...bss.0"; objdiff reports those at 99% against retail's lbl_805E12E0 although
  * every instruction and relocation target is retail's.
- * Open (17 of 100 functions):
- * - fn_8041DBD4 and fn_8041ED8C (the blended rotation channels), fn_8041BE30, fn_8041A83C,
- *   fn_80418044 and fn_80416198 have retail's instructions with other saved registers; no
- *   declaration order reaches retail's;
- * - fn_8041CC18, fn_8041CD6C, fn_8041CE74, fn_8041CFB0 and fn_8041D31C differ in where the first
- *   load and a parameter copy stand in the prologue (retail loads through the saved copy first);
- * - fn_80415EA4 (mr r30,r28 where GC/2.7 loads the zero again), fn_8041FAD8 and fn_8041FB4C (the
- *   entry array and the list trade r4 and r5);
- * - fn_80420590 keeps its loads after the stores into its local matrix in retail while GC/2.7
- *   hoists them;
+ * Wave 40 matched seven more: fn_80418044 (copy propagation off and the position flag declared
+ * first), fn_8041CC18, fn_8041CD6C, fn_8041CE74 and fn_8041D31C (the model is a pointer to const,
+ * so GC/2.7 schedules its first load early, as retail does), and fn_80415EA4 (its loop stands in
+ * the inline AdvanceLayers) and fn_80420590 (its matrices are pointers to non-const);
+ * probes/Game_MotionPlayWork.py.
+ * Open (10 of 100 functions):
+ * - fn_8041DBD4 and fn_8041ED8C (the blended rotation channels), fn_8041BE30, fn_8041A83C and
+ *   fn_80416198 have retail's instructions with other saved registers; no declaration order
+ *   reaches retail's (for fn_80416198 not with copy propagation off either);
+ * - fn_8041CFB0 (const model: 3 rows left) forms the weight scale's address with the base and the
+ *   scaled index in each other's registers; fn_8041FAD8 and fn_8041FB4C (the entry array and the
+ *   list trade r4 and r5; the entry in one expression, through inline functions, the list in a
+ *   local and const pointers do not change that);
  * - fn_804165D8 and fn_804175C8 still differ in structure. */
 #include <dolphin/types.h>
 #include <cmath>
@@ -295,10 +298,10 @@ void fn_80411548(Vec3f *out, const Vec3f *from, const Vec3f *offset);
 int fn_80411818(u16 motion, int target, float *frames, void *arg, int stopped);
 int fn_80411DEC(u16 motion, int target, float *frames, void *arg, int stopped);
 void fn_80413240(u16 motion);
-void fn_8041CC18(MotionModel *model, int layer);
-int fn_8041CFB0(MotionModel *model, int index, u32 key, float scale, float offset);
+void fn_8041CC18(const MotionModel *model, int layer);
+int fn_8041CFB0(const MotionModel *model, int index, u32 key, float scale, float offset);
 int fn_8041D1A0(MotionModel *model, u32 key, void (*callback)(MotionCallbackArgs *args), u32 arg);
-MotionNode *fn_8041D31C(MotionModel *model, u32 key);
+MotionNode *fn_8041D31C(const MotionModel *model, u32 key);
 void fn_8041AB3C(MotionPlayWork *work, int index);
 int fn_804125F4(MotionFrames *frames, u16 motion);
 u32 fn_804123DC(u16 motion);
@@ -351,9 +354,9 @@ void fn_8040BAC4(Mtx34f *m, const Mtx34f *by);
 void fn_8040BCD4(Mtx34f *m);
 void fn_804113E8(Mtx34f *m, const Mtx34f *from);
 void fn_8041157C(Vec3f *out, const Mtx34f *m, const Vec3f *v);
-void fn_8041CD6C(MotionModel *model, int layer);
+void fn_8041CD6C(const MotionModel *model, int layer);
 void fn_804114D0(Vec3f *v, int flags);
-void fn_80420590(Mtx34f *out, const Mtx34f *from, const Mtx34f *to, float t);
+void fn_80420590(Mtx34f *out, Mtx34f *from, Mtx34f *to, float t);
 void fn_804186A0(MotionPlayWork *work, MotionModel *model);
 }
 
@@ -379,7 +382,7 @@ void fn_8041AED0(MotionPlayWork *work, int slot);
 u32 fn_8041AD94(MotionFrames *frames, MotionFrames *request, float minFrame, float maxFrame);
 void fn_80419D5C(MotionPlayWork *work, int index);
 void fn_804198E4(MotionPlayWork *work, int index);
-void fn_8041CE74(MotionModel *model, int layer);
+void fn_8041CE74(const MotionModel *model, int layer);
 void fn_804194B8(MotionModel *model);
 void fn_8041D580(void *data);
 void fn_8041D89C(void *data);
@@ -677,7 +680,9 @@ extern "C" void fn_8042062C(Mtx34f *out, const Mtx34f *from, const Mtx34f *to, f
 }
 
 /* Blends two matrices: rotation by fn_8042062C, translation linearly. */
-extern "C" void fn_80420590(Mtx34f *out, const Mtx34f *from, const Mtx34f *to, float t) {
+/* The matrices are pointers to non-const: GC/2.7 then leaves their loads behind the stores into
+ * the local matrix, as retail has them (wave 40). */
+extern "C" void fn_80420590(Mtx34f *out, Mtx34f *from, Mtx34f *to, float t) {
     Mtx34f matrix;
 
     fn_8042062C(&matrix, from, to, t);
@@ -1930,7 +1935,7 @@ extern "C" MotionModel *fn_8041D448(MotionModel *model, u32 key) {
 }
 
 /* The node of the model frame with key. */
-extern "C" MotionNode *fn_8041D31C(MotionModel *model, u32 key) {
+extern "C" MotionNode *fn_8041D31C(const MotionModel *model, u32 key) {
     MotionNode *found;
 
     if (key == model->m_header->m_key) {
@@ -1963,7 +1968,7 @@ extern "C" int fn_8041D1A0(MotionModel *model, u32 key, void (*callback)(MotionC
 }
 
 /* Requests a weight scale for a layer in the model frame with key. */
-extern "C" int fn_8041CFB0(MotionModel *model, int index, u32 key, float scale, float offset) {
+extern "C" int fn_8041CFB0(const MotionModel *model, int index, u32 key, float scale, float offset) {
     MotionWeightScale *weightScale;
 
     if (key == model->m_header->m_key) {
@@ -1984,7 +1989,7 @@ extern "C" int fn_8041CFB0(MotionModel *model, int index, u32 key, float scale, 
 
 /* Applies the pending weight scale of a layer in a model frame and the frames below and after
  * it. */
-extern "C" void fn_8041CE74(MotionModel *model, int index) {
+extern "C" void fn_8041CE74(const MotionModel *model, int index) {
     MotionWeightScale *scales = model->m_weightScales;
 
     if (scales[index].m_pending) {
@@ -2001,7 +2006,7 @@ extern "C" void fn_8041CE74(MotionModel *model, int index) {
 }
 
 /* Drops the pending weight scale of a layer in a model frame and the frames below and after it. */
-extern "C" void fn_8041CD6C(MotionModel *model, int index) {
+extern "C" void fn_8041CD6C(const MotionModel *model, int index) {
     MotionWeightScale *scale = &model->m_weightScales[index];
 
     scale->m_pending = 0;
@@ -2016,7 +2021,7 @@ extern "C" void fn_8041CD6C(MotionModel *model, int index) {
 }
 
 /* Resets the weight scale of a layer in a model frame and all the frames below and after it. */
-extern "C" void fn_8041CC18(MotionModel *model, int index) {
+extern "C" void fn_8041CC18(const MotionModel *model, int index) {
     MotionWeightScale *scales = model->m_weightScales;
     MotionModel *child = model->m_child;
 
@@ -4105,10 +4110,13 @@ extern "C" void fn_804186A0(MotionPlayWork *work, MotionModel *model) {
     }
 }
 
-/* Builds the matrices of the layers of a play work and blends them, then walks the model. */
+/* Builds the matrices of the layers of a play work and blends them, then walks the model. Copy
+ * propagation is off for this function, and the two flags are declared position first: then
+ * GC/2.7 gives the locals retail's saved registers (wave 40, probes/Game_MotionPlayWork.py). */
+#pragma opt_propagation off
 extern "C" void fn_80418044(MotionPlayWork *work) {
-    int fixRotation;
     int fixPosition;
+    int fixRotation;
     int i;
     int index;
     MotionLayer *layer;
@@ -4259,6 +4267,7 @@ extern "C" void fn_80418044(MotionPlayWork *work) {
     }
     fn_804186A0(work, work->m_model);
 }
+#pragma opt_propagation reset
 
 /* Applies the layers of a play work to their matrices and moves the root. */
 extern "C" void fn_804175C8(MotionPlayWork *work) {
@@ -5334,30 +5343,34 @@ extern "C" void fn_80415F98(MotionPlayWork *work, int slot, u32 key, float scale
     }
 }
 
-/* Updates a play work. */
-extern "C" void fn_80415EA4(MotionPlayWork *work) {
-    MotionLayer *layer;
-    int i;
-    int index;
-
-    if (!work) {
-        return;
-    }
-    fn_8040C204(lbl_805F13A8);
-    fn_8040B6F8(TopMatrix());
-    work->m_flags &= ~0xFF0000;
-    for (i = 0; i < work->m_layerCount; i++) {
-        index = work->m_order[i];
+/* Clears the per-frame flags of the layers of a play work and advances them in blend order
+ * (name inferred). An inline function with its locals in the loop: GC/2.7 then copies the
+ * zeroed counter into the loop's offset (mr) as retail does, where the loop written in
+ * fn_80415EA4 itself loads the zero again (wave 40, probes/Game_MotionPlayWork.py). */
+inline void AdvanceLayers(MotionPlayWork *work) {
+    for (int i = 0; i < work->m_layerCount; i++) {
+        int index = work->m_order[i];
         if (index == -1) {
             break;
         }
-        layer = &work->m_layers[index];
+        MotionLayer *layer = &work->m_layers[index];
         layer->m_flags &= 0xFFFF;
         fn_8041AB3C(work, index);
         if (layer->m_flags & 4) {
             layer->m_lastFrame = layer->m_frames.m_frame;
         }
     }
+}
+
+/* Updates a play work. */
+extern "C" void fn_80415EA4(MotionPlayWork *work) {
+    if (!work) {
+        return;
+    }
+    fn_8040C204(lbl_805F13A8);
+    fn_8040B6F8(TopMatrix());
+    work->m_flags &= ~0xFF0000;
+    AdvanceLayers(work);
     fn_80419F5C(work);
     fn_804192EC(work);
     fn_80418A4C(work);

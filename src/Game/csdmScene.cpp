@@ -13,11 +13,17 @@
  * them); they stand in for library code that instantiated the helpers the game keeps in this
  * order.
  *
- * NonMatching: 193 of 195 functions match, and .text has the game's layout. Update (0x803669B8)
- * schedules two loads of UpdateScene's arguments the other way round, and IsParentVisible
- * (0x8036635C) indexes the layers with other registers. In .data, the space the linker leaves for
- * the weak RCObject<CNode> vtables (whose copies the game keeps elsewhere) comes after a different
- * vtable than in the game. */
+ * Matching since wave 40. IsParentVisible (0x8036635C) forms the layer's address (base + offset)
+ * and reads its casts at +4 only with copy propagation off for it (see there). Three stand-ins
+ * that the linker drops shape the data: UnusedAllocMessage pools the node allocator's message
+ * ahead of the tree's insert message in .rodata, UnusedNodeCopy (defined last) has the compiler
+ * emit the weak RCObject<CNode> vtables after CFontList's in .data, where retail leaves their
+ * space, and Game/TCsdSystem.cpp defines the weak CFunctorBase vtable of RCPtr<unsigned char>
+ * ahead of this unit, so that this unit's copy is the zero-filled space retail has (its contents
+ * would pull in the functor's destructor). Game/AdvSynopsis.cpp's stand-ins set an RCPtr<CNode>
+ * through Set, so that its weak copy of operator=(CNode *) does not displace this unit's. Update
+ * (0x803669B8) matches since wave 40: UpdateScene takes the frame as its last parameter, so its
+ * load is the last before the call. */
 #define CSD_OBJECT_LAYER
 #define CSD_RCPTR_DEALLOC_CTOR
 #define MSL_PAIR_CONVERTING_CONSTRUCTOR
@@ -40,6 +46,13 @@ namespace CSD {
 
 /* The time a frame takes when the scene is advanced without one. */
 static f32 s_frameTime = 0.016666f;
+
+/* (Not original; never called, the linker drops it.) Its message is the node allocator's, which
+ * retail pools ahead of the tree's insert message in .rodata; GC/2.7 otherwise pools the two in
+ * the order the template members are generated, insert_node first (wave 40). */
+void UnusedAllocMessage() {
+    std::__msl_error("Memory allocation failure");
+}
 
 template <>
 void CObserver<CScene>::OnSubjectDestroyed(CScene *subject) {
@@ -259,7 +272,7 @@ void CScene::Update(float dt) {
     for (node = m_nodes.begin(); node != m_nodes.end(); ++node) {
         (*node).second->Update();
     }
-    UpdateScene(m_frame, m_palette->m_resource, m_resource, motion, fontList, parent);
+    UpdateScene(m_palette->m_resource, m_resource, motion, fontList, parent, m_frame);
     Notify(&CSceneObserver::OnPostUpdate, this);
     FunctorList::iterator post = m_onPostUpdate.begin();
     while (post != m_onPostUpdate.end()) {
@@ -385,17 +398,23 @@ extern "C" void fn_803663C0(CScene *scene, const RCPtr<CNode> &parent) {
     }
 }
 
-/* Whether a layer's root cast needs its own companion matrices. */
+/* Whether a layer's root cast needs its own companion matrices. Copy propagation is off for
+ * this function: retail forms the layer's address (base + offset) and reads its casts at +4,
+ * where GC/2.7 with propagation on folds the layer local back and the +4 into an indexed load
+ * (wave 40, probes/Game_csdmScene_R3.py); the state is declared before the info. */
+#pragma opt_propagation off
 s32 CScene::IsParentVisible() {
-    SSceneInfo *info = m_resource;
     SSceneState *state = m_palette->m_resource;
+    SSceneInfo *info = m_resource;
     for (s32 i = 0; i < state->m_layerCount; i++) {
-        if (state->m_layers[i].m_casts[info->m_layers[i].m_root].m_matrix.m_scale != 0) {
+        SLayer *layer = &state->m_layers[i];
+        if (layer->m_casts[info->m_layers[i].m_root].m_matrix.m_scale != 0) {
             return 1;
         }
     }
     return 0;
 }
+#pragma opt_propagation reset
 
 void CScene::SetPattern(CMotionPattern *pattern) {
     if (m_pattern != 0) {
@@ -575,6 +594,14 @@ extern "C" float fn_80364430(CScene *scene, const char *name) {
 /* The scene, for its observers. */
 CScene *CScene::GetSubject() {
     return this;
+}
+
+/* (Not original; never called, the linker drops it.) Defined last, so that the compiler emits the
+ * weak RCObject<CNode> vtables, whose space retail leaves in .data, after CFontList's rather than
+ * where CScene::Unused needs them (wave 40). Its callees are the ones the game keeps at
+ * 0x8003DFB0-0x8003E388, so this unit's .text keeps its layout. */
+void UnusedNodeCopy(const RCPtr<CNode> &node) {
+    RCPtr<CNode> copy(node);
 }
 
 } // namespace CSD

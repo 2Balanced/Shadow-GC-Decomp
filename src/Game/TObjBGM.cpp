@@ -6,9 +6,14 @@
  * marked "(name inferred)" are not original. Definitions are in reverse address order (deferred
  * inlining emits functions last-defined first).
  *
- * NonMatching: fn_801D78C4 (96%), fn_801D7A50 (99%) and fn_801D7CB8 (99%) differ only in which
- * registers hold the loop counter and the player pointers; every other function and all data
- * match. */
+ * NonMatching: fn_801D78C4 differs only in which registers hold the priority; every other
+ * function and all data match. fn_801D7A50 and fn_801D7CB8 match since wave 40, with the slots
+ * read through the inline GetSerif and GetBgm (fn_801D7CB8 also with one counter for both loops),
+ * which also took fn_801D78C4 from 19 rows to 12 (probes/Game_TObjBGM_R3.py). In fn_801D78C4
+ * retail keeps the sign-extended priority in one register for both CanInterrupt calls where
+ * GC/2.7 keeps the loaded byte and extends it twice (an s8 or int local, declared in the loop or
+ * at the top, with or without copy propagation, int, const or reference parameters for
+ * CanInterrupt, an inline getter and a split declaration do not change that; wave 40). */
 #include "Game/Task.h"
 #include <dolphin/types.h>
 #include "size_assert.h"
@@ -190,6 +195,18 @@ static UnkBgmLoopPoint s_loopPoints[] = {
 static TObjBGM *s_bgm[2] = {0, 0};
 static void *s_bgmWork[2] = {0, 0};
 static TObjSERIF *s_serif[2] = {0, 0};
+
+/* The voice object in slot i (name inferred). Read through this inline function, the slot is a
+ * compiler temporary, which GC/2.7 colours apart from the named locals as retail does
+ * (fn_801D7A50, fn_801D78C4, fn_801D7CB8; wave 40, probes/Game_TObjBGM_R3.py). */
+inline TObjSERIF *GetSerif(int i) {
+    return s_serif[i];
+}
+
+/* The music object in slot i (name inferred; see GetSerif). */
+inline TObjBGM *GetBgm(int i) {
+    return s_bgm[i];
+}
 static void *s_serifWork[2] = {0, 0};
 /* The voice archive loaded, 6 for none (name inferred). */
 static int s_voiceSet = 6;
@@ -399,8 +416,10 @@ extern "C" void fn_801D7DA0(void) {
 /* Pauses the music and the voices (name inferred). */
 extern "C" void fn_801D7CB8(void) {
     TObjBGM *bgm;
-    for (u8 i = 0; i < 2; i++) {
-        bgm = s_bgm[i];
+    TObjSERIF *serif;
+    u8 i;
+    for (i = 0; i < 2; i++) {
+        bgm = GetBgm(i);
         if (bgm != 0) {
             switch (bgm->m_state) {
             case 2:
@@ -417,9 +436,8 @@ extern "C" void fn_801D7CB8(void) {
             }
         }
     }
-    TObjSERIF *serif;
-    for (u8 i = 0; i < 2; i++) {
-        serif = s_serif[i];
+    for (i = 0; i < 2; i++) {
+        serif = GetSerif(i);
         if (serif != 0) {
             switch (serif->m_state) {
             case 1:
@@ -509,7 +527,7 @@ inline bool CanInterrupt(s8 current, s8 incoming) {
 extern "C" int fn_801D78C4(int owner, s8 priority) {
     if (owner >= 0) {
         for (int i = 0; i < 2; i++) {
-            TObjSERIF *serif = s_serif[i];
+            TObjSERIF *serif = GetSerif(i);
             if (serif != 0 && serif->m_owner == owner) {
                 if (CanInterrupt(serif->m_priority, priority)) {
                     return i;
@@ -543,7 +561,7 @@ extern "C" int fn_801D7A50(int voice, int priority, int owner) {
     int index = fn_801D78C4(owner, priority);
     if (index >= 0) {
         s_serif[index]->Stop();
-        serif = s_serif[index];
+        serif = GetSerif(index);
         serif->m_voice = voice;
         serif->m_priority = priority;
         serif->m_owner = owner;

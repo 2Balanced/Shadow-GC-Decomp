@@ -10,14 +10,12 @@
  * name from the namespace. Names marked "(name inferred)" are not original. Definitions are in
  * reverse address order (deferred inlining emits functions last-defined first).
  *
- * Not yet matching (64 of 66 functions match; the data matches):
- * - OnCommand: GC/2.7 hoists the address of the command's target (command + 0x14 / 0x1C) out of
- *   both ring loops into a sixth saved register; the original computes it inside the loops. No
- *   source shape tried (references, pointer casts, &&, continue, a local) stops the hoist, so the
- *   function is 8 bytes longer.
- * - LayoutRings: same code, but the "liner" step lives in f31 instead of the original's f30.
- * Both look like the code-generation differences of the original compiler described in
- * docs/research-notes.md. */
+ * Not yet matching (65 of 66 functions match; the data matches): LayoutRings is the same code,
+ * but the "liner" step lives in f31 instead of the original's f30. About twenty shapes were
+ * tried in wave 40 (probes/Game_RegularRing_R2.py: a second float declared before the step, the
+ * length or the count in locals, the negated step in a local, floats shared between the cases at
+ * function level); it looks like the register choice of the original compiler described in
+ * docs/research-notes.md. OnCommand matches with loop-invariant code motion off (see there). */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <cmath>
@@ -692,6 +690,11 @@ void Ring::Draw(RednerDrawArgs &args) {
     }
 }
 
+/* Loop-invariant code motion is off for this function: retail forms the address of the
+ * command's target (command + 0x14 / 0x1C) inside both ring loops, and GC/2.7 otherwise moves it
+ * out of them into a sixth saved register (8 bytes more); no source shape stops that (wave 40,
+ * probes/Game_RegularRing.py). */
+#pragma opt_loop_invariants off
 void Ring::OnCommand(CharCommand &command) {
     switch (command.TypeId()) {
     case 0x14: /* VacuumCommand */
@@ -748,6 +751,7 @@ void Ring::OnCommand(CharCommand &command) {
         break;
     }
 }
+#pragma opt_loop_invariants reset
 
 void Ring::EnableTargets() {
     for (int i = 0; i < m_count; i++) {

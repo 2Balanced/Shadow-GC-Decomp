@@ -3,10 +3,16 @@
  * (EnemyWalkerAI's states), cautions (EnemyBaseAI's state) and fires its weapon (WeaponAttack).
  * File name inferred from the class. Names marked "(name inferred)" are not original. Definitions
  * are in reverse address order (deferred inlining emits functions last-defined first). The
- * records the walker states register their objects with sit after a block of unused ones in
- * retail's .bss, which GC/2.7 does not reproduce (see Game/EggPawnAI.cpp). */
+ * unit's .bss is kept whole: the records its states register sit among six unknown ones, as in
+ * Game/EggPawnAI.cpp, but with three of them ahead of EnemyBaseAI's Caution state. The AI's
+ * destructor is defined here, behind vfAI_0x38 (retail has it there, not at the head of the unit
+ * where a weak copy would go). */
 /* See EnemyBaseAI (Game/EnemyAI.h). */
 #define ENEMY_BASE_AI_STATES
+/* The six unknown statics of the unit's .bss (see Game/EnemyWalkerAI.h). */
+#define ENEMY_WALKER_AI_UNKNOWN_STATICS
+/* Three of them ahead of EnemyBaseAI's Caution state (see Game/EnemyAI.h). */
+#define ENEMY_BASE_AI_UNKNOWN_STATICS
 
 #include "Game/GunRobot.h"
 #include "Game/EnemyAIState.h"
@@ -52,6 +58,8 @@ void EnemyAIState_GunRobotAI_WeaponAttack::SetOwner(EnemyBaseAI *ai) {
 GunRobotAI::GunRobotAI() {
     m_body = dynamic_cast<GunRobot *>(m_enemy->m_disp);
 }
+
+GunRobotAI::~GunRobotAI() {}
 
 void GunRobotAI::vfAI_0x38() {
     switch (m_body->GetAppearType()) {

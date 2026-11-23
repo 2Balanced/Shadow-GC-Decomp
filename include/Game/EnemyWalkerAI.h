@@ -161,6 +161,8 @@ class EnemyWalkerAI : public EnemyBaseAI {
         static UnkWalkerAIStatic s_state;
         return &s_state;
     }
+#ifndef ENEMY_BASE_AI_UNKNOWN_STATICS
+    /* With ENEMY_BASE_AI_UNKNOWN_STATICS three of the five stand in EnemyBaseAI. */
     static void *GetUnknownStatic2() {
         static UnkWalkerAIStatic s_state;
         return &s_state;
@@ -173,6 +175,7 @@ class EnemyWalkerAI : public EnemyBaseAI {
         static UnkWalkerAIStatic s_state;
         return &s_state;
     }
+#endif
 #endif
 #endif
 

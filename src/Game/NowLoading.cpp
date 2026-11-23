@@ -3,10 +3,14 @@
  * not original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: NowLoadingScreen::Load (96.9%) has the register swap around sprintf of
- * Game/ResultTask.cpp and Game/Mission.cpp (retail keeps the game state's address in r6), and
- * retail places the RTTI name "Task" after the float constants in .sdata2, where GC/2.7 puts it
- * first. Everything else matches. */
+ * NonMatching: every function matches (NowLoadingScreen::Load since wave 40, with the language
+ * in a local and copy propagation off; see there), but the data does not. Retail places the RTTI
+ * name "Task" after the float constants in .sdata2, where GC/2.7 puts it first: the name is made
+ * when the vtables are (at parse time), while the constants of Update, Load and the screen's
+ * constructor are made as the functions are generated, so a stand-in function at either end of
+ * the file does not move them ahead of it (wave 40); Game/Parachute.cpp and Game/VacuumObject.cpp get a constant
+ * ahead of "Task" with a named const, which here would not reach the int-to-float constant.
+ * .rodata also leaves 7 bytes after s_projectName where ours leaves 3. */
 #include "Game/NowLoading.h"
 
 #include <stdio.h>
@@ -333,15 +337,21 @@ NowLoadingScreen::NowLoadingScreen() {
 }
 
 /* NonMatching (96.9%): see the note at the top of the file. */
+/* Copy propagation is off for this function: retail keeps the game state's address in r6 (the
+ * register the suffix is loaded into), which GC/2.7 gives only to a named language local that
+ * propagation does not fold back (wave 40, probes/Game_NowLoading.py rerun with the pragma). */
+#pragma opt_propagation off
 bool NowLoadingScreen::Load() {
     char path[0x20];
-    sprintf(path, "%s%s", s_projectName, lbl_8051D528[lbl_8057D6A0.m_language]);
+    s32 language = lbl_8057D6A0.m_language;
+    sprintf(path, "%s%s", s_projectName, lbl_8051D528[language]);
     m_loaded = fn_8036E114(&m_project, fn_800423B8(fn_8003F8D4(), path, 0)) != 0;
     if (m_loaded) {
         fn_8036D598(&m_project, 0);
     }
     return m_loaded;
 }
+#pragma opt_propagation reset
 
 bool NowLoadingScreen::Update() {
     if (m_loaded) {

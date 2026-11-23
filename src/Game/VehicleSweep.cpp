@@ -8,10 +8,13 @@
  * functions last-defined first).
  *
  * NonMatching: every function but the sweep (fn_801BFFD8) matches, and all data matches. The sweep
- * has retail's instructions and stack layout; it differs only in register allocation: retail keeps
- * &filter in the mask parameter's register across the loop and gives the loop's locals the high
- * saved registers, which GC/2.7 does not (the blocker of Game/VehicleColliMove.cpp's Sweep and
- * Settle; about ten source shapes tried). */
+ * has retail's instructions and stack layout; it differs only in register allocation. Declaring
+ * its scalar locals at the top in the order self, world, hits, previous, hit, again gives retail's
+ * r29-r31 to again, hit and previous and the parameters retail's r23-r28 (70 rows down to 21; the
+ * best of all 720 orders, with and without copy propagation; wave 40, probes/Game_VehicleSweep.py).
+ * What is left are r17-r21: retail gives world r21, the hits r20, the loop's node r19 and object
+ * r18, and &filter the mask parameter's r17, which GC/2.7 hands out the other way round (the
+ * blocker of Game/VehicleColliMove.cpp's Sweep and Settle). */
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/CharaColliBaseCharInfo.h"
@@ -210,8 +213,14 @@ static bool AcceptHit(UnkCollisionCandidate_80021934 *candidate) {
  * last touched. Whether it touched anything. */
 extern "C" bool fn_801BFFD8(TVehicleBase *vehicle, u32 mask, Vec3f *position, Vec3f *velocity, bool slide,
                             boost::weak_ptr<CharInfo> *chara, int count, float radius) {
-    void *world = fn_80020D40();
-    CollisionResultList *previous = 0;
+    const UnkSweepFilter_801BFF9C *self;
+    void *world;
+    CollisionResultList *hits;
+    CollisionResultList *previous;
+    bool hit;
+    bool again;
+    world = fn_80020D40();
+    previous = 0;
     UnkSphere_80021C04 sphere;
     fn_80021C04(&sphere, position, radius);
     Vec3f move;
@@ -222,10 +231,8 @@ extern "C" bool fn_801BFFD8(TVehicleBase *vehicle, u32 mask, Vec3f *position, Ve
         filter.m_body = fn_801B6350(vehicle);
         filter.m_other = fn_801B6380(vehicle);
     }
-    bool again;
-    CollisionResultList *hits;
-    bool hit = false;
-    const UnkSweepFilter_801BFF9C *self = &filter;
+    hit = false;
+    self = &filter;
     do {
         again = false;
         Vec3f start;

@@ -5,8 +5,10 @@
  * it (RejectHoming), jumps back off when hit while homing (HomingJump) and falls back to the ground
  * (Falling). File name inferred from the class. Names marked "(name inferred)" are not original.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
- * first). NonMatching (41 of 43 functions; every data section matches): the two turn helpers'
- * float registers (see TurnYawToward). */
+ * first). Matching since wave 40: the two turn helpers (fn_8029EB5C and fn_8029E488, the second
+ * inline, as retail emits it behind its first caller) keep their rate in a local declared first,
+ * with copy propagation off for them; the state getters stand in reverse order and s_jumpMotions
+ * behind the states' constructors, which gives retail's .sbss, .bss and .rodata. */
 /* See EnemyBaseAI (Game/EnemyAI.h). */
 #define ENEMY_BASE_AI_STATES
 
@@ -136,19 +138,11 @@ class EnemyAIState_EggShadowAndroidAI_MissileAttack : public TEnemyAIState {
 };
 
 /* The states' objects (names inferred). They are inline, and the AI switches to them through
- * EnemyBaseAI::ChangeState, so they are called out of line (as in GunBigfootAI.cpp). */
-static inline TEnemyAIState *GetFallingState() {
-    static EnemyAIState_EggShadowAndroidAI_Falling s_state;
-    return &s_state;
-}
-
-static inline TEnemyAIState *GetHomingJumpState() {
-    static EnemyAIState_EggShadowAndroidAI_HomingJump s_state;
-    return &s_state;
-}
-
-static inline TEnemyAIState *GetRejectHomingState() {
-    static EnemyAIState_EggShadowAndroidAI_RejectHoming s_state;
+ * EnemyBaseAI::ChangeState, so they are called out of line (as in GunBigfootAI.cpp). Defined in
+ * the reverse of their address order: their statics come out in .sbss and .bss in definition
+ * order, and retail has them the other way round (wave 40). */
+static inline TEnemyAIState *GetMissileAttackState() {
+    static EnemyAIState_EggShadowAndroidAI_MissileAttack s_state;
     return &s_state;
 }
 
@@ -157,13 +151,20 @@ static inline TEnemyAIState *GetJumpState() {
     return &s_state;
 }
 
-static inline TEnemyAIState *GetMissileAttackState() {
-    static EnemyAIState_EggShadowAndroidAI_MissileAttack s_state;
+static inline TEnemyAIState *GetRejectHomingState() {
+    static EnemyAIState_EggShadowAndroidAI_RejectHoming s_state;
     return &s_state;
 }
 
-/* The motions of the jump (picked at random). */
-static const s32 s_jumpMotions[] = {7, 8, 9};
+static inline TEnemyAIState *GetHomingJumpState() {
+    static EnemyAIState_EggShadowAndroidAI_HomingJump s_state;
+    return &s_state;
+}
+
+static inline TEnemyAIState *GetFallingState() {
+    static EnemyAIState_EggShadowAndroidAI_Falling s_state;
+    return &s_state;
+}
 
 EnemyAIState_EggShadowAndroidAI_MissileAttack::EnemyAIState_EggShadowAndroidAI_MissileAttack()
     : m_ai(0) {}
@@ -280,24 +281,30 @@ void EnemyAIState_EggShadowAndroidAI_Jump::Enter() {
 }
 
 /* Turns self's yaw toward the point target at rate (or its own turn rate when rate is negative); whether it
- * faces it. Game/EggLastMechAIState.cpp calls it too. NonMatching: retail gives rate f31 and the yaw f30; GC/2.7 gives the
- * parameter the last register (see EggShadowAndroid::vfDisp_0x64 in Game/EggShadowAndroid.cpp). */
+ * faces it. Game/EggLastMechAIState.cpp calls it too. Retail gives the rate f31 and the yaw f30: the rate
+ * is a local copy declared first, and copy propagation is off for the function, so that GC/2.7 does not
+ * merge the copy back into the parameter, which it gives the last register (wave 40,
+ * probes/Game_EggShadowAndroidAI.py rerun with the pragma; see EggShadowAndroid::vfDisp_0x64 in
+ * Game/EggShadowAndroid.cpp for the same shape). */
+#pragma opt_propagation off
 extern "C" bool fn_8029EB5C(EnemyCharInfo *self, const Vec3f *target, float rate) {
+    float turn = rate;
     Vec3f direction;
     Vec3f offset;
     fn_800091EC(&direction,
                 fn_800091EC(&offset, &(const Vec3f &)((VectorSubtractFn)fn_8040CD74)(
                                          target, &self->m_position)));
     float yaw = fn_80016260(-direction.x, -direction.z);
-    if (rate < 0.0f) {
-        rate = self->field_0xB4;
+    if (turn < 0.0f) {
+        turn = self->field_0xB4;
     }
-    self->m_rotation.y = TurnAngleToward(yaw, self->m_rotation.y, rate * fn_8019FFE0(self));
+    self->m_rotation.y = TurnAngleToward(yaw, self->m_rotation.y, turn * fn_8019FFE0(self));
     if (fn_801C455C(yaw, self->m_rotation.y)) {
         return true;
     }
     return false;
 }
+#pragma opt_propagation reset
 
 void EnemyAIState_EggShadowAndroidAI_Jump::Update() {
     fn_8029EB5C(static_cast<EnemyCharInfo *>(static_cast<CharInfo *>(
@@ -362,10 +369,13 @@ void EnemyAIState_EggShadowAndroidAI_RejectHoming::Enter() {
 }
 
 /* Turns self toward the point target at rate (or its own turn rate when rate is negative), its pitch at most
- * its pitch limit; whether it faces it (name inferred). NonMatching: retail gives rate f31, the
- * pitch f30 and the yaw f29 (GC/2.7: the parameter last, as in TurnYawToward), and returns the
- * second test through r0. */
-extern "C" bool fn_8029E488(EnemyCharInfo *self, const Vec3f *target, float rate) {
+ * its pitch limit; whether it faces it (name inferred). As in fn_8029EB5C, the rate is a local copy
+ * declared first and copy propagation is off for the function, which gives retail's f31 to the rate,
+ * f30 to the pitch and f29 to the yaw; the second test is kept in an int, which retail turns back into
+ * a bool through r0 (wave 40, probes/Game_EggShadowAndroidAI_R3.py). */
+#pragma opt_propagation off
+extern "C" inline bool fn_8029E488(EnemyCharInfo *self, const Vec3f *target, float rate) {
+    float turn = rate;
     Vec3f direction;
     Vec3f offset;
     fn_800091EC(&direction,
@@ -374,20 +384,25 @@ extern "C" bool fn_8029E488(EnemyCharInfo *self, const Vec3f *target, float rate
     Vec2f angles = fn_8040F760(&direction);
     float pitch = angles.x;
     float yaw = angles.y;
-    if (rate < 0.0f) {
-        rate = self->field_0xB4;
+    if (turn < 0.0f) {
+        turn = self->field_0xB4;
     }
-    rate *= fn_8019FFE0(self);
+    turn *= fn_8019FFE0(self);
     if (pitch > self->field_0xB8) {
         pitch = self->field_0xB8;
     } else if (pitch < -self->field_0xB8) {
         pitch = -self->field_0xB8;
     }
-    self->m_rotation.y = TurnAngleToward(yaw, self->m_rotation.y, rate);
-    self->m_rotation.x = TurnAngleToward(pitch, self->m_rotation.x, rate);
-    self->m_rotation.z = TurnAngleToward(0.0f, self->m_rotation.z, rate);
-    return fn_801C455C(yaw, self->m_rotation.y) && fn_801C455C(pitch, self->m_rotation.x);
+    self->m_rotation.y = TurnAngleToward(yaw, self->m_rotation.y, turn);
+    self->m_rotation.x = TurnAngleToward(pitch, self->m_rotation.x, turn);
+    self->m_rotation.z = TurnAngleToward(0.0f, self->m_rotation.z, turn);
+    if (!fn_801C455C(yaw, self->m_rotation.y)) {
+        return false;
+    }
+    int facing = fn_801C455C(pitch, self->m_rotation.x);
+    return facing;
 }
+#pragma opt_propagation reset
 
 void EnemyAIState_EggShadowAndroidAI_RejectHoming::Update() {
     if (m_ai->m_body->WasHit()) {
@@ -432,6 +447,10 @@ void EnemyAIState_EggShadowAndroidAI_HomingJump::Enter() {
     fn_800091D0(fn_8028F324(m_ai->m_enemy), &Vec3f(0.0f, 100.0f, 0.0f));
     m_ai->m_step = 0;
 }
+
+/* The motions of the jump (picked at random). Defined here, after the states' constructors: retail
+ * keeps it behind their RTTI names in .rodata (wave 40). */
+static const s32 s_jumpMotions[] = {7, 8, 9};
 
 void EnemyAIState_EggShadowAndroidAI_HomingJump::Update() {
     if (!m_ai->IsTimeUp()) {

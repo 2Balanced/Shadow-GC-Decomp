@@ -5,12 +5,9 @@
  * of hits or its range. Names marked "(name inferred)" are not original. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * Not yet matching: in HitCallback::Call (0x80220E88, a weak copy emitted here) the original loads
- * the function's manager after saving r31, while GC/2.7 schedules that load above the save (the
- * scheduling difference described in docs/research-notes.md for ScatteringRing). Everything else,
- * including the data, matches. #pragma scheduling off around Call (wave 39) gives retail's prologue
- * but then leaves the epilogue's two loads unscheduled, which retail does schedule, so it only
- * moves the two rows. */
+ * HitCallback::Call (0x80220E88, a weak copy emitted here) is a non-const member: retail loads the
+ * function's manager after saving r31, and GC/2.7 keeps a load below the prologue's stores only
+ * when the object it reads is not const (wave 40). */
 /* std::runtime_error with the library's size (see <stdexcept>). */
 #define MSL_RUNTIME_ERROR_STRING
 #include <stdexcept>

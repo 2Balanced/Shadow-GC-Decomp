@@ -913,7 +913,10 @@ void PoolSynopsisVtables3(RCPtr<CScene> &scene, void **functor) {
     *functor = new RCPtr<CNode>::RCObject<CNode>::CFunctorBase;
 }
 
+/* The node is set through Set itself, not through operator=: an operator= instance here would
+ * be a weak copy of the one Game/csdmScene.cpp keeps (0x80366328), and the linker would keep this
+ * earlier copy once csdmScene is linked from source. */
 void PoolSynopsisVtables4(RCPtr<CNode> &node) {
-    node = (CNode *)0;
+    node.Set((CNode *)0, Chao::CSD::RCDeleteTag());
     boost::shared_ptr<AdvReal::AdvBase> phase;
 }

@@ -18,7 +18,7 @@ extern "C" {
 /* The path: places position and rotation distance along it (false past its end), and sets it up
  * from the path pathId of the stage (behaviours inferred). */
 bool fn_801A6588(UnkEnemyPath_801A6844 *path, Vec3f *position, Vec3f *rotation, float distance);
-void fn_801A6688(UnkEnemyPath_801A6844 *path, Vec3f *position, Vec3f *rotation, int pathId,
+void fn_801A6688(UnkEnemyPath_801A6844 *path, Vec3f *position, const Vec3f *rotation, int pathId,
                  bool mirror, int arg5);
 /* The enemy's velocity (an inline function of the AI units, weak copy 0x80181F0C; behaviour
  * inferred). */

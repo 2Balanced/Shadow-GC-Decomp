@@ -103,7 +103,7 @@ struct HitCallback {
         return HasFunction();
     }
     /* Calls the function, or returns a default state when none is set (name inferred). */
-    BulletPosition Call(LaserReflectEventArgs &context) const {
+    BulletPosition Call(LaserReflectEventArgs &context) {
         if (m_function.empty()) {
             return BulletPosition();
         }

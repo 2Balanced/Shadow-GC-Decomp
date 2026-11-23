@@ -6,18 +6,20 @@
  * and vtable, and the clump fade's constructor fn_80027D5C, which other units call by that
  * name.
  *
- * NonMatching: 1 of 4 functions match (the destructor).
+ * NonMatching: 2 of 4 functions match (the destructor and fn_80027D5C).
  * - The constructor (95%) and Update (99%) convert the four colour bytes to floats through four
  *   stack temporaries. Every instruction matches except which temporary each byte gets: retail
  *   gives alpha the highest slot and red, green and blue the next ones down. Under GC/2.7 that
  *   order only comes with alpha converted after the colour is stored, which puts its load after
  *   the stores; retail loads all four bytes first. About 40 source shapes were tried (argument
- *   orders, locals, inline helpers, separate statements); probably the conversion-slot
- *   difference of docs/research-notes.md. Game/EffectParticleUSA.cpp has the same block.
- * - fn_80027D5C (89%): retail keeps the loop counter in r7 and copies the colour through r4-r6;
- *   GC/2.7 reuses r4 for the counter. Written as a C function because other units call it by
- *   its fn_ name; retail's is probably the struct's constructor (it is also passed to
- *   __construct_new_array, Game/EffectParticleUSA.cpp). */
+ *   orders, locals, inline helpers, separate statements), and ten more in wave 40
+ *   (probes/Game_EffectObjectUSA_R2.py: the colour read through pointers to const, inline
+ *   functions for a byte or its float, a helper taking the four bytes); probably the
+ *   conversion-slot difference of docs/research-notes.md. Game/EffectParticleUSA.cpp has the same
+ *   block.
+ * - fn_80027D5C is written as a C function because other units call it by its fn_ name;
+ *   retail's is probably the struct's constructor (it is also passed to __construct_new_array,
+ *   Game/EffectParticleUSA.cpp). Its loop stands in an inline function (see FillOnes). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define RESOURCEONEFILE_POLYMORPHIC
 
@@ -51,19 +53,26 @@ inline void SetFadeColor(UnkClumpFade_80027D5C *fade, float a, float r, float g,
     fade->m_color[3] = a;
 }
 
+/* Sets two values to one (name inferred). An inline function: GC/2.7 then makes the loop's
+ * offset before the colour's copy and gives it r7, as retail has it; written in the constructor
+ * the loop gets r4 (wave 40, probes/Game_EffectObjectUSA.py). */
+inline void FillOnes(float *values) {
+    for (int i = 0; i < 2; i++) {
+        values[i] = 1.0f;
+    }
+}
+
 extern "C" UnkClumpFade_80027D5C *fn_80027D5C(UnkClumpFade_80027D5C *fade) {
-    int i = 0;
     *reinterpret_cast<UnkFadeColor_80027D5C *>(fade->m_color) = lbl_804AB220;
     fade->field_0x18[0] = 1.0f;
     fade->field_0x18[1] = 1.0f;
     fade->field_0x18[2] = 1.0f;
-    for (; i < 2; i++) {
-        fade->field_0x10[i] = 1.0f;
-    }
+    FillOnes(fade->field_0x10);
     fade->m_mode = 0;
     fade->field_0x28 = -1.0f;
     return fade;
 }
+
 
 namespace SonicteamUSA {
 namespace System {

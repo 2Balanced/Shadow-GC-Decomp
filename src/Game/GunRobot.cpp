@@ -8,6 +8,10 @@
  * sections whole: Game/TNumEdit.h and Game/CharaColliBaseCharInfo.h supply the RTTI base lists the
  * .data starts with (as in BkSoldier.cpp). */
 
+/* The task's base keeps its destructor out of line behind the task's (see Game/Enemy.h); the AI's
+ * destructor is not inline (Game/GunRobotAI.cpp). */
+#define ENEMY_TEMPLATE_DTOR_OUT_OF_LINE
+
 #include <stdio.h>
 #include <string.h>
 

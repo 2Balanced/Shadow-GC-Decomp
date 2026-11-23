@@ -487,13 +487,16 @@ void Impl::UpdateGrid() {
     }
 }
 
-/* NonMatching (8 rows, wave 39): retail keeps the item in r29 and reuses that register for the
- * save data of the sound test's case; GC/2.7 gives the item r28. The three locals of that case in
- * any other order, or the counter declared in the for statement, are worse (11 to 16 rows).
- * SetupMenu's four remaining rows are names only: symbols.txt has the scene names as one string
- * block (@750, 0x78 bytes) where the object has one symbol per name. */
+/* The item the cursor is on (name inferred). An inline function: read through it, the item is a
+ * compiler temporary and GC/2.7 gives it r29, which the sound test's case reuses for the save
+ * data, as retail does; as a plain local's initializer the item gets r28 (wave 40,
+ * probes/Game_AdvOption_R2.py). */
+inline int CurrentItem() {
+    return s_itemGrid[s_data.m_current.m_row][s_data.m_current.m_column];
+}
+
 void Impl::UpdateList() {
-    int item = s_itemGrid[s_data.m_current.m_row][s_data.m_current.m_column];
+    int item = CurrentItem();
     if (fn_8003DBB0(fn_8003CEAC(&m_scenes, s_sceneNames[1]))) {
         m_active = 1;
         if (m_repeatWait != 0) {

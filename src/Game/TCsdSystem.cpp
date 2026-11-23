@@ -140,4 +140,14 @@ extern "C" int fn_800421BC(CProject *project, void *dictionary) {
     return 0;
 }
 
+/* Not original, and never called (the linker strips it with the vtable and functions it needs).
+ * It defines the weak vtable of RCPtr<unsigned char>::RCObject<unsigned char>::CFunctorBase ahead of
+ * Game/csdmScene.cpp, whose .data is kept whole: the linker then leaves that unit's copy as
+ * zero-filled space, as retail has it (the original's earlier copy does not survive in the DOL). */
+typedef Chao::CSD::RCPtr<unsigned char>::RCObject<unsigned char>::CFunctorBase UnkCsdDataFunctor;
+
+void PoolCsdDataFunctor(UnkCsdDataFunctor *functor) {
+    functor->UnkCsdDataFunctor::~UnkCsdDataFunctor();
+}
+
 #include <map_impl>

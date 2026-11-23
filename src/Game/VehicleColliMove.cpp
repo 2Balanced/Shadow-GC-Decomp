@@ -13,17 +13,14 @@
  * - Settle (0x803337EC): passing the filter through the pointer local keeps &filter in a register
  *   as retail does, and declaring the counter, object and hit list at the top of the function
  *   moves the registers towards retail's (where a local is declared changes its register); the
- *   colouring of the locals still differs as in Sweep, and retail adds distance + 1.0f with the
- *   operands the other way round.
- * - AcceptHit (0x80334314): retail schedules two loads above stack stores (above the stmw, and
- *   above the iterator copy); GC/2.7 keeps them below. The same load-above-store pattern blocks
- *   fn_80334480 in Game/VehiclePathMove.cpp. Wave 39: with `#pragma scheduling off` the entry
- *   block is filter load, collider load, compare, branch whatever the source order (collider
- *   named first, the test kept in a bool, the filter assigned inside the condition, the filter
- *   read through the candidate at each use); the scheduler then puts the collider load first and
- *   the filter load before the compare, while retail has collider load, stmw, mr, compare, filter
- *   load. GC/2.7 does move a single load above the stmw (Game/BulletHitEffect.cpp's fn_802B3FE8
- *   matches that way), but here the second load fills the load-to-compare gap instead. */
+ *   colouring of the locals still differs as in Sweep.
+ * AcceptHit (0x80334314) matches since wave 40: its candidate is a pointer to const, so GC/2.7
+ * moves the two loads above the stack stores as retail does (the filter callback's type says so
+ * too). In Settle the 120 orders of the world, counter, filter, object and hit list declarations
+ * at the top of the function all leave 20 rows (probes/Game_VehicleColliMove_settle_c.py), and so
+ * do all 720 orders of those with the clear flag declared at the top too, with and without copy
+ * propagation (wave 40, probes/Game_VehicleColliMove_settle_d.py); the residual is the lowest
+ * saved registers, as in Game/VehicleSweep.cpp. */
 #define BOOST_SP_NOT_EQUAL
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
@@ -195,7 +192,7 @@ struct UnkCollisionCandidate_80021934 {
     /* 0x10 */ const UnkColliMoveFilter_80333AE4 *m_filter;
 };
 
-typedef bool (*UnkCollisionFilter_80021934)(UnkCollisionCandidate_80021934 *candidate);
+typedef bool (*UnkCollisionFilter_80021934)(const UnkCollisionCandidate_80021934 *candidate);
 
 /* A sphere: centre and radius (built by fn_80021C04; see MeteorsHolder.cpp). */
 struct UnkSphere_80021C04 {
@@ -430,7 +427,7 @@ class UnkVehicleColliMove_8033377C {
 SIZE_ASSERT(UnkVehicleColliMove_8033377C, 0x28);
 
 /* Accepts a candidate hit of the sweep (name inferred). */
-static bool AcceptHit(UnkCollisionCandidate_80021934 *candidate) {
+static bool AcceptHit(const UnkCollisionCandidate_80021934 *candidate) {
     const UnkColliMoveFilter_80333AE4 *filter = candidate->m_filter;
     if (candidate->m_collider != 0) {
         if (!filter->m_owner.expired()) {
@@ -619,7 +616,9 @@ static UnkCopyVector3_800091EC Settle(const Vec3f &position, const Vec3f &direct
     filter.m_mask = 0x3A93;
     UnkCopyVector3_800091EC point;
     fn_800091EC(reinterpret_cast<Vec3f *>(&point), &position);
-    float reach = distance + 1.0f;
+    /* A named constant: GC/2.7 then adds distance + 1.0f in retail's operand order. */
+    float one = 1.0f;
+    float reach = distance + one;
     float lift = distance + s_skin;
     const UnkColliMoveFilter_80333AE4 *self = &filter;
     void *object;

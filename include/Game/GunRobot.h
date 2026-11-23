@@ -123,7 +123,7 @@ class GunRobot : public EnemyWalker {
 class GunRobotAI : public EnemyWalkerAI {
   public:
     GunRobotAI();
-    virtual ~GunRobotAI() {}  /* weak, first at 0x801865F0 */
+    virtual ~GunRobotAI();    /* 0x801865F0 */
     virtual void vfAI_0x38(); /* 0x80186498 */
     virtual void vfAI_0x3C(); /* 0x801863D8 */
     virtual void vfAI_0x44(); /* 0x80186318 */

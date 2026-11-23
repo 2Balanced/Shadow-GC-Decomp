@@ -5,9 +5,9 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: 5 of 6 functions and all data match. In fn_801A6688 retail loads the three words
- * of the rotation it passes by value into r6, r7 and r0 before storing them; GC/2.7 reuses r0 for
- * the last two, for every source form tried. */
+ * fn_801A6688 takes the rotation through a pointer to const: retail loads the three words of the
+ * copy it passes by value into r6, r7 and r0 before storing them, and GC/2.7 moves loads above
+ * stores only when the object read is const (wave 40). */
 /* The fields of UnkEnemyPath_801A6844 (Game/EnemyFlyer.h). */
 #define ENEMY_PATH_UNIT
 
@@ -69,7 +69,7 @@ extern "C" void *fn_801A6790(UnkEnemyPath_801A6844 *path, int index) {
 }
 
 /* Takes path pathId of the stage and puts position and rotation at its start (name inferred). */
-extern "C" void fn_801A6688(UnkEnemyPath_801A6844 *path, Vec3f *position, Vec3f *rotation, int pathId,
+extern "C" void fn_801A6688(UnkEnemyPath_801A6844 *path, Vec3f *position, const Vec3f *rotation, int pathId,
                             bool mirror, int backward) {
     fn_801A6648(path);
     UnkPathManager_8001B494 *manager = fn_8001B494();
@@ -113,4 +113,11 @@ extern "C" bool fn_801A6588(UnkEnemyPath_801A6844 *path, Vec3f *position, Vec3f 
         }
     }
     return result;
+}
+
+/* Not called anywhere: the linker strips it from the game. Retail pools the constructor's 0.0f
+ * ahead of fn_801A6688's 1.0f (source order); GC/2.7 pools in emission order, so a function
+ * emitted first names the zero first (see docs/research-notes.md; name not original). */
+float UnusedEnemyPathZero() {
+    return 0.0f;
 }

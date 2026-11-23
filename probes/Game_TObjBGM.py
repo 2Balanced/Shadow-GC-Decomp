@@ -1,0 +1,28 @@
+"""Wave 40: the voice player choice and the pause/play functions of Game/TObjBGM.cpp."""
+SCORE = ["fn_801D78C4", "fn_801D7A50", "fn_801D7CB8"]
+A1 = "                if (CanInterrupt(serif->m_priority, priority)) {\n"
+B1 = "            if (CanInterrupt(serif->m_priority, priority) == true) {\n"
+B2 = "                } else if (CanInterrupt(serif->m_priority, s_serif[found]->m_priority) == true) {\n"
+ST = "            if (serif->m_state != 1) {\n                return i;\n            }\n"
+P_OLD = "    TObjBGM *bgm;\n    for (u8 i = 0; i < 2; i++) {\n        bgm = s_bgm[i];\n        if (bgm != 0) {\n            switch (bgm->m_state) {\n            case 2:\n            case 3:\n            case 4:\n            case 5:\n            case 6:\n                fn_803C1174(bgm->m_player, 1);\n                bgm->m_paused |= 1;"
+V_OLD = "        s_serif[index]->Stop();\n        serif = s_serif[index];\n"
+S_OLD = "    TObjSERIF *serif;\n    for (u8 i = 0; i < 2; i++) {\n        serif = s_serif[i];\n        if (serif != 0) {\n            switch (serif->m_state) {\n            case 1:\n                fn_803C1174(serif->m_player, 1);"
+S_NEW = "    for (i = 0; i < 2; i++) {\n        serif = s_serif[i];\n        if (serif != 0) {\n            switch (serif->m_state) {\n            case 1:\n                fn_803C1174(serif->m_player, 1);"
+REPL = {
+  "cur_b": [(ST + B1, ST + "            s8 current = serif->m_priority;\n            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "cur_b_early": [(ST + B1, "            s8 current = serif->m_priority;\n" + ST + "            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "cur_ab": [(A1, "                s8 current = serif->m_priority;\n                if (CanInterrupt(current, priority)) {\n"), (ST + B1, ST + "            s8 current = serif->m_priority;\n            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "pause_decl": [(P_OLD, P_OLD.replace("    TObjBGM *bgm;\n", "    TObjBGM *bgm;\n    TObjSERIF *serif;\n")), ("    TObjSERIF *serif;\n    for (u8 i = 0; i < 2; i++) {\n        serif = s_serif[i];\n        if (serif != 0) {\n            switch (serif->m_state) {\n            case 1:\n                fn_803C1174(serif->m_player, 1);", "    for (u8 i = 0; i < 2; i++) {\n        serif = s_serif[i];\n        if (serif != 0) {\n            switch (serif->m_state) {\n            case 1:\n                fn_803C1174(serif->m_player, 1);")],
+  "play_same": [(V_OLD, "        serif = s_serif[index];\n        serif->Stop();\n        serif = s_serif[index];\n")],
+  "play_idx_first": [("    TObjSERIF *serif;\n    int index = fn_801D78C4(owner, priority);", "    int index = fn_801D78C4(owner, priority);\n    TObjSERIF *serif;")],
+  "int_b": [(ST + B1, ST + "            int current = serif->m_priority;\n            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "int_b_early": [(ST + B1, "            int current = serif->m_priority;\n" + ST + "            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "volatile_b": [(ST + B1, ST + "            s8 current;\n            current = serif->m_priority;\n            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "getter_b": [("/* The voice player to use for owner", "inline s8 PriorityOf_(TObjSERIF *serif) { return serif->m_priority; }\n/* The voice player to use for owner"), (B1, "            if (CanInterrupt(PriorityOf_(serif), priority) == true) {\n"), (B2, "                } else if (CanInterrupt(PriorityOf_(serif), s_serif[found]->m_priority) == true) {\n")],
+  "getter_all": [("/* The voice player to use for owner", "inline s8 PriorityOf_(TObjSERIF *serif) { return serif->m_priority; }\n/* The voice player to use for owner"), (A1, "                if (CanInterrupt(PriorityOf_(serif), priority)) {\n"), (B1, "            if (CanInterrupt(PriorityOf_(serif), priority) == true) {\n"), (B2, "                } else if (CanInterrupt(PriorityOf_(serif), PriorityOf_(s_serif[found])) == true) {\n")],
+  "getter_local": [("/* The voice player to use for owner", "inline s8 PriorityOf_(TObjSERIF *serif) { return serif->m_priority; }\n/* The voice player to use for owner"), (ST + B1, ST + "            s8 current = PriorityOf_(serif);\n            if (CanInterrupt(current, priority) == true) {\n"), (B2, "                } else if (CanInterrupt(current, s_serif[found]->m_priority) == true) {\n")],
+  "pause_i_top": [(P_OLD, P_OLD.replace("    TObjBGM *bgm;\n    for (u8 i = 0;", "    TObjBGM *bgm;\n    TObjSERIF *serif;\n    u8 i;\n    for (i = 0;")), (S_OLD, S_NEW)],
+  "pause_i_first": [(P_OLD, P_OLD.replace("    TObjBGM *bgm;\n    for (u8 i = 0;", "    u8 i;\n    TObjBGM *bgm;\n    TObjSERIF *serif;\n    for (i = 0;")), (S_OLD, S_NEW)],
+  "pause_i_mid": [(P_OLD, P_OLD.replace("    TObjBGM *bgm;\n    for (u8 i = 0;", "    TObjBGM *bgm;\n    u8 i;\n    TObjSERIF *serif;\n    for (i = 0;")), (S_OLD, S_NEW)],
+  "pause_i_only": [(P_OLD, P_OLD.replace("    TObjBGM *bgm;\n    for (u8 i = 0;", "    TObjBGM *bgm;\n    u8 i;\n    for (i = 0;")), (S_OLD, "    TObjSERIF *serif;\n" + S_NEW)],
+}

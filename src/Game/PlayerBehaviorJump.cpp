@@ -118,8 +118,8 @@ void fn_8040F990(Vec3f *along, Vec3f *across, const Vec3f *vector, const Vec3f *
 inline s32 CharaKind(Player::PlayerBase *player) {
     return FieldsOf(player)->m_kind;
 }
-inline const float &FrameTime(Player::PlayerBase *player) {
-    return *FieldsOf(player)->m_frameTime;
+inline float &FrameTime(Player::PlayerBase *player) {
+    return *const_cast<float *>(FieldsOf(player)->m_frameTime);
 }
 
 /* The larger of a and b (name inferred). Retail calls it out of line, so it is not declared inline
@@ -234,9 +234,14 @@ bool Jump::vf_0x0C(int prevId, const InitializeArgs &args) {
     return true;
 }
 
-/* NonMatching (99.7%): two spots. Retail reads the frame time through the pointer after setting up
- * the scaled gravity's result (mr r4,r3 before the lfs), and keeps the jump table's address in r3
- * and the player in r4 at the curl check (as Player::Behavior::Ground::SetSpeedRange). */
+/* Copy propagation is off for this function: retail keeps the jump table's address in r3 and the
+ * player in r4 at the curl check (as Player::Behavior::Ground::SetSpeedRange), where GC/2.7 with
+ * propagation on has them the other way round; a table or parameter pointer or reference, an
+ * inline lookup, the kind in a local, read through px, operator-> or a const player, a u8 flag and
+ * the test's sense all left those 4 rows (wave 40, probes/Game_PlayerBehaviorJump.py). FrameTime
+ * returns a reference to non-const, so GC/2.7 leaves the read of the frame time behind the set-up
+ * of the scaled gravity's result (mr r4,r3 before the lfs). */
+#pragma opt_propagation off
 void Jump::Enter(int prevId, const InitializeArgs &args) {
     const InitializeArgsJump *jump = dynamic_cast<const InitializeArgsJump *>(&args);
     fn_80076CC8(m_player.get()->m_stateBits, 2);
@@ -364,6 +369,7 @@ void Jump::Enter(int prevId, const InitializeArgs &args) {
         fn_80014E1C(&m_player.get()->m_flags, 7);
     }
 }
+#pragma opt_propagation reset
 
 void Jump::Leave(int nextId) {
     fn_80076CC8(m_player.get()->m_stateBits, 0);

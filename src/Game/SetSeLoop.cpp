@@ -8,13 +8,12 @@
  * File name inferred from the class. Names marked "(name inferred)" are not original. Definitions
  * are in reverse address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: Behave (0x8033CBF8) differs only in register allocation. Retail keeps this in r31,
- * the contact list in r30 and the volume in r29; GC/2.7 gives this r29 and the volume r31 for every
- * source shape tried (an inline Play helper, a named s8, the volume as a call argument, the
- * contact list in the if, a separate per-target inline function). SetSeOneShot's Behave, the same
- * loop without the volume, matches. Wave 39 also tried the volume declared at the top of the
- * function and, around Behave alone, the pragmas optimize_for_size, optimization_level 2 and 3,
- * scheduling, peephole and the opt_* switches: none moves this out of r29. */
+ * Behave (0x8033CBF8) matches since wave 40: retail keeps this in r31, the contact list in r30 and
+ * the volume in r29, which GC/2.7 gives only to a copy of this (self) with copy propagation off for
+ * the function, the target's pointer in a local of its own, and the sound manager and the sound id
+ * in locals before the PanCtrl call (probes/Game_SetSeLoop_R2.py). Earlier waves tried an inline
+ * Play helper, a named s8, the volume as a call argument, the contact list in the if, a separate
+ * per-target inline function, the volume declared at the top and single pragmas. */
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/DebugDisp.h"
@@ -194,47 +193,53 @@ static s32 s_volumeLow = -128;
 static s32 s_volumeHigh = 0;
 #pragma explicit_zero_data reset
 
+#pragma opt_propagation off
 void SetSeLoop::Behave(float dt) {
+    SetSeLoop *self = this;
     if (UnkColliContacts_8001EE04 *contacts = reinterpret_cast<UnkColliContacts_8001EE04 *>(
-            reinterpret_cast<u8 *>(m_collider.get()) + 0xC)) {
+            reinterpret_cast<u8 *>(self->m_collider.get()) + 0xC)) {
         for (UnkColliContactIter_8001EDFC it(fn_8001EE04(contacts));
              it.m_node != fn_8001EDEC(contacts); fn_80027374(&it, 0)) {
             boost::shared_ptr<CharInfo> target =
                 fn_800C4568(fn_80021B08(), fn_800587A0(it.m_node)).lock();
             if (target.get() != 0 && reinterpret_cast<UnkCharInfoTest_0x28 *>(target.get())->vf_0x28()) {
-                if (m_params.type == 0) {
+                if (self->m_params.type == 0) {
                     float ratio;
-                    if (m_params.rangeType == 0) {
+                    if (self->m_params.rangeType == 0) {
                         Vec3f offset;
-                        fn_8040CD74(&offset, &target->m_position, &m_chara->m_position);
+                        CharInfo *t = target.get();
+                        fn_8040CD74(&offset, &t->m_position, &self->m_chara->m_position);
                         float distance = fn_8040CF50(&offset);
-                        if (fn_8000A950(m_params.colliParam0)) {
+                        if (fn_8000A950(self->m_params.colliParam0)) {
                             ratio = 1.0f;
                         } else {
-                            ratio = distance / m_params.colliParam0;
+                            ratio = distance / self->m_params.colliParam0;
                         }
                         ratio = fn_80070460(ratio, s_ratioLow, s_ratioHigh);
                     } else {
                         float t;
-                        fn_8040FC78(&t, &m_axis, &target->m_position);
+                        fn_8040FC78(&t, &self->m_axis, &target->m_position);
                         t = fn_80070460(t, s_tLow, s_tHigh);
                         ratio = 2.0f * std::fabs(t - 0.5f);
                     }
-                    if (ratio <= m_params.dampingRate || fn_801C455C(m_params.dampingRate, 1.0f)) {
-                        fn_801D53C4(fn_80053164(), m_params.seId, 0, this, 2, 0, 2);
+                    if (ratio <= self->m_params.dampingRate || fn_801C455C(self->m_params.dampingRate, 1.0f)) {
+                        fn_801D53C4(fn_80053164(), self->m_params.seId, 0, self, 2, 0, 2);
                     } else {
-                        s32 volume = -128.0f * ((ratio - m_params.dampingRate) /
-                                                (1.0f - m_params.dampingRate));
-                        fn_801D53C4(fn_80053164(), m_params.seId, 0, this, 2,
+                        s32 volume = -128.0f * ((ratio - self->m_params.dampingRate) /
+                                                (1.0f - self->m_params.dampingRate));
+                        fn_801D53C4(fn_80053164(), self->m_params.seId, 0, self, 2,
                                     volume = *fn_8016F21C(&volume, &s_volumeLow, &s_volumeHigh), 2);
                     }
                 } else {
-                    fn_801D53C4(fn_80053164(), m_params.seId, &m_chara->m_position, this, 3, 0, 2);
+                    void *mgr = fn_80053164();
+                    u16 id = self->m_params.seId;
+                    fn_801D53C4(mgr, id, &self->m_chara->m_position, self, 3, 0, 2);
                 }
             }
         }
     }
 }
+#pragma opt_propagation reset
 
 void SetSeLoop::ReloadPlacement(UnkPlacement_800C9CD0 *owner) {
     SetSeLoopParams old = m_params;

@@ -39,8 +39,8 @@ void FromLayout(float *x, float *y);
 void SplitPatternFrame(float frame, s32 *index, s32 *pattern, float *frac);
 float MakePatternFrame(float frac, s32 index, s32 pattern);
 void InitLayers(SSceneState *state, const SSceneInfo *info, void *fontList);
-void UpdateScene(float frame, SSceneState *state, const SSceneInfo *info, const SMotion *motion, void *fontList,
-                 SCast *parent);
+void UpdateScene(SSceneState *state, const SSceneInfo *info, const SMotion *motion, void *fontList, SCast *parent,
+                 float frame);
 void DrawScene(SSceneInfo *info, const RCPtr<CTexList> &texList, void *fontList, SSceneState *state);
 
 class CNode;

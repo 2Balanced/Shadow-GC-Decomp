@@ -129,6 +129,22 @@ inline float fn_8018346C(Enemy *enemy) {
 }
 #endif
 
+#ifdef ENEMY_BASE_AI_UNKNOWN_STATICS
+/* Stand-ins for three function-local statics of the original headers that this project does not
+ * know (not original; see UnkWalkerAIStatic in Game/EnemyWalkerAI.h). Game/GunRobotAI.cpp's .bss
+ * is kept whole and its vfAI_0x44 registers EnemyBaseAI's Caution state in the tenth 12-byte
+ * record, where the twelve known states put it in the seventh: three of the five unknown records
+ * that Game/EggPawnAI.cpp shows ahead of the walker's states stand ahead of Caution. Only that
+ * unit defines the macro (with ENEMY_WALKER_AI_UNKNOWN_STATICS, which then gives two records
+ * ahead of the walker's states instead of five). */
+struct UnkBaseAIStatic {
+    UnkBaseAIStatic();
+    ~UnkBaseAIStatic();
+
+    u32 m_words[2];
+};
+#endif
+
 #ifdef ENEMY_BASE_AI_STATES
 #include "Game/EnemyAIState.h"
 
@@ -345,6 +361,21 @@ class EnemyBaseAI : public virtual EnemyReferer, public EnemyCtrlFunc {
         static EnemyAIState_EnemyBaseAI_Caution s_state;
         return &s_state;
     }
+#ifdef ENEMY_BASE_AI_UNKNOWN_STATICS
+    /* See UnkBaseAIStatic above. */
+    static void *GetUnknownStatic2() {
+        static UnkBaseAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic1() {
+        static UnkBaseAIStatic s_state;
+        return &s_state;
+    }
+    static void *GetUnknownStatic0() {
+        static UnkBaseAIStatic s_state;
+        return &s_state;
+    }
+#endif
     static TEnemyAIState *GetGuardState() {
         static EnemyAIState_EnemyBaseAI_Guard s_state;
         return &s_state;

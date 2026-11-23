@@ -518,7 +518,10 @@ TPjsEventActionManager::~TPjsEventActionManager() {
  * Wave 39 (probes/Game_PjsEventActionManager_R*.py, 35 more): the format string as a local
  * declared anywhere, the letter through a local, a cast, a constructor-style cast or an inline
  * function, the argument made an int after the add, and a long, unsigned or short counter all keep
- * GC/2.7's registers; only a conversion applied to the counter itself flips them. */
+ * GC/2.7's registers; only a conversion applied to the counter itself flips them. Wave 40
+ * (Game_PjsEventActionManager_R7.py, 14 more): the event number, the format or the counter's start
+ * through inline functions, the counter declared first, a while loop, the scene stored through an
+ * inline function and casts of the counter that make no code change nothing either. */
 void TPjsEventActionManager::FindScenes() {
     char fileName[0x40];
     m_sceneIndex = 0;
