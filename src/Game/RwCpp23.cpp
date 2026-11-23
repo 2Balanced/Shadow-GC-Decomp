@@ -1,4 +1,8 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior.
+/* RenderWare world plugin, 0x8045D898-0x8045F458: mesh building (the triangle-strip builder and
+ * the triangle-list builder fn_8045EF64), fn_8045F1FC (_rpMeshOptimise: build a mesh header from a
+ * build mesh with the strip callback or the list builder), and world-sector render helpers
+ * (fn_8045F390 renders the sector's atomics that pass the frustum test, once per frame). Names are
+ * inferred from behavior. Not written yet: fn_8045D898 and fn_8045E904 (the strip builder).
  * fn_8045EF64 implements the full grouped-object factory; loop register allocation and group
  * initialization differ from retail. fn_8045E51C implements all staged reads and cleanup paths;
  * loop scheduling and final link order differ. */
@@ -27,31 +31,28 @@ s32 fn_804856C8(u32, u32);
 extern u32 lbl_8056D868[];
 
 u32 *fn_8045F1FC(u32 *object, u32 mode) {
-    if (object == NULL) {
-        goto done;
-    }
-    if (object[1] == 0) {
-        fn_8045C26C(object);
-        return (u32 *)lbl_8056D868;
-    }
-    u32 *result;
-    u32 *(*callback)(u32 *, u32);
-    u32 argument;
-    if ((mode & 1) != 0) {
-        callback = (u32 *(*)(u32 *, u32))lbl_8056D868[4];
-        argument = lbl_8056D868[5];
-    } else {
-        callback = fn_8045EF64;
-        argument = 0;
-    }
-    result = callback(object, argument);
-    if (result != NULL) {
-        fn_8045C26C(object);
-        return result;
+    if (object != NULL) {
+        u32 *result;
+        u32 *(*callback)(u32 *, u32);
+        u32 argument;
+        if (object[1] == 0) {
+            fn_8045C26C(object);
+            return (u32 *)lbl_8056D868;
+        }
+        if ((mode & 1) != 0) {
+            callback = (u32 *(*)(u32 *, u32))lbl_8056D868[4];
+            argument = lbl_8056D868[5];
+        } else {
+            callback = fn_8045EF64;
+            argument = 0;
+        }
+        result = callback(object, argument);
+        if (result != NULL) {
+            fn_8045C26C(object);
+            return result;
+        }
     }
     return NULL;
-done:
-    return object;
 }
 
 extern u32 lbl_805F14F0;
@@ -262,8 +263,8 @@ u32 *fn_8045F390(u32 *object) {
                 if (fn_804856C8(*(u32 *)lbl_805F15B4, result) != 0) {
                     ((void (*)(u32 *))*(u32 *)((u8 *)node + 72))(node);
                 }
+                *(u16 *)((u8 *)node + 96) = *(u16 *)(lbl_805F15B4 + 8);
             }
-            *(u16 *)((u8 *)node + 96) = *(u16 *)(lbl_805F15B4 + 8);
         }
         current = (u32 *)current[0];
     }
@@ -271,11 +272,13 @@ done:
     return object;
 }
 
-u32 fn_8045F374(u32 value, u32 *object) {
-    if (object[0] == value) {
-        object[1] = 1;
+/* For-all callback of a search: stops (returns NULL) at the wanted item and flags it as found. */
+void *fn_8045F374(void *item, u32 *search) {
+    if ((void *)search[0] == item) {
+        search[1] = 1;
+        return NULL;
     }
-    return 0;
+    return item;
 }
 
 void fn_8045E904(u32, u32, u32);

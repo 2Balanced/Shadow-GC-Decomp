@@ -1,14 +1,19 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior.
- * fn_8045CA38 has retail's instruction sequence and size; GC/2.7 assigns one extra saved register
- * to the final field temporaries. Direct, cached, and scoped comparison forms were measured.
- * fn_8045C340 also matches size; its repeated record stores retain addressing/register drift.
- * fn_8045C56C matches size and the expansion loops; only setup scheduling/register choices differ.
- * fn_8045C770 matches size and all conversion code; its entry-type load is scheduled one store later.
- * fn_8045D3A8 implements the full graph walk; validity temporaries and output scheduling differ. */
+/* RenderWare world plugin, 0x8045C340-0x8045D898: the end of the mesh module that starts in RwCpp21
+ * (fn_8045C340 _rpBuildMeshAddTriangle, fn_8045C56C _rpMeshWrite, fn_8045C770 _rpMeshRead), then
+ * the triangle-strip builder's helpers (untyped drafts). Names are inferred from behavior.
+ * fn_8045C770 has retail's instructions except that GC/2.7 copies the chunk count to r3 before the
+ * unrolled index copy (retail unrolls on the count itself); 15 loop spellings were measured
+ * (probes/Game_RwCpp22.py). fn_8045CA38 (a qsort comparator) has retail's instruction sequence;
+ * GC/2.7 assigns one extra saved register to the final field temporaries. fn_8045D3A8 implements
+ * the full graph walk; validity temporaries and output scheduling differ. Still built with the
+ * older C++ flags: the mesh functions match under both. */
 #include <dolphin/types.h>
+#include "Game/rw/r3.h"
 
-extern u8 *lbl_805F15B4;
-extern u32 lbl_805F14F0;
+/* The untyped functions below still index the engine block by offset. */
+#define RWENGINEBYTES ((u8 *)lbl_805F15B4)
+extern "C" RwModuleInfo lbl_805F14F0; /* mesh module */
+#define lbl_805F14F0_OFFSET ((u32)lbl_805F14F0.globalsOffset)
 
 extern u32 lbl_805FB170;
 
@@ -35,7 +40,7 @@ static inline u32 *RwCpp22Link(u32 **head, u32 **slot, u32 *allocator, u16 key_a
         }
         record = (u32 *)record[3];
     }
-    record = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(allocator, 0x00030502);
+    record = ((u32 *(*)(u32 *, u32))*(u32 *)(RWENGINEBYTES + 0x118))(allocator, 0x00030502);
     *(u16 *)record = key_a;
     *(u16 *)((u8 *)record + 2) = key_b;
     record[1] = (u32)slot[0];
@@ -46,183 +51,186 @@ static inline u32 *RwCpp22Link(u32 **head, u32 **slot, u32 *allocator, u16 key_a
 }
 
 extern "C" {
-u32 fn_8047DC28(u32 code, u32 size, ...);
-void fn_8047DB84(u32 *error);
 
-u8 *fn_8045C340(u32 *object, u32 value, u16 first, u16 second, u16 third,
-                u16 fourth, u16 fifth, u16 sixth, u16 seventh) {
-    if (object[1] >= object[0]) {
-        u32 size = (object[1] + 1) * 20;
-        u8 *buffer;
-        if (object[1] != 0) {
-            buffer = ((u8 *(*)(u8 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
-                (u8 *)object[2], size, 0x01030502);
+/* _rpBuildMeshAddTriangle: appends one triangle, growing the buffer by one record when full. */
+RpBuildMesh *fn_8045C340(RpBuildMesh *mesh, RpMaterial *material, u16 vert1, u16 vert2, u16 vert3,
+                         u16 matIndex, u16 textureIndex, u16 rasterIndex, u16 pipelineIndex) {
+    if (mesh->numTriangles >= mesh->triangleBufferSize) {
+        RpBuildMeshTriangle *triangles;
+        u32 size = (mesh->numTriangles + 1) * sizeof(RpBuildMeshTriangle);
+        if (mesh->numTriangles != 0) {
+            triangles = (RpBuildMeshTriangle *)RwRealloc(mesh->meshTriangles, size, 0x1030502);
         } else {
-            buffer = ((u8 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030502);
+            triangles = (RpBuildMeshTriangle *)RwMalloc(size, 0x1030502);
         }
-        if (buffer == NULL) {
-            u32 error[2];
-            error[0] = 2;
-            error[1] = fn_8047DC28(0x80000013, size);
-            fn_8047DB84(error);
+        if (triangles == NULL) {
+            RWERROR((E_RW_NOMEM, size));
             return NULL;
         }
-        object[2] = (u32)buffer;
-        object[0] = object[1] + 1;
+        mesh->meshTriangles = triangles;
+        mesh->triangleBufferSize = mesh->numTriangles + 1;
     }
-    RwCpp22Record *record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->value = value;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->first = first;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->second = second;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->third = third;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->fourth = fourth;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->fifth = fifth;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->sixth = sixth;
-    record = (RwCpp22Record *)(object[2] + object[1] * 20);
-    record->seventh = seventh;
-    object[1]++;
-    return (u8 *)object[2];
+    mesh->meshTriangles[mesh->numTriangles].material = material;
+    mesh->meshTriangles[mesh->numTriangles].vertIndex[0] = vert1;
+    mesh->meshTriangles[mesh->numTriangles].vertIndex[1] = vert2;
+    mesh->meshTriangles[mesh->numTriangles].vertIndex[2] = vert3;
+    mesh->meshTriangles[mesh->numTriangles].matIndex = matIndex;
+    mesh->meshTriangles[mesh->numTriangles].textureIndex = textureIndex;
+    mesh->meshTriangles[mesh->numTriangles].rasterIndex = rasterIndex;
+    mesh->meshTriangles[mesh->numTriangles].pipelineIndex = pipelineIndex;
+    mesh->numTriangles++;
+    return mesh;
 }
+RwStream *fn_8047D458(RwStream *stream, const void *data, u32 size); /* RwStreamWriteInt32 */
+RwStream *fn_8047D868(RwStream *stream, void *data, u32 size);       /* RwStreamReadInt32 */
+s32 fn_8045B8EC(const RpMaterialList *matList, const RpMaterial *material);
+RpMaterial *fn_8045B79C(const RpMaterialList *matList, s32 index);
 
-u32 fn_8047D458(u8 *stream, void *data, u32 size);
-s32 fn_8045B8EC(u32 *object, u32 value);
+/* Mesh chunk records. */
+struct RpMeshHeaderChunk {
+    u32 flags;
+    u32 numMeshes;
+    u32 totalIndicesInMesh;
+};
 
-u8 *fn_8045C56C(u32 *object, u8 *entry, u8 *stream, u32 *search) {
-    u32 pair[2];
-    u32 header[3];
-    u32 first = object[0];
-    u32 second = *(u16 *)((u8 *)object + 4);
-    u32 third = object[2];
-    header[0] = first;
-    header[1] = second;
-    header[2] = third;
-    if (fn_8047D458(stream, header, 12) == 0) {
+struct RpMeshChunk {
+    u32 numIndices;
+    s32 matIndex;
+};
+
+/* The object that owns the meshes is a geometry (type 8) or a world sector's world (type 7);
+ * both keep their flags at 0x08, and a native one has no indices in the stream. */
+struct RpMeshOwner {
+    RwObject object;
+    u32 flags;
+};
+
+#define RPMESHOWNERHASINDICES(type, owner)                                 \
+    (((type) == 8 && !((owner)->flags & rpGEOMETRYNATIVE)) ||              \
+     ((type) == 7 && !((owner)->flags & rpGEOMETRYNATIVE)))
+
+/* _rpMeshWrite: the header, then per mesh its size and material index and its indices as words. */
+RwStream *fn_8045C56C(const RpMeshHeader *meshHeader, const RpMeshOwner *owner, RwStream *stream,
+                      const RpMaterialList *matList) {
+    u32 buffer[256];
+    RpMeshHeaderChunk headerChunk;
+    RpMeshChunk meshChunk;
+    u32 count;
+    u32 type;
+    u32 numMeshes;
+    const RpMesh *mesh;
+    u32 remaining;
+    const u16 *indices;
+
+    headerChunk.flags = meshHeader->flags;
+    headerChunk.numMeshes = meshHeader->numMeshes;
+    headerChunk.totalIndicesInMesh = meshHeader->totalIndicesInMesh;
+    if (fn_8047D458(stream, &headerChunk, sizeof(headerChunk)) == NULL) {
         return NULL;
     }
-    u32 type;
-    u32 count = *(u16 *)((u8 *)object + 4);
-    u8 *record = (u8 *)object + 16;
-    type = entry[0];
-    while (count-- != 0) {
-        u32 key = ((u32 *)record)[2];
-        pair[0] = ((u32 *)record)[1];
-        pair[1] = fn_8045B8EC(search, key);
-        if ((s32)pair[1] < 0) {
-            pair[1] = 0;
+    numMeshes = meshHeader->numMeshes;
+    mesh = (const RpMesh *)(meshHeader + 1);
+    type = owner->object.type;
+    while (numMeshes--) {
+        meshChunk.numIndices = mesh->numIndices;
+        meshChunk.matIndex = fn_8045B8EC(matList, mesh->material);
+        if (meshChunk.matIndex < 0) {
+            meshChunk.matIndex = 0;
         }
-        if (fn_8047D458(stream, pair, 8) == 0) {
+        if (fn_8047D458(stream, &meshChunk, sizeof(meshChunk)) == NULL) {
             return NULL;
         }
-        if (type == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-            goto convert;
-        }
-        if (type == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-            goto convert;
-        }
-        goto next_record;
-convert:
-        {
-            u32 remaining = ((u32 *)record)[1];
-            u16 *source = (u16 *)((u32 *)record)[0];
-            u32 values[256];
+        if (RPMESHOWNERHASINDICES(type, owner)) {
+            remaining = mesh->numIndices;
+            indices = mesh->indices;
             while (remaining != 0) {
-                u32 chunk = remaining < 256 ? remaining : 256;
-                u32 i = 0;
-                while (i < chunk) {
-                    values[i] = *source++;
-                    i++;
+                u32 i;
+                count = 256;
+                if (remaining < 256) {
+                    count = remaining;
                 }
-                if (fn_8047D458(stream, values, chunk * 4) == 0) {
+                for (i = 0; i < count; i++) {
+                    buffer[i] = *indices++;
+                }
+                if (fn_8047D458(stream, buffer, count * sizeof(u32)) == NULL) {
                     return NULL;
                 }
-                remaining -= chunk;
+                remaining -= count;
             }
         }
-next_record:
-        record += 12;
+        mesh++;
     }
     return stream;
 }
 
-u32 fn_8047D868(u8 *stream, void *data, u32 size);
-u32 fn_8045B79C(u32 *object, u32 index);
+/* The mesh header allocator of the previous unit (fn_8045BF30), which the reader expands. */
+static inline RpMeshHeader *RpMeshHeaderAlloc(u32 size) {
+    return (RpMeshHeader *)RwMalloc(size, 0x30502);
+}
 
-u32 *fn_8045C770(u8 *stream, u8 *entry, u32 *search) {
-    u32 pair[2];
-    u32 header[3];
-    if (fn_8047D868(stream, header, 12) == 0) {
+/* _rpMeshRead: the inverse of the writer; the header gets the module's next serial number. */
+RpMeshHeader *fn_8045C770(RwStream *stream, const RpMeshOwner *owner, const RpMaterialList *matList) {
+    u32 buffer[256];
+    RpMeshHeaderChunk headerChunk;
+    RpMeshChunk meshChunk;
+    RpMeshHeader *meshHeader;
+    u32 type;
+    RpMesh *mesh;
+    u16 *indices;
+    u32 count;
+    u32 numMeshes;
+    u32 remaining;
+    u32 *source;
+    u32 size;
+
+    if (fn_8047D868(stream, &headerChunk, sizeof(headerChunk)) == NULL) {
         return NULL;
     }
-    u32 size = header[1] * 16 + 16;
-    if (entry[0] == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-        goto add_values;
+    size = sizeof(RpMeshHeader) + headerChunk.numMeshes * (sizeof(RpMesh) + sizeof(u32));
+    if (RPMESHOWNERHASINDICES(owner->object.type, owner)) {
+        size += headerChunk.totalIndicesInMesh * sizeof(u16);
     }
-    if (entry[0] == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-        goto add_values;
-    }
-    goto size_ready;
-add_values:
-    size += header[2] * 2;
-size_ready:
-    {
-        u32 *object = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x00030502);
-        if (object == NULL) {
-            goto done;
-        }
-        u32 type;
-        u8 *record = (u8 *)object + 16;
-        u8 *output = record + header[1] * 12;
-        object[0] = header[0];
-        type = entry[0];
-        *(u16 *)((u8 *)object + 4) = header[1];
-        *(s16 *)((u8 *)object + 6) = *(s16 *)(lbl_805F15B4 + lbl_805F14F0);
-        object[2] = header[2];
-        object[3] = 0;
-        (*(s16 *)(lbl_805F15B4 + lbl_805F14F0))++;
-        u32 count = *(u16 *)((u8 *)object + 4);
-        while (count-- != 0) {
-            if (fn_8047D868(stream, pair, 8) == 0) {
+    meshHeader = RpMeshHeaderAlloc(size);
+    if (meshHeader != NULL) {
+        mesh = (RpMesh *)(meshHeader + 1);
+        indices = (u16 *)(mesh + headerChunk.numMeshes);
+        type = owner->object.type;
+        meshHeader->flags = headerChunk.flags;
+        meshHeader->numMeshes = headerChunk.numMeshes;
+        meshHeader->serialNum = RWPLUGINGLOBAL(rpMeshGlobals, lbl_805F14F0).nextSerialNum;
+        meshHeader->totalIndicesInMesh = headerChunk.totalIndicesInMesh;
+        meshHeader->firstMeshOffset = 0;
+        RWPLUGINGLOBAL(rpMeshGlobals, lbl_805F14F0).nextSerialNum++;
+        numMeshes = meshHeader->numMeshes;
+        while (numMeshes--) {
+            if (fn_8047D868(stream, &meshChunk, sizeof(meshChunk)) == NULL) {
                 return NULL;
             }
-            ((u32 *)record)[1] = pair[0];
-            ((u32 *)record)[2] = fn_8045B79C(search, pair[1]);
-            ((u32 *)record)[0] = (u32)output;
-            if (type == 8 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-                goto convert;
-            }
-            if (type == 7 && !(*(u32 *)(entry + 8) & 0x01000000)) {
-                goto convert;
-            }
-            goto next_record;
-convert:
-            {
-                u32 remaining = ((u32 *)record)[1];
-                u32 values[256];
+            mesh->numIndices = meshChunk.numIndices;
+            mesh->material = fn_8045B79C(matList, meshChunk.matIndex);
+            mesh->indices = indices;
+            if (RPMESHOWNERHASINDICES(type, owner)) {
+                remaining = mesh->numIndices;
                 while (remaining != 0) {
-                    u32 *input = values;
-                    u32 chunk = remaining < 256 ? remaining : 256;
-                    if (fn_8047D868(stream, input, chunk * 4) == 0) {
+                    source = buffer;
+                    count = 256;
+                    if (remaining < 256) {
+                        count = remaining;
+                    }
+                    if (fn_8047D868(stream, source, count * sizeof(u32)) == NULL) {
                         return NULL;
                     }
-                    remaining -= chunk;
-                    while (chunk-- != 0) {
-                        *(u16 *)output = *input++;
-                        output += 2;
+                    remaining -= count;
+                    while (count != 0) {
+                        *indices++ = *source++;
+                        count--;
                     }
                 }
             }
-next_record:
-            record += 12;
+            mesh++;
         }
-done:
-        return object;
     }
+    return meshHeader;
 }
 
 void *memcpy(void *destination, const void *source, u32 size);
@@ -242,10 +250,10 @@ u32 *fn_8045CBD4(u32 *object) {
         i++;
     }
     size = (bits + 31) >> 3;
-    bitset = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x00010502);
+    bitset = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(size, 0x00010502);
     if (bitset != NULL) {
         u32 copy_size = object[1] * 2;
-        u16 *copy = ((u16 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(copy_size, 0x00010502);
+        u16 *copy = ((u16 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(copy_size, 0x00010502);
         if (copy != NULL) {
             memcpy(copy, data, copy_size);
             u32 clear;
@@ -291,9 +299,9 @@ next:
                     source += 3;
                 }
             }
-            ((void (*)(u16 *))*(u32 *)(lbl_805F15B4 + 0x10C))(copy);
+            ((void (*)(u16 *))*(u32 *)(RWENGINEBYTES + 0x10C))(copy);
         }
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(bitset);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(bitset);
         return object;
     }
     return object;
@@ -302,14 +310,14 @@ next:
 u32 *fn_8047FBD8(u32 size, u32 count, u32 alignment, u32 tag);
 
 u32 *fn_8045CED8(u32 count, u32 *output, u32 **head, u8 *input) {
-    u32 *slots = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 4, 0x00030502);
+    u32 *slots = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(count * 4, 0x00030502);
     output[0] = (u32)fn_8047FBD8(36, count, 4, 0x00030502);
     output[1] = (u32)fn_8047FBD8(16, count / 2 + 1, 4, 0x00030502);
     u32 *slot = slots;
     u8 *current = input;
     u32 index = 0;
     while (index < count) {
-        slot[0] = (u32)((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
+        slot[0] = (u32)((u32 *(*)(u32 *, u32))*(u32 *)(RWENGINEBYTES + 0x118))(
             (u32 *)output[0], 0x00030502);
         ((u8 *)slot[0])[32] = 0;
         ((u32 *)slot[0])[0] = index;
@@ -600,7 +608,7 @@ u32 *fn_8045C4E4(u32 *object, u32 (*callback)(u8 *, u32 *, u32), u32 argument) {
 }
 
 void fn_8045CA20(void) {
-    s16 *target = (s16 *)((u8 *)lbl_805F15B4 + lbl_805F14F0);
+    s16 *target = (s16 *)((u8 *)RWENGINEBYTES + lbl_805F14F0.globalsOffset);
     *target += 1;
 }
 }

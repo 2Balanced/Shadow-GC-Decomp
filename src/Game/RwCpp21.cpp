@@ -1,850 +1,747 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior.
- * fn_8045B8EC returns the found index or -1 with retail's size; GC/2.7 folds its pointer decrement
- * into lwzu where retail uses a separate addi. fn_8045A7C4 and fn_8045AA44 also match size;
- * their remaining differences are copy-register and first-comparison scheduling choices.
- * fn_8045AFA4 matches size and returns; its first data-pointer setup is scheduled after the saves.
- * fn_8045AD34 matches size; its constant loads and assignments use different volatile registers.
- * fn_8045B13C also matches size; its byte temporary and source-table registers differ.
- * fn_8045BFBC matches size and the emitted byte layout; its temporary registers and final two
- * store forms differ. fn_8045A818 implements all three easing branches; GC/2.7 adds seven
- * conversion/spill instructions and reschedules the polynomial temporaries.
- * fn_8045B348 matches size and all cleanup paths; its initializer temporary registers differ.
- * fn_8045B924 implements every read/append/cleanup path; stack slots and error-block scheduling
- * still differ from retail. */
+/* RenderWare world plugin, four modules cut by size:
+ *   RpLight (balight)        0x8045A760-0x8045AF28 (its first three functions are in RwCpp20)
+ *   RpMaterial (bamateri)    0x8045AF28-0x8045B6F0
+ *   material lists (bamatlst) 0x8045B6F0-0x8045BF30
+ *   meshes (bamesh)          0x8045BF30- (continues in RwCpp22)
+ *
+ * Names are inferred from behaviour and the public RenderWare API:
+ *   fn_8045A7C4  RpLightSetColor          fn_8045A818  RpLightGetConeAngle
+ *   fn_8045AA44  RpLightSetConeAngle      fn_8045AAA0  RpLightRegisterPlugin
+ *   fn_8045AAE0  RpLightRegisterPluginStream  fn_8045AB1C  RpLightStreamRead
+ *   fn_8045ACD4  RpLightDestroy           fn_8045AD34  RpLightCreate
+ *   fn_8045AE20 / fn_8045AE98  light module close / open (plugin 0x505)
+ *   fn_8045AF28 / fn_8045AFA4 / fn_8045B020  material "rights" chunk read / write / size
+ *   fn_8045B048 / fn_8045B0D8  material module open / close (plugin 0x501)
+ *   fn_8045B13C  RpMaterialCreate         fn_8045B1F4  RpMaterialDestroy
+ *   fn_8045B270  RpMaterialSetTexture     fn_8045B2CC  RpMaterialRegisterPlugin
+ *   fn_8045B30C  RpMaterialRegisterPluginStream  fn_8045B348  RpMaterialStreamRead
+ *   fn_8045B6F0  _rpMaterialListDeinitialize  fn_8045B788  _rpMaterialListInitialize
+ *   fn_8045B79C  _rpMaterialListGetMaterial   fn_8045B7AC  _rpMaterialListAppendMaterial
+ *   fn_8045B8EC  _rpMaterialListFindMaterialIndex  fn_8045B924  _rpMaterialListStreamRead
+ *   fn_8045BF30  mesh allocation helper   fn_8045BF64 / fn_8045BFBC  mesh module close / open
+ *   fn_8045C144  _rpBuildMeshCreate       fn_8045C26C  _rpBuildMeshDestroy
+ *   fn_8045C2D4  _rpMeshDestroy
+ * The float constants are the unit's .sdata2 literals; they are named by address until the unit
+ * owns that section. Built with cflags_rw_r3 (configure.py): functions are in address order.
+ * Status: every function matches except fn_8045B8EC (the material array loaded into r5 and the
+ * scaled count into r0, retail the other way round; 3 rows) and fn_8045B924, where retail gives the
+ * two parameters r31/r30 and the inlined list helpers' variables the registers below them, ours the
+ * reverse (a whole-function register permutation). Both are recorded in probes/Game_RwCpp21.py. */
 #include <dolphin/types.h>
+#include "Game/rw/r3.h"
 
-extern "C" {
-void fn_8045A7C4(u8 *object, f32 *values) {
-    u32 first = ((u32 *)values)[0];
-    u32 second = ((u32 *)values)[1];
-    *(u32 *)(object + 24) = first;
-    u32 third = ((u32 *)values)[2];
-    *(u32 *)(object + 28) = second;
-    u32 fourth = ((u32 *)values)[3];
-    *(u32 *)(object + 32) = third;
-    *(u32 *)(object + 36) = fourth;
-    if (*(f32 *)(object + 24) == *(f32 *)(object + 28) &&
-        *(f32 *)(object + 24) == *(f32 *)(object + 32)) {
-        object[3] = 1;
+extern RwModuleInfo lbl_805F14D8;     /* light module */
+extern u32 lbl_805F14E0;              /* extra data of the last rights chunk read */
+extern u32 lbl_805F14E4;              /* plugin of the last rights chunk read */
+extern RwModuleInfo lbl_805F14E8;     /* material module */
+extern RwModuleInfo lbl_805F14F0;     /* mesh module */
+extern RwPluginRegistry lbl_8056D828; /* lightTKList */
+extern RwPluginRegistry lbl_8056D840; /* materialTKList */
+extern RwSurfaceProperties lbl_8056D858; /* default surface properties */
+extern u8 lbl_805E15C8[0x28];         /* static light free list */
+extern u8 lbl_805E15F0[0x28];         /* static material free list */
+extern s32 lbl_805EDDB0;              /* light free list block size */
+extern s32 lbl_805EDDB4;              /* light free list preallocation */
+extern s32 lbl_805EDDB8;              /* material free list block size */
+extern s32 lbl_805EDDBC;              /* material free list preallocation */
+extern RwFreeList *lbl_805EDDC0;      /* build mesh free list */
+
+extern const f32 lbl_805FB120; /* 0.0f */
+extern const f32 lbl_805FB124; /* pi */
+extern const f32 lbl_805FB128; /* pi / 2 */
+extern const f32 lbl_805FB12C; /* pi / 2, high part */
+extern const f32 lbl_805FB130; /* pi / 2, low part */
+extern const f32 lbl_805FB134; /* pS0 */
+extern const f32 lbl_805FB138; /* pS1 */
+extern const f32 lbl_805FB13C; /* pS2 */
+extern const f32 lbl_805FB140; /* pS3 */
+extern const f32 lbl_805FB144; /* pS4 */
+extern const f32 lbl_805FB148; /* pS5 */
+extern const f32 lbl_805FB14C; /* 1.0f */
+extern const f32 lbl_805FB150; /* qS1 */
+extern const f32 lbl_805FB154; /* qS2 */
+extern const f32 lbl_805FB158; /* qS3 */
+extern const f32 lbl_805FB15C; /* qS4 */
+extern const f32 lbl_805FB160; /* 0.5f */
+extern const f32 lbl_805FB164; /* pi, single precision sum */
+extern const f32 lbl_805FB168; /* 2.0f */
+
+void *memset(void *, int, u32);
+double cos(double);
+f32 fn_80482340(f32); /* _rwSqrt */
+
+s32 fn_804815F0(RwPluginRegistry *, u32, void *, void *, void *);
+s32 fn_80481DC8(RwPluginRegistry *, s32, u32, void *, void *, void *);
+void fn_8048209C(RwPluginRegistry *, void *);
+void fn_80482144(RwPluginRegistry *, void *);
+void *fn_804816AC(RwPluginRegistry *, RwStream *, void *);
+void fn_80481870(RwPluginRegistry *, u32, void *, u32); /* invoke the rights callback */
+void fn_8048D834(void *);                               /* release the object's frame */
+
+RwFreeList *fn_8047FC04(s32, s32, s32, s32, void *, u32); /* RwFreeListCreateAndPreallocateSpace */
+RwFreeList *fn_8047FBD8(s32, s32, s32, u32);              /* RwFreeListCreate */
+s32 fn_8047FCDC(RwFreeList *);                            /* RwFreeListDestroy */
+RwFreeList *fn_804800DC(RwFreeList *, void *, void *);    /* RwFreeListForAllUsed */
+
+s32 fn_8047CF50(RwStream *, u32, u32 *, u32 *);
+u32 fn_80480D4C(RwStream *, void *, u32);
+void *fn_8047D254(void *, u32);
+RwStream *fn_8047D868(RwStream *, void *, u32); /* RwStreamReadInt32 */
+RwStream *fn_8047D458(RwStream *, const void *, u32); /* RwStreamWriteInt32 */
+RwTexture *fn_80483D28(RwStream *);             /* RwTextureStreamRead */
+s32 fn_8048CD8C(RwTexture *);                   /* RwTextureDestroy */
+
+void fn_8045A760(void);
+void fn_8045A780(void);
+RpLight *fn_8045AD34(s32 type);
+RpMaterial *fn_8045B270(RpMaterial *material, RwTexture *texture);
+
+/* --- RpLight --- */
+
+RpLight *fn_8045A7C4(RpLight *light, const RwRGBAReal *color) {
+    light->color = *color;
+    if (light->color.red == light->color.green && light->color.red == light->color.blue) {
+        light->object.object.privateFlags = 1;
     } else {
-        object[3] = 0;
+        light->object.object.privateFlags = 0;
+    }
+    return light;
+}
+
+/* Access to the bits of a float, as fdlibm does it. */
+typedef union RwFloatBits {
+    f32 value;
+    s32 word;
+} RwFloatBits;
+
+#define GET_FLOAT_WORD(i, d)     \
+    do {                         \
+        RwFloatBits getBits;     \
+        getBits.value = (d);     \
+        (i) = getBits.word;      \
+    } while (0)
+
+#define SET_FLOAT_WORD(d, i)     \
+    do {                         \
+        RwFloatBits setBits;     \
+        setBits.word = (i);      \
+        (d) = setBits.value;     \
+    } while (0)
+
+/* The angle is the arc cosine of the stored value, in single precision (the fdlibm algorithm). */
+f32 fn_8045A818(const RpLight *light) {
+    f32 x = -light->minusCosAngle;
+    f32 z, p, q, r, w, s, c, df;
+    s32 hx, ix;
+
+    GET_FLOAT_WORD(hx, x);
+    ix = hx & 0x7FFFFFFF;
+    if (ix >= 0x3F800000) {
+        if (hx > 0) {
+            return lbl_805FB120;
+        }
+        return lbl_805FB124;
+    }
+    if (ix < 0x3F000000) {
+        if (ix <= 0x23000000) {
+            return lbl_805FB128;
+        }
+        z = x * x;
+        p = z * (lbl_805FB134 +
+                 z * (lbl_805FB138 +
+                      z * (lbl_805FB13C + z * (lbl_805FB140 + z * (lbl_805FB144 + lbl_805FB148 * z)))));
+        q = lbl_805FB14C +
+            z * (lbl_805FB150 + z * (lbl_805FB154 + z * (lbl_805FB158 + lbl_805FB15C * z)));
+        r = p / q;
+        return lbl_805FB12C - (x - (lbl_805FB130 - x * r));
+    } else if (hx < 0) {
+        z = (lbl_805FB14C + x) * lbl_805FB160;
+        s = fn_80482340(z);
+        p = z * (lbl_805FB134 +
+                 z * (lbl_805FB138 +
+                      z * (lbl_805FB13C + z * (lbl_805FB140 + z * (lbl_805FB144 + lbl_805FB148 * z)))));
+        q = lbl_805FB14C +
+            z * (lbl_805FB150 + z * (lbl_805FB154 + z * (lbl_805FB158 + lbl_805FB15C * z)));
+        r = p / q;
+        w = r * s - lbl_805FB130;
+        return lbl_805FB164 - lbl_805FB168 * (s + w);
+    } else {
+        s32 idf;
+        z = (lbl_805FB14C - x) * lbl_805FB160;
+        s = fn_80482340(z);
+        df = s;
+        GET_FLOAT_WORD(idf, df);
+        SET_FLOAT_WORD(df, idf & 0xFFFFF000);
+        c = (z - df * df) / (s + df);
+        p = z * (lbl_805FB134 +
+                 z * (lbl_805FB138 +
+                      z * (lbl_805FB13C + z * (lbl_805FB140 + z * (lbl_805FB144 + lbl_805FB148 * z)))));
+        q = lbl_805FB14C +
+            z * (lbl_805FB150 + z * (lbl_805FB154 + z * (lbl_805FB158 + lbl_805FB15C * z)));
+        r = p / q;
+        w = r * s + c;
+        return lbl_805FB168 * (df + w);
     }
 }
 
-extern f32 lbl_805FB120;
-extern f32 lbl_805FB128;
-double cos(double);
-
-u8 *fn_8045AA44(u8 *object, f32 value) {
-    if (value < lbl_805FB120 || value > lbl_805FB128) {
+RpLight *fn_8045AA44(RpLight *light, f32 angle) {
+    if (angle < lbl_805FB120 || angle > lbl_805FB128) {
         return NULL;
     }
-    *(f32 *)(object + 40) = -(f32)cos(value);
-    return object;
+    light->minusCosAngle = -(f32)cos(angle);
+    return light;
 }
 
-u32 fn_8045B79C(u32 *object, u32 index) {
-    return ((u32 *)object[0])[index];
+s32 fn_8045AAA0(s32 size, u32 pluginID, void *constructCB, void *destructCB, void *copyCB) {
+    return fn_80481DC8(&lbl_8056D828, size, pluginID, constructCB, destructCB, copyCB);
 }
 
-void fn_8045B788(u32 *object) {
-    object[2] = 0;
-    object[0] = 0;
-    object[1] = 0;
+s32 fn_8045AAE0(u32 pluginID, void *readCB, void *writeCB, void *getSizeCB) {
+    return fn_804815F0(&lbl_8056D828, pluginID, readCB, writeCB, getSizeCB);
 }
 
-u32 fn_8045B020(u32 *object) {
-    u32 *nested = (u32 *)object[2];
-    if (nested != NULL) {
-        if (nested[0x0B] != 0) {
+typedef struct RpLightChunkInfo {
+    f32 radius;
+    f32 red;
+    f32 green;
+    f32 blue;
+    f32 minusCosAngle;
+    u32 typeAndFlags;
+} RpLightChunkInfo;
+
+RpLight *fn_8045AB1C(RwStream *stream) {
+    RpLight *light;
+    RpLightChunkInfo info;
+    u32 size;
+    u32 version;
+
+    if (!fn_8047CF50(stream, 1, &size, &version)) {
+        return NULL;
+    }
+    if (version >= 0x35000 && version <= 0x37002) {
+        memset(&info, 0, sizeof(info));
+        if (fn_80480D4C(stream, &info, size) != size) {
+            return NULL;
+        }
+        fn_8047D254(&info, sizeof(info));
+        light = fn_8045AD34((info.typeAndFlags >> 16) & 0xFF);
+        if (light == NULL) {
+            return NULL;
+        }
+        light->radius = info.radius;
+        light->color.red = info.red;
+        light->color.green = info.green;
+        light->color.blue = info.blue;
+        if (version < 0x30300) {
+            /* Old streams hold the tangent of the cone angle. */
+            light->minusCosAngle =
+                -fn_80482340(lbl_805FB14C / (lbl_805FB14C + info.minusCosAngle * info.minusCosAngle));
+        } else {
+            light->minusCosAngle = info.minusCosAngle;
+        }
+        if (light->color.red == light->color.green && light->color.red == light->color.blue) {
+            light->object.object.privateFlags = 1;
+        } else {
+            light->object.object.privateFlags = 0;
+        }
+        light->object.object.flags = info.typeAndFlags;
+        if (fn_804816AC(&lbl_8056D828, stream, light) == NULL) {
+            return NULL;
+        }
+        return light;
+    }
+    RWERROR((E_RW_BADVERSION));
+    return NULL;
+}
+
+s32 fn_8045ACD4(RpLight *light) {
+    fn_80482144(&lbl_8056D828, light);
+    fn_8048D834(light);
+    RwFreeListFree(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8), light);
+    return 1;
+}
+
+RpLight *fn_8045AD34(s32 type) {
+    RpLight *light = (RpLight *)RwFreeListAlloc(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8), 0x30012);
+    if (light == NULL) {
+        return NULL;
+    }
+    light->object.object.type = 3;
+    light->object.object.subType = type;
+    light->object.object.flags = 0;
+    light->object.object.privateFlags = 0;
+    light->object.object.parent = NULL;
+    light->object.sync = (RwObjectHasFrame *(*)(RwObjectHasFrame *))fn_8045A780;
+    light->radius = lbl_805FB120;
+    light->minusCosAngle = lbl_805FB120;
+    light->color.red = lbl_805FB14C;
+    light->color.green = lbl_805FB14C;
+    light->color.blue = lbl_805FB14C;
+    light->color.alpha = lbl_805FB14C;
+    light->object.object.privateFlags = 1;
+    light->WorldSectorsInLight.link.next = &light->WorldSectorsInLight.link;
+    light->WorldSectorsInLight.link.prev = &light->WorldSectorsInLight.link;
+    light->inWorld.prev = NULL;
+    light->inWorld.next = NULL;
+    light->lightFrame = RWSRCGLOBAL(lightFrame) - 1;
+    light->object.object.flags = 3;
+    fn_8048209C(&lbl_8056D828, light);
+    return light;
+}
+
+void *fn_8045AE20(void *instance) {
+    fn_804800DC(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8), (void *)fn_8045A760, NULL);
+    fn_8047FCDC(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8));
+    RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8) = NULL;
+    lbl_805F14D8.numInstances--;
+    return instance;
+}
+
+void *fn_8045AE98(void *instance, s32 offset) {
+    lbl_805F14D8.globalsOffset = offset;
+    RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8) = fn_8047FC04(
+        lbl_8056D828.sizeOfStruct, lbl_805EDDB0, 4, lbl_805EDDB4, lbl_805E15C8, 0x40012);
+    if (RWPLUGINGLOBAL(RwFreeList *, lbl_805F14D8) != NULL) {
+        lbl_805F14D8.numInstances++;
+        return instance;
+    }
+    return NULL;
+}
+
+/* --- RpMaterial --- */
+
+RwStream *fn_8045AF28(RwStream *stream, s32 length) {
+    if (fn_8047D868(stream, &lbl_805F14E4, sizeof(u32)) == NULL) {
+        return NULL;
+    }
+    if (length == 8) {
+        if (fn_8047D868(stream, &lbl_805F14E0, sizeof(u32)) == NULL) {
+            return NULL;
+        }
+    }
+    return stream;
+}
+
+RwStream *fn_8045AFA4(RwStream *stream, s32 length, const RpMaterial *material) {
+    if (fn_8047D458(stream, &material->pipeline->pluginId, sizeof(u32)) == NULL) {
+        return NULL;
+    }
+    if (fn_8047D458(stream, &material->pipeline->pluginData, sizeof(u32)) != NULL) {
+        return stream;
+    }
+    return NULL;
+}
+
+s32 fn_8045B020(const RpMaterial *material) {
+    if (material->pipeline != NULL) {
+        if (material->pipeline->pluginId != 0) {
             return 8;
         }
     }
     return 0;
 }
 
-extern u8 *lbl_805F15B4;
-
-void fn_8045BF30(u32 first) {
-    ((void (*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(first, 0x30502);
-}
-
-s32 fn_8045B8EC(u32 *object, u32 value) {
-    s32 count = object[1];
-    u32 *entries = (u32 *)object[0] + count;
-    while (count-- > 0) {
-        entries--;
-        if (entries[0] == value) {
-            return count;
-        }
+void *fn_8045B048(void *instance, s32 offset) {
+    lbl_805F14E8.globalsOffset = offset;
+    RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8) = fn_8047FC04(
+        lbl_8056D840.sizeOfStruct, lbl_805EDDB8, 4, lbl_805EDDBC, lbl_805E15F0, 0x40007);
+    if (RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8) == NULL) {
+        return NULL;
     }
-    return -1;
+    lbl_805F14E8.numInstances++;
+    return instance;
 }
 
-extern u8 lbl_8056D828[];
-extern u32 lbl_805F14D8;
-void fn_80482144(u8 *, u32 *);
-void fn_8048D834(u32 *);
+void *fn_8045B0D8(void *instance) {
+    if (RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8) != NULL) {
+        fn_8047FCDC(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8));
+        RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8) = NULL;
+    }
+    lbl_805F14E8.numInstances--;
+    return instance;
+}
 
-u32 fn_8045ACD4(u32 *object) {
-    fn_80482144(lbl_8056D828, object);
-    fn_8048D834(object);
-    ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-        *(u8 **)(lbl_805F15B4 + lbl_805F14D8), object);
+RpMaterial *fn_8045B13C(void) {
+    RwRGBA color;
+    RpMaterial *material =
+        (RpMaterial *)RwFreeListAlloc(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8), 0x30007);
+    if (material == NULL) {
+        return NULL;
+    }
+    material->refCount = 1;
+    color.red = 0xFF;
+    color.green = 0xFF;
+    color.blue = 0xFF;
+    color.alpha = 0xFF;
+    material->color = color;
+    material->texture = NULL;
+    material->pipeline = NULL;
+    material->surfaceProps = lbl_8056D858;
+    fn_8048209C(&lbl_8056D840, material);
+    return material;
+}
+
+/* The material file expands RpMaterialDestroy in RpMaterialStreamRead; the material-list file
+ * behind it calls it. While both are one unit, the function is kept out of line and the stream
+ * reader uses the two inline copies below (remove them when the unit is cut at 0x8045B6F0). */
+#pragma dont_inline on
+s32 fn_8045B1F4(RpMaterial *material) {
+    if (material->refCount == 1) {
+        fn_80482144(&lbl_8056D840, material);
+        fn_8045B270(material, NULL);
+        RwFreeListFree(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8), material);
+    } else {
+        material->refCount--;
+    }
+    return 1;
+}
+#pragma dont_inline reset
+
+RpMaterial *fn_8045B270(RpMaterial *material, RwTexture *texture) {
+    if (texture != NULL) {
+        texture->refCount++;
+    }
+    if (material->texture != NULL) {
+        fn_8048CD8C(material->texture);
+    }
+    material->texture = texture;
+    return material;
+}
+
+static inline RpMaterial *RpMaterialSetTextureInline(RpMaterial *material, RwTexture *texture) {
+    if (texture != NULL) {
+        texture->refCount++;
+    }
+    if (material->texture != NULL) {
+        fn_8048CD8C(material->texture);
+    }
+    material->texture = texture;
+    return material;
+}
+
+static inline s32 RpMaterialDestroyInline(RpMaterial *material) {
+    if (material->refCount == 1) {
+        fn_80482144(&lbl_8056D840, material);
+        RpMaterialSetTextureInline(material, NULL);
+        RwFreeListFree(RWPLUGINGLOBAL(RwFreeList *, lbl_805F14E8), material);
+    } else {
+        material->refCount--;
+    }
     return 1;
 }
 
-extern u32 lbl_805F14E8;
-extern u8 lbl_8056D840[];
-u32 *fn_8047FC04(u32, u32, u32, u32, u32 *, u32);
-extern u32 lbl_805EDDB0;
-extern u32 lbl_805EDDB4;
-extern u32 lbl_805E15C8[];
+s32 fn_8045B2CC(s32 size, u32 pluginID, void *constructCB, void *destructCB, void *copyCB) {
+    return fn_80481DC8(&lbl_8056D840, size, pluginID, constructCB, destructCB, copyCB);
+}
 
-u32 *fn_8045AE98(u32 *object, u32 value) {
-    lbl_805F14D8 = value;
-    u32 *table = fn_8047FC04(*(u32 *)lbl_8056D828, lbl_805EDDB0, 4, lbl_805EDDB4,
-                             lbl_805E15C8, 0x00040012);
-    *(u32 **)(lbl_805F15B4 + lbl_805F14D8) = table;
-    if (*(u32 **)(lbl_805F15B4 + lbl_805F14D8) != NULL) {
-        (&lbl_805F14D8)[1]++;
-        return object;
+s32 fn_8045B30C(u32 pluginID, void *readCB, void *writeCB, void *getSizeCB) {
+    return fn_804815F0(&lbl_8056D840, pluginID, readCB, writeCB, getSizeCB);
+}
+
+typedef struct RpMaterialChunkInfo {
+    s32 flags;
+    RwRGBA color;
+    s32 unused;
+    s32 textured;
+    RwSurfaceProperties surfaceProps;
+} RpMaterialChunkInfo;
+
+RpMaterial *fn_8045B348(RwStream *stream) {
+    u32 size;
+    u32 version;
+    RpMaterialChunkInfo info;
+    RpMaterial *material;
+    RwRGBA color;
+
+    if (!fn_8047CF50(stream, 1, &size, &version)) {
+        return NULL;
     }
+    if (version >= 0x35000 && version <= 0x37002) {
+        memset(&info, 0, sizeof(info));
+        if (fn_80480D4C(stream, &info, size) != size) {
+            return NULL;
+        }
+        /* The colour is bytes: it does not take part in the word swap. */
+        color = info.color;
+        fn_8047D254(&info, sizeof(info));
+        info.color = color;
+
+        material = fn_8045B13C();
+        if (material == NULL) {
+            return NULL;
+        }
+        material->color = info.color;
+        material->surfaceProps = info.surfaceProps;
+        material->texture = NULL;
+        if (info.textured) {
+            if (!fn_8047CF50(stream, 6, NULL, &version)) {
+                RpMaterialDestroyInline(material);
+                return NULL;
+            }
+            if (version >= 0x35000 && version <= 0x37002) {
+                material->texture = fn_80483D28(stream);
+            } else {
+                RpMaterialDestroyInline(material);
+                RWERROR((E_RW_BADVERSION));
+                return NULL;
+            }
+        }
+        lbl_805F14E4 = 0;
+        lbl_805F14E0 = 0;
+        if (fn_804816AC(&lbl_8056D840, stream, material) == NULL) {
+            RpMaterialDestroyInline(material);
+            return NULL;
+        }
+        if (lbl_805F14E4 != 0) {
+            fn_80481870(&lbl_8056D840, lbl_805F14E4, material, lbl_805F14E0);
+        }
+        return material;
+    }
+    RWERROR((E_RW_BADVERSION));
     return NULL;
 }
 
-void fn_8047FCDC(u32 *table);
-void fn_8045A780(void);
-void fn_8045A760(void);
-void fn_8048209C(u8 *, u32 *);
-void fn_804800DC(u32 *, u32, u32);
-extern f32 lbl_805FB14C;
+/* --- material lists --- */
 
-u32 *fn_8045AD34(u32 type) {
-    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F14D8), 0x00030012);
-    if (object == NULL) {
-        return NULL;
-    }
-    ((u8 *)object)[0] = 3;
-    ((u8 *)object)[1] = type;
-    ((u8 *)object)[2] = 0;
-    ((u8 *)object)[3] = 0;
-    object[1] = 0;
-    object[4] = (u32)fn_8045A780;
-    f32 first = lbl_805FB120;
-    *(f32 *)((u8 *)object + 20) = first;
-    *(f32 *)((u8 *)object + 40) = first;
-    f32 second = lbl_805FB14C;
-    *(f32 *)((u8 *)object + 24) = second;
-    *(f32 *)((u8 *)object + 28) = second;
-    *(f32 *)((u8 *)object + 32) = second;
-    *(f32 *)((u8 *)object + 36) = second;
-    ((u8 *)object)[3] = 1;
-    object[11] = (u32)(object + 11);
-    object[12] = (u32)(object + 11);
-    object[14] = 0;
-    object[13] = 0;
-    *(u16 *)((u8 *)object + 60) = *(u16 *)(lbl_805F15B4 + 10) - 1;
-    ((u8 *)object)[2] = 3;
-    fn_8048209C(lbl_8056D828, object);
-    return object;
-}
-
-u32 *fn_8045AE20(u32 *object) {
-    u32 *table = *(u32 **)(lbl_805F15B4 + lbl_805F14D8);
-    fn_804800DC(table, (u32)fn_8045A760, 0);
-    fn_8047FCDC(*(u32 **)(lbl_805F15B4 + lbl_805F14D8));
-    *(u32 **)(lbl_805F15B4 + lbl_805F14D8) = NULL;
-    (&lbl_805F14D8)[1]--;
-    return object;
-}
-
-u32 fn_8045B1F4(u32 *object);
-u32 *fn_8045B348(u8 *stream);
-u32 fn_8047DC28(u32 code, ...);
-void fn_8047DB84(u32 *error);
-u32 fn_8047CF50(u8 *, u32, u32 *, u32 *);
-u32 fn_8047D868(u8 *stream, void *data, u32 size);
-
-static inline void RwCpp21ClearOwner(u32 *owner) {
-    u32 *current;
-    u32 *entries = (u32 *)owner[0];
-    if (entries != NULL) {
-        s32 count = owner[1];
-        current = entries;
-        for (s32 i = 0; i < count; i++) {
-            fn_8045B1F4((u32 *)current[0]);
-            current[0] = 0;
-            current++;
+RpMaterialList *fn_8045B6F0(RpMaterialList *matList) {
+    RpMaterial **materials = matList->materials;
+    if (materials != NULL) {
+        s32 count = matList->numMaterials;
+        s32 i;
+        for (i = 0; i < count; i++) {
+            fn_8045B1F4(materials[i]);
+            materials[i] = NULL;
         }
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(entries);
-        owner[0] = 0;
+        RwFree(materials);
+        matList->materials = NULL;
     }
-    owner[1] = 0;
-    owner[2] = 0;
+    matList->numMaterials = 0;
+    matList->space = 0;
+    return matList;
 }
 
-static inline void RwCpp21AppendObject(u32 *owner, u32 *object) {
-    if ((s32)owner[2] > (s32)owner[1]) {
-        ((u32 *)owner[0])[owner[1]] = (u32)object;
-        (*(s16 *)((u8 *)object + 24))++;
-        owner[1]++;
-        return;
-    }
-    u32 capacity = owner[2] + 20;
-    u32 error_size = capacity * 4;
-    u32 *buffer;
-    if (owner[0] != 0) {
-        buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
-            (u32 *)owner[0], capacity * 4, 0x01030008);
-    } else {
-        buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(capacity * 4, 0x01030008);
-    }
-    if (buffer == NULL) {
-        u32 error[2];
-        error[0] = 2;
-        error[1] = fn_8047DC28(0x80000013, error_size);
-        fn_8047DB84(error);
-        return;
-    }
-    owner[0] = (u32)buffer;
-    owner[2] += 20;
-    buffer[owner[1]] = (u32)object;
-    (*(s16 *)((u8 *)object + 24))++;
-    owner[1]++;
+RpMaterialList *fn_8045B788(RpMaterialList *matList) {
+    matList->space = 0;
+    matList->materials = NULL;
+    matList->numMaterials = 0;
+    return matList;
 }
 
-u32 *fn_8045B924(u8 *stream, u32 *owner) {
-    u32 first;
-    u32 second;
-    u32 count;
-    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
-        return NULL;
-    }
-    if (first < 0x00035000 || first > 0x00037002) {
-        goto invalid;
-    }
-    bool read_ok = fn_8047D868(stream, &count, 4) != 0;
-    if (!read_ok) {
-        return NULL;
-    }
-    owner[2] = 0;
-    owner[0] = 0;
-    owner[1] = 0;
-    if ((s32)count == 0) {
-        return owner;
-    }
-    u32 *result = owner;
-    if ((s32)owner[2] < (s32)count) {
-        u32 size = count * 4;
-        u32 *buffer;
-        if (owner[0] != 0) {
-            buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
-                (u32 *)owner[0], size, 0x01030008);
+RpMaterial *fn_8045B79C(const RpMaterialList *matList, s32 index) {
+    return matList->materials[index];
+}
+
+static RpMaterialList *RpMaterialListSetSize(RpMaterialList *matList, s32 space) {
+    if (matList->space < space) {
+        RpMaterial **materials;
+        u32 size = space * sizeof(RpMaterial *);
+        if (matList->materials != NULL) {
+            materials = (RpMaterial **)RwRealloc(matList->materials, size, 0x1030008);
         } else {
-            buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030008);
+            materials = (RpMaterial **)RwMalloc(size, 0x1030008);
         }
-        if (buffer == NULL) {
-            u32 error[2];
-            error[0] = 2;
-            error[1] = fn_8047DC28(0x80000013, size);
-            fn_8047DB84(error);
-            result = NULL;
-        } else {
-            owner[0] = (u32)buffer;
-            owner[2] = count;
-        }
-    }
-    if (result == NULL) {
-        RwCpp21ClearOwner(owner);
-        return NULL;
-    }
-    u32 *table = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count * 4, 0x00010501);
-    read_ok = fn_8047D868(stream, table, count * 4) != 0;
-    if (!read_ok) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-        RwCpp21ClearOwner(owner);
-        return NULL;
-    }
-    u32 *current = table;
-    for (s32 i = 0; i < (s32)count; i++) {
-        u32 *object;
-        if ((s32)current[0] < 0) {
-            if ((s32)fn_8047CF50(stream, 7, NULL, &first) == 0) {
-                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-                RwCpp21ClearOwner(owner);
-                return NULL;
-            }
-            if (first >= 0x00035000 && first <= 0x00037002) {
-                object = fn_8045B348(stream);
-            } else {
-                {
-                    u32 error[2];
-                    error[0] = 2;
-                    error[1] = fn_8047DC28(0x80000004);
-                    fn_8047DB84(error);
-                }
-                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-                RwCpp21ClearOwner(owner);
-                return NULL;
-            }
-            if (object == NULL) {
-                ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-                RwCpp21ClearOwner(owner);
-                return NULL;
-            }
-        } else {
-            object = ((u32 **)owner[0])[i];
-            (*(s16 *)((u8 *)object + 24))++;
-        }
-        RwCpp21AppendObject(owner, object);
-        fn_8045B1F4(object);
-        current++;
-    }
-    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table);
-    return owner;
-invalid:
-    {
-        u32 error[2];
-        error[0] = 2;
-        error[1] = fn_8047DC28(0x80000004);
-        fn_8047DB84(error);
-        return NULL;
-    }
-}
-
-u32 fn_80480D4C(u8 *, u8 *, u32);
-void fn_8047D254(u8 *, u32);
-u32 fn_804816AC(u8 *, u8 *, u32 *);
-f32 fn_80482340(f32);
-void *memset(void *, s32, u32);
-
-u32 *fn_8045AB1C(u8 *stream) {
-    u32 second;
-    u32 first;
-    u8 buffer[24];
-    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
-        return NULL;
-    }
-    if (first < 0x00035000 || first > 0x00037002) {
-        goto invalid;
-    }
-    memset(buffer, 0, 24);
-    if (fn_80480D4C(stream, buffer, second) != second) {
-        return NULL;
-    }
-    fn_8047D254(buffer, 24);
-    u32 *object = fn_8045AD34((*(u32 *)(buffer + 20) >> 16) & 0xFF);
-    if (object == NULL) {
-        return NULL;
-    }
-    *(f32 *)((u8 *)object + 20) = *(f32 *)(buffer);
-    *(f32 *)((u8 *)object + 24) = *(f32 *)(buffer + 4);
-    *(f32 *)((u8 *)object + 28) = *(f32 *)(buffer + 8);
-    *(f32 *)((u8 *)object + 32) = *(f32 *)(buffer + 12);
-    if (first < 0x00030300) {
-        f32 value = *(f32 *)(buffer + 16);
-        value = value * value;
-        f32 denominator = lbl_805FB14C + value;
-        *(f32 *)((u8 *)object + 40) = -fn_80482340(lbl_805FB14C / denominator);
-    } else {
-        *(f32 *)((u8 *)object + 40) = *(f32 *)(buffer + 16);
-    }
-    if (*(f32 *)((u8 *)object + 24) == *(f32 *)((u8 *)object + 28) &&
-        *(f32 *)((u8 *)object + 24) == *(f32 *)((u8 *)object + 32)) {
-        ((u8 *)object)[3] = 1;
-    } else {
-        ((u8 *)object)[3] = 0;
-    }
-    ((u8 *)object)[2] = *(u32 *)(buffer + 20);
-    if (fn_804816AC(lbl_8056D828, stream, object) == 0) {
-        return NULL;
-    }
-    return object;
-invalid:
-    {
-        u32 error[2];
-        error[0] = 2;
-        error[1] = fn_8047DC28(0x80000004);
-        fn_8047DB84(error);
-        return NULL;
-    }
-}
-
-extern f32 lbl_805FB124;
-extern f32 lbl_805FB128;
-extern f32 lbl_805FB12C;
-extern f32 lbl_805FB130;
-extern f32 lbl_805FB134;
-extern f32 lbl_805FB138;
-extern f32 lbl_805FB13C;
-extern f32 lbl_805FB140;
-extern f32 lbl_805FB144;
-extern f32 lbl_805FB148;
-extern f32 lbl_805FB150;
-extern f32 lbl_805FB154;
-extern f32 lbl_805FB158;
-extern f32 lbl_805FB15C;
-extern f32 lbl_805FB160;
-extern f32 lbl_805FB164;
-extern f32 lbl_805FB168;
-
-f32 fn_8045A818(f32 *object) {
-    f32 input = object[10];
-    f32 value = -input;
-    u32 bits = *(u32 *)&value;
-    u32 magnitude = bits & 0x7FFFFFFF;
-    if ((s32)magnitude >= 0x3F800000) {
-        if ((s32)bits > 0) {
-            return lbl_805FB120;
-        }
-        return lbl_805FB124;
-    }
-    if ((s32)magnitude < 0x3F000000) {
-        if ((s32)magnitude <= 0x23000000) {
-            return lbl_805FB128;
-        }
-        f32 f8 = value * value;
-        f32 f4 = lbl_805FB148 * f8 + lbl_805FB144;
-        f32 f3 = f8 * f4 + lbl_805FB140;
-        f32 f1 = lbl_805FB15C * f8 + lbl_805FB158;
-        f32 f6 = f8 * f3 + lbl_805FB13C;
-        f3 = f8 * f1 + lbl_805FB154;
-        f32 f5 = f8 * f6 + lbl_805FB138;
-        f32 f2 = f8 * f3 + lbl_805FB150;
-        f3 = f8 * f5 + lbl_805FB134;
-        f1 = f8 * f2 + lbl_805FB14C;
-        f2 = f8 * f3;
-        f1 = f2 / f1;
-        f32 f0 = lbl_805FB130 - value * f1;
-        f0 = value - f0;
-        return lbl_805FB12C - f0;
-    }
-    if ((s32)bits < 0) {
-        f32 f0 = lbl_805FB14C + value;
-        f32 f31 = lbl_805FB160 * f0;
-        f32 f1 = f31;
-        f1 = fn_80482340(f1);
-        f32 f5 = lbl_805FB148 * f31 + lbl_805FB144;
-        f32 f4 = f31 * f5 + lbl_805FB140;
-        f32 f2 = lbl_805FB15C * f31 + lbl_805FB158;
-        f32 f7 = f31 * f4 + lbl_805FB13C;
-        f4 = f31 * f2 + lbl_805FB154;
-        f32 f6 = f31 * f7 + lbl_805FB138;
-        f4 = f31 * f4 + lbl_805FB150;
-        f5 = f31 * f6 + lbl_805FB134;
-        f32 f3 = f31 * f4 + lbl_805FB14C;
-        f4 = f31 * f5;
-        f3 = f4 / f3;
-        f2 = f3 * f1 - lbl_805FB130;
-        f1 = f1 + f2;
-        return lbl_805FB130 - lbl_805FB168 * f1;
-    }
-    f32 f0 = lbl_805FB14C - value;
-    f32 f31 = lbl_805FB160 * f0;
-    f32 result = fn_80482340(f31);
-    u32 rounded_bits = *(u32 *)&result;
-    rounded_bits &= 0xFFFFF000;
-    f32 rounded = *(f32 *)&rounded_bits;
-    f32 f2 = lbl_805FB148 * f31 + lbl_805FB144;
-    f32 f4 = f31 * f2 + lbl_805FB140;
-    f4 = f31 * f4 + lbl_805FB13C;
-    f2 = lbl_805FB15C * f31 + lbl_805FB158;
-    f4 = f31 * f4 + lbl_805FB138;
-    f2 = f31 * f2 + lbl_805FB154;
-    f4 = f31 * f4 + lbl_805FB134;
-    f2 = f31 * f2 + lbl_805FB150;
-    f32 f5 = f31 * f4 + lbl_805FB14C;
-    f4 = f31 * f2 + lbl_805FB130;
-    f2 = f31 - rounded * rounded;
-    f0 = result + rounded;
-    f5 = f31 * f5;
-    f32 f3 = f31 * f4 + lbl_805FB14C;
-    f0 = f2 / f0;
-    f2 = f5 / f3;
-    f0 = f2 * result + f0;
-    f0 = rounded + f0;
-    return lbl_805FB168 * f0;
-}
-
-extern u32 lbl_805EDDB8;
-extern u32 lbl_805EDDBC;
-extern u32 lbl_805E15F0[];
-
-u32 *fn_8045B048(u32 *object, u32 value) {
-    lbl_805F14E8 = value;
-    u32 *table = fn_8047FC04(*(u32 *)lbl_8056D840, lbl_805EDDB8, 4, lbl_805EDDBC,
-                             lbl_805E15F0, 0x00040007);
-    *(u32 **)(lbl_805F15B4 + lbl_805F14E8) = table;
-    if (*(u32 **)(lbl_805F15B4 + lbl_805F14E8) == NULL) {
-        return NULL;
-    }
-    (&lbl_805F14E8)[1]++;
-    return object;
-}
-
-u32 *fn_8045B0D8(u32 *object) {
-    u32 *table = *(u32 **)(lbl_805F15B4 + lbl_805F14E8);
-    if (table != NULL) {
-        fn_8047FCDC(table);
-        *(u32 **)(lbl_805F15B4 + lbl_805F14E8) = NULL;
-    }
-    (&lbl_805F14E8)[1]--;
-    return object;
-}
-
-void fn_8048CD8C(u32 *value);
-
-u32 *fn_8045B270(u32 *object, u32 *value) {
-    if (value != NULL) {
-        value[21]++;
-    }
-    if (object[0] != 0) {
-        fn_8048CD8C((u32 *)object[0]);
-    }
-    object[0] = (u32)value;
-    return object;
-}
-
-extern u8 lbl_8056D858[];
-
-u32 *fn_8045B13C(void) {
-    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F14E8), 0x00030007);
-    if (object == NULL) {
-        return NULL;
-    }
-    u32 *constants = (u32 *)lbl_8056D858;
-    u32 fill = 255;
-    u32 one = 1;
-    u8 bytes[4];
-    bytes[0] = fill;
-    bytes[1] = fill;
-    bytes[2] = fill;
-    bytes[3] = fill;
-    *(s16 *)((u8 *)object + 24) = one;
-    fill = *(u32 *)bytes;
-    object[1] = fill;
-    object[0] = 0;
-    object[2] = 0;
-    object[3] = constants[0];
-    object[4] = constants[1];
-    object[5] = constants[2];
-    fn_8048209C(lbl_8056D840, object);
-    return object;
-}
-
-extern u32 lbl_805F14E4;
-extern u32 lbl_805F14E0;
-static inline void RwCpp21CleanupObject(u32 *object) {
-    if (*(s16 *)((u8 *)object + 24) == 1) {
-        fn_80482144(lbl_8056D840, object);
-        if (object[0] != 0) {
-            fn_8048CD8C((u32 *)object[0]);
-        }
-        object[0] = 0;
-        ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-            *(u8 **)(lbl_805F15B4 + lbl_805F14E8), object);
-    } else {
-        (*(s16 *)((u8 *)object + 24))--;
-    }
-}
-
-u32 fn_80483D28(u8 *);
-void fn_80481870(u8 *, u32, u32 *, u32);
-
-u32 *fn_8045B348(u8 *stream) {
-    u32 second;
-    u32 first;
-    volatile u32 saved;
-    u8 buffer[28];
-    if ((s32)fn_8047CF50(stream, 1, &second, &first) == 0) {
-        return NULL;
-    }
-    if (first < 0x00035000 || first > 0x00037002) {
-        goto invalid_first;
-    }
-    memset(buffer, 0, 28);
-    if (fn_80480D4C(stream, buffer, second) != second) {
-        return NULL;
-    }
-    saved = *(u32 *)(buffer + 4);
-    fn_8047D254(buffer, 28);
-    *(u32 *)(buffer + 4) = saved;
-    u32 *object = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F14E8), 0x00030007);
-    if (object == NULL) {
-        object = NULL;
-        goto initialized;
-    }
-    u32 *constants = (u32 *)lbl_8056D858;
-    u32 fill = 255;
-    u32 one = 1;
-    u8 bytes[4];
-    bytes[0] = fill;
-    bytes[1] = fill;
-    bytes[2] = fill;
-    bytes[3] = fill;
-    *(s16 *)((u8 *)object + 24) = one;
-    fill = *(u32 *)bytes;
-    object[1] = fill;
-    object[0] = 0;
-    object[2] = 0;
-    object[3] = constants[0];
-    object[4] = constants[1];
-    object[5] = constants[2];
-    fn_8048209C(lbl_8056D840, object);
-initialized:
-    if (object == NULL) {
-        return NULL;
-    }
-    object[1] = *(u32 *)(buffer + 4);
-    object[3] = *(u32 *)(buffer + 16);
-    object[4] = *(u32 *)(buffer + 20);
-    object[5] = *(u32 *)(buffer + 24);
-    object[0] = 0;
-    if ((s32)*(u32 *)(buffer + 12) != 0) {
-        if ((s32)fn_8047CF50(stream, 6, NULL, &first) == 0) {
-            RwCpp21CleanupObject(object);
+        if (materials == NULL) {
+            RWERROR((E_RW_NOMEM, size));
             return NULL;
         }
-        if (first >= 0x00035000 && first <= 0x00037002) {
-            object[0] = fn_80483D28(stream);
-        } else {
-            RwCpp21CleanupObject(object);
-            {
-                u32 error[2];
-                error[0] = 2;
-                error[1] = fn_8047DC28(0x80000004);
-                fn_8047DB84(error);
-                return NULL;
-            }
-        }
+        matList->materials = materials;
+        matList->space = space;
     }
-    lbl_805F14E4 = 0;
-    lbl_805F14E0 = 0;
-    if (fn_804816AC(lbl_8056D840, stream, object) == 0) {
-        RwCpp21CleanupObject(object);
-        return NULL;
-    }
-    if (lbl_805F14E4 != 0) {
-        fn_80481870(lbl_8056D840, lbl_805F14E4, object, lbl_805F14E0);
-    }
-    return object;
-invalid_first:
-    {
-        u32 error[2];
-        error[0] = 2;
-        error[1] = fn_8047DC28(0x80000004);
-        fn_8047DB84(error);
-        return NULL;
-    }
+    return matList;
 }
 
-u32 fn_8045B1F4(u32 *object) {
-    if (*(s16 *)((u8 *)object + 24) == 1) {
-        fn_80482144(lbl_8056D840, object);
-        fn_8045B270(object, NULL);
-        ((void (*)(u8 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-            *(u8 **)(lbl_805F15B4 + lbl_805F14E8), object);
-    } else {
-        (*(s16 *)((u8 *)object + 24))--;
-    }
-    return 1;
-}
+s32 fn_8045B7AC(RpMaterialList *matList, RpMaterial *material) {
+    RpMaterial **materials;
+    s32 space;
+    u32 size;
 
-s32 fn_8045B7AC(u32 *object, u32 *value) {
-    if ((s32)object[2] > (s32)object[1]) {
-        ((u32 *)object[0])[object[1]] = (u32)value;
-        (*(s16 *)((u8 *)value + 24))++;
-        object[1]++;
-        return (s32)object[1] - 1;
+    if (matList->space > matList->numMaterials) {
+        matList->materials[matList->numMaterials] = material;
+        material->refCount++;
+        matList->numMaterials++;
+        return matList->numMaterials - 1;
     }
-    u32 capacity = object[2] + 20;
-    u32 error_size = capacity * 4;
-    u32 *buffer;
-    if (object[0] != 0) {
-        buffer = ((u32 *(*)(u32 *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x110))(
-            (u32 *)object[0], capacity * 4, 0x01030008);
+    space = matList->space + 20;
+    size = space * sizeof(RpMaterial *);
+    if (matList->materials != NULL) {
+        materials = (RpMaterial **)RwRealloc(matList->materials, space * sizeof(RpMaterial *),
+                                             0x1030008);
     } else {
-        buffer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(capacity * 4, 0x01030008);
+        materials = (RpMaterial **)RwMalloc(space * sizeof(RpMaterial *), 0x1030008);
     }
-    if (buffer == NULL) {
-        u32 error[2];
-        error[0] = 2;
-        error[1] = fn_8047DC28(0x80000013, error_size);
-        fn_8047DB84(error);
+    if (materials == NULL) {
+        RWERROR((E_RW_NOMEM, size));
         return -1;
     }
-    object[0] = (u32)buffer;
-    object[2] += 20;
-    buffer[object[1]] = (u32)value;
-    (*(s16 *)((u8 *)value + 24))++;
-    object[1]++;
-    return (s32)object[1] - 1;
+    matList->materials = materials;
+    matList->space += 20;
+    materials[matList->numMaterials] = material;
+    material->refCount++;
+    matList->numMaterials++;
+    return matList->numMaterials - 1;
 }
 
-u32 *fn_8045B6F0(u32 *object) {
-    u32 *current;
-    u32 *entries = (u32 *)object[0];
-    if (entries != NULL) {
-        s32 count = object[1];
-        current = entries;
-        for (s32 i = 0; i < count; i++) {
-            fn_8045B1F4((u32 *)current[0]);
-            current[0] = 0;
-            current++;
+s32 fn_8045B8EC(const RpMaterialList *matList, const RpMaterial *material) {
+    s32 i = matList->numMaterials;
+    RpMaterial **entry = matList->materials + i;
+    while (entry--, i-- > 0) {
+        if (*entry == material) {
+            return i;
         }
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(entries);
-        object[0] = 0;
     }
-    object[1] = 0;
-    object[2] = 0;
-    return object;
+    return i;
 }
 
-extern u32 lbl_805F14F0;
-extern u32 lbl_805EDDC0;
+RpMaterialList *fn_8045B924(RwStream *stream, RpMaterialList *matList) {
+    s32 count;
+    u32 size;
+    u32 version;
+    s32 *indices;
+    s32 i;
+    s32 status;
 
-u32 *fn_8047FBD8(u32 size, u32 count, u32 alignment, u32 tag);
+    if (!fn_8047CF50(stream, 1, &size, &version)) {
+        return NULL;
+    }
+    if (version >= 0x35000 && version <= 0x37002) {
+        status = (fn_8047D868(stream, &count, sizeof(count)) != NULL);
+        if (!status) {
+            return NULL;
+        }
+        fn_8045B788(matList);
+        if (count == 0) {
+            return matList;
+        }
+        if (RpMaterialListSetSize(matList, count) == NULL) {
+            fn_8045B6F0(matList);
+            return NULL;
+        }
+        indices = (s32 *)RwMalloc(count * sizeof(s32), 0x10501);
+        status = (fn_8047D868(stream, indices, count * sizeof(s32)) != NULL);
+        if (!status) {
+            RwFree(indices);
+            fn_8045B6F0(matList);
+            return NULL;
+        }
+        for (i = 0; i < count; i++) {
+            RpMaterial *material;
+            if (indices[i] < 0) {
+                if (!fn_8047CF50(stream, 7, NULL, &version)) {
+                    RwFree(indices);
+                    fn_8045B6F0(matList);
+                    return NULL;
+                }
+                if (version >= 0x35000 && version <= 0x37002) {
+                    material = fn_8045B348(stream);
+                    if (material == NULL) {
+                        RwFree(indices);
+                        fn_8045B6F0(matList);
+                        return NULL;
+                    }
+                } else {
+                    RWERROR((E_RW_BADVERSION));
+                    RwFree(indices);
+                    fn_8045B6F0(matList);
+                    return NULL;
+                }
+            } else {
+                material = fn_8045B79C(matList, indices[i]);
+                material->refCount++;
+            }
+            fn_8045B7AC(matList, material);
+            fn_8045B1F4(material);
+        }
+        RwFree(indices);
+        return matList;
+    }
+    RWERROR((E_RW_BADVERSION));
+    return NULL;
+}
 
-u8 *fn_8045BFBC(u8 *stream, u32 value) {
-    lbl_805F14F0 = value;
-    if ((s32)(&lbl_805F14F0)[1] == 0) {
-        lbl_805EDDC0 = (u32)fn_8047FBD8(12, 50, 4, 0x00040502);
-        if (lbl_805EDDC0 == 0) {
-            if (lbl_805EDDC0 != 0) {
-                fn_8047FCDC((u32 *)lbl_805EDDC0);
-                lbl_805EDDC0 = 0;
+/* --- meshes --- */
+
+void *fn_8045BF30(u32 size) {
+    return RwMalloc(size, 0x30502);
+}
+
+void *fn_8045BF64(void *instance) {
+    lbl_805F14F0.numInstances--;
+    if (lbl_805F14F0.numInstances == 0) {
+        if (lbl_805EDDC0 != NULL) {
+            fn_8047FCDC(lbl_805EDDC0);
+            lbl_805EDDC0 = NULL;
+        }
+    }
+    return instance;
+}
+
+#define RPMESHGLOBAL(member) (RWPLUGINGLOBAL(rpMeshGlobals, lbl_805F14F0).member)
+
+void *fn_8045BFBC(void *instance, s32 offset) {
+    lbl_805F14F0.globalsOffset = offset;
+    if (lbl_805F14F0.numInstances == 0) {
+        lbl_805EDDC0 = fn_8047FBD8(sizeof(RpBuildMesh), 50, 4, 0x40502);
+        if (lbl_805EDDC0 == NULL) {
+            if (lbl_805EDDC0 != NULL) {
+                fn_8047FCDC(lbl_805EDDC0);
+                lbl_805EDDC0 = NULL;
             }
             return NULL;
         }
     }
-    *(s16 *)(lbl_805F15B4 + lbl_805F14F0) = 1;
-    (&lbl_805F14F0)[1]++;
-    u32 offset = lbl_805F14F0 + 8;
-    lbl_805F15B4[offset] = 3;
-    offset = lbl_805F14F0 + 9;
-    lbl_805F15B4[offset] = 4;
-    offset = lbl_805F14F0 + 10;
-    lbl_805F15B4[offset] = 5;
-    offset = lbl_805F14F0 + 12;
-    lbl_805F15B4[offset] = 1;
-    offset = lbl_805F14F0 + 16;
-    lbl_805F15B4[offset] = 2;
-    offset = lbl_805F14F0 + 24;
-    lbl_805F15B4[offset] = 6;
-    offset = lbl_805F14F0 + 40;
-    lbl_805F15B4[offset] = 4;
-    offset = lbl_805F14F0 + 41;
-    lbl_805F15B4[offset] = 8;
-    offset = lbl_805F14F0 + 42;
-    lbl_805F15B4[offset] = 0;
-    offset = lbl_805F14F0 + 43;
-    lbl_805F15B4[offset] = 1;
-    offset = lbl_805F14F0 + 44;
-    lbl_805F15B4[offset] = 2;
-    offset = lbl_805F14F0 + 45;
-    lbl_805F15B4[offset] = 16;
-    return stream;
+    RPMESHGLOBAL(nextSerialNum) = 1;
+    lbl_805F14F0.numInstances++;
+    RPMESHGLOBAL(meshFlagsToPrimType)[0] = 3;
+    RPMESHGLOBAL(meshFlagsToPrimType)[1] = 4;
+    RPMESHGLOBAL(meshFlagsToPrimType)[2] = 5;
+    RPMESHGLOBAL(meshFlagsToPrimType)[4] = 1;
+    RPMESHGLOBAL(meshFlagsToPrimType)[8] = 2;
+    RPMESHGLOBAL(meshFlagsToPrimType)[16] = 6;
+    RPMESHGLOBAL(primTypeToMeshFlags)[1] = 4;
+    RPMESHGLOBAL(primTypeToMeshFlags)[2] = 8;
+    RPMESHGLOBAL(primTypeToMeshFlags)[3] = 0;
+    RPMESHGLOBAL(primTypeToMeshFlags)[4] = 1;
+    RPMESHGLOBAL(primTypeToMeshFlags)[5] = 2;
+    RPMESHGLOBAL(primTypeToMeshFlags)[6] = 16;
+    return instance;
 }
 
-u32 *fn_8045BF64(u32 *object) {
-    if (--(&lbl_805F14F0)[1] == 0 && lbl_805EDDC0 != 0) {
-        fn_8047FCDC((u32 *)lbl_805EDDC0);
-        lbl_805EDDC0 = 0;
-    }
-    return object;
-}
-
-u32 *fn_8045C144(u32 count) {
-    u32 *object = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        lbl_805EDDC0, 0x00030502);
-    if (object != NULL) {
-        object[1] = 0;
-        if (count != 0) {
-            u32 size = count * 20;
-            object[2] = (u32)((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x01030502);
-            if (object[2] == 0) {
-                ((void (*)(u32, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(lbl_805EDDC0, object);
-                u32 error[2];
-                error[0] = 2;
-                error[1] = fn_8047DC28(0x80000013, size);
-                fn_8047DB84(error);
+RpBuildMesh *fn_8045C144(u32 bufferSize) {
+    RpBuildMesh *mesh = (RpBuildMesh *)RwFreeListAlloc(lbl_805EDDC0, 0x30502);
+    if (mesh != NULL) {
+        mesh->numTriangles = 0;
+        if (bufferSize != 0) {
+            u32 size = bufferSize * sizeof(RpBuildMeshTriangle);
+            mesh->meshTriangles = (RpBuildMeshTriangle *)RwMalloc(size, 0x1030502);
+            if (mesh->meshTriangles == NULL) {
+                RwFreeListFree(lbl_805EDDC0, mesh);
+                RWERROR((E_RW_NOMEM, size));
                 return NULL;
             }
-            object[0] = count;
+            mesh->triangleBufferSize = bufferSize;
         } else {
-            object[2] = 0;
-            object[0] = 0;
+            mesh->meshTriangles = NULL;
+            mesh->triangleBufferSize = 0;
         }
-        return object;
+        return mesh;
     }
-    u32 error[2];
-    error[0] = 2;
-    error[1] = fn_8047DC28(0x80000013, 12);
-    fn_8047DB84(error);
+    RWERROR((E_RW_NOMEM, sizeof(RpBuildMesh)));
     return NULL;
 }
 
-u32 fn_8045C26C(u32 *object) {
-    if (object[2] != 0) {
-        ((void (*)(u32))*(u32 *)(lbl_805F15B4 + 0x10C))(object[2]);
-        object[2] = 0;
+s32 fn_8045C26C(RpBuildMesh *mesh) {
+    if (mesh->meshTriangles != NULL) {
+        RwFree(mesh->meshTriangles);
+        mesh->meshTriangles = NULL;
     }
-    ((void (*)(u32, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(lbl_805EDDC0, object);
+    RwFreeListFree(lbl_805EDDC0, mesh);
     return 1;
 }
 
-u32 fn_8045C2D4(u32 *object) {
-    if (object[0] != 0 || *(u16 *)((u8 *)object + 4) != 0 || *(u16 *)((u8 *)object + 6) != 0 ||
-        object[2] != 0 || object[3] != 0) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+s32 fn_8045C2D4(RpMeshHeader *header) {
+    if (header->flags != 0 || header->numMeshes != 0 || header->serialNum != 0 ||
+        header->totalIndicesInMesh != 0 || header->firstMeshOffset != 0) {
+        RwFree(header);
     }
     return 1;
-}
-
-u32 fn_8047D868(u8 *stream, void *data, u32 size);
-u32 fn_8047D458(u8 *stream, void *data, u32 size);
-
-u8 *fn_8045AF28(u8 *stream, s32 type) {
-    if (fn_8047D868(stream, &lbl_805F14E4, 4) == 0) {
-        return NULL;
-    }
-    if (type == 8 && fn_8047D868(stream, &lbl_805F14E0, 4) == 0) {
-        return NULL;
-    }
-    return stream;
-}
-
-u8 *fn_8045AFA4(u8 *stream, u8 *entry, const u32 *object) {
-    if (fn_8047D458(stream, (u8 *)object[2] + 44, 4) == 0) {
-        return NULL;
-    }
-    if (fn_8047D458(stream, (u8 *)object[2] + 48, 4) != 0) {
-        return stream;
-    }
-    return NULL;
-}
-
-void fn_804815F0(u8 *, u32, u32, u32, u32);
-
-void fn_8045AAE0(u32 first, u32 second, u32 third, u32 fourth) {
-    fn_804815F0(lbl_8056D828, first, second, third, fourth);
-}
-
-void fn_8045B30C(u32 first, u32 second, u32 third, u32 fourth) {
-    fn_804815F0(lbl_8056D840, first, second, third, fourth);
-}
-
-void fn_80481DC8(u8 *, u32, u32, u32, u32, u32);
-
-void fn_8045AAA0(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
-    fn_80481DC8(lbl_8056D828, first, second, third, fourth, fifth);
-}
-
-void fn_8045B2CC(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
-    fn_80481DC8(lbl_8056D840, first, second, third, fourth, fifth);
-}
 }

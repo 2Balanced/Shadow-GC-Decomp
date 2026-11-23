@@ -1,6 +1,18 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare world plugin, 0x8045F458-0x80460E74: world sectors and the sector tree (destroy,
+ * bounding boxes, per-sector meshes), the world's plugin registrations and module open/close.
+ * Names are inferred from behavior; most functions are still untyped drafts.
+ * fn_8045F7D0 (destroy a sector tree) matches once each case keeps its own typed copy of the
+ * sector pointer (a void * parameter). fn_8045FBA4 (spread the world's bounding box down the tree)
+ * returns the world, which keeps r3 live as retail does; the plane's axis and a scratch address
+ * still trade saved registers (r30/r31). fn_8045FFA0 stops at the documented counter-copy residual
+ * (retail copies the zeroed counter with mr where GC/2.7 emits a second li). fn_8045F458 and
+ * fn_80460138 give the parameters the first saved registers in retail, the locals in ours. */
 #include <dolphin/types.h>
 #include <string.h>
+#include "Game/rw/r3.h"
+
+/* The untyped functions below still index the engine block by offset. */
+#define RWENGINEBYTES ((u8 *)lbl_805F15B4)
 
 extern "C" {
 u32 *fn_8045FB10(u32 *object);
@@ -14,7 +26,6 @@ void fn_80460120(u32 *object, void (*callback)(void)) {
 
 extern u8 lbl_8056D898[];
 extern u32 lbl_805F1508;
-extern u8 *lbl_805F15B4;
 void fn_804815F0(u8 *, u32, u32, u32, u32);
 
 void fn_804607D0(u32 first, u32 second, u32 third, u32 fourth) {
@@ -30,7 +41,7 @@ void fn_80460790(u32 first, u32 second, u32 third, u32 fourth, u32 fifth) {
 void fn_80460B68(u8 *object) {
     u32 offset = lbl_805F1508;
     u32 *target = (u32 *)(object + offset);
-    ((u32 *)lbl_805F15B4)[1] = 0;
+    ((u32 *)RWENGINEBYTES)[1] = 0;
     void (*callback)(u8 *) = (void (*)(u8 *))target[5];
     callback(object);
 }
@@ -43,16 +54,16 @@ void fn_80462770(void);
 extern u32 lbl_805F1500;
 
 u32 *fn_8045FF5C(u32 *object, u32 unused_a, u32 unused_b, u32 last) {
-    fn_804624E8(*(u8 **)lbl_805F15B4, (u32)fn_8045F390, object, last);
+    fn_804624E8(*(u8 **)RWENGINEBYTES, (u32)fn_8045F390, object, last);
     return object;
 }
 
 void fn_80460B1C(u32 *object) {
-    u8 *engine = lbl_805F15B4;
+    u8 *engine = RWENGINEBYTES;
     u32 offset = lbl_805F1508;
     u32 *table = (u32 *)((u8 *)object + offset);
     ((u32 *)engine)[1] = table[3];
-    engine = lbl_805F15B4;
+    engine = RWENGINEBYTES;
     u32 count = ((u16 *)engine)[4];
     ((u16 *)engine)[4] = count + 1;
     ((void (*)(u32 *, u32))table[4])(object, count);
@@ -89,10 +100,10 @@ u32 *fn_80460CA4(u32 *object, u32 *engine) {
 }
 
 u32 *fn_8045F9E8(u32 *object) {
-    u32 *table = *(u32 **)(lbl_805F15B4 + lbl_805F1500);
+    u32 *table = *(u32 **)(RWENGINEBYTES + lbl_805F1500);
     if (table != NULL) {
         fn_8047FCDC(table);
-        *(u32 **)(lbl_805F15B4 + lbl_805F1500) = NULL;
+        *(u32 **)(RWENGINEBYTES + lbl_805F1500) = NULL;
     }
     fn_80462770();
     (&lbl_805F1500)[1]--;
@@ -104,7 +115,7 @@ u32 fn_8045F374(u32 value, u32 *object);
 extern u32 lbl_805F1518;
 
 u32 *fn_8045FEA0(u32 target) {
-    u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+    u32 *sentinel = (u32 *)(RWENGINEBYTES + lbl_805F1500 + 4);
     u32 *current = (u32 *)sentinel[0];
     while (current != sentinel) {
         if (((u8 *)current[-2])[3] & 1) {
@@ -131,8 +142,8 @@ u32 fn_80460D80(u32 *object) {
     ((u32 *)object[3])[1] = object[4];
     ((u32 *)object[1])[0] = object[0];
     ((u32 *)object[0])[1] = object[1];
-    ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F1518 + 4), object);
+    ((void (*)(u32 *, u32 *))*(u32 *)(RWENGINEBYTES + 0x11C))(
+        *(u32 **)(RWENGINEBYTES + lbl_805F1518 + 4), object);
     return 1;
 }
 
@@ -142,8 +153,8 @@ u32 fn_80460DF0(u32 *object) {
         ((u32 *)object[3])[1] = object[4];
         ((u32 *)object[1])[0] = object[0];
         ((u32 *)object[0])[1] = object[1];
-        ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-            *(u32 **)(lbl_805F15B4 + lbl_805F1518), object);
+        ((void (*)(u32 *, u32 *))*(u32 *)(RWENGINEBYTES + 0x11C))(
+            *(u32 **)(RWENGINEBYTES + lbl_805F1518), object);
     }
     return 1;
 }
@@ -183,7 +194,7 @@ u32 *fn_80460BA4(u32 *object) {
     if (((u32 (*)(u32 *))table[6])(object) != 0) {
         u32 *child = (u32 *)table[3];
         if (child != NULL) {
-            void (*notify)(u32, u32, u32) = (void (*)(u32, u32, u32))*(u32 *)(lbl_805F15B4 + 0xA0);
+            void (*notify)(u32, u32, u32) = (void (*)(u32, u32, u32))*(u32 *)(RWENGINEBYTES + 0xA0);
             fn_80461658(child, object);
             notify(0, 0, child[3] == 1 ? 1 : 0);
         }
@@ -193,15 +204,15 @@ u32 *fn_80460BA4(u32 *object) {
 }
 
 u32 *fn_80460A88(u32 *object) {
-    u32 *first = *(u32 **)(lbl_805F15B4 + lbl_805F1518 + 4);
+    u32 *first = *(u32 **)(RWENGINEBYTES + lbl_805F1518 + 4);
     if (first != NULL) {
         fn_8047FCDC(first);
-        *(u32 **)(lbl_805F15B4 + lbl_805F1518 + 4) = NULL;
+        *(u32 **)(RWENGINEBYTES + lbl_805F1518 + 4) = NULL;
     }
-    u32 *second = *(u32 **)(lbl_805F15B4 + lbl_805F1518);
+    u32 *second = *(u32 **)(RWENGINEBYTES + lbl_805F1518);
     if (second != NULL) {
         fn_8047FCDC(second);
-        *(u32 **)(lbl_805F15B4 + lbl_805F1518) = NULL;
+        *(u32 **)(RWENGINEBYTES + lbl_805F1518) = NULL;
     }
     (&lbl_805F1518)[1]--;
     return object;
@@ -210,7 +221,7 @@ u32 *fn_80460A88(u32 *object) {
 u32 *fn_80460D00(u32 *object) {
     u32 *table = (u32 *)((u8 *)object + lbl_805F1508);
     if (table[0] != 0) {
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)table[0]);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)table[0]);
     }
     table[0] = 0;
     table[1] = 0;
@@ -231,34 +242,34 @@ extern u8 lbl_805E1664[];
 
 u32 *fn_80460974(u32 *object, u32 offset) {
     lbl_805F1518 = offset;
-    *(u32 **)(lbl_805F15B4 + lbl_805F1518) =
+    *(u32 **)(RWENGINEBYTES + lbl_805F1518) =
         (u32 *)fn_8047FC04(24, lbl_805EDDC8, 4, lbl_805EDDCC, (u32)lbl_805E1640, 0x40507);
-    if (*(u32 **)(lbl_805F15B4 + lbl_805F1518) == NULL) {
+    if (*(u32 **)(RWENGINEBYTES + lbl_805F1518) == NULL) {
         return NULL;
     }
-    *(u32 **)(lbl_805F15B4 + lbl_805F1518 + 4) =
+    *(u32 **)(RWENGINEBYTES + lbl_805F1518 + 4) =
         (u32 *)fn_8047FC04(24, lbl_805EDDD0, 4, lbl_805EDDD4, (u32)lbl_805E1664, 0x40507);
-    if (*(u32 *)(lbl_805F15B4 + lbl_805F1518 + 4) == 0) {
-        fn_8047FCDC(*(u32 **)(lbl_805F15B4 + lbl_805F1518));
-        *(u32 **)(lbl_805F15B4 + lbl_805F1518) = NULL;
+    if (*(u32 *)(RWENGINEBYTES + lbl_805F1518 + 4) == 0) {
+        fn_8047FCDC(*(u32 **)(RWENGINEBYTES + lbl_805F1518));
+        *(u32 **)(RWENGINEBYTES + lbl_805F1518) = NULL;
         return NULL;
     }
-    ((u16 *)lbl_805F15B4)[4] = 1;
-    *(u32 *)(lbl_805F15B4 + lbl_805F1518 + 8) = 0;
+    ((u16 *)RWENGINEBYTES)[4] = 1;
+    *(u32 *)(RWENGINEBYTES + lbl_805F1518 + 8) = 0;
     (&lbl_805F1518)[1]++;
     return object;
 }
 
 void fn_8045FCFC(u32 first, u32 second) {
-    u32 *node = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F1500), 0x40507);
+    u32 *node = ((u32 *(*)(u32 *, u32))*(u32 *)(RWENGINEBYTES + 0x118))(
+        *(u32 **)(RWENGINEBYTES + lbl_805F1500), 0x40507);
     if (node != NULL) {
         node[0] = first;
         node[1] = second;
-        node[2] = *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
-        node[3] = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
-        *(u32 *)(*(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) + 4) = (u32)(node + 2);
-        *(u32 **)(lbl_805F15B4 + lbl_805F1500 + 4) = node + 2;
+        node[2] = *(u32 *)(RWENGINEBYTES + lbl_805F1500 + 4);
+        node[3] = (u32)(RWENGINEBYTES + lbl_805F1500 + 4);
+        *(u32 *)(*(u32 *)(RWENGINEBYTES + lbl_805F1500 + 4) + 4) = (u32)(node + 2);
+        *(u32 **)(RWENGINEBYTES + lbl_805F1500 + 4) = node + 2;
     }
 }
 
@@ -344,20 +355,20 @@ void fn_8045C2D4(u32 *);
 void fn_8045B6F0(u32 *);
 void fn_80482144(u8 *, u32 *);
 void fn_8045F6E0(u32 *);
-void fn_8045F7D0(u32 *);
+void fn_8045F7D0(void *);
 
 u32 fn_8045FFA0(u32 *object) {
     u32 buffer[62];
     u32 *current;
-    u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+    u32 *sentinel = (u32 *)(RWENGINEBYTES + lbl_805F1500 + 4);
     current = (u32 *)sentinel[0];
     while (current != sentinel) {
         u32 *link = current - 2;
         if (*(u32 volatile *)link == (u32)object) {
             ((u32 *)link[3])[0] = link[2];
             ((u32 *)link[2])[1] = link[3];
-            ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-                *(u32 **)(lbl_805F15B4 + lbl_805F1500), link);
+            ((void (*)(u32 *, u32 *))*(u32 *)(RWENGINEBYTES + 0x11C))(
+                *(u32 **)(RWENGINEBYTES + lbl_805F1500), link);
             break;
         }
         current = (u32 *)current[0];
@@ -386,13 +397,13 @@ u32 fn_8045FFA0(u32 *object) {
             fn_8045F6E0((u32 *)object[7]);
         }
         fn_80482144(lbl_8056D898, object);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(object);
     } else {
         if (object[7] != 0) {
             fn_8045F7D0((u32 *)object[7]);
         }
         fn_80482144(lbl_8056D898, object);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(object);
     }
     return 1;
 }
@@ -405,14 +416,14 @@ u32 *fn_8045FA50(u32 *object, u32 offset) {
     if (fn_80462798() == 0) {
         return NULL;
     }
-    *(u32 **)(lbl_805F15B4 + lbl_805F1500) =
+    *(u32 **)(RWENGINEBYTES + lbl_805F1500) =
         (u32 *)fn_8047FC04(16, 8, 4, 1, (u32)lbl_805E1618, 0x4000B);
-    u32 *table = (u32 *)(lbl_805F15B4 + lbl_805F1500);
+    u32 *table = (u32 *)(RWENGINEBYTES + lbl_805F1500);
     if (table[0] == 0) {
         return NULL;
     }
-    *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
-    *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 8) = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
+    *(u32 *)(RWENGINEBYTES + lbl_805F1500 + 4) = (u32)(RWENGINEBYTES + lbl_805F1500 + 4);
+    *(u32 *)(RWENGINEBYTES + lbl_805F1500 + 8) = (u32)(RWENGINEBYTES + lbl_805F1500 + 4);
     (&lbl_805F1500)[1]++;
     return object;
 }
@@ -428,11 +439,11 @@ u32 *fn_8045FB10(u32 *object) {
     if (object[31] != 0) {
         callback = (u32 *)object[31];
     } else {
-        u32 *engine = *(u32 **)(lbl_805F15B4 + 4);
+        u32 *engine = *(u32 **)(RWENGINEBYTES + 4);
         if (engine[27] != 0) {
             callback = (u32 *)engine[27];
         } else {
-            callback = *(u32 **)(lbl_805F15B4 + lbl_805F1690 + 64);
+            callback = *(u32 **)(RWENGINEBYTES + lbl_805F1690 + 64);
         }
     }
     if (fn_8049B674(callback, object, 1) != 0) {
@@ -487,60 +498,39 @@ void fn_8045F6E0(u32 *object) {
     }
 }
 
-void fn_8045FBA4(u32 *object) {
-    u32 current[6];
-    u32 links[64];
-    u32 states[64][6];
-    s32 index = 0;
-    s32 offset;
-    u32 *node;
-    current[0] = object[20];
-    current[1] = object[21];
-    current[2] = object[22];
-    current[3] = object[23];
-    current[4] = object[24];
-    current[5] = object[25];
-    node = (u32 *)object[7];
-    do {
-        offset = *(s32 *)node;
-        if (offset < 0) {
-            node[18] = current[0];
-            node[19] = current[1];
-            node[20] = current[2];
-            node[21] = current[3];
-            node[22] = current[4];
-            node[23] = current[5];
-            current[0] = states[index][0];
-            current[1] = states[index][1];
-            current[2] = states[index][2];
-            current[3] = states[index][3];
-            current[4] = states[index][4];
-            current[5] = states[index][5];
-            node = (u32 *)links[index--];
+/* Spreads the world's bounding box down its sector tree: each plane splits its box at its left and
+ * right values, each world sector gets the box of its leaf. */
+RpWorld *fn_8045FBA4(RpWorld *world) {
+    RwBBox bbox;
+    RpSector *stack[64];
+    RwBBox bboxStack[64];
+    s32 depth = 0;
+    RpSector *sector;
+
+    bbox = world->boundingBox;
+    sector = world->rootSector;
+    while (depth >= 0) {
+        if (sector->type < 0) {
+            ((RpWorldSector *)sector)->boundingBox = bbox;
+            bbox = bboxStack[depth];
+            sector = stack[depth--];
         } else {
-            index++;
-            states[index][0] = current[0];
-            states[index][1] = current[1];
-            states[index][2] = current[2];
-            states[index][3] = current[3];
-            states[index][4] = current[4];
-            states[index][5] = current[5];
-            u32 child = node[3];
-            u8 *saved = (u8 *)states[index] + offset;
-            f32 first = ((f32 *)node)[4];
-            f32 second = ((f32 *)node)[5];
-            node = (u32 *)node[2];
-            links[index] = child;
-            *(f32 *)(saved + 12) = second;
-            *(f32 *)((u8 *)current + offset) = first;
+            RpPlaneSector *plane = (RpPlaneSector *)sector;
+            depth++;
+            bboxStack[depth] = bbox;
+            stack[depth] = plane->rightSubTree;
+            *(f32 *)((u8 *)&bboxStack[depth].inf + plane->type) = plane->rightValue;
+            *(f32 *)((u8 *)&bbox.sup + plane->type) = plane->leftValue;
+            sector = plane->leftSubTree;
         }
-    } while (index >= 0);
+    }
+    return world;
 }
 
-void fn_8045F7D0(u32 *input) {
+void fn_8045F7D0(void *input) {
     switch (*(s32 *)input) {
     case -1:
-        u32 *object = input;
+        u32 *object = (u32 *)input;
         if (object[13] != 0) {
             fn_8048071C((u32 *)object[13]);
         }
@@ -564,19 +554,19 @@ void fn_8045F7D0(u32 *input) {
         }
         fn_80482144(lbl_8056D880, object);
         if (object[2] != 0) {
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[2]);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)object[2]);
             object[2] = 0;
         }
         if (object[3] != 0) {
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[3]);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)object[3]);
             object[3] = 0;
         }
         if (object[12] != 0) {
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[12]);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)object[12]);
             object[12] = 0;
         }
         if (object[1] != 0) {
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)object[1]);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)object[1]);
             object[1] = 0;
         }
         {
@@ -584,7 +574,7 @@ void fn_8045F7D0(u32 *input) {
             u32 zero = 0;
             for (s32 i = 0; i < 8; i++) {
                 if (field[4] != 0) {
-                    ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))((u32 *)field[4]);
+                    ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))((u32 *)field[4]);
                     field[4] = zero;
                 }
                 field++;
@@ -594,13 +584,13 @@ void fn_8045F7D0(u32 *input) {
             fn_8045C2D4((u32 *)object[30]);
             object[30] = 0;
         }
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(object);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(object);
         break;
     case -2:
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(input);
+        ((void (*)(void *))*(u32 *)(RWENGINEBYTES + 0x10C))(input);
         break;
     default: {
-        u32 *target = input;
+        u32 *target = (u32 *)input;
         if (target[2] != 0) {
             fn_8045F7D0((u32 *)target[2]);
         }
@@ -609,7 +599,7 @@ void fn_8045F7D0(u32 *input) {
             fn_8045F7D0((u32 *)target[3]);
         }
         target[3] = 0;
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(target);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(target);
         break;
     }
     }
@@ -625,9 +615,9 @@ u32 *fn_8045F458(u32 *object, u32 *value, u32 *node, u32 *slot) {
     u32 count_c = 0;
     if (object[5] != 0) {
         u32 size = object[5] * 4;
-        u32 *table_a = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10006);
-        u32 *table_b = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10507);
-        u32 *table_c = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, 0x10507);
+        u32 *table_a = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(size, 0x10006);
+        u32 *table_b = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(size, 0x10507);
+        u32 *table_c = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(size, 0x10507);
         s32 entry_index = 0;
         u32 entry_offset = 0;
         while (entry_index < ((u16 *)node)[66]) {
@@ -674,9 +664,9 @@ u32 *fn_8045F458(u32 *object, u32 *value, u32 *node, u32 *slot) {
             entry_offset += 8;
             entry_index++;
         }
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_a);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_b);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(table_c);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(table_a);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(table_b);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(table_c);
     }
     u32 *result;
     if (object[2] & 1) {
@@ -695,20 +685,19 @@ u32 *fn_8045F458(u32 *object, u32 *value, u32 *node, u32 *slot) {
 
 void fn_8045B788(u32 *);
 void fn_8048209C(u8 *, u32 *);
-u32 fn_8047DC28(u32, u32, ...);
-void fn_8047DB84(u32 *);
+
 extern f32 lbl_805FB178;
 
 u32 *fn_80460138(u32 *config) {
     u32 errors[4];
     u32 resolve_stack[64];
     u32 cleanup_stack[64];
-    u32 *outer = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(
+    u32 *outer = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(
         *(u32 *)lbl_8056D898, 0x3000B);
     if (outer == NULL) {
         errors[2] = 2;
         errors[3] = fn_8047DC28(0x80000013, *(u32 *)lbl_8056D898);
-        fn_8047DB84(errors + 2);
+        fn_8047DB84((RwError *)(errors + 2));
         return NULL;
     }
     ((u8 *)outer)[0] = 7;
@@ -719,13 +708,13 @@ u32 *fn_80460138(u32 *config) {
     fn_8045B788(outer + 4);
     outer[3] = 2;
     outer[2] = 0;
-    u32 *inner = ((u32 *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(
+    u32 *inner = ((u32 *(*)(u32, u32))*(u32 *)(RWENGINEBYTES + 0x108))(
         *(u32 *)lbl_8056D880, 0x3000B);
     if (inner == NULL) {
         errors[0] = 2;
         errors[1] = fn_8047DC28(0x80000013, 4);
-        fn_8047DB84(errors);
-        ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+        fn_8047DB84((RwError *)errors);
+        ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(outer);
         return NULL;
     }
     ((s32 *)inner)[0] = -1;
@@ -778,16 +767,16 @@ u32 *fn_80460138(u32 *config) {
     outer[26] = (u32)fn_8045FB10;
     outer[27] = 0;
     u32 config_value = *(u32 *)lbl_8056D898;
-    u32 *link_node = ((u32 *(*)(u32 *, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        *(u32 **)(lbl_805F15B4 + lbl_805F1500), 0x40507);
+    u32 *link_node = ((u32 *(*)(u32 *, u32))*(u32 *)(RWENGINEBYTES + 0x118))(
+        *(u32 **)(RWENGINEBYTES + lbl_805F1500), 0x40507);
     if (link_node != NULL) {
         link_node[0] = (u32)outer;
         link_node[1] = config_value;
         u32 *link = link_node + 2;
-        link_node[2] = *(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
-        link_node[3] = (u32)(lbl_805F15B4 + lbl_805F1500 + 4);
-        *(u32 *)(*(u32 *)(lbl_805F15B4 + lbl_805F1500 + 4) + 4) = (u32)link;
-        *(u32 **)(lbl_805F15B4 + lbl_805F1500 + 4) = link;
+        link_node[2] = *(u32 *)(RWENGINEBYTES + lbl_805F1500 + 4);
+        link_node[3] = (u32)(RWENGINEBYTES + lbl_805F1500 + 4);
+        *(u32 *)(*(u32 *)(RWENGINEBYTES + lbl_805F1500 + 4) + 4) = (u32)link;
+        *(u32 **)(RWENGINEBYTES + lbl_805F1500 + 4) = link;
     }
     fn_8048209C(lbl_8056D898, outer);
     fn_8048209C(lbl_8056D880, inner);
@@ -819,15 +808,15 @@ u32 *fn_80460138(u32 *config) {
     }
     if (resolved == NULL) {
         u32 *current;
-        u32 *sentinel = (u32 *)(lbl_805F15B4 + lbl_805F1500 + 4);
+        u32 *sentinel = (u32 *)(RWENGINEBYTES + lbl_805F1500 + 4);
         current = (u32 *)sentinel[0];
         while (current != sentinel) {
             u32 *link = current - 2;
             if (current[-2] == (u32)outer) {
                 ((u32 *)link[3])[0] = link[2];
                 ((u32 *)link[2])[1] = link[3];
-                ((void (*)(u32 *, u32 *))*(u32 *)(lbl_805F15B4 + 0x11C))(
-                    *(u32 **)(lbl_805F15B4 + lbl_805F1500), link);
+                ((void (*)(u32 *, u32 *))*(u32 *)(RWENGINEBYTES + 0x11C))(
+                    *(u32 **)(RWENGINEBYTES + lbl_805F1500), link);
                 break;
             }
             current = (u32 *)current[0];
@@ -856,13 +845,13 @@ u32 *fn_80460138(u32 *config) {
                 fn_8045F6E0((u32 *)outer[7]);
             }
             fn_80482144(lbl_8056D898, outer);
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(outer);
         } else {
             if (outer[7] != 0) {
                 fn_8045F7D0((u32 *)outer[7]);
             }
             fn_80482144(lbl_8056D898, outer);
-            ((void (*)(u32 *))*(u32 *)(lbl_805F15B4 + 0x10C))(outer);
+            ((void (*)(u32 *))*(u32 *)(RWENGINEBYTES + 0x10C))(outer);
         }
         return NULL;
     }

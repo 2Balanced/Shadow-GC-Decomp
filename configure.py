@@ -344,6 +344,23 @@ cflags_rw_r6 = [
     "-inline auto,level=5",
 ]
 
+# RenderWare units of agent r3 (wave 40): a C library built without lmw/stmw, for speed, with
+# automatic inlining and no deferred inlining (functions come out in definition order;
+# RpGeometryDestroy is expanded in every failure path of RpGeometryStreamRead). The sources are
+# C (-lang c): structure assignments copy words, where C++ copies float members as floats.
+# Used by RwCpp20, 21, 26 and 27; GC 2.0-2.7 give the same code, -O3/-O4,s/1.x do not. Where a
+# size-cut unit holds several of RenderWare's source files, the calls retail makes across a file
+# boundary are kept out of line with #pragma dont_inline (see RwCpp26).
+cflags_rw_r3 = [
+    *cflags_base,
+    "-use_lmw_stmw off",
+    "-str reuse,readonly",
+    "-inline auto",
+    "-lang c",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
+]
+
 # The Chao CSD 2D library (src/Game/csd*.cpp; see Game/csdAccess.cpp): game flags without RTTI and
 # small data, with automatic inlining one level deep and no deferred inlining, so functions come out
 # in definition order.
@@ -1190,14 +1207,14 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp17.cpp"),
             Object(NonMatching, "Game/RwCpp18.cpp"),
             Object(NonMatching, "Game/RwCpp19.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
-            Object(NonMatching, "Game/RwCpp20.cpp"),
-            Object(NonMatching, "Game/RwCpp21.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
+            Object(NonMatching, "Game/RwCpp20.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp21.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp22.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp23.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp24.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp25.cpp"),
-            Object(NonMatching, "Game/RwCpp26.cpp"),
-            Object(NonMatching, "Game/RwCpp27.cpp"),
+            Object(NonMatching, "Game/RwCpp26.cpp", cflags=cflags_rw_r3),
+            Object(NonMatching, "Game/RwCpp27.cpp", cflags=cflags_rw_r3),
             Object(NonMatching, "Game/RwCpp28.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(Matching, "Game/RwCpp29.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
             Object(Matching, "Game/RwCpp30.cpp", cflags=cflags_rw_132, mw_version="GC/1.3.2"),
