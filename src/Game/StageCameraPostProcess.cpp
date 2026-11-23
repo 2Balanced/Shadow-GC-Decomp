@@ -4,14 +4,22 @@
  * other names are inferred. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first).
  *
- * Not linking yet: every function and every data section matches, but as in
- * Game/ItemIconManagerTask.cpp GC/2.7 emits the vector members instantiated at the end of the unit
- * class by class (erase, insert_n, destroy_all, reserve and the destructor for the weak pointers,
- * then the same for the shared pointers), while retail emits erase, insert_n and reserve of both
- * vectors first and destroy_all and the destructors of both after them (0x801CE3DC..0x801CE5C4).
- * Moving reserve, insert_n and erase to a class of their own (between the vector and its storage,
- * before the storage, or as an empty base of it) did not change GC/2.7's order. */
+ * Not linking yet: Tick (8 rows of 298) gives the last loop's counter copy r29 and its iterator
+ * r28, retail the other way round (index r28, iterator r29, the inner iterator r30 in both).
+ * Linking the unit changes those seven words of main.dol and nothing else. About 45 shapes were
+ * tried in wave 40 (probe tables were kept in build/t only): the three locals declared in every
+ * order at the loop, at the top of the block and at the top of the function (the copy keeps r29
+ * in all of them; only the two iterators trade r28 and r30), the copy made before the loop, in
+ * the for statement or not at all (without it the iterator does get r29, but the player keeps
+ * r30 in the loop), int, long and unsigned counters, a while loop, the erase's arguments as
+ * locals, and the loop as an inline function (which GC/2.7 does not inline: 128 rows).
+ * The order of the functions matches since wave 40: the vector members that grow and shrink the
+ * vector (reserve, insert_n, erase) belong to the class between the vector and its storage
+ * (MSL_VECTOR_MIDDLE_MEMBERS in <vector>), which is declared ahead of the storage, so GC/2.7
+ * emits them for both vectors first and the storage's destroy_all, destructor and data for both
+ * after them, as retail has it (0x801CD474..0x801CE5C4). */
 #define MSL_VECTOR_MIDDLE
+#define MSL_VECTOR_MIDDLE_MEMBERS
 #define MSL_VECTOR_ERASE
 #define MSL_VECTOR_DESTROY_ALL_LATE
 #define MSL_ALGORITHM_COPY

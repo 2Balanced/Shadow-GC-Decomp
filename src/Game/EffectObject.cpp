@@ -7,14 +7,17 @@
  * ParseCommands name. File name from the class. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 10 of 11 functions match.
- * - The constructor (78%): retail loads each colour byte of the description after storing the
- *   one before it (and m_size before them), GC/2.7 hoists the four loads above the stores; about
- *   ten spellings of the colour code (local pointers, an inline setter, masks, casts) leave it so.
- *   This is the load-after-store scheduling difference of docs/research-notes.md
- *   (Game/ScatteringRing.cpp).
+ * NonMatching: all 11 functions match (wave 40: the constructor takes the description as a
+ * pointer to non-const, which keeps the colour loads behind the stores, and adds the pool's
+ * size with `+=`), but the unit cannot link:
  * - GC/2.7 emits the two operator deletes right after the functions whose exception tables name
- *   them (ParseCommands, the constructor); retail has them after ~EffectCommandExec. */
+ *   them (ParseCommands, the constructor); retail has their code after ~EffectCommandExec.
+ *   Retail's exception tables are not in its code order either: Update, ~EffectCommandExec,
+ *   ParseCommands, ~EffCmdVector3Exec, the executors' delete, ~EffectObject, the constructor, the
+ *   pool's delete. Defining the two deletes out of line ahead of ~EffectCommandExec under
+ *   `#pragma auto_inline on` gives retail's code order and every function (wave 40), but then the
+ *   tables follow the code and main.dol differs in extab/extabindex only; GC/2.7 always writes
+ *   the tables in code order, so neither form links. */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -40,11 +43,11 @@ struct UnkObjectDesc_80421D38 {
 
 EffectCommandExec::~EffectCommandExec() {}
 
-EffectObject::EffectObject(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectObject::EffectObject(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                            EffectManager *manager)
     : EffectElement(desc, info, manager), m_state(0), m_config(0), m_cursor(0), m_head(0),
       m_tail(0), m_commandPool(0) {
-    const UnkObjectDesc_80421D38 *params = reinterpret_cast<const UnkObjectDesc_80421D38 *>(desc);
+    UnkObjectDesc_80421D38 *params = reinterpret_cast<UnkObjectDesc_80421D38 *>(desc);
     m_size -= sizeof(EffectElement);
     m_size += sizeof(EffectObject);
     if (!(m_flags & 1)) {
@@ -57,7 +60,7 @@ EffectObject::EffectObject(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo 
         m_flags &= ~1;
         return;
     }
-    m_size = m_size + m_commandPool->GetSize() + sizeof(UnkEffectPool_8042A344);
+    m_size += m_commandPool->GetSize() + sizeof(UnkEffectPool_8042A344);
     m_color[0] = (params->m_color[1] & 0xFF) << 22;
     m_color[1] = (params->m_color[2] & 0xFF) << 22;
     m_color[2] = (params->m_color[3] & 0xFF) << 22;

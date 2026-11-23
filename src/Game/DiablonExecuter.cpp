@@ -5,7 +5,12 @@
  * rebuilds the matrix and ticks the parts. The functions other units call keep their fn_ names (C
  * functions taking the executer). File name inferred from the class. Names marked "(name
  * inferred)" are not original. Definitions are in reverse address order (deferred inlining emits
- * functions last-defined first). */
+ * functions last-defined first).
+ *
+ * Matching since wave 40: the loops over the behavior table in Impl's constructor and destructor
+ * are inline functions (SetUpBehaviors, TearDownBehaviors). Inlined, the table offset starts as a
+ * copy of the zeroed counter (li r29,0 ... mr r31,r29) as in retail; written in place GC/2.7
+ * loads a second zero. */
 #include <boost/scoped_ptr.hpp>
 
 #include "Game/CharInfo.h"
@@ -132,13 +137,25 @@ boost::shared_ptr<Behavior::BehaviorBase> Executer::Impl::CreateBehavior(int id)
  * the table offset; GC/2.7 loads the table address first and clears both separately for every
  * shape tried (index, element pointer, inline helper, do-while, const and unsized table), so these
  * two functions stay at about 98-99%. */
-Executer::Impl::Impl(const boost::shared_ptr<Diablon> &owner) : m_owner(owner) {
-    m_owner->m_rootPart = new Parts::PartsBase(0, "Root", m_owner);
+inline void SetUpBehaviors(Executer::Impl *impl) {
     for (u32 i = 0; i < 7; i++) {
         if (s_behaviors[i] != 0 && s_behaviors[i]->setup != 0) {
-            s_behaviors[i]->setup(this);
+            s_behaviors[i]->setup(impl);
         }
     }
+}
+
+inline void TearDownBehaviors(Executer::Impl *impl) {
+    for (u32 i = 0; i < 7; i++) {
+        if (s_behaviors[i] != 0 && s_behaviors[i]->teardown != 0) {
+            s_behaviors[i]->teardown(impl);
+        }
+    }
+}
+
+Executer::Impl::Impl(const boost::shared_ptr<Diablon> &owner) : m_owner(owner) {
+    m_owner->m_rootPart = new Parts::PartsBase(0, "Root", m_owner);
+    SetUpBehaviors(this);
 }
 
 Executer::Impl::~Impl() {
@@ -146,11 +163,7 @@ Executer::Impl::~Impl() {
         m_current->End(7);
         m_current.reset();
     }
-    for (u32 i = 0; i < 7; i++) {
-        if (s_behaviors[i] != 0 && s_behaviors[i]->teardown != 0) {
-            s_behaviors[i]->teardown(this);
-        }
-    }
+    TearDownBehaviors(this);
     if (m_owner->m_rootPart != 0) {
         delete m_owner->m_rootPart;
     }

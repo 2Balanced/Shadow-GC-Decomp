@@ -4,16 +4,12 @@
  * "(name inferred)" are not original. Definitions are in reverse address order (deferred inlining
  * emits functions last-defined first).
  *
- * NonMatching: 89 of 90 functions and all data match. In slot 0x98 (vfStat_0x98, 2 rows) retail
- * loads the attacker's pointer after the prologue's save of r31 and the copy of the parameter;
- * GC/2.7 schedules that load above the save (the prologue scheduling of Game/BulletLaser.cpp's
- * HitCallback::Call and Game/EnemyParamCommon.cpp). Game/ElecCircuitColli.cpp's HitCharacter has
- * retail's order under GC/2.7, with its load through the other parameter; here a pointer or
- * reference local for the attacker, a local for its pointer, for the status or for the reward,
- * an early return and the reward nested in the call (8 forms, wave 39) leave it as it is or add
- * rows. Wave 39 matched the other two: Reset declares its result before the table, and
- * boost::function1::operator() gets retail's frame from std::runtime_error's library size
- * (MSL_RUNTIME_ERROR_STRING), with function1::swap calling the game's shared std::swap. */
+ * Matching since wave 40. What the last functions needed: slot 0x98 takes the attacker as a
+ * reference to a non-const shared pointer (GC/2.7 moves the load of its pointer above the
+ * prologue's save of r31 when the reference is to const, and leaves it behind it otherwise);
+ * Reset declares its result before the table, and boost::function1::operator() gets retail's
+ * frame from std::runtime_error's library size (MSL_RUNTIME_ERROR_STRING), with function1::swap
+ * calling the game's shared std::swap (wave 39). */
 /* The fields of EnemyCharaColliModule (Game/Enemy.h). */
 #define ENEMY_STATUS_COMMON_UNIT
 
@@ -552,7 +548,7 @@ void EnemyStatusCommon::vfStat_0x94(int flags) {
 /* Slots 0x98 and 0x9C reward the attacker; they take it, which Game/Enemy.h does not declare (see
  * ENEMY_STAT_SLOT_ARGS there), so they are defined under their symbols. */
 extern "C" void vfStat_0x98__17EnemyStatusCommonFv(EnemyStatusCommon *status,
-                                                    const boost::shared_ptr<CharInfo> &attacker) {
+                                                    boost::shared_ptr<CharInfo> &attacker) {
     if (attacker.get() != 0) {
         int reward = status->vfStat_0xB8();
         fn_8020642C(attacker, reward);

@@ -26,7 +26,7 @@ namespace RW3 {
 
 EffectObjectRW3::EffectObjectRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                                  EffectManager *manager)
-    : EffectObject(desc, info, manager) {
+    : EffectObject(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager) {
     m_clump = 0;
     m_uvAnim = 0;
     m_world = 0;

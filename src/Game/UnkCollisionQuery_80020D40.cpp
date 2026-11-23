@@ -13,12 +13,10 @@
  * other units call them by those names. The const structs in .rodata (@N) are the constant parts
  * of the filter queries' initializers.
  *
- * NonMatching (49 of 53 functions match):
+ * NonMatching (51 of 53 functions match; the two pool getters since wave 40, see LinkPool):
  * - fn_8001EE0C and fn_800201D4: the code is the game's, but GC/2.7 gives the variables other
  *   callee-saved registers (fn_8001EE0C: the game puts the function's own locals in r31 down and
  *   the arguments below them; fn_800201D4: the game has the shape in r31 and the triangle in r30).
- * - fn_8001FD6C and fn_80020088: the game copies the loop counter from the zero register (one
- *   instruction).
  * - Data: the function-local statics are written out here (their constructors and destructors have C names); the game's are real
  *   ones, which puts the pools' storage after AttackIgnorePoolObject's in .bss, and without
  *   that object's destructor record (this unit sees no destructor for it). */
@@ -1151,6 +1149,24 @@ extern "C" void *fn_80020170(UnkPool<RangeTriangle> *pool, short flags) {
     return pool;
 }
 
+/* Links the nodes of a pool's array into its free list. An inline function: the loop's counter
+ * then starts as a copy of the zero just stored to the pool (mr), where the loop written in
+ * place loads a second zero (li). */
+template <class T> inline void LinkPool(T *node) {
+    for (int i = 0; i < 0x20; i++, node++) {
+        if (i == 0) {
+            node->m_prev = 0;
+        } else {
+            node->m_prev = node - 1;
+        }
+        if (i == 0x1F) {
+            node->m_next = 0;
+        } else {
+            node->m_next = node + 1;
+        }
+    }
+}
+
 /* The triangle pool (a function-local static). */
 extern "C" UnkPool<RangeTriangle> *fn_80020088(void) {
     if (!lbl_805EE060) {
@@ -1163,19 +1179,7 @@ extern "C" UnkPool<RangeTriangle> *fn_80020088(void) {
         lbl_80570CAC.m_used = 0;
         lbl_80570CAC.m_capacity = 0x20;
         lbl_80570CAC.m_free = lbl_80570CAC.m_array;
-        RangeTriangle *node = lbl_80570CAC.m_array;
-        for (int i = 0; i < 0x20; i++, node++) {
-            if (i == 0) {
-                node->m_prev = 0;
-            } else {
-                node->m_prev = node - 1;
-            }
-            if (i == 0x1F) {
-                node->m_next = 0;
-            } else {
-                node->m_next = node + 1;
-            }
-        }
+        LinkPool(lbl_80570CAC.m_array);
         __register_global_object(&lbl_80570CAC, (void *)fn_80020170, lbl_80570C4C);
         lbl_805EE060 = 1;
     }
@@ -1275,19 +1279,7 @@ extern "C" UnkPool<UnkColliHit> *fn_8001FD6C(void) {
         lbl_80570CBC.m_used = 0;
         lbl_80570CBC.m_capacity = 0x20;
         lbl_80570CBC.m_free = lbl_80570CBC.m_array;
-        UnkColliHit *node = lbl_80570CBC.m_array;
-        for (int i = 0; i < 0x20; i++, node++) {
-            if (i == 0) {
-                node->m_prev = 0;
-            } else {
-                node->m_prev = node - 1;
-            }
-            if (i == 0x1F) {
-                node->m_next = 0;
-            } else {
-                node->m_next = node + 1;
-            }
-        }
+        LinkPool(lbl_80570CBC.m_array);
         __register_global_object(&lbl_80570CBC, (void *)fn_8001FE54, lbl_80570C58);
         lbl_805EE061 = 1;
     }

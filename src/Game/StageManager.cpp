@@ -8,12 +8,19 @@
  * order (deferred inlining emits functions last-defined first). The unit's code reaches its
  * .rodata through a pooled base address, so the linker keeps that section whole.
  *
- * Not matching yet (everything else, data and .sbss/.bss layout included, links): Start
- * (0x80178020) holds the new TFogSet in r29 where retail uses r28, and OnStageDataLoaded
- * (0x801775B0) adds the archive entry's 0x34 after the header where retail adds it first, which
- * also shifts four registers. Wave 39: every spelling of the entry's address tried (the inline
- * GetEntry with an int, long or unsigned index, casts over the header, a named base) gives either
- * the same 16 rows or 35. */
+ * Not matching yet (everything else, data and .sbss/.bss layout included, links):
+ * OnStageDataLoaded (0x801775B0) adds the archive entry's 0x34 after the header where retail adds
+ * the header and the index first, and retail colours the entry below the block (header r27,
+ * block r26, entry r25; GC/2.7 gives entry r27, header r26, block r25). Wave 39: every spelling
+ * of the entry's address tried (the inline GetEntry with an int, long or unsigned index, casts
+ * over the header, a named base) gives either the same 16 rows or 35. Wave 40, 20 more shapes:
+ * the entry, the block or the counter declared ahead of the loop in every order, the entry made
+ * in two statements or through a 0x38-byte record, the header const or read in the loop (16, 19
+ * or 35 rows); without the entry local (header->m_entries[i] at every use) GC/2.7 does add in
+ * retail's order, but into two registers, and the header takes r31 (24 rows).
+ * Start (0x80178020) matches since wave 40: the fog task is made like the message, with operator
+ * new and the constructor called by its symbol on a local of its own, which gives the pointer
+ * r28 (`new TFogSet(...)` gives the compiler's temporary r29). */
 /* The shared_ptr control blocks' allocation failure throws a bad_alloc, whose names this unit's
  * .rodata holds (see <new>). */
 #define MSL_NEW_INLINE_BAD_ALLOC
@@ -93,6 +100,7 @@ class TFogSet : public Task {
     /* 0x2C */ u8 m_first;
 };
 SIZE_ASSERT(TFogSet, 0x30);
+extern "C" TFogSet *__ct__7TFogSetFP4Taski(void *self, Task *parent, int player);
 
 /* The stage's start-up tasks (Game/StageInitalizeTask.cpp). */
 class TStageInitalizeTask : public Task {
@@ -592,7 +600,11 @@ bool StageManager::Start() {
         info->m_callbacks[0]();
     }
     fn_80344420();
-    m_fog = boost::shared_ptr<TFogSet>(new TFogSet(fn_80046178()->field_0x8, 0));
+    TFogSet *fog = (TFogSet *)operator new(0x30);
+    if (fog != 0) {
+        fog = __ct__7TFogSetFP4Taski(fog, fn_80046178()->field_0x8, 0);
+    }
+    m_fog = boost::shared_ptr<TFogSet>(fog);
     if (LoadStageData(true)) {
         lbl_8057D6A0.field_0x30 = 1.0f;
         lbl_8057D6A0.field_0x1C = 1.0f;

@@ -16,7 +16,11 @@
  * differ by that order. Wave 39: the start-up function now calls ResourceManagerTask's constructor
  * by its symbol (it matched but for that name); for fn_801E2878's store, the count written as
  * m_first[26], the table through a pointer, the counter declared outside or before the store and
- * a while loop give the same two rows or more. */
+ * a while loop give the same two rows or more. Wave 40: the second loop over a pointer to the
+ * table, as do/while or while, with a long counter, the counter declared or set ahead of the
+ * store, the count stored as m_first[i + 1] and the count re-read for the store give the same
+ * row; the loop or the store in static inline members of the index give 41 rows, and
+ * `#pragma scheduling off` 7. */
 #include "Effect/System/EffectSystem.h"
 #include "Game/GameSystem.h"
 #include "Game/NowLoading.h"

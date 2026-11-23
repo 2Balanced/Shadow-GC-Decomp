@@ -7,15 +7,16 @@
  * File name inferred; names marked "(name inferred)" are not original. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 30 of 32 functions and all data match. Two differ only in register allocation:
- * fn_801A3CE4, where retail gives the parameters r27..r30 in their order (GC/2.7 gives model r29
- * and slot r23, for every source form tried), and Part::SetAlpha, where retail loads m_area into r3
- * and m_baseArea into r0 for the comparison in its second branch (GC/2.7 swaps the two). Wave 39
- * tried about 20 more spellings of that comparison (operands swapped, named locals, inline
- * getters and setters, the types of the two members): `m_area != (m_area = m_baseArea)` is the
- * only one that gives retail's registers, with the store ahead of the branch. For fn_801A3CE4,
- * separate loop counters, the counter and count declared in other places and the second bound
- * read in the condition all leave slot and table in r23/r24. */
+ * NonMatching: 31 of 32 functions and all data match. fn_801A3CE4 differs only in register
+ * allocation: retail gives the parameters r27..r30 in their order (GC/2.7 gives model r29 and
+ * slot r23, for every source form tried). Separate loop counters, the counter and count declared
+ * in other places and the second bound read in the condition all leave slot and table in r23/r24
+ * (wave 39); so do the entries declared first or last, the count set in one statement with
+ * m_frameCount and either loop moved into an inline function (wave 40, 31 to 72 rows).
+ * Part::SetAlpha matches since wave 40: its second branch reads m_area into a local and compares
+ * that with m_baseArea (`int area = m_area; if (area != m_baseArea)`), which loads m_area into r3
+ * and m_baseArea into r0; the members compared directly, two locals, or an inline setter swap
+ * the registers. */
 /* boost::scoped_array needs it (see boost/checked_delete.hpp). */
 #define BOOST_CHECKED_ARRAY_DELETE
 
@@ -285,12 +286,15 @@ void UnkModel_801A3E9C::Part::SetAlpha(float alpha) {
                 SetClumpWorld(m_clump, world);
                 Update();
             }
-        } else if (m_area != m_baseArea) {
-            m_area = m_baseArea;
-            LeaveWorld();
-            void *world = AreaWorld(m_area);
-            SetClumpWorld(m_clump, world);
-            Update();
+        } else {
+            int area = m_area;
+            if (area != m_baseArea) {
+                m_area = m_baseArea;
+                LeaveWorld();
+                void *world = AreaWorld(m_area);
+                SetClumpWorld(m_clump, world);
+                Update();
+            }
         }
     }
 }

@@ -9,11 +9,13 @@
  * RCPtr members for CScene, CNode, CTexList and unsigned char, of CProject's constructor and of the
  * string copy constructor, assign, replace and compare.
  *
- * The unit stays NonMatching (249 of 255 functions match):
- * - fn_8003FAC4: retail loads csd.m_project above the prologue's stores (the later 2.7-era compiler
- *   of docs/research-notes.md, fourth difference).
+ * The unit stays NonMatching (250 of 255 functions match; fn_8003FAC4 since wave 40: it takes the
+ * project as a reference to const, which lets GC/2.7 load csd.m_project above the prologue's
+ * stores as retail does):
  * - fn_8003CEF8: retail computes the scene comparison into a register before the GetScene
- *   temporary's destructor; GC/2.7 compares after it (one more saved register).
+ *   temporary's destructor; GC/2.7 compares after it (one more saved register). Wave 40: the
+ *   comparison in an inline function of the scene or of the tour, as `Get() != Get()` and with
+ *   `return pa != pb` give 25 to 46 rows.
  * - allocator<Motion>::destroy: retail calls Motion's destructor out of line, GC/2.7 inlines it.
  * - list<SReorder>::erase (and its operator-> helper): retail calls operator-> out of line for this
  *   trivially destructible list only; <list>'s MSL_LIST_TRIVIAL_VALUES fixes it but breaks the
@@ -114,7 +116,7 @@ void fn_8003E414(TPjsCsd &csd, s32 index, bool loop);
 void fn_8003E388(TPjsCsd &csd, const char *motion, bool loop);
 bool fn_8003F938(TPjsCsd &csd, const char *name, const char *textures);
 bool fn_8003FA08(TPjsCsd &csd, const char *name);
-RCPtr<CScene> fn_8003FAC4(TPjsCsd &csd);
+RCPtr<CScene> fn_8003FAC4(const TPjsCsd &csd);
 bool fn_8003FB10(TPjsCsd &csd);
 void fn_8003FDF4(TPjsCsd &csd);
 bool fn_8003FE2C(TPjsCsd &csd);
@@ -259,7 +261,7 @@ extern "C" bool fn_8003FB10(TPjsCsd &csd) {
 }
 
 /* The scene (fn_8003FAC4). */
-extern "C" RCPtr<CScene> fn_8003FAC4(TPjsCsd &csd) {
+extern "C" RCPtr<CScene> fn_8003FAC4(const TPjsCsd &csd) {
     CProject *project = csd.m_project;
     if (project != 0) {
         return fn_8036D660(project, csd.m_sceneName);

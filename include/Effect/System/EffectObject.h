@@ -19,7 +19,7 @@ class EffectObject : public EffectElement {
   public:
 #ifdef EFFECT_ELEMENT_FULL
     /* 0x80421D38. */
-    EffectObject(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+    EffectObject(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                  EffectManager *manager);
 #endif
     virtual ~EffectObject();

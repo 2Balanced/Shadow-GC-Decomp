@@ -406,8 +406,10 @@ build described above):
 
 - a loop's strength-reduced offset initialised by copying the zeroed counter (`li r29,0` ...
   `mr r31,r29`), where GC/2.7 emits a second `li`: `Game/ClumpUpdater.cpp` (`fn_80015570`),
-  `Game/DiablonExecuter.cpp` (constructor and destructor), `Game/folderTargetWindow.cpp`
-  (constructor), `Game/TTextureChange.cpp` (`Setup`);
+  `Game/folderTargetWindow.cpp` (constructor), `Game/TTextureChange.cpp` (`Setup`). This one is
+  a source shape after all, see "Levers measured in wave 40": `Game/DiablonExecuter.cpp` and the
+  two pool getters of `Game/UnkCollisionQuery_80020D40.cpp` match with the loop in an inline
+  function, so the three units left here are worth the same try;
 - `this` in r31 and a pooled `.rodata` base in r30 (`Game/GiGameOver.cpp`,
   `Game/TGiCommandWindow.cpp`): a string that goes through a value of its own flips the pair but
   then takes a scratch register from a constant;
@@ -451,6 +453,52 @@ build described above):
   record right behind the record of the first function that calls it. GC/2.7 puts both where the
   function is defined (out of line) or both behind the caller (inline); no shape tried splits
   them, and it is all that keeps the two units from linking.
+
+## Levers measured in wave 40
+
+Several residuals that the sections above put down to the later compiler build were source shapes.
+Try these before recording a floor:
+
+- **Prologue and store scheduling is the `const` lever, in both directions.** A load that retail
+  has *behind* the prologue's `stw r31` or behind member stores means the object is reached through
+  a pointer or reference to non-const; a load retail has *above* them means const.
+  `EnemyStatusCommon`'s slot 0x98 (attacker as `boost::shared_ptr<CharInfo> &`, which flipped the
+  unit), `EffectObject`'s constructor (description as a pointer to non-const: the four colour
+  loads stay behind the stores) and `fn_8003FAC4` of `Game/TPjsCsd.cpp` (`const TPjsCsd &`) were
+  all recorded as compiler differences. `ScatteringRing::Instantiate` (the "fourth difference"
+  above), `Game/EnemyArea.cpp` and `Game/EnemyParamCommon.cpp` describe the same symptom and have
+  not been retried with it.
+- **`mr` from the zeroed counter means the loop was in an inline function.** Written in place,
+  GC/2.7 starts the loop's second induction variable with its own `li`; inlined from a function
+  (`LinkPool` in `Game/UnkCollisionQuery_80020D40.cpp`, `SetUpBehaviors`/`TearDownBehaviors` in
+  `Game/DiablonExecuter.cpp`) it copies the zero that is already in a register. That flipped
+  `Game/DiablonExecuter.cpp`.
+- **A member read into a local decides the operand registers of a comparison.**
+  `int area = m_area; if (area != m_baseArea) { m_area = m_baseArea; ...` loads `m_area` into r3
+  and `m_baseArea` into r0 (`UnkModel_801A3E9C::Part::SetAlpha`); the two members compared
+  directly, or two locals, swap them.
+- **`new T(...)` and operator new plus the constructor called by its symbol colour differently.**
+  The compiler's temporary for a `new` expression took r29 in `StageManager::Start`; a local that
+  receives `operator new` and then the constructor's result took retail's r28.
+- **`x += a + b` and `x = x + a + b` add in different orders** (`EffectObject`'s constructor:
+  the first adds the constant last, as retail does).
+- **Members of class template instances are emitted template by template, in the order the class
+  templates were first declared, and inside one template instance by instance.** With one class
+  holding all of a vector's out-of-line members, a unit with two vector types gets all the members
+  of one vector and then the other's. Retail's `Game/StageCameraPostProcess.cpp` has `erase`,
+  `insert_n` and `reserve` of both vectors first and `destroy_all`, the destructor and `data` of
+  both after them: two class templates, the growing members in the class between the vector and
+  its storage. `MSL_VECTOR_MIDDLE_MEMBERS` in `<vector>` does that (the middle class is forward
+  declared ahead of the storage class, which is what puts its members first) and gives that unit
+  retail's function order. `Game/ItemIconManagerTask.cpp` records the same symptom.
+- **Exception tables are written in code order, always.** `Game/EffectObject.cpp` has every
+  function matching and retail's code order within reach (the two operator deletes defined out of
+  line ahead of `~EffectCommandExec` under `#pragma auto_inline on`, so that the deleting
+  destructors still inline them), but retail's tables are in another order than its code
+  (`Update`, `~EffectCommandExec`, `ParseCommands`, ...), so the unit differs in `extab` and
+  `extabindex` either way. `Game/EffectManager.cpp` shows the same.
+- **`fnside.py` rows that differ only in a branch's printed target are not differences**: the
+  target is printed as an offset in the object, and it moves when the function order differs.
 
 ## The C++ runtime library (Runtime.PPCEABI.H)
 
