@@ -5,12 +5,12 @@
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
  * first).
  *
- * NonMatching: Tick is left. Load matches since wave 40 with the row and the scene declared, in
- * that order, ahead of the loop (the first local declared gets the highest saved register). Tick
- * numbers its variables differently: retail keeps the counter in r31 above the player (r30), the
- * address of the row's state in r24 for both tests, and in the closing branch the side in r24 and
- * its scene in r23; a counter declared first, a pointer to the state and locals for the side and
- * the scene in the branches leave 30 rows or more (probes/Game_TGiHissatu.py). */
+ * Load matches since wave 40 with the row and the scene declared, in that order, ahead of the loop
+ * (the first local declared gets the highest saved register). Tick matches since wave 41 with the
+ * counter declared ahead of the player and no named row: every access indexes s_sides and
+ * m_sides, so the only named locals are the counter (r31) and the player (r30), this follows
+ * (r29), and the rows, the state's address and the scenes are the compiler's own temporaries
+ * (probes/Game_TGiHissatu_W41.py; a named row pointer left 30 rows or more, probes/Game_TGiHissatu.py). */
 #define TGI_NO_NUMBER_COLORS
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -95,19 +95,19 @@ TGiHissatu::~TGiHissatu() {
 }
 
 void TGiHissatu::Tick(float dt) {
+    int i;
     UnkPlayerInfo_80178B5C *player = fn_80178B5C(fn_80079808(), 0);
     if (player != 0) {
-        for (int i = 0; i < 2; i++) {
-            const UnkHissatuSide_804B52E4 *side = &s_sides[i];
-            if (side->m_state == fn_8016EEC0(player) && !m_sides[i].m_open) {
+        for (i = 0; i < 2; i++) {
+            if (s_sides[i].m_state == fn_8016EEC0(player) && !m_sides[i].m_open) {
                 m_sides[i].m_open = 1;
-                fn_8003E388(m_sides[i].m_csd, side->m_open, 1);
-                fn_8003E388(m_sides[i].m_csd, side->m_loop, 0);
-            } else if (side->m_state != fn_8016EEC0(player) && m_sides[i].m_open) {
+                fn_8003E388(m_sides[i].m_csd, s_sides[i].m_open, 1);
+                fn_8003E388(m_sides[i].m_csd, s_sides[i].m_loop, 0);
+            } else if (s_sides[i].m_state != fn_8016EEC0(player) && m_sides[i].m_open) {
                 fn_8003FB10(m_sides[i].m_csd);
                 m_sides[i].m_open = 0;
-                fn_8003E388(m_sides[i].m_csd, side->m_loop, 1);
-                fn_8003E388(m_sides[i].m_csd, side->m_close, 1);
+                fn_8003E388(m_sides[i].m_csd, s_sides[i].m_loop, 1);
+                fn_8003E388(m_sides[i].m_csd, s_sides[i].m_close, 1);
             }
             fn_8003FE2C(m_sides[i].m_csd);
         }

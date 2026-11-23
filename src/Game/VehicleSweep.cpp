@@ -14,7 +14,9 @@
  * best of all 720 orders, with and without copy propagation; wave 40, probes/Game_VehicleSweep.py).
  * What is left are r17-r21: retail gives world r21, the hits r20, the loop's node r19 and object
  * r18, and &filter the mask parameter's r17, which GC/2.7 hands out the other way round (the
- * blocker of Game/VehicleColliMove.cpp's Sweep and Settle). */
+ * blocker of Game/VehicleColliMove.cpp's Sweep and Settle). Wave 41 (probes/Game_VehicleSweep_W41*.py):
+ * the loop's node and object declared with the scalars at every position (57 orders) stay at 21
+ * rows, copy propagation off gives 27, and passing &filter without the named pointer 56 or more. */
 #include "Game/CharInfo.h"
 #include "Game/CharaColli.h"
 #include "Game/CharaColliBaseCharInfo.h"

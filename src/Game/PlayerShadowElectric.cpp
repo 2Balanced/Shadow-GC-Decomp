@@ -14,6 +14,7 @@
 #include "boost/shared_ptr.hpp"
 #include "boost/weak_ptr.hpp"
 #include "size_assert.h"
+#include "Game/PlayerShadowElectric.h"
 
 using Effect::System::EffectElement;
 
@@ -42,22 +43,6 @@ static float s_levelMin = 0.0f;
 
 namespace Player {
 namespace Shadow {
-
-class Electric : public Task {
-  public:
-    class Impl;
-
-    Electric(Task *parent, const boost::shared_ptr<PlayerBase> &player, Electric **slot);
-    virtual ~Electric();
-    virtual void Tick(float dt);
-
-    /* Ends the aura: it fades out, and the task ends with it. */
-    void Stop();
-
-    /* 0x28 */ boost::scoped_ptr<Impl> m_impl;
-    /* 0x2C */ u32 field_0x2C; /* (the constructor leaves it alone; meaning unknown) */
-};
-SIZE_ASSERT(Electric, 0x30);
 
 class Electric::Impl {
   public:

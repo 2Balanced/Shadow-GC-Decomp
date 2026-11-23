@@ -9,10 +9,13 @@
  * them here. Names of functions and members are inferred. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: four functions differ from retail only in register allocation (Awake's constructor
- * and Tick, 4 instructions each; Jet::UpdateVisibility, 1; Jet::UpdateModels, which swaps the
- * registers of the frame pointer and the loop's base pointer). Everything else matches. */
+ * Matching since wave 41. What it took besides the register shapes noted at Jet and Awake: the
+ * electric aura is Player::Shadow::Electric (Game/PlayerShadowElectric.h), CharacterFileManager's
+ * GetHandle is declared only (its weak copy would be linked here), the shared std::swap for
+ * any_pointer stands in for the template's local copy, and Awake::Tick shows the model only when
+ * the player has a motion (the branch objdiff could not see). */
 #define EFFECT_ELEMENT_POLYMORPHIC
+#define CHARACTER_FILES_GET_HANDLE_EXTERN
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <boost/scoped_ptr.hpp>
@@ -37,6 +40,14 @@
 #include "boost/weak_ptr.hpp"
 #include <dolphin/types.h>
 #include "size_assert.h"
+#include "Game/PlayerShadowElectric.h"
+
+/* The game has one shared copy of std::swap for boost::function's any_pointer (0x80019164), which
+ * function1::swap calls; this overload stands in for it, as in Game/CatchStick.cpp (GC/2.7 would
+ * emit a local copy of the template, 0x20 bytes retail does not have here). */
+namespace std {
+void swap(boost::detail::function::any_pointer &a, boost::detail::function::any_pointer &b);
+}
 
 using Effect::System::EffectElement;
 using SonicteamUSA::System::Camera::CameraMode;
@@ -239,9 +250,6 @@ boost::shared_ptr<CameraMode> fn_8026F6A4(int kind, UnkCameraModeArgs_8000EBB0 *
 void fn_8000FBFC(const boost::shared_ptr<CameraMode> &mode, UnkCameraData_80012510 *data, float time,
                  const Mtx34f *matrix);
 int fn_80011B7C(UnkCameraData_80012510 *data, float *time, const float *step);
-/* The task that fn_8028D9D8 makes (class name unknown) and its release (behaviour inferred). */
-void fn_8028D9D8(void *task, Task *parent, void *impl, void *slot);
-void fn_8028D834(void *task);
 }
 
 namespace {
@@ -708,9 +716,11 @@ void Jet::Tick(float dt) {
     UpdateVisibility();
 }
 
+/* The frame is declared ahead of the counter and its matrix is reached through a pointer of its
+ * own: that gives the frame r31 above the row base, as retail has it (wave 41). */
 void Jet::UpdateModels() {
-    int i;
     RwFrame *frame;
+    int i;
     for (i = 0; i < 4; i++) {
         if (m_clumps[i] != 0) {
             float color[4];
@@ -723,31 +733,42 @@ void Jet::UpdateModels() {
                                        50.0f * (lbl_805FAD38 / 180.0f));
             UnkMotionNode_800AA760 *node = fn_800AA760(m_player->m_motion, s_jetNodes[i]);
             frame = m_frames[i];
-            frame->modelling = fn_800591F0(
+            RwMatrix *matrix = &frame->modelling;
+            *matrix = fn_800591F0(
                 &(const Mtx34f &)fn_8001E044(node->m_matrix, &(const Mtx34f &)fn_8040B138(m_angles[i])));
             fn_8048722C(m_frames[i]);
         }
     }
 }
 
+/* Hides and shows the jets' models (names inferred). Inline functions: with the loops inlined from
+ * them GC/2.7 starts the hiding loop's offset by copying the zeroed counter (mr r31,r30) and stores
+ * false from the showing loop's zero, as retail does (wave 41, probes/Game_PlayerEffect_W41.py). */
+inline void HideJetClumps(Jet *jet) {
+    for (int i = 0; i < 4; i++) {
+        if (jet->m_clumps[i] != 0) {
+            fn_80038FC0(jet->m_clumps[i]);
+        }
+    }
+}
+
+inline void ShowJetClumps(Jet *jet) {
+    for (int i = 0; i < 4; i++) {
+        if (jet->m_clumps[i] != 0) {
+            fn_80038F94(jet->m_clumps[i]);
+        }
+    }
+}
+
 void Jet::UpdateVisibility() {
-    int i;
     if (m_player->IsWeaponHidden()) {
         if (!m_hidden) {
             m_hidden = true;
-            for (i = 0; i < 4; i++) {
-                if (m_clumps[i] != 0) {
-                    fn_80038FC0(m_clumps[i]);
-                }
-            }
+            HideJetClumps(this);
         }
     } else if (m_hidden) {
         m_hidden = false;
-        for (i = 0; i < 4; i++) {
-            if (m_clumps[i] != 0) {
-                fn_80038F94(m_clumps[i]);
-            }
-        }
+        ShowJetClumps(this);
     }
 }
 
@@ -895,6 +916,10 @@ class Awake : public Task {
 };
 SIZE_ASSERT(Awake, 0x50);
 
+/* The constructor and Tick reach the awakening effect by its offset in the motion rather than through
+ * AwakeEffect: the inline function's result is a temporary that GC/2.7 copies into the reference's
+ * register, which then shares a saved register with another local; written out, the reference
+ * takes retail's (r28 here, r29 in Tick; wave 41, probes/Game_PlayerEffect_W41b.py). */
 Awake::Awake(Task *parent, const boost::shared_ptr<PlayerBase> &player, Awake **slot, int kind)
     : Task(parent), m_player(player), m_slot(slot), m_kind(kind) {
     RpClump *clump;
@@ -919,7 +944,8 @@ Awake::Awake(Task *parent, const boost::shared_ptr<PlayerBase> &player, Awake **
     fn_8007939C(m_player.get(), 1);
     fn_80079334(m_player.get(), 1);
     if (PlayerMotion *motion = m_player->m_motion) {
-        boost::weak_ptr<EffectElement> &effect = AwakeEffect(motion);
+        boost::weak_ptr<EffectElement> &effect =
+            *reinterpret_cast<boost::weak_ptr<EffectElement> *>(motion->field_0x28 + (0x48 - 0x28));
         if (!effect.expired()) {
             effect.lock()->Retire();
         }
@@ -977,15 +1003,16 @@ void Awake::Tick(float dt) {
     case 0:
         if (m_time >= 1.5f) {
             if (PlayerMotion *motion = m_player->m_motion) {
-                boost::weak_ptr<EffectElement> &effect = AwakeEffect(motion);
+                boost::weak_ptr<EffectElement> &effect =
+                    *reinterpret_cast<boost::weak_ptr<EffectElement> *>(motion->field_0x28 + (0x48 - 0x28));
                 if (!effect.expired()) {
                     effect.lock()->Retire();
                 }
                 effect = fn_800A2854(reinterpret_cast<Player::Effect *>(m_player->field_0x23C), 1,
                                      s_awakeKinds[m_kind].m_effect);
+                m_hidden = true;
+                Show();
             }
-            m_hidden = true;
-            Show();
             AddToWorld();
             m_state = 100;
         }
@@ -1397,15 +1424,12 @@ class Effect::Impl {
             m_auraCount = 0;
         }
         if (m_auraCount == 0 && m_aura != 0) {
-            fn_8028D834(m_aura);
+            m_aura->Stop();
         }
     }
     void StartAura(Task *parent) {
         if (m_aura == 0) {
-            void *aura = operator new(0x30);
-            if (aura != 0) {
-                fn_8028D9D8(aura, parent, this, &m_aura);
-            }
+            new Shadow::Electric(parent, m_player, &m_aura);
         }
         m_auraCount++;
     }
@@ -1428,7 +1452,7 @@ class Effect::Impl {
     /* 0x18 */ Awake *m_awake;
     /* 0x1C */ Shadow::Super *m_super;
     /* 0x20 */ s32 m_auraCount;
-    /* 0x24 */ void *m_aura;
+    /* 0x24 */ Shadow::Electric *m_aura;
     /* 0x28 */ boost::weak_ptr<EffectElement> m_chaosEffect;
     /* 0x30 */ Slow *m_slow;
     /* 0x34 */ Footmark *m_footmark;

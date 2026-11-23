@@ -22,7 +22,9 @@
  * blocks when the switch was lowered and became one afterwards.  GC/2.7 joins labels on one block
  * before it lowers the switch whatever stands between them (every order of the labels, an empty
  * statement, an empty block, (void)0, an empty inline call, do {} while (0), if (0), gotos to one
- * label): all give 53 instructions. */
+ * label): all give 53 instructions. Wave 41 (probes/Game_MemoryCardCtrl_W41.py): the failure written
+ * after the switch, with 2, 3 and 6 breaking out of it (grouped, separate, with and without
+ * default) and 4 and 5 returning, gives 54. */
 #include "Game/MemoryCardCtrl.h"
 #include "Game/MemoryCardCrypt.h"
 #include "Game/Task.h"

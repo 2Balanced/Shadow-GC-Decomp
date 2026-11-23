@@ -18,7 +18,10 @@
  * fifth, r27, and results sixth, r26); in fn_800C4DE0 only `filter` is (r20 in retail, above the
  * four block temporaries; r16 here, below them, next to filterArg). Declaring i and the collider
  * at the top of the function, and copying filter or filterArg into a local declared first or
- * after `still`, change nothing: the copies are coalesced away. */
+ * after `still`, change nothing: the copies are coalesced away. Wave 41
+ * (probes/Game_CharaColliManager_W41.py): with copy propagation off the copies stay, but they add
+ * instructions (fn_800C5478 258 of 256) and move nothing the right way; a copy of filter declared
+ * first in fn_800C4DE0 is no better. */
 #define CHARACOLLI_BASE_MEMBERS
 #include "Game/AttackIgnoreList.h"
 #include "Game/BitTable.h"

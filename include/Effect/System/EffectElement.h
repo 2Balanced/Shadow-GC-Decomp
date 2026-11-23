@@ -133,10 +133,15 @@ class EffectElement {
      * and scale, and the velocity from the last two positions (0x80425C34). */
     void UpdateTransform(float dt);
     /* m_speed (the launch command gives a launched effect its parent's; its copy of GetSpeed is
-     * at 0x80424D18, Game/EffectCommandExec.cpp). */
+     * at 0x80424D18, Game/EffectCommandExec.cpp, which defines it out of line ahead of its first
+     * function: retail emits it right behind that function, not behind its first caller). */
+#ifdef EFFECT_ELEMENT_GETSPEED_EXTERN
+    float GetSpeed() const;
+#else
     float GetSpeed() const {
         return m_speed;
     }
+#endif
     void SetSpeed(float speed) {
         m_speed = speed;
     }

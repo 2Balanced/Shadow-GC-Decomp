@@ -108,7 +108,9 @@ enum {
  * the block temporaries, then overflow, context and read (r18-r16), state (r15) and negative (r14);
  * this source gets overflow, context and read in r31-r29 and the locals below them. Declaration
  * order, moving the block locals, copying the parameters and the count-- idiom that settled
- * strtoul.c do not move the parameters. */
+ * strtoul.c do not move the parameters. Wave 41: copy propagation off with read, context and
+ * overflow copied into locals declared after the others keeps the copies but adds moves (291 and
+ * 324 differing rows against 257). */
 
 /* The most significant digits kept; further integer digits only scale the exponent. */
 #define MAX_SIG_DIGITS 20

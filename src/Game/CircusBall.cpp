@@ -8,9 +8,9 @@
  * not original. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first), except the static HitCharacter, which the compiler places after them all.
  *
- * Not yet matching: HitCharacter's float-to-int and int-to-float conversions share one stack slot
- * in the original, which GC/2.7 does not reproduce (see docs/research-notes.md). Everything else,
- * including the data, matches. */
+ * Matching since wave 41: HitCharacter's float-to-int and int-to-float conversions share one stack
+ * slot, as in the original, once the difference to the next table entry is a variable of its own
+ * reduced with -= (see Game/LongSpring.cpp). */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -165,7 +165,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     int level = context->m_params->level;
     float speed = lbl_804BE910[level];
     if (level < 15) {
-        speed += (lbl_804BE910[level + 1] - speed) * (context->m_params->level - level);
+        float delta = lbl_804BE910[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
     }
 
     Mtx34f matrix;

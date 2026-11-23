@@ -83,8 +83,9 @@ class folderStoryRoute {
 
     /* Advances the chart; true while a scene is still playing (name inferred). */
     bool Update();
-    /* Finds the scenes (name inferred). */
-    void InitScenes(Chao::CSD::CProject *project);
+    /* Finds the scenes (name inferred). The constructor passes the manager's player in r5 and
+     * nothing reads it: an unused parameter, as in folderPause. */
+    void InitScenes(Chao::CSD::CProject *project, s32 player);
     /* Shows the stages and endings reached, the lines gone along and the player icons (names
      * inferred). */
     void UpdateStages();

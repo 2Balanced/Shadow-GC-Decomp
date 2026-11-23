@@ -5,17 +5,18 @@
  * base class. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first); the inline destructors come out at the end of the unit.
  *
- * NonMatching: 43 of 46 functions match. The constructors of EffCmdMatAlphaExec (98%),
- * EffCmdMatColorExec (98%) and EffCmdPtnAnimExec (99%) add a random whole number to a member
- * right after the random call; retail loads the member into r0 and the converted number into r3,
- * GC/2.7 the other way round (about ten spellings tried: compound and plain adds, a named
- * temporary, an inline helper, casts; wave 39 added the operands swapped, two named locals in
- * both orders, a named random float, (u8), (s32) and (u32) casts and a reference helper, none of
- * which moves the 4 rows of the pattern constructor). The unit's data also carries boost's bad_weak_ptr and
- * std::exception RTTI and vtables from weak_ptr::lock, which retail's unit does not have, and
- * GC/2.7 emits GetSpeed's out-of-line copy after Exec of the launch command where retail has it
- * after EffCmdSingleExec's constructor. */
+ * Matching since wave 41. The constructors of EffCmdMatAlphaExec, EffCmdMatColorExec and
+ * EffCmdPtnAnimExec add a random whole number to a member right after the random call; retail
+ * loads the member into r0 and the converted number into r3, which GC/2.7 does only with the
+ * number in a named local and copy propagation off for the constructor (wave 41,
+ * probes/Game_EffectCommandExec_W41.py; with propagation on, the twenty-odd spellings of waves
+ * 38-39 all had the two the other way round). EffectElement::GetSpeed is an ordinary function of
+ * this file, defined ahead of the first command (as an inline member GC/2.7 put its copy behind the
+ * launch command's Exec, 8 bytes early). The object's data also carries boost's bad_weak_ptr and
+ * std::exception RTTI and vtables from weak_ptr::lock, which retail's unit does not have; the link
+ * drops them. */
 #define EFFECT_COMMAND_LAUNCH
+#define EFFECT_ELEMENT_GETSPEED_EXTERN
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -80,6 +81,12 @@ inline void ClampColor(int &value) {
  * makes the children follow its matrix every update. */
 inline u32 ParentConfig(const EffectElement *parent) {
     return static_cast<const EffectArranger *>(parent)->m_config;
+}
+
+/* Not inline: retail's only copy (0x80424D18) stands right behind EffCmdSingleExec's constructor,
+ * where a function defined ahead of it is emitted (wave 41). */
+float EffectElement::GetSpeed() const {
+    return m_speed;
 }
 
 EffCmdSingleExec::EffCmdSingleExec(const u8 *data, u32 *state,
@@ -229,6 +236,7 @@ bool EffCmdVector3Exec::Exec(float dt) {
     return true;
 }
 
+#pragma opt_propagation off
 EffCmdPtnAnimExec::EffCmdPtnAnimExec(const u8 *data, u32 *state,
                                      Vec2f *uvMin, Vec2f *uvMax)
     : EffectCommandExec(data), m_state(state), m_uvMin(uvMin), m_uvMax(uvMax), m_cell(0),
@@ -251,7 +259,8 @@ EffCmdPtnAnimExec::EffCmdPtnAnimExec(const u8 *data, u32 *state,
     }
     m_cell = m_firstCell = c->m_firstCell;
     if (c->m_firstCellRange != 0) {
-        m_cell += (int)(c->m_firstCellRange * EffectRandom());
+        int add = (int)(c->m_firstCellRange * EffectRandom());
+        m_cell += add;
     }
     m_lastCell = c->m_lastCell;
     m_frames = c->m_frames;
@@ -264,6 +273,7 @@ EffCmdPtnAnimExec::EffCmdPtnAnimExec(const u8 *data, u32 *state,
     }
 }
 
+#pragma opt_propagation reset
 bool EffCmdPtnAnimExec::Exec(float dt) {
     if (m_grid == 0) {
         EndCommand(this);
@@ -428,6 +438,7 @@ bool EffCmd2DSclExec::Exec(float dt) {
     return true;
 }
 
+#pragma opt_propagation off
 EffCmdMatColorExec::EffCmdMatColorExec(const u8 *data, u32 *state, u32 *target)
     : EffectCommandExec(data), m_state(state), m_target(reinterpret_cast<int *>(target)), m_elapsed(0.0f) {
     const UnkEffectColorCommand_8042341C *c =
@@ -449,15 +460,18 @@ EffCmdMatColorExec::EffCmdMatColorExec(const u8 *data, u32 *state, u32 *target)
     } else {
         m_delta[0] = c->m_base[0];
         if (c->m_range[0] != 0) {
-            m_delta[0] += (int)(c->m_range[0] * EffectRandom());
+            int add = (int)(c->m_range[0] * EffectRandom());
+            m_delta[0] += add;
         }
         m_delta[1] = c->m_base[1];
         if (c->m_range[1] != 0) {
-            m_delta[1] += (int)(c->m_range[1] * EffectRandom());
+            int add = (int)(c->m_range[1] * EffectRandom());
+            m_delta[1] += add;
         }
         m_delta[2] = c->m_base[2];
         if (c->m_range[2] != 0) {
-            m_delta[2] += (int)(c->m_range[2] * EffectRandom());
+            int add = (int)(c->m_range[2] * EffectRandom());
+            m_delta[2] += add;
         }
     }
     m_duration = c->m_frames;
@@ -496,6 +510,7 @@ EffCmdMatColorExec::EffCmdMatColorExec(const u8 *data, u32 *state, u32 *target)
     }
 }
 
+#pragma opt_propagation reset
 bool EffCmdMatColorExec::Exec(float dt) {
     if (m_target == 0) {
         EndCommand(this);
@@ -525,14 +540,17 @@ bool EffCmdMatColorExec::Exec(float dt) {
     return true;
 }
 
+#pragma opt_propagation off
 EffCmdMatAlphaExec::EffCmdMatAlphaExec(const u8 *data, u32 *state, u32 *target)
     : EffectCommandExec(data), m_state(state), m_target(reinterpret_cast<int *>(target)), m_elapsed(0.0f) {
     const UnkEffectAlphaCommand_80423000 *c =
         static_cast<const UnkEffectAlphaCommand_80423000 *>(reinterpret_cast<const UnkEffectCommand_80421834 *>(m_data));
     m_delta = c->m_base;
-    m_delta += (int)(c->m_range * EffectRandom());
+    int add = (int)(c->m_range * EffectRandom());
+    m_delta += add;
     if (c->m_range != 0) {
-        m_delta += (int)(c->m_range * EffectRandom());
+        int more = (int)(c->m_range * EffectRandom());
+        m_delta += more;
     }
     m_duration = c->m_frames;
     if (c->m_framesRange != 0) {
@@ -558,6 +576,7 @@ EffCmdMatAlphaExec::EffCmdMatAlphaExec(const u8 *data, u32 *state, u32 *target)
     }
 }
 
+#pragma opt_propagation reset
 bool EffCmdMatAlphaExec::Exec(float dt) {
     if (m_target == 0) {
         EndCommand(this);

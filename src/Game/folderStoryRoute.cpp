@@ -7,7 +7,9 @@
  * accessor (fn_800BB74C), a flag test other units call (fn_800BBDD8), and StoryCheck's destructor
  * with the instances of its std::map.
  *
- * NonMatching: 19 of 20 functions and all the data match; see the constructor. */
+ * Matching since wave 41: the constructor passes the player on to InitScenes, which does not read
+ * it (the lever of folderPause's constructor), and the .sbss word fn_801E68A4 uses
+ * (lbl_805EE624) is Game/TGiPause.cpp's, so this unit's .sbss starts 8-aligned with its guard. */
 #define TGI_NO_NUMBER_COLORS
 #define TGI_HANDLE_ASSIGN
 #define MSL_LESS_CAST
@@ -93,10 +95,6 @@ struct UnkCsdPosition_8036AE98 {
 
 /* The holder's instance pointer (another unit's .sbss). */
 extern UnkSaveHolder_801E559C *lbl_805EE014;
-
-/* The instance pointer of the object fn_801E68A4 makes on first use (Game/UnkSystemManager_801E2128.cpp;
- * class unknown). Retail's .sbss holds it here, before this unit's guard, so the unit defines it. */
-void *lbl_805EE624;
 
 extern "C" {
 /* The scene list at path of project, and a scene of a scene list by name (see
@@ -242,22 +240,17 @@ extern "C" bool fn_800BBDD8(const UnkFlags_801E5810 *flags, int bit) {
     return (flags->m_bits & (1 << bit)) != 0;
 }
 
-/* NonMatching (2 instructions): retail loads the manager's player and cursor into two registers
- * before storing either; GC/2.7 gives both r0 and stores the player before loading the cursor (the
- * same detail as folderPause's constructor). Locals in either order, stores in either order, struct
- * copies, an inline setter and pointer copies did not reproduce it. Wave 39 (25 more forms): retail's
- * four words are what GC/2.7 emits for the copy-initialization of an 8-byte struct (a placement new
- * of {player, cursor} gives them, plus a null test of the destination that retail does not have; so
- * does a function-local static's initializer, see Game/FlashbackQueue.cpp), while every assignment
- * comes out interleaved (struct of 8 or 12 bytes, with or without a constructor) or with the value
- * stored last loaded first (two locals, an inline setter with either parameter order, a u64 copy).
- * A by-value inline getter is not inlined (the struct returns in r3:r4). */
+/* Retail loads the manager's player and cursor into two registers before storing either: the
+ * player is passed on to InitScenes (in r5), which does not read it, as in folderPause's
+ * constructor (wave 41; the earlier struct-copy, local and setter shapes all left 2 rows). */
 folderStoryRoute::folderStoryRoute(Chao::CSD::CProject *project) : m_check(0) {
     TPauseManager *manager = fn_800BADE8();
     m_managerState = manager->m_state;
-    m_player = manager->m_player;
-    m_cursor = manager->m_cursor;
-    InitScenes(project);
+    s32 player = manager->m_player;
+    s32 cursor = manager->m_cursor;
+    m_player = player;
+    m_cursor = cursor;
+    InitScenes(project, player);
     m_route.Reset();
     m_stages.Reset();
     m_icons.Reset();
@@ -268,7 +261,7 @@ SavedataAnalyzer::StoryCheck::~StoryCheck() {}
 
 folderStoryRoute::~folderStoryRoute() {}
 
-void folderStoryRoute::InitScenes(Chao::CSD::CProject *project) {
+void folderStoryRoute::InitScenes(Chao::CSD::CProject *project, s32 player) {
     m_sceneList = fn_8036D2FC(project, "Root/StoryRoute", 0);
     if (m_sceneList != UnkCsdHandle_80042DF0(0)) {
         m_route.SetScene(fn_8036F470(m_sceneList.Get(), "StoryRoute"));

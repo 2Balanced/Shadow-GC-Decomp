@@ -206,3 +206,9 @@ void TGiPause::Draw(RednerDrawArgs &args) {
         m_pause->Draw();
     }
 }
+
+/* The instance pointer of the object fn_801E68A4 makes on first use (Game/UnkSystemManager_801E2128.cpp;
+ * class unknown). Retail's .sbss holds it right behind this unit's guards: every unit's .sbss starts
+ * 8-aligned and this word does not, so it is the last word of this unit's .sbss, not the first of
+ * Game/folderStoryRoute.cpp's (wave 41). */
+void *lbl_805EE624;

@@ -26,6 +26,9 @@
  *   r23, r24, r26 and r22. Comparing as `(u32)event->m_type == (u32)type` is what puts the
  *   hoisted type below the parameters (84 rows before); naming the three as locals in any order
  *   (15 shapes) is worse.
+ * Wave 41 (probes/Game_SonicteamMotionBank_W41.py): the event offset reached through labels (the
+ * lever that kept Game/Target.cpp's test a branch) still becomes the subfic/subfe mask, and copy
+ * propagation off does not move fn_80412BFC's bare name.
  *
  * What matched the others in wave 39, as it may help elsewhere in this library:
  * - fn_804124DC: FindRecord names the bank's base id (`int base = bank->m_base;`).

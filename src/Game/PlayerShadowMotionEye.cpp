@@ -168,13 +168,11 @@ template<> inline void checked_delete<Player::Shadow::MotionEyeImpl>(Player::Sha
 namespace Player {
 namespace Shadow {
 
-/* NonMatching (11 rows): register allocation only. In the second loop retail keeps the clump's
- * offset in r26 and the world in r28, GC/2.7 the other way round. Wave 39: the index in a local
- * gave the first loop's file entry retail's r3; for the second loop the world declared before
- * the loop or the stage (17 rows), one counter for both loops (17), a clump local (14), the area
- * in a local and the inline with its parameters exchanged (no change) were tried. Wave 40: either
- * loop in an inline helper (34 rows) and the world through an inline lookup (19 and 38 rows) are
- * worse (probes/Game_PlayerShadowMotionEye_R2.py, _R3.py). */
+/* The index in a local gives the first loop's file entry retail's r3 (wave 39). The second loop
+ * reaches its clump through a pointer to the slot: that is what gives the slot's offset r26 and
+ * the world r28, as retail has them (wave 41, probes/Game_PlayerShadowMotionEye_W41.py; the
+ * clump read into a local, the world declared early and copy propagation off all leave the two
+ * swapped). */
 MotionEyeBlink::MotionEyeBlink(const shared_ptr<PlayerBase> &player, const UnkMotionNode_800AA760 *node,
                                UnkClumpFade_80027D5C *fade, const UnkMotionFiles_800ADE78 &files)
     : m_state(0), m_step(0), m_time(0.0f), m_current(0), m_hidden(0) {
@@ -190,14 +188,15 @@ MotionEyeBlink::MotionEyeBlink(const shared_ptr<PlayerBase> &player, const UnkMo
     }
     UnkStage_8003A840 *stage = fn_8003A840();
     for (int i = 0; i < 5; i++) {
-        if (m_clumps[i] != 0) {
-            m_clumps[i] = fn_80457090(m_clumps[i]);
-            void *world = stage->GetAreas()[fn_80169350(fn_80169364(m_clumps[i]))].m_world;
+        RpClump **slot = &m_clumps[i];
+        if (*slot != 0) {
+            *slot = fn_80457090(*slot);
+            void *world = stage->GetAreas()[fn_80169350(fn_80169364(*slot))].m_world;
             if (world != 0) {
-                SetClumpWorld(m_clumps[i], world);
+                SetClumpWorld(*slot, world);
             }
-            fn_80038FC0(m_clumps[i]);
-            fn_80038198(m_clumps[i], fade);
+            fn_80038FC0(*slot);
+            fn_80038198(*slot, fade);
         }
     }
 }

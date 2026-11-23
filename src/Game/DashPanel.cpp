@@ -96,7 +96,10 @@ namespace DashPanel {
 
 const char *DashPanel::s_taskName = "DashPanel";
 
-/* Boosts hit unless the panel already boosted it (name inferred). */
+/* Boosts hit unless the panel already boosted it (name inferred). The table interpolations keep
+ * the difference to the next entry in a variable of its own reduced with -=: only then does GC/2.7
+ * share one stack slot between the three conversions, as retail does (wave 41; see
+ * Game/LongSpring.cpp). */
 static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     DashPanelHitContext *context = static_cast<DashPanelHitContext *>(user);
     boost::shared_ptr<GadgetCharInfo> self = context->m_chara.lock();
@@ -130,8 +133,11 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
 
     int level = context->m_params->level;
     float speed = lbl_804BABF0[level];
-    if (level < 15)
-        speed += (lbl_804BABF0[level + 1] - speed) * (context->m_params->level - level);
+    if (level < 15) {
+        float delta = lbl_804BABF0[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
+    }
 
     Vec3f forward;
     fn_800091EC(&forward,
@@ -151,8 +157,11 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     hit->PushCommand(new SetVelocityCommand(velocity, 4));
 
     float factor = lbl_804BAC30[level];
-    if (level < 15)
-        factor += (lbl_804BAC30[level + 1] - factor) * (context->m_params->level - level);
+    if (level < 15) {
+        float delta = lbl_804BAC30[level + 1];
+        delta -= factor;
+        factor += delta * (context->m_params->level - level);
+    }
 
     Vec3f acceleration(0.0f, 0.0f, -1.0f);
     AssignVector(acceleration, fn_8040B67C(&matrix, &acceleration));

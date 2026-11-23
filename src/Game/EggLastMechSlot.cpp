@@ -175,12 +175,11 @@ inline void PickNextSymbols(UnkSlot_803142C0 *slot) {
     }
 }
 
-/* Runs the slot machine (name inferred).
- * NonMatching (6 rows): in case 3 retail loads the shot type into r0 and the symbol into r4 for the
- * result lookup, GC/2.7 the other way round (same instructions and order). Not changed by a 2D
- * index, GetResult with its parameters in either order, an inline lookup of the row or of the
- * value, or locals for the row, the symbol and the shot type in either order (wave 40,
- * probes/Game_EggLastMechSlot_R3.py). */
+/* Runs the slot machine (name inferred). Case 3 reads the shot type and the symbol into locals and
+ * copy propagation is off for the function: then GC/2.7 loads the shot type into r0 and the symbol
+ * into r4 for the result lookup, as retail does (wave 41, probes/Game_EggLastMechSlot_W41.py; with
+ * propagation on, every spelling of wave 40 had the two the other way round). */
+#pragma opt_propagation off
 extern "C" void fn_80313CC0(UnkSlot_803142C0 *slot) {
     switch (slot->m_state) {
     case 0:
@@ -209,8 +208,9 @@ extern "C" void fn_80313CC0(UnkSlot_803142C0 *slot) {
         if (!slot->m_mech->IsReady()) {
             if ((slot->m_timer -= fn_8019FFE0(slot->m_mech)) < 0.0f) {
                 if (slot->m_line.IsMatch()) {
-                    const s32 *results = s_results[slot->m_line.m_shotType];
-                    slot->m_result = results[slot->m_line.m_symbols[0]];
+                    s32 shotType = slot->m_line.m_shotType;
+                    s32 symbol = slot->m_line.m_symbols[0];
+                    slot->m_result = s_results[shotType][symbol];
                     fn_8032DA3C(slot->m_disp.get(), slot->m_line.m_symbols[0], slot->m_line.m_shotType);
                     fn_80336B1C(slot->m_mech->m_sound, 0x7F34);
                 } else {
@@ -231,6 +231,7 @@ extern "C" void fn_80313CC0(UnkSlot_803142C0 *slot) {
     }
 }
 
+#pragma opt_propagation reset
 /* Stops reel on the next symbol of shot type 0 (name inferred). */
 extern "C" void fn_80313C98(UnkSlot_803142C0 *slot, int reel) {
     fn_80314004(slot, reel, 0, -1);

@@ -17,7 +17,11 @@
  * Game/BkWorm.cpp). ProcessEvents (0x8022F7BC) has retail's registers (this in r30, ahead of the
  * event's value) only with a const copy of this and a const value pointer; three rows of its
  * prologue are left (retail copies this and then forms the switch's 0xD004 in r3, GC/2.7 forms it
- * first, in r5), under 50 shapes (probes/Game_UnkMotion_8022F058*.py). */
+ * first, in r5), under 50 shapes (probes/Game_UnkMotion_8022F058*.py). Wave 41
+ * (probes/Game_UnkMotion_8022F058_W41.py): copy propagation off, a plain or a copied work pointer,
+ * scheduling off and the declarations in other orders do not move ProcessEvents' prologue; in
+ * LoadParts copy propagation off with the part declared anywhere leaves it in the lowest register
+ * (retail ranks it r30, right below the hoisted table->m_sets). */
 /* boost::scoped_array needs it (see boost/checked_delete.hpp). */
 #define BOOST_CHECKED_ARRAY_DELETE
 /* Declares Player::SetExternalMotionCommand's constructor (Game/CharCommand.h). */

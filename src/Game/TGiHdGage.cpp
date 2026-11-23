@@ -4,15 +4,13 @@
  * the names marked "(name inferred)" are not original. Definitions are in reverse address order
  * (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 22 of 24 functions and all the data match. Tick converts a float to an int and an
- * int to a float; retail shares one stack slot between the two conversions, which GC/2.7 does not
- * do (see docs/research-notes.md); it also addresses the gauge as the array's offset plus the
- * index, then this, where GC/2.7 adds the index to this. In the destructor retail copies the loop's
- * zero into the offset register (mr) where GC/2.7 loads it again (li) for a loop written in the
- * destructor itself; the loop in an inline helper matches (wave 39; folderTargetWindow's
- * constructor shows the same difference and may want the same). The unit's .rodata
- * also gets the RTTI name of boost::detail::sp_counted_base, which retail's does not have
- * (GC/2.7 instantiates the shared_ptr<Render> helpers here). */
+ * Matching since wave 41. Tick's two conversions (float to int and back) share one stack slot
+ * under GC/2.7 too; what kept it apart was the gauge's addressing and the null tests' order (see
+ * Tick). In the destructor retail copies the loop's zero into the offset register (mr) where
+ * GC/2.7 loads it again (li) for a loop written in the destructor itself; the loop in an inline
+ * helper matches (wave 39). The object's .rodata also gets the RTTI name of
+ * boost::detail::sp_counted_base, which retail's does not have (GC/2.7 instantiates the
+ * shared_ptr<Render> helpers here); the link drops it. */
 #define TGI_NO_NUMBER_COLORS
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
@@ -101,24 +99,29 @@ TGiHdGage::~TGiHdGage() {
     DeleteGaugeProjects(this);
 }
 
+/* The counter is declared first and the gauge is indexed at each use (retail forms this + i*8
+ * once and reaches both members from it); the scene is read into a local before the empty scene
+ * is, which orders the two null tests and the compare as retail has them (wave 41,
+ * probes/Game_TGiHdGage_W41.py). */
 void TGiHdGage::Tick(float dt) {
+    int i;
     UnkHdGauge_80079808 *saved = (UnkHdGauge_80079808 *)((u8 *)fn_80079808() + 0x70C);
-    for (int i = 0; i < 2; i++) {
-        Gauge *gauge = &m_gauges[i];
-        RCPtr<CScene> scene = fn_8036D660(gauge->m_project, s_files[i].m_scene);
-        if (scene.Get() != lbl_805EE118.Get()) {
+    for (i = 0; i < 2; i++) {
+        RCPtr<CScene> scene = fn_8036D660(m_gauges[i].m_project, s_files[i].m_scene);
+        CScene *current = scene.Get();
+        if (current != lbl_805EE118.Get()) {
             int frames = fn_80366728(scene.Get());
             UnkHdGauge_80079808 *value = &saved[i];
-            if (value->m_value > gauge->m_value) {
-                gauge->m_value = (gauge->m_value + value->m_value) / 2;
+            if (value->m_value > m_gauges[i].m_value) {
+                m_gauges[i].m_value = (m_gauges[i].m_value + value->m_value) / 2;
             } else {
-                gauge->m_value = value->m_value;
+                m_gauges[i].m_value = value->m_value;
             }
-            if (gauge->m_value > value->m_max) {
-                gauge->m_value = value->m_max;
+            if (m_gauges[i].m_value > value->m_max) {
+                m_gauges[i].m_value = value->m_max;
             }
-            fn_80366740(scene.Get(), frames * gauge->m_value / value->m_max);
-            fn_8036DAD4(gauge->m_project);
+            fn_80366740(scene.Get(), frames * m_gauges[i].m_value / value->m_max);
+            fn_8036DAD4(m_gauges[i].m_project);
         }
     }
 }

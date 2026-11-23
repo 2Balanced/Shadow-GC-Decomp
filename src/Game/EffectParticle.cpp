@@ -6,10 +6,13 @@
  * out here). File name from the class; member names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 14 of 15 functions match. Generate (88%) has the float/int conversion stack-slot
- * difference of docs/research-notes.md (retail shares one slot, GC/2.7 gives each conversion its
- * own and the frame grows by 0x10), and GC/2.7 also keeps the float constants' base address in a
- * register where retail loads each constant with its own lis. Move matched in wave 39: its last
+ * NonMatching: 14 of 15 functions match. Generate's float constants are each loaded with their own
+ * lis in retail: the unit is built without pooled data (cflags_effect_nopool, as EffectObject and
+ * EffectCommandExec; wave 41, the other functions are unchanged by it), which takes Generate from 88%
+ * to 99%. What is left is its register allocation (count, i, the particle and the shape take other
+ * saved registers, and the particle goes through an extra copy after the two news) and the stack
+ * slots of its conversions; the conversion-slot lever of Game/LongSpring.cpp (a difference reduced
+ * with -=) may apply to the spread interpolation. Move matched in wave 39: its last
  * loop walks the list with a pointer of its own, declared third (after next and exec, before
  * current); saved registers go down from r30 in declaration order, so that is what gives it r29.
  * Reusing `particle`, or a new pointer declared anywhere else, gives r30. */

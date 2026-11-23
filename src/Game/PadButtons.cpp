@@ -109,7 +109,9 @@ extern "C" bool fn_80356214(UnkPadInput_80051734 *input, int pad, u32 mask, int 
  * row offset r30, byte offset r31); there the pad parameter never needs a register of its own
  * because the prologue folds it into `mulli r29,r4,40`. Declaring the mask with its initialiser
  * inside the loop gets the mask to r28 and leaves 5 rows (16 shapes probed, floor 5): the counter
- * and the pad parameter still trade places. */
+ * and the pad parameter still trade places. Wave 41 (probes/Game_PadButtons_W41.py): copy
+ * propagation off with copies of pad or button in every order, an unnamed mask, a row pointer
+ * and the inline IsRepeated called directly all stay at 5 rows or more. */
 extern "C" bool fn_80356190(int button, int pad) {
     for (int i = 0; i < 3; i++) {
         u32 mask = s_buttons[button][i];
