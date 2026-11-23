@@ -20,12 +20,14 @@ treat every rule here as part of their instructions.
   likely written in: the game's own code in C++, libraries that were built from C (RenderWare,
   the Dolphin SDK, MSL, MetroTRK) in C, built with `-lang=c` where needed. When a unit departs
   from its neighbours, say why in its header comment.
-- **Real source only.** `.s` files, inline-asm functions, and one-to-one assembly transcriptions do
-  not count as decompilation and must not be committed as RenderWare progress. The one exception is
-  a short `asm` statement inside an otherwise ordinary C function that only reads or writes a
-  special register C cannot reach (a GQR or HID2 `mtspr`, for example), the way the SDK's own
-  headers do it; it carries a comment saying so. Library routines that were hand-written assembly
-  in the original stay unwritten.
+- **RenderWare is real source only.** `.s` files, inline-asm functions, and one-to-one assembly
+  transcriptions do not count as decompilation and must not be committed as RenderWare progress;
+  RenderWare routines that were hand-written assembly in the original stay unwritten. The one
+  exception is a short `asm` statement inside an otherwise ordinary C function that only reads or
+  writes a special register C cannot reach (a GQR or HID2 `mtspr`, for example), the way the SDK's
+  own headers do it; it carries a comment saying so. (In the Dolphin SDK, the runtime and MetroTRK,
+  routines that were hand-written assembly in the original are kept as `asm` functions, as
+  `dolphin/base/PPCArch.c` does, each with a comment giving the evidence.)
 
 ## References
 
