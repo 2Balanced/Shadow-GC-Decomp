@@ -21,27 +21,40 @@ void *TRK_memset(void *dest, int value, TRKSize length) {
 
 /* Fills length bytes with (u8)value: single bytes up to a word boundary, 32-byte blocks of words,
  * the remaining words, then the remaining bytes. Each pointer trails its next store by one
- * element so the stores can pre-increment. */
+ * element so the stores can pre-increment.
+ *
+ * The algorithm is the runtime's __fill_mem, but the nub's copy was written separately: retail
+ * keeps the word pointer in r3 and the two word counters in r4, where __fill_mem has them the other
+ * way round. That takes the word pointer declared first, a counter of its own for each of the three
+ * loops (the third declared after the fill value) and the two word counts assigned inside their
+ * tests; with one shared counter, or the counts assigned in statements of their own, GC/2.7 gives
+ * __fill_mem's registers or adds a register copy. The pointer is stepped back in a statement of
+ * its own: one statement fewer and GC/2.7 inlines the function into TRK_memset, which retail's
+ * calls it. */
 void TRK_fill_mem(void *dest, int value, TRKSize length) {
-    u8 *bytes = (u8 *)dest - 1;
     u32 *words;
-    u32 count;
-    u32 fill = (u8)value;
+    u8 *bytes;
+    u32 head;
+    u32 blocks;
+    u32 fill;
+    u32 rest;
 
+    fill = (u8)value;
+    bytes = (u8 *)dest;
+    bytes--;
     if (length >= 32) {
-        count = ~(u32)bytes & 3;
-        if (count != 0) {
-            length -= count;
+        head = ~(u32)bytes & 3;
+        if (head != 0) {
+            length -= head;
             do {
                 *++bytes = fill;
-            } while (--count != 0);
+            } while (--head != 0);
         }
         if (fill != 0) {
             fill |= fill << 24 | fill << 16 | fill << 8;
         }
         words = (u32 *)(bytes + 1) - 1;
-        count = length >> 5;
-        if (count != 0) {
+        if ((blocks = length >> 5) != 0) {
             do {
                 *++words = fill;
                 *++words = fill;
@@ -51,13 +64,12 @@ void TRK_fill_mem(void *dest, int value, TRKSize length) {
                 *++words = fill;
                 *++words = fill;
                 *++words = fill;
-            } while (--count != 0);
+            } while (--blocks != 0);
         }
-        count = (length & 31) >> 2;
-        if (count != 0) {
+        if ((rest = (length & 31) >> 2) != 0) {
             do {
                 *++words = fill;
-            } while (--count != 0);
+            } while (--rest != 0);
         }
         bytes = (u8 *)(words + 1) - 1;
         length &= 3;

@@ -6,9 +6,12 @@
  * assembly in the original; everything after them in the file is compiled with the peephole pass
  * off, which the compiler does by itself after an asm function.
  *
- * Not linked yet: ReverbHICreate (0x80386990) differs in register choice only. Retail keeps the work
- * area pointer in r31 and everything else one register lower; this source gets the pointer in
- * the lowest saved register instead. Every other function and all data match. */
+ * Not linked yet: ReverbHICreate (0x80386990) differs in register choice only. Both keep the work
+ * area pointer in r31, but retail colours the inner loop's lens pointer and delay-line pointer last
+ * (r18, r17) and a line's length before its size, where this source gives the two pointers r28 and
+ * r23 and colours the size first (111 rows). Every other function and all data match. The same
+ * length/size swap is in ReverbSTDCreate, so a change to the shared DLcreate shape probably
+ * settles both. */
 #include <dolphin/os.h>
 
 #pragma fp_contract off

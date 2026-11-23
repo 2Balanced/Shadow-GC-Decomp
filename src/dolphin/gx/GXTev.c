@@ -108,6 +108,9 @@ void GXSetTevAlphaOp(GXTevStageID stage, GXTevOp op, GXTevBias bias, GXTevScale 
     gx->bpSentNot = GX_FALSE;
 }
 
+/* The fields are masked before they are inserted and both words are built before the first is
+ * sent: that is what keeps the register words in the registers their shifts produced (without the
+ * masks GC/1.2.5n copies the first word after its first insert, as it does in GXSetTevKColor). */
 void GXSetTevColor(GXTevRegID id, GXColor color) {
     u32 rgba;
     u32 regRA;
@@ -116,11 +119,11 @@ void GXSetTevColor(GXTevRegID id, GXColor color) {
     rgba = *(u32 *)&color;
     regRA = (0xE0 + id * 2) << 24;
     SET_REG_FIELD(regRA, 8, 0, rgba >> 24);
-    SET_REG_FIELD(regRA, 8, 12, rgba);
-    GX_WRITE_RAS_REG(regRA);
+    SET_REG_FIELD(regRA, 8, 12, rgba & 0xFF);
     regBG = (0xE1 + id * 2) << 24;
-    SET_REG_FIELD(regBG, 8, 0, rgba >> 8);
-    SET_REG_FIELD(regBG, 8, 12, rgba >> 16);
+    SET_REG_FIELD(regBG, 8, 0, (rgba >> 8) & 0xFF);
+    SET_REG_FIELD(regBG, 8, 12, (rgba >> 16) & 0xFF);
+    GX_WRITE_RAS_REG(regRA);
     /* The blue/green word has to be sent three times for the register to take it. */
     GX_WRITE_RAS_REG(regBG);
     GX_WRITE_RAS_REG(regBG);
@@ -137,12 +140,12 @@ void GXSetTevColorS10(GXTevRegID id, GXColorS10 color) {
     sRG = *(u32 *)&color;
     sBA = *((u32 *)&color + 1);
     regRA = (0xE0 + id * 2) << 24;
-    SET_REG_FIELD(regRA, 11, 0, sRG >> 16);
-    SET_REG_FIELD(regRA, 11, 12, sBA);
-    GX_WRITE_RAS_REG(regRA);
+    SET_REG_FIELD(regRA, 11, 0, (sRG >> 16) & 0x7FF);
+    SET_REG_FIELD(regRA, 11, 12, sBA & 0x7FF);
     regBG = (0xE1 + id * 2) << 24;
-    SET_REG_FIELD(regBG, 11, 0, sBA >> 16);
-    SET_REG_FIELD(regBG, 11, 12, sRG);
+    SET_REG_FIELD(regBG, 11, 0, (sBA >> 16) & 0x7FF);
+    SET_REG_FIELD(regBG, 11, 12, sRG & 0x7FF);
+    GX_WRITE_RAS_REG(regRA);
     GX_WRITE_RAS_REG(regBG);
     GX_WRITE_RAS_REG(regBG);
     GX_WRITE_RAS_REG(regBG);

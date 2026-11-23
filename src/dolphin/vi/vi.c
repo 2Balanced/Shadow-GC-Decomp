@@ -9,10 +9,10 @@
  * The OS thread calls keep dtk's names (nothing in the binary names them); the macros below give
  * them the public SDK names.
  *
- * Not linked yet, two functions differ in register choice only: in fn_8037E1B4 retail loads the
- * mask of a later `changed` bit one instruction later, which leaves r5 free for the first
- * update; in fn_8037E354 the inlined setPicConfig keeps the interlace mode in r0 and the
- * register value in r6, where this source has them the other way round. */
+ * Register choice in three functions follows the source's shape rather than its meaning: the
+ * vertical timing values reach the registers through setReg's u32 parameter (fn_8037E1B4), the
+ * display configuration is written out in VIConfigure itself while the other register groups are
+ * inline helpers, and the horizontal blanking sums keep retail's grouping (fn_8037E354). */
 #include <dolphin/os.h>
 #include <dolphin/os_interrupt.h>
 
@@ -240,6 +240,8 @@ static void fn_8037D434(__OSInterrupt interrupt, OSContext *context) {
         OSSetCurrentContext(&exceptionContext);
         if (PositionCallback) {
             s16 x, y;
+            /* Never used; it only takes the stack slot below y that retail's frame leaves free. */
+            u32 unused;
 
             fn_8037F5B0(&x, &y);
             PositionCallback(x, y);
@@ -585,6 +587,14 @@ static void fn_8037DEE0(VIHorVer *HorVer, u32 *tfbb, u32 *bfbb, u32 *rtfbb, u32 
     }
 }
 
+/* Writes one shadow register and marks it changed. fn_8037E1B4 needs its values to go through
+ * this (a u32 parameter): written out in place, GC/1.2.5n schedules the bit 9 and bit 8 masks
+ * ahead of the first update of `changed` and colours that update one register differently. */
+static inline void setReg(int index, u32 value) {
+    regs[index] = value;
+    changed |= VI_BITMASK(index);
+}
+
 static void fn_8037E1B4(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd, u16 prbEven,
                         u16 psbOdd, u16 psbEven, BOOL black) {
     u16 actualPrbOdd;
@@ -624,16 +634,11 @@ static void fn_8037E1B4(u16 dispPosY, u16 dispSizeY, u8 equ, u16 acv, u16 prbOdd
         actualAcv = 0;
     }
 
-    regs[0] = equ | (actualAcv << 4);
-    changed |= VI_BITMASK(0);
-    regs[7] = actualPrbOdd;
-    changed |= VI_BITMASK(7);
-    regs[6] = actualPsbOdd;
-    changed |= VI_BITMASK(6);
-    regs[9] = actualPrbEven;
-    changed |= VI_BITMASK(9);
-    regs[8] = actualPsbEven;
-    changed |= VI_BITMASK(8);
+    setReg(0, equ | (actualAcv << 4));
+    setReg(7, actualPrbOdd);
+    setReg(6, actualPsbOdd);
+    setReg(9, actualPrbEven);
+    setReg(8, actualPsbEven);
 }
 
 static inline void setInterruptRegs(VITiming *tm) {
@@ -648,31 +653,6 @@ static inline void setInterruptRegs(VITiming *tm) {
     changed |= VI_BITMASK(25);
     regs[24] = (vct + 1) | 0x1000;
     changed |= VI_BITMASK(24);
-}
-
-static inline void setPicConfig(u32 nonInter) {
-    u32 reg;
-    u32 clk;
-
-    reg = regs[1];
-    clk = regs[54];
-    if (nonInter == 2 || nonInter == 3) {
-        reg = (reg & ~4) | 4;
-        clk = (clk & ~1) | 1;
-    } else {
-        reg = (reg & ~4) | ((nonInter & 1) << 2);
-        clk = clk & ~1;
-    }
-    reg = (reg & ~8) | (HorVer.threeD << 3);
-    if (HorVer.tv == 1 || HorVer.tv == 2 || HorVer.tv == 3) {
-        reg = (reg & ~0x300) | (HorVer.tv << 8);
-    } else {
-        reg = reg & ~0x300;
-    }
-    regs[1] = reg;
-    regs[54] = clk;
-    changed |= VI_BITMASK(1);
-    changed |= VI_BITMASK(54);
 }
 
 static inline void setScalingRegs(u16 panSizeX, u16 dispSizeX, BOOL threeD) {
@@ -700,11 +680,8 @@ static inline void setHorizontalRegs(VITiming *tm, u16 dispPosX, u16 dispSizeX) 
     changed |= VI_BITMASK(3);
     regs[2] = tm->hce | (tm->hcs << 8);
     changed |= VI_BITMASK(2);
-    hbe = tm->hbe640 + dispPosX;
-    hbe -= 40;
-    hbs = tm->hbs640 + dispPosX;
-    hbs += 40;
-    hbs -= 720 - dispSizeX;
+    hbe = tm->hbe640 - 40 + dispPosX;
+    hbs = tm->hbs640 + 40 + dispPosX - (720 - dispSizeX);
     regs[5] = tm->hsy | ((hbe & 0x1FF) << 7);
     changed |= VI_BITMASK(5);
     regs[4] = (hbe >> 9) | (hbs << 1);
@@ -739,6 +716,9 @@ void fn_8037E354(const VIRenderMode *rm) {
     u32 newNonInter;
     u32 tvInBootrom;
     u32 tvInGame;
+    u32 cfg;
+    u16 clk;
+    u32 newCfg;
 
     enabled = OSDisableInterrupts();
     newNonInter = rm->viTVmode & 3;
@@ -811,7 +791,31 @@ void fn_8037E354(const VIRenderMode *rm) {
     }
 
     setInterruptRegs(tm);
-    setPicConfig(HorVer.nonInter);
+
+    /* Display configuration (register 1): interlace mode, 3D and TV format; clock select
+     * (register 54): 54 MHz for the progressive and 3D modes. Written out here rather than in a
+     * helper like the other registers: as an inline function GC/1.2.5n colours the mode, the
+     * configuration word and the clock word in the opposite order. */
+    cfg = regs[1];
+    clk = regs[54];
+    if (HorVer.nonInter == 2 || HorVer.nonInter == 3) {
+        cfg = (cfg & ~4) | 4;
+        clk = (clk & ~1) | 1;
+    } else {
+        cfg = (cfg & ~4) | ((HorVer.nonInter & 1) << 2);
+        clk = clk & ~1;
+    }
+    cfg = (cfg & ~8) | (HorVer.threeD << 3);
+    if (HorVer.tv == 1 || HorVer.tv == 2 || HorVer.tv == 3) {
+        newCfg = (cfg & ~0x300) | (HorVer.tv << 8);
+    } else {
+        newCfg = cfg & ~0x300;
+    }
+    regs[1] = newCfg;
+    regs[54] = clk;
+    changed |= VI_BITMASK(1);
+    changed |= VI_BITMASK(54);
+
     setScalingRegs(HorVer.PanSizeX, HorVer.DispSizeX, HorVer.threeD);
     setHorizontalRegs(tm, HorVer.AdjustedDispPosX, HorVer.DispSizeX);
     setBurstBlankRegs(tm);

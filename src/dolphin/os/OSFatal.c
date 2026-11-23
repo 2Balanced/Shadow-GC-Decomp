@@ -13,7 +13,14 @@
  * GXAbortFrame. OSSwitchFiber is OSSwitchFiber, fn_80374690 OSLoadFont and
  * fn_8037490C OSGetFontTexel. ScreenReport is not matched yet: its size, frame and instruction
  * sequence are right (the pixel offset needs its own local, n), but the register allocation still
- * differs. */
+ * differs: retail colours xfb with the other parameters (r26) and the line pointer late (r19), this
+ * source gives the pointer r30 next to xpos and xfb r17. Measured without effect (wave 40, some
+ * 200 compiled variants): the pointer declared at every position or in a block, void pointer,
+ * byte pointer and u32 spellings of xfb and the pointer, dead early assignments, every order of the line-start, pixel
+ * offset, texel value and parity expressions, and the loop shapes of earlier waves. Computing the
+ * pointer from xpos per character is not strength-reduced (retail's source steps the pointer),
+ * an offset instead of a pointer keeps xfb in r26 but adds the address arithmetic, and inline
+ * helpers for the clear or the glyph loops are worse. */
 #include <dolphin/os.h>
 
 /* The colour conversion keeps separate multiplies and adds (no fused multiply-add). */

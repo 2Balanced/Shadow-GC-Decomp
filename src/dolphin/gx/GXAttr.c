@@ -6,9 +6,11 @@
  * vertex size (__GXCalculateVLim). Also programs array bases/strides and texture coordinate
  * generation.
  *
- * Not linked yet: __GXCalculateVLim differs in instruction order and register choice only.
- * Retail extracts the normal count bit after the first table lookup and compares it last; this
- * source gets both one step earlier, with the format word in r5 instead of r8. */
+ * __GXCalculateVLim needs two spellings that the rest of the file does not: the first format word
+ * is read into the normal-count variable itself (with a variable of its own GC/1.2.5n puts it in r5
+ * instead of r8), and the count bit is masked first and shifted afterwards. The compiler folds
+ * that to the same rlwinm as shift-then-mask, but only after the block is scheduled, which is what
+ * puts the extraction behind the position table lookup and the compare before the last add. */
 #include <dolphin/gx/GXPrivate.h>
 
 void GXSetVtxDesc(GXAttr attr, GXAttrType type) {
@@ -139,7 +141,6 @@ void __GXCalculateVLim(void) {
     u32 b;
     u32 vl;
     u32 vh;
-    u32 va;
 
     if (gx->vNum == 0) {
         return;
@@ -147,7 +148,7 @@ void __GXCalculateVLim(void) {
 
     vl = gx->vcdLo;
     vh = gx->vcdHi;
-    va = gx->vatA[0];
+    nc = (GXCompCnt)gx->vatA[0];
 
     vlm = GET_REG_FIELD(vl, 1, 0);
     vlm += GET_REG_FIELD(vl, 1, 1);
@@ -159,7 +160,7 @@ void __GXCalculateVLim(void) {
     vlm += GET_REG_FIELD(vl, 1, 7);
     vlm += GET_REG_FIELD(vl, 1, 8);
     vlm += tbl3[GET_REG_FIELD(vl, 2, 9)];
-    nc = GET_REG_FIELD(va, 1, 9);
+    nc = (GXCompCnt)(((u32)nc & 0x200) >> 9);
     b = (nc == 1) ? 3 : 1;
     vlm += tbl3[GET_REG_FIELD(vl, 2, 11)] * b;
     vlm += tbl1[GET_REG_FIELD(vl, 2, 13)];

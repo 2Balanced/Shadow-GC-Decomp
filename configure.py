@@ -547,7 +547,7 @@ config.libs = [
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/mutex_TRK.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Portable/notify.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/flush_cache.c"),
-            Object(NonMatching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/mem_TRK.c"),
+            Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/mem_TRK.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/targimpl.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Export/targsupp.c"),
             Object(Matching, "TRK_MINNOW_DOLPHIN/MetroTRK/Processor/ppc/Generic/mpc_7xx_603e.c"),
@@ -653,7 +653,7 @@ config.libs = [
     DolphinLib(
         "vi",
         [
-            Object(NonMatching, "dolphin/vi/vi.c"),
+            Object(Matching, "dolphin/vi/vi.c"),
         ],
     ),
     DolphinLib(
@@ -725,7 +725,7 @@ config.libs = [
         "cflags": [*cflags_base, "-fp_contract off"],
         "progress_category": "sdk",
         "objects": [
-            Object(NonMatching, "dolphin/gx/GXAttr.c"),
+            Object(Matching, "dolphin/gx/GXAttr.c"),
             Object(Matching, "dolphin/gx/GXBump.c"),
             Object(Matching, "dolphin/gx/GXDisplayList.c"),
             Object(Matching, "dolphin/gx/GXFifo.c"),
@@ -736,7 +736,7 @@ config.libs = [
             Object(Matching, "dolphin/gx/GXMisc.c"),
             Object(Matching, "dolphin/gx/GXPerf.c"),
             Object(Matching, "dolphin/gx/GXPixel.c"),
-            Object(NonMatching, "dolphin/gx/GXTev.c"),
+            Object(Matching, "dolphin/gx/GXTev.c"),
             Object(Matching, "dolphin/gx/GXTexture.c"),
             Object(Matching, "dolphin/gx/GXTransform.c"),
         ],

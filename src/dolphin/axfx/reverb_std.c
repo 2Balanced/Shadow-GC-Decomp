@@ -7,7 +7,13 @@
  *
  * Not linked yet: ReverbSTDCreate (0x80387898) differs in register choice only. Retail keeps the work
  * area pointer in r31 and everything else one register lower; this source gets the pointer in
- * the lowest saved register instead. Every other function and all data match. */
+ * the lowest saved register instead. Every other function and all data match. Measured without
+ * effect (wave 40): nine spellings of DLcreate's size (no local, dl->length, separate
+ * statement, a max_length copy, size and length as two parameters), result variables for the
+ * DLcreate calls, a copy of rv for part of the function, and short-lived extra values. Two extra
+ * values that live across the calls do move rv to r31, and a void * parameter cast at each use
+ * does too (46 rows left, the addressing changes), so retail's graph has more call-crossing
+ * values than this source's. */
 #include <dolphin/os.h>
 
 #pragma fp_contract off
