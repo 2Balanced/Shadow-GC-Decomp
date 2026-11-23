@@ -6,18 +6,31 @@
  * inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 14 of 16 functions match. Generate (89%) has the float/int conversion stack-slot
- * difference of docs/research-notes.md and the float-constant base register that
- * Game/EffectParticle.cpp's Generate has; the constructor (90%) loads the description fields in
- * another order, the scheduling difference of Game/EffectShimmer.cpp's and
- * Game/EffectLensFlare.cpp's constructors: retail keeps every load of a description field after
- * the store before it, GC/2.7 moves the loads up (the fourth compiler difference of
- * docs/research-notes.md). A non-const or volatile description pointer, raw scalar reads, a
- * named shape, a reference to m_config and the optimizer pragmas do not change that, and
- * `#pragma scheduling off` fixes those rows while breaking the prologue and the pool set-up (34
- * rows for 20). Move matched in wave 39 as Game/EffectParticle.cpp's did: the last loop has a
- * pointer of its own, declared third. The unit's .data also holds the GenQuantity and Friction
- * command vtables (weak copies; retail links the particle unit's). */
+ * NonMatching, with all 16 functions matching since wave 41 (probes/Game_EffectRay_W41f.py,
+ * _W41g.py, _W41h.py, _W41i.py); what keeps the unit from linking is its exception tables (below).
+ * - The unit is built without pooled data (cflags_effect_nopool, as Game/EffectParticle.cpp):
+ *   retail addresses each float constant with its own lis.
+ * - The constructor takes the description as a pointer to non-const (the wave 40 constructor
+ *   lever: only then do the description loads stay behind the stores before them, as in retail),
+ *   so EffectRayRW3's constructor casts. Its symbol name in symbols.txt changed with it.
+ * - Generate: the shape and the description are declared first, ahead of the count (saved
+ *   registers go to locals in declaration order: shape r30, desc r29, count r28, i r27); the
+ *   spread, angle and size floats are declared at the top of the function (or of the loop) and
+ *   shared by the cases, which gives the cases retail's float registers (case 1 keeps a spread of
+ *   its own; EffectParticle's Generate needs them ahead of its speed, so they stand at the top of
+ *   both functions); the half
+ *   spread is `spread / 2.0f`; the height's 0.0f is assigned between the sine and the cosine; and
+ *   the radius pick is a conditional expression, which loads the radius straight into its result's
+ *   register. Its conversions share their stack slots as retail's without further change.
+ * - Retail's exception tables are not in its code order: EffectRayExecUnit's operator delete has
+ *   its code last in the unit and its extab record right behind Generate's (the shape
+ *   docs/research-notes.md records for EffectLensFlareRW3, EffectManagerRW3 and EffectObject).
+ *   GC/2.7 emits the operator delete, code and record, behind Generate, its first caller, and it
+ *   always writes the records in code order (see Game/EffectObject.cpp), so neither placement of
+ *   the code links: flipped, main.dol differs in the .text order and in extab/extabindex.
+ * Move matched in wave 39 as Game/EffectParticle.cpp's did: the last loop has a pointer of its own,
+ * declared third. The unit's .data also holds the GenQuantity and Friction command vtables (weak
+ * copies; retail links the particle unit's). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define EFFECT_ELEMENT_FULL
 #define EFFECT_SYSTEM_FULL
@@ -258,7 +271,7 @@ void EffectRayExecUnit::ParseCommands() {
     }
 }
 
-EffectRay::EffectRay(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
+EffectRay::EffectRay(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                      EffectManager *manager)
     : EffectElement(desc, info, manager), m_head(0), m_tail(0), m_request(0), m_config(0),
       m_activeCount(0), m_friction(0.0f), m_cursor(0), m_commandHead(0), m_commandTail(0), m_commandPool(0),
@@ -425,9 +438,14 @@ void EffectRay::ParseCommands() {
 }
 
 void EffectRay::Generate(float dt) {
+    const UnkRayShape_804298D4 *shape;
+    const UnkRayDesc_804298D4 *desc;
+    float spread;
+    float angle;
+    float size;
     int count = 0;
     float quantity = m_rate * dt;
-    const UnkRayDesc_804298D4 *desc = reinterpret_cast<const UnkRayDesc_804298D4 *>(m_desc);
+    desc = reinterpret_cast<const UnkRayDesc_804298D4 *>(m_desc);
     if (quantity < 1.0f) {
         if (RandomFloat() < quantity) {
             count = 1;
@@ -458,7 +476,7 @@ void EffectRay::Generate(float dt) {
             m_head = ray;
         }
         float velocity = desc->m_speedRange * RandomFloat() + desc->m_speed;
-        const UnkRayShape_804298D4 *shape = desc->m_shape;
+        shape = desc->m_shape;
         switch (shape->m_type) {
         default: {
             AssignVector(ray->m_start, m_lastPosition);
@@ -468,33 +486,27 @@ void EffectRay::Generate(float dt) {
             break;
         }
         case 0: {
-            float spread = shape->m_spread;
-            float angle;
+            spread = shape->m_spread;
             if ((m_config & 0x40) && count > 1) {
                 if (spread > 359.9999f) {
                     angle = spread * ((float)i / (float)count);
                 } else {
                     angle = spread * ((float)i / (float)(count - 1));
                 }
-                angle -= spread * 0.5f;
+                angle -= spread / 2.0f;
             } else {
-                angle = spread * RandomFloat() - shape->m_spread * 0.5f;
+                angle = spread * RandomFloat() - shape->m_spread / 2.0f;
             }
             float radius = 0.0f;
             float tilt = 0.0f;
             if (shape->m_radius > 0.0001f) {
-                float r;
-                if (m_config & 0x80) {
-                    r = shape->m_radius;
-                } else {
-                    r = shape->m_radius * RandomFloat();
-                }
+                float r = (m_config & 0x80) ? shape->m_radius : shape->m_radius * RandomFloat();
                 radius = r;
                 tilt = shape->m_angle * (r / shape->m_radius);
             }
             float s = std::sin(angle);
-            float c = std::cos(angle);
             float height = 0.0f;
+            float c = std::cos(angle);
             if (shape->m_height > 0.0001f) {
                 height = shape->m_height * RandomFloat();
             }
@@ -510,7 +522,7 @@ void EffectRay::Generate(float dt) {
         }
         case 1: {
             float spread = shape->m_spread;
-            float angle = spread * RandomFloat() - shape->m_spread;
+            angle = spread * RandomFloat() - shape->m_spread;
             float radius = 0.0f;
             if (shape->m_radius > 0.0001f) {
                 if (m_config & 0x80) {
@@ -538,7 +550,7 @@ void EffectRay::Generate(float dt) {
             break;
         }
         case 2: {
-            float size = shape->m_radius;
+            size = shape->m_radius;
             ray->m_start.x = size * RandomFloat() - 0.5f * size;
             size = shape->m_spread;
             ray->m_start.y = size * RandomFloat() - 0.5f * size;

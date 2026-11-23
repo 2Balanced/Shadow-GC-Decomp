@@ -5,10 +5,22 @@
  * names are inferred. Definitions are in reverse address order (deferred inlining emits functions
  * last-defined first).
  *
- * NonMatching: 4 of 5 functions match. BuildVertices (0x80439B18) converts both ways between
- * floats and integers, and retail shares the conversion stack slots, which GC/2.7 does not
- * (docs/research-notes.md); its frame is 0x30 bytes larger and the float registers shift with
- * it. The code is otherwise written out instruction for instruction. */
+ * NonMatching: 4 of 5 functions match. BuildVertices (0x80439B18) differs in 137 of 684 rows.
+ * Its frame was 0x30 bytes larger than retail's, which was recorded here as the shared conversion
+ * slot of docs/research-notes.md; it was the inverse matrix instead, copied out of the call's
+ * return slot into a local (a 48-byte struct copy) where retail passes the returned matrix on in
+ * place. Wave 41 (probes/Game_EffectLocusRW3_W41f.py to _W41i.py, 320 rows to 137) fixed that,
+ * the stack layout (position declared at the top, direction ahead of axis), the transform test
+ * (the false case first, the world bit in a signed local: retail tests it again with cmpwi), the
+ * acos overload (acos__3stdFf, as retail calls it) and the section pointer's register (declared
+ * after the point, ahead of the outer counter). Copy propagation off changes nothing. Left: the
+ * float registers (retail gives the first colour value and the int-to-float constant f31 and f30
+ * and the twelve colour scales f29 down to f18), the transform flag (retail computes it in r22
+ * and copies it to r31 for the section loop, as if that loop took it as a parameter), and two
+ * blocks retail schedules as if their loads came first: the three position components before
+ * the vertex stores, and the four section colour bytes before the conversions (inline setters
+ * taking the values as arguments lose the m_vertices reloads retail has). The twelve colour
+ * conversions at the top take retail's stack slots once the frame is right. */
 #include "Game/EffectRW3.h"
 #include "Game/Quaternion.h"
 
@@ -77,6 +89,11 @@ float fn_8040CF90(const Vec3f *a, const Vec3f *b);
 Quatf fn_8040C874(const Vec3f *axis, float angle);
 void fn_8040B8C0(Mtx34f *matrix, const Quatf *rotation);
 }
+
+/* The float overload of <cmath>'s acos, out of line elsewhere in the game (acos__3stdFf). */
+namespace std {
+float acos(float x);
+} // namespace std
 
 inline void CopyMatrix(Mtx34f &to, const Mtx34f &from) {
     fn_8040C148(&to, &from);
@@ -177,6 +194,7 @@ void EffectLocusRW3::BuildVertices() {
     const UnkLocusDesc_80439B18 *desc = reinterpret_cast<const UnkLocusDesc_80439B18 *>(m_desc);
     Mtx34f matrix;
     Vec3f cameraPos;
+    Vec3f position;
     if (m_config & 0x4000) {
         RwCamera *camera = static_cast<RwCamera *>(
             dynamic_cast<EffectSystemRW3 *>(::Effect::System::fn_8042A5D0())->GetCamera());
@@ -199,6 +217,7 @@ void EffectLocusRW3::BuildVertices() {
     float lastA = (s32)((m_lastColor[3] >> 22) & 0xFF) / 255.0f;
     float color[4] = {lastR, lastG, lastB, lastA};
     UnkLocusPoint_80439B18 *point = reinterpret_cast<UnkLocusPoint_80439B18 *>(m_head);
+    const UnkLocusSection_80439B18 *section;
     for (int i = 0; point != 0; i++) {
         if (m_config & 0x100000) {
             float t = (float)i / (float)m_pointCount;
@@ -213,19 +232,22 @@ void EffectLocusRW3::BuildVertices() {
         color[2] *= scaleB;
         color[3] *= scaleA;
         bool transform;
-        if ((m_config & 0x800) || (m_config & 0x4000) ||
-            i + m_removedCount > m_pointCount - 1 - m_addedCount) {
+        s32 world = m_config & 0x800;
+        if (!(world || (m_config & 0x4000) ||
+              i + m_removedCount > m_pointCount - 1 - m_addedCount)) {
+            transform = false;
+        } else {
             transform = true;
-            if (m_config & 0x800) {
+            if (world) {
                 CopyMatrix(matrix, fn_8001E044(&m_worldMatrix, &point->m_matrix));
             } else {
                 fn_8040C148(&matrix, &point->m_matrix);
             }
             if (m_config & 0x4000) {
-                Vec3f axis(1.0f, 0.0f, 0.0f);
-                Mtx34f inverse = fn_8040BEF8(&matrix);
                 Vec3f direction;
-                AssignVector(direction, fn_8040B67C(&inverse, &cameraPos));
+                Vec3f axis(1.0f, 0.0f, 0.0f);
+                AssignVector(direction,
+                             fn_8040B67C(&(const Mtx34f &)fn_8040BEF8(&matrix), &cameraPos));
                 direction.z = 0.0f;
                 fn_8040CE74(&direction);
                 Vec3f normal;
@@ -237,10 +259,8 @@ void EffectLocusRW3::BuildVertices() {
                     fn_8040B8C0(&matrix, &rotation);
                 }
             }
-        } else {
-            transform = false;
         }
-        const UnkLocusSection_80439B18 *section = desc->m_sections;
+        section = desc->m_sections;
         for (int j = 0; section != 0; j++) {
             if (section->m_type != 0x15) {
                 break;
@@ -263,8 +283,9 @@ void EffectLocusRW3::BuildVertices() {
                 }
             }
             if (transform) {
-                Vec3f position(section->m_position.x, section->m_position.y,
-                               section->m_position.z);
+                position.x = section->m_position.x;
+                position.y = section->m_position.y;
+                position.z = section->m_position.z;
                 AssignVector(position, fn_8040B67C(&matrix, &position));
                 m_vertices[index].x = position.x;
                 m_vertices[index].y = position.y;

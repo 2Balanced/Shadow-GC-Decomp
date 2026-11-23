@@ -62,8 +62,9 @@ class EffectRay : public EffectElement {
     virtual void Update(float dt);
 
 #ifdef EFFECT_ELEMENT_FULL
-    /* 0x804298D4 */
-    EffectRay(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info, EffectManager *manager);
+    /* 0x804298D4; the description is not const: the constructor keeps its loads behind the
+     * stores before them (Game/EffectRayRW3.cpp casts). */
+    EffectRay(UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info, EffectManager *manager);
     /* Turns commands into executors until a wait (0x804293B4). */
     void ParseCommands();
     /* Emits this update's rays (0x80428DFC), and moves them and runs their commands

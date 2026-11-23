@@ -339,7 +339,14 @@ class EffectParticleUSA : public ::Effect::RW3::EffectParticleRW3 {
     EffectParticleUSA(const ::Effect::System::UnkEffectDesc_801D0AFC *desc,
                       ::Effect::System::EffectLaunchInfo *info,
                       ::Effect::System::EffectManager *manager);
+#ifdef EFFECT_PARTICLE_USA_IMPLEMENTATION
+    /* Defined out of line in Game/EffectParticleUSA.cpp, where retail has its code (between Update
+     * and the constructor). The other units keep the inline form, so their weak copies and their
+     * compiler-numbered locals stay as they were. */
+    virtual ~EffectParticleUSA();
+#else
     virtual ~EffectParticleUSA() {}
+#endif
     virtual void Update(float dt);
 
     /* 0x148 */ s32 m_shownDrawPass; /* the draw pass to go back to when shown (inferred) */

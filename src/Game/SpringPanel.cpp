@@ -6,7 +6,9 @@
  * callback on its character info: command 0x1A disables the Target (class name from RTTI) that
  * marks its contact point and 0x1B enables it again. File name inferred from the class. Method
  * names marked "(name inferred)" are not original. Definitions are in reverse address order
- * (deferred inlining emits functions last-defined first). */
+ * (deferred inlining emits functions last-defined first).
+ *
+ * Matching since wave 41 (HitCharacter's conversion slot, see there). */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <stdexcept>
@@ -161,10 +163,10 @@ static UnkColor_8040D2D8 lbl_805EF1A4(0xFF, 0x33, 0x00, 0x00);
 static UnkColor_8040D2D8 lbl_805EF1A8(0xFF, 0x7F, 0x00, 0x00);
 static UnkColor_8040D2D8 lbl_805EF1AC(0xFF, 0x99, 0x33, 0x00);
 
-/* Launches hit from the contact point (name inferred). The level interpolation keeps this function
- * at about 99.7%: retail shares one stack slot between the float-to-int and int-to-float
- * conversions, which GC/2.7 does not (see docs/research-notes.md; Spring's HitCharacter has the
- * same blocker). Everything else in the unit matches. */
+/* Launches hit from the contact point (name inferred). Retail shares one stack slot between the
+ * float-to-int and int-to-float conversions of the level interpolation; GC/2.7 does too once the
+ * difference to the next table entry is a local reduced with -= (delta = next; delta -= speed; see
+ * Game/LongSpring.cpp). The one-expression interpolation left this function at 99.7%. */
 static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     SpringPanelHitContext *context = static_cast<SpringPanelHitContext *>(user);
     Mtx34f matrix;
@@ -186,7 +188,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     int level = context->m_params->level;
     float speed = lbl_804C2238[level];
     if (level < 15) {
-        speed += (lbl_804C2238[level + 1] - speed) * (context->m_params->level - level);
+        float delta = lbl_804C2238[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
     }
 
     fn_8040C148(&matrix, &lbl_805E0720);

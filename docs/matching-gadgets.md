@@ -210,9 +210,13 @@ The pool base symbol at the start of such a section should be the compiler's `@N
     member declarations, then its bases' declarations. A new virtual declared before the
     overrides (`~EnemyDispCommon`) gets its thunk last; new virtuals keep their relative order,
     so the slot layout stays the same. See `BkSoldier.cpp`.
-- Functions that convert between float and int (a `fctiwz` plus a `0x43300000` sequence) may stay
-  at about 99.8%. The original compiler shares one stack slot for these; see
-  `docs/research-notes.md`. Leave them NonMatching with a comment and move on.
+- Functions that convert between float and int (a `fctiwz` plus a `0x43300000` sequence) where
+  retail shares one stack slot between the conversions: write the table interpolation with the
+  difference in a variable of its own reduced with `-=`
+  (`float delta = table[level + 1]; delta -= speed; speed += delta * (x - level);`). The
+  one-expression form gives each conversion its own slot and stays at about 99.8%; this was once
+  taken for a compiler-version floor (see "Source levers measured in wave 41" in
+  `docs/research-notes.md`, and `LongSpring.cpp`).
 
 ## 3. Pair the symbols
 

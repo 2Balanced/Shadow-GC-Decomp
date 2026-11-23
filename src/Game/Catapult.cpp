@@ -5,7 +5,11 @@
  * at the speed for the "level" parameter, along the catapult's up axis tilted by the "X" and "Z"
  * angles, and "nocontrol time (sec)" sets how long its input is ignored. File name inferred from the
  * class. Method names marked "(name inferred)" are not original. Definitions are in reverse address
- * order (deferred inlining emits functions last-defined first). */
+ * order (deferred inlining emits functions last-defined first).
+ *
+ * Matching since wave 41: HitCharacter's float-to-int and int-to-float conversions share one stack
+ * slot, as in the original, once the difference to the next table entry is a variable of its own
+ * reduced with -= (see Game/LongSpring.cpp and HitCharacter). */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -120,8 +124,10 @@ namespace Catapult {
 const char *Catapult::s_taskName = "Catapult";
 
 /* Launches hit from the catapult (name inferred). The level interpolation converts float to int
- * and back; retail shares one stack slot for both conversions, which GC/2.7 does not (see
- * docs/research-notes.md), so this function stays at 99.7% and the unit NonMatching. */
+ * and back; retail shares one stack slot for both conversions. GC/2.7 does the same when the
+ * difference to the next table entry is a local reduced with -= (delta = next; delta -= speed);
+ * the one-expression interpolation gives each conversion its own slot (99.7%, once recorded here
+ * as a compiler-version blocker). */
 static void HitCharacter(boost::shared_ptr<CharInfo> hit, CatapultHitContext *context) {
     boost::shared_ptr<GadgetCharInfo> self = context->m_chara.lock();
 
@@ -135,7 +141,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, CatapultHitContext *co
     int level = context->m_params->level;
     float speed = lbl_804C0680[level];
     if (level < 15) {
-        speed += (lbl_804C0680[level + 1] - speed) * (context->m_params->level - level);
+        float delta = lbl_804C0680[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
     }
 
     Mtx34f matrix;

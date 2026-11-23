@@ -5,7 +5,12 @@
  * enables it again, together with the Target (class name from RTTI) that marks its contact point.
  * File name inferred from the class. Method names marked "(name inferred)" are not original.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
- * first). */
+ * first).
+ *
+ * Matching since wave 41. HitCharacter's float-to-int and int-to-float conversions share one stack
+ * slot, as in the original, once the difference to the next table entry is a variable of its own
+ * reduced with -= (delta = next; delta -= speed; see Game/LongSpring.cpp); the one-expression
+ * interpolation gave each conversion its own slot and left the function at 99.86%. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 #include <stdexcept>
@@ -181,7 +186,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     int level = context->m_params->level;
     float speed = lbl_804BD7D8[level];
     if (level < 15) {
-        speed += (lbl_804BD7D8[level + 1] - speed) * (context->m_params->level - level);
+        float delta = lbl_804BD7D8[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
     }
 
     fn_8040C148(&launchMatrix, &lbl_805E0720);

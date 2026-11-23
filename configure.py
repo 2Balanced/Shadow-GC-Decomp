@@ -444,7 +444,7 @@ cflags_effect = [
 ]
 
 # The same without pooled data (Game/EffectObject.cpp, Game/EffectCommandExec.cpp,
-# Game/EffectParticle.cpp): retail
+# Game/EffectParticle.cpp, Game/EffectRay.cpp): retail
 # addresses every float constant of .rodata on its own (lis/lfs per use); with -pool on, GC/2.7
 # keeps a base register for the unit's constants instead.
 cflags_effect_nopool = [
@@ -1057,7 +1057,7 @@ config.libs = [
             Object(Matching, "Game/CameraTargetInfo.cpp"),
             Object(Matching, "Game/CandleStick.cpp"),
             Object(Matching, "Game/CaptureCage.cpp"),
-            Object(NonMatching, "Game/Catapult.cpp"),
+            Object(Matching, "Game/Catapult.cpp"),
             Object(Matching, "Game/CatchStick.cpp"),
             Object(Matching, "Game/CenFile.cpp"),
             Object(Matching, "Game/CenFileNumber.cpp"),
@@ -1152,7 +1152,7 @@ config.libs = [
             Object(Matching, "Game/DeadAction.cpp"),
             Object(Matching, "Game/DarkSpinEntrance.cpp"),
             Object(Matching, "Game/DashPanel.cpp"),
-            Object(NonMatching, "Game/DashRing.cpp"),
+            Object(Matching, "Game/DashRing.cpp"),
             Object(Matching, "Game/DebugDisp.cpp"),
             Object(Matching, "Game/DebugDispBox.cpp"),
             Object(Matching, "Game/DebugDispCapsule.cpp"),
@@ -1239,8 +1239,8 @@ config.libs = [
             Object(NonMatching, "Game/EffectParticle.cpp", cflags=cflags_effect_nopool),
             Object(Matching, "Game/EffectParticle3DPJS.cpp"),
             Object(Matching, "Game/EffectParticleRW3.cpp", cflags=cflags_effect),
-            Object(NonMatching, "Game/EffectParticleUSA.cpp"),
-            Object(NonMatching, "Game/EffectRay.cpp", cflags=cflags_effect),
+            Object(Matching, "Game/EffectParticleUSA.cpp"),
+            Object(NonMatching, "Game/EffectRay.cpp", cflags=cflags_effect_nopool),
             Object(Matching, "Game/EffectRayRW3.cpp", cflags=cflags_effect_lib),
             Object(Matching, "Game/EffectRayUSA.cpp"),
             Object(Matching, "Game/EffectPJS.cpp"),
@@ -1416,7 +1416,7 @@ config.libs = [
             Object(Matching, "Game/IHeap.cpp"),
             Object(Matching, "Game/InitAction.cpp"),
             Object(NonMatching, "Game/ItemIconManagerTask.cpp"),
-            Object(NonMatching, "Game/JumpBoard.cpp"),
+            Object(Matching, "Game/JumpBoard.cpp"),
             Object(Matching, "Game/KeyCounter.cpp"),
             Object(Matching, "Game/LandManager.cpp"),
             Object(NonMatching, "Game/LightColli.cpp"),
@@ -1643,8 +1643,8 @@ config.libs = [
             Object(Matching, "Game/SonicTypeControlFactory.cpp"),
             Object(Matching, "Game/SonicTypeExecuter.cpp"),
             Object(Matching, "Game/SpaceGadget.cpp"),
-            Object(NonMatching, "Game/Spring.cpp"),
-            Object(NonMatching, "Game/SpringPanel.cpp"),
+            Object(Matching, "Game/Spring.cpp"),
+            Object(Matching, "Game/SpringPanel.cpp"),
             Object(Matching, "Game/StageActionManager.cpp"),
             Object(Matching, "Game/StageBase.cpp"),
             Object(Matching, "Game/StageCameraHandle.cpp"),
@@ -1674,7 +1674,7 @@ config.libs = [
             Object(Matching, "Game/StageTimer.cpp"),
             Object(Matching, "Game/StageTriggerEventTask.cpp"),
             Object(Matching, "Game/Stick.cpp"),
-            Object(NonMatching, "Game/StretchGrass.cpp"),
+            Object(Matching, "Game/StretchGrass.cpp"),
             Object(Matching, "Game/SuctionPillar.cpp"),
             Object(Matching, "Game/SuperComputer.cpp"),
             Object(Matching, "Game/SweepMove.cpp"),

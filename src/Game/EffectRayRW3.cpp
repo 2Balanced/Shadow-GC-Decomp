@@ -111,7 +111,7 @@ namespace RW3 {
 
 EffectRayRW3::EffectRayRW3(const UnkEffectDesc_801D0AFC *desc, EffectLaunchInfo *info,
                            EffectManager *manager)
-    : EffectRay(desc, info, manager), m_vertices(0) {
+    : EffectRay(const_cast<UnkEffectDesc_801D0AFC *>(desc), info, manager), m_vertices(0) {
     m_size -= sizeof(EffectRay);
     m_size += sizeof(EffectRayRW3);
     if (!(m_flags & 1)) {

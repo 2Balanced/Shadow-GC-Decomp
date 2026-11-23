@@ -7,9 +7,11 @@
  * HitCharacter, which is defined before the constructor: that puts its code and its float
  * constants where the original has them.
  *
- * Not yet matching: HitCharacter's float-to-int and int-to-float conversions share one stack slot
- * in the original, which GC/2.7 does not reproduce (see docs/research-notes.md). Everything else,
- * including the data, matches. */
+ * Matching since wave 41. HitCharacter's float-to-int and int-to-float conversions share one stack
+ * slot, as in the original, once the difference to the next table entry is a variable of its own
+ * reduced with -= (delta = next; delta -= speed; see Game/LongSpring.cpp); the one-expression
+ * interpolation gives each conversion its own slot, which was recorded here as a compiler-version
+ * blocker. */
 #include <boost/bind.hpp>
 #include <boost/function.hpp>
 
@@ -115,7 +117,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     int level = context->m_params->level;
     float speed = lbl_804BAD80[level];
     if (level < 15) {
-        speed += (lbl_804BAD80[level + 1] - speed) * (context->m_params->level - level);
+        float delta = lbl_804BAD80[level + 1];
+        delta -= speed;
+        speed += delta * (context->m_params->level - level);
     }
 
     fn_8040C148(&matrix, &lbl_805E0720);

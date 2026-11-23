@@ -24,6 +24,14 @@ at 0x80003154 and BSS from 0x8056ED40 to 0x805FB564. Check the SHA-1 afterwards.
 
 ## Open question: the game compiler is slightly newer than GC/2.7 build 108
 
+**Corrected in wave 41: the shared conversion slot below is a source shape, not a compiler
+floor.** GC/2.7 shares the slot, and numbers the float registers as retail does, when the
+interpolation keeps the difference to the next table entry in a variable of its own reduced with
+`-=` (see "Source levers measured in wave 41"). Every `HitCharacter` named in this section now
+matches under GC/2.7, and the units that were held back by it link. The text below is kept as the
+record of what was tried; the other differences it lists (tail calls, the `.sdata2` order,
+`checked_delete`, `ScatteringRing`) are not affected by the correction.
+
 Functions that convert between float and int show a code-generation detail that no compiler in
 the decomp.dev package reproduces together with the rest of the game. Examples are the
 speed-table interpolation in `HitCharacter` of JumpBoard (0x8010F028) and of LongSpring
@@ -31,34 +39,37 @@ speed-table interpolation in `HitCharacter` of JumpBoard (0x8010F028) and of Lon
 
 - **What the original does.** It reuses one 8-byte stack slot for every conversion temporary: the
   `fctiwz`/`stfd` slot also serves the `0x43300000` int→float sequence.
-- **GC 1.3.2 through 2.7.** Every one of these compilers gives each conversion its own slot. The
+- **GC 1.3.2 through 2.7.** Every one of these compilers gives each conversion its own slot for the
+  one-expression interpolation (`speed += (table[level + 1] - speed) * (x - level);`). The
   stack frame grows by 0x10 and the float register numbering changes. No `-opt` sub-option
-  (`lifetimes`, `cse`, `prop`, `deadstore`, ...) changes this.
+  (`lifetimes`, `cse`, `prop`, `deadstore`, ...) changes this; the `-=` spelling of wave 41 does.
 - **GC 3.0a3/3.0a5.** These reuse the slot like the original. However, they also tail-call
   (`b fn_8006B50C` where the original keeps a frame) and inline differently. Boost 1.32 also takes
   its newer `enable_if` path under them. Together that breaks 18 of 22 other JumpBoard functions.
 - **What was ruled out.** Union-based conversion helpers compiled with 2.7 produce
   `fsub`/`frsp`, which the original does not have.
 
-So the original is probably a CodeWarrior build between 2.7 (build 108, 2.4.7) and 3.0a3
+So the original was taken to be a CodeWarrior build between 2.7 (build 108, 2.4.7) and 3.0a3
 (build 51213, Dec 2005). That fits the game's Oct 10 2005 build date, but no such build is
-public. Until one turns up, these functions stay at roughly 99.8% under GC/2.7. Everything else in
-those units matches.
+public. (Wave 41: the slot is a source shape, and these functions match under GC/2.7; what is left
+of the argument rests on the other differences below.)
 
 Further evidence:
 
 - **3.0a3 always tail-calls.** A one-call hook compiles to `b` under every flag tried
   (`-O2` … `-O4,p`, `-opt noschedule/nopeephole`, `-ipa off/file`). The original hooks keep a frame,
   so those units were not built with 3.0a3. GC/2.7 rejects `-ipa`.
-- **GC/2.7 never shares the slot.** Every shape tried keeps separate slots: a named int variable,
-  an int temporary passed straight to a call (the shape of `fn_80036464`), an explicit cast, and
-  brace-less `if` bodies.
+- **GC/2.7 shares the slot for some shapes only.** Every shape tried before wave 41 kept separate
+  slots: a named int variable, an int temporary passed straight to a call (the shape of
+  `fn_80036464`), an explicit cast, and brace-less `if` bodies. The difference reduced with `-=`
+  shares it (wave 41).
 - **The DOL mixes both behaviours.** A scan of the dtk assembly found 56 game functions that hold
   both conversion kinds. 23 of them share the slot (e.g. `fn_80036464`, `fn_800A4944`, JumpBoard,
   LongSpring and DashRing `HitCharacter`, Effect code at 0x804230xx). The other 33 keep them
   separate, as GC/2.7 does.
-  - So translation units were built with at least two code generators, or with a 2.7-like build
-    whose allocator changed.
+  - This was read as translation units built with at least two code generators, or with a
+    2.7-like build whose allocator changed. Wave 41 shows one compiler doing both, depending on
+    how the expression is written.
   - Reimplementations of MWCC (rayanht/mwcc, zcanann/mwcc-rs) might eventually allow a patched
     build.
 
@@ -499,6 +510,68 @@ Try these before recording a floor:
   `extabindex` either way. `Game/EffectManager.cpp` shows the same.
 - **`fnside.py` rows that differ only in a branch's printed target are not differences**: the
   target is printed as an offset in the object, and it moves when the function order differs.
+
+## Source levers measured in wave 41
+
+- **The shared float/int conversion slot is a source shape (A).** The speed-table interpolation
+  written in one expression, `speed += (table[level + 1] - speed) * (x - level);`, gives the
+  float-to-int conversion of the level and the int-to-float conversion back their own stack slots
+  (the frame grows by 0x10 and the float registers renumber). Written
+  `float delta = table[level + 1]; delta -= speed; speed += delta * (x - level);`, GC/2.7 shares
+  one slot and numbers the float registers as retail does (the level's value f2, the difference
+  f3). This was the "compiler version" blocker of the open question above. It flipped
+  `Game/LongSpring`, `CircusBall`, `DashPanel` and `TGiHdGage`, and then `Game/DashRing`,
+  `JumpBoard` (both of its interpolations), `Spring`, `SpringPanel`, `Catapult` and `StretchGrass`.
+  Expect `@N` renumbering in the unit after the change (`tools/pair_symbols.py --apply`).
+- **Conversion slots are handed out in argument-evaluation order (B).** Right to left, except that a
+  first argument computed in place goes ahead of the second; masking that value into a named
+  local first restores the strict order (`Game/EffectObjectUSA.cpp`: blue, green, red, then alpha
+  in the highest slot). In `Game/EffectParticleUSA.cpp` the same colour block had retail's slots but
+  two scratch registers swapped (the alpha byte and the clump's offset, r7/r8) with the alpha
+  local as `u32`, `unsigned long`, `int` or `const`, declared anywhere, with copy propagation on or
+  off; **the local's type decides it**: as `u8` (or `u16`) holding the masked byte it takes r7.
+- **A struct returned by value and then copied into a local costs a copy and frame space.**
+  `Mtx34f inverse = f(&matrix); g(&inverse, ...)` copies the call's return slot into the local
+  (a 48-byte word loop); `g(&(const Mtx34f &)f(&matrix), ...)` passes the return slot on, as retail
+  does. That copy was the 0x30-byte frame difference of `EffectLocusRW3::BuildVertices`, which its
+  header had put down to the conversion slot; once the frame is right its twelve conversions take
+  retail's slots.
+- **Variables that the cases of a switch share are declared together at the top.**
+  `Effect::System::EffectRay::Generate` and `EffectParticle::Generate` got retail's saved
+  registers once the shape pointer (and EffectRay's description) were declared ahead of the count,
+  and retail's float registers once the spread, angle and size floats were declared at the top of
+  the function (ahead of EffectParticle's speed) and assigned in the cases; declared in each case,
+  every case numbers them differently. Three smaller shapes in the same functions:
+  `angle -= spread / 2.0f` (the `* 0.5f` form swaps the `fnmsubs` operands); the height's `0.0f`
+  assigned between the sine and the cosine calls (it lands in the angle's register there); and the
+  radius pick as a conditional expression (`float r = c ? a : a * Random();`), which loads the
+  radius straight into the result's register where an if/else copies it with `fmr`. Their
+  conversions share slots as retail's without lever A.
+- **The constructor lever (wave 40) again.** `EffectRay`'s constructor keeps every description load
+  behind the store before it only with the description parameter non-const (its caller casts; the
+  mangled name in `symbols.txt` follows the declaration).
+- **An inline destructor whose code sits in the middle of a unit was defined out of line.**
+  `EffectParticleUSA`'s destructor is between its `Update` and its constructor in retail; written
+  in the class, GC/2.7 emits it after the unit's last function (a late vtable's inline virtual);
+  defined out of line between the two, it lands where retail has it and the unit links. The
+  out-of-line declaration stands behind `EFFECT_PARTICLE_USA_IMPLEMENTATION` in
+  `Game/EffectManagerPJS.h`: taking an inline function out of a header that many units include
+  renumbers the compiler's `@N` locals of all of them (by two here).
+- **An unused function that orders constants must not instantiate anything.** `Game/StretchGrass`'s
+  `LaunchDirectionOutOfLine` (the unused-function trick for `.sdata2` order) built its vector as a
+  temporary, `*d = Vec3f(0.0f, 0.0f, 1.0f)`; the temporary calls the weak `__ct__5Vec3fFfff`, which
+  the linker then placed in this unit (first in link order) ahead of the copy
+  `Game/ElecSecurityCode.cpp` places at 0x80157A5C, 0x10 bytes too many. A local
+  (`Vec3f v(0.0f, 0.0f, 1.0f); *d = v;`) is built inline and pools the same constants.
+- **Exception records out of code order, two more units.** `Game/EffectRay.cpp` and
+  `Game/EffectParticle.cpp` now match every function but have retail's executor `operator delete`
+  code last in the unit with its `extab` record right behind `Generate`'s, the shape of
+  `Game/EffectObject.cpp`; they stay NonMatching.
+- **`#pragma opt_propagation off` (the wave 41 lever) did not help here.** Around
+  `EffectParticle3DUSA::Update` it took the function from 5 rows to 19 (the inline setter's
+  parameter copies keep float registers of their own), with or without named copies of the alpha,
+  the counter, the particle, the model or the scale; around `EffectLocusRW3::BuildVertices` it
+  changed nothing.
 
 ## The C++ runtime library (Runtime.PPCEABI.H)
 

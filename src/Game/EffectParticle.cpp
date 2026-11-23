@@ -6,13 +6,17 @@
  * out here). File name from the class; member names are inferred. Definitions are in reverse
  * address order (deferred inlining emits functions last-defined first).
  *
- * NonMatching: 14 of 15 functions match. Generate's float constants are each loaded with their own
- * lis in retail: the unit is built without pooled data (cflags_effect_nopool, as EffectObject and
- * EffectCommandExec; wave 41, the other functions are unchanged by it), which takes Generate from 88%
- * to 99%. What is left is its register allocation (count, i, the particle and the shape take other
- * saved registers, and the particle goes through an extra copy after the two news) and the stack
- * slots of its conversions; the conversion-slot lever of Game/LongSpring.cpp (a difference reduced
- * with -=) may apply to the spread interpolation. Move matched in wave 39: its last
+ * NonMatching, with all 15 functions matching since wave 41; what keeps the unit from linking is its
+ * exception tables: EffectParticleExecUnit's operator delete has its code last in the unit and its
+ * extab record right behind Generate's, and GC/2.7 writes the records in code order (the shape of
+ * Game/EffectRay.cpp and Game/EffectObject.cpp). Generate's float constants are each loaded with
+ * their own lis in retail: the unit is built without pooled data (cflags_effect_nopool, as
+ * EffectObject and EffectCommandExec). The rest of Generate came with EffectRay's Generate shapes
+ * (probes/Game_EffectParticle_W41f.py): the shape and the floats the cases share (spread, angle,
+ * size) declared at the top of the function, the shape first (r31) and the spread ahead of the
+ * speed (f31); `spread / 2.0f`; the height's 0.0f between the sine and the cosine; the radius pick
+ * as a conditional expression. Its conversions share their stack slots as retail's without the
+ * -= lever, and the particle needs no other declaration. Move matched in wave 39: its last
  * loop walks the list with a pointer of its own, declared third (after next and exec, before
  * current); saved registers go down from r30 in declaration order, so that is what gives it r29.
  * Reusing `particle`, or a new pointer declared anywhere else, gives r30. */
@@ -488,6 +492,10 @@ void EffectParticle::ParseCommands() {
 }
 
 void EffectParticle::Generate(float dt) {
+    const UnkParticleShape_80427EC8 *shape;
+    float spread;
+    float angle;
+    float size;
     int count = 0;
     float quantity = m_rate * dt;
     if (quantity < 1.0f) {
@@ -534,7 +542,7 @@ void EffectParticle::Generate(float dt) {
         }
         const UnkParticleParams_80427EC8 *params = m_params;
         float velocity = params->m_speedRange * RandomFloat() + params->m_speed;
-        const UnkParticleShape_80427EC8 *shape = m_emitter->m_shape;
+        shape = m_emitter->m_shape;
         switch (shape->m_type) {
         default: {
             AssignVector(particle->m_position, m_lastPosition);
@@ -544,33 +552,27 @@ void EffectParticle::Generate(float dt) {
             break;
         }
         case 0: {
-            float spread = shape->m_spread;
-            float angle;
+            spread = shape->m_spread;
             if ((m_config & 0x40) && count > 1) {
                 if (spread > 359.9999f) {
                     angle = spread * ((float)i / (float)count);
                 } else {
                     angle = spread * ((float)i / (float)(count - 1));
                 }
-                angle -= spread * 0.5f;
+                angle -= spread / 2.0f;
             } else {
-                angle = spread * RandomFloat() - shape->m_spread * 0.5f;
+                angle = spread * RandomFloat() - shape->m_spread / 2.0f;
             }
             float radius = 0.0f;
             float tilt = 0.0f;
             if (shape->m_radius > 0.0001f) {
-                float r;
-                if (m_config & 0x80) {
-                    r = shape->m_radius;
-                } else {
-                    r = shape->m_radius * RandomFloat();
-                }
+                float r = (m_config & 0x80) ? shape->m_radius : shape->m_radius * RandomFloat();
                 radius = r;
                 tilt = shape->m_angle * (r / shape->m_radius);
             }
             float s = std::sin(angle);
-            float c = std::cos(angle);
             float height = 0.0f;
+            float c = std::cos(angle);
             if (shape->m_height > 0.0001f) {
                 height = shape->m_height * RandomFloat();
             }
@@ -586,7 +588,7 @@ void EffectParticle::Generate(float dt) {
         }
         case 1: {
             float spread = shape->m_spread;
-            float angle = spread * RandomFloat() - shape->m_spread;
+            angle = spread * RandomFloat() - shape->m_spread;
             float radius = 0.0f;
             if (shape->m_radius > 0.0001f) {
                 if (m_config & 0x80) {
@@ -614,7 +616,7 @@ void EffectParticle::Generate(float dt) {
             break;
         }
         case 2: {
-            float size = shape->m_radius;
+            size = shape->m_radius;
             particle->m_position.x = size * RandomFloat() - 0.5f * size;
             size = shape->m_spread;
             particle->m_position.y = size * RandomFloat() - 0.5f * size;

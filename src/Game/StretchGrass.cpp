@@ -8,7 +8,11 @@
  * grass holds a character at a time. File name inferred from the namespace. Names marked "(name
  * inferred)" are not original. Definitions are in reverse address order (deferred inlining emits
  * functions last-defined first). The unit's code reaches its .data and .rodata through pooled base
- * addresses, so the linker keeps those sections whole. */
+ * addresses, so the linker keeps those sections whole.
+ *
+ * Matching since wave 41: HitCharacter's two conversions share one stack slot once the level
+ * interpolation reduces the difference to the next entry with -= (see HitCharacter), and the
+ * unused LaunchDirectionOutOfLine builds its vector in a local (see there). */
 /* Keeps the dead copy of bad_alloc's vtable in .data, as retail has it (see <new>). */
 #define MSL_NEW_INLINE_BAD_ALLOC
 
@@ -277,7 +281,8 @@ static RpAtomic *SetMorphWeights(RpAtomic *atomic, void *data) {
 
 /* Takes hold of an idle character, or launches the held one once the grass springs back (name
  * inferred). The level interpolation converts float to int and back; retail shares one stack slot
- * for both conversions, which GC/2.7 does not (see docs/research-notes.md). */
+ * for both conversions, and so does GC/2.7 once the difference to the next table entry is a local
+ * reduced with -= (delta = next; delta -= speed; see Game/LongSpring.cpp). */
 static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
     StretchGrassHitContext *context = static_cast<StretchGrassHitContext *>(user);
 
@@ -310,7 +315,9 @@ static void HitCharacter(boost::shared_ptr<CharInfo> hit, void *user) {
             int level = context->m_params->level;
             float speed = lbl_804C1268[level];
             if (level < 7) {
-                speed += (lbl_804C1268[level + 1] - speed) * (context->m_params->level - level);
+                float delta = lbl_804C1268[level + 1];
+                delta -= speed;
+                speed += delta * (context->m_params->level - level);
             }
 
             Mtx34f matrix;
@@ -483,9 +490,12 @@ void SetStretchGrass::ReloadPlacement(UnkPlacement_800C9CD0 *owner) {
 /* Not called anywhere: the linker strips it from the game. Retail pools the 1.0 of HitCharacter's
  * launch direction between the literals of Draw and those of ReloadPlacement, which compiling a
  * function that builds that direction at this point of the file reproduces (inferred, as in
- * ElecSmallCube). */
+ * ElecSmallCube). The direction is a local: built as a temporary, its constructor is called out
+ * of line, and that weak copy of Vec3f's constructor is linked here ahead of the one
+ * Game/ElecSecurityCode.cpp places at 0x80157A5C, 0x10 bytes too many. */
 void SetStretchGrass::LaunchDirectionOutOfLine(Vec3f *direction) {
-    *direction = Vec3f(0.0f, 0.0f, 1.0f);
+    Vec3f launch(0.0f, 0.0f, 1.0f);
+    *direction = launch;
 }
 
 void SetStretchGrass::LoadFromOwner(UnkPlacement_800C9CD0 *owner) {

@@ -5,18 +5,23 @@
  * clump fade. While hidden they move to draw pass 5 (the request bits at 0x104, as
  * Game/EffectLocusUSA.cpp does). File name inferred from the classes; member names are inferred.
  * Definitions are in reverse address order (deferred inlining emits functions last-defined
- * first). The unit also emits EffectParticleUSA's inline destructor and both vtables.
+ * first). The unit also emits EffectParticleUSA's destructor and both vtables.
  *
- * NonMatching: 5 of 6 functions match. EffectParticle3DUSA::Update differs in 5 rows (two scratch
- * registers): retail gives the alpha byte r7 and the clump's offset r8, GC/2.7 the other way
- * round. Wave 41 (probes/Game_EffectParticleUSA_W41.py, about 45 shapes) took it from 23 rows:
- * the fade flags are signed bytes (extsb.), the alpha byte is read into a local ahead of the
- * colour and converted after it (retail's stack slots: blue, green, red, then alpha from the
- * bottom up), and the fade's address is a local. The alpha local declared anywhere from the
- * function's top to the store, through inline readers, as unsigned long, a const or with copy
- * propagation off, and the clump's address through a local, leave the two registers swapped. */
+ * Matching since wave 41. EffectParticle3DUSA::Update: the fade flags are signed bytes (extsb.),
+ * the alpha byte is read into a local ahead of the colour and converted after it (retail's stack
+ * slots: blue, green, red, then alpha from the bottom up; as Game/EffectObjectUSA.cpp's colour
+ * block), and the fade's address is a local (probes/Game_EffectParticleUSA_W41.py, about 45
+ * shapes, 23 rows to 5). The last 5 rows (retail gives the alpha byte r7 and the clump's offset
+ * r8, GC/2.7 the other way round with a u32 local, an unsigned long, an int, a const, inline
+ * readers, any declaration point, copy propagation off with or without named copies) went with
+ * the local's type: as a u8 (or u16) holding the masked byte, it takes r7
+ * (probes/Game_EffectParticleUSA_W41f.py). EffectParticleUSA's destructor is defined out of line
+ * between its constructor and Update, where retail has its code; written in the class (inline),
+ * GC/2.7 emits it after the unit's last function (probes/Game_EffectParticleUSA_W41g.py). */
 #define EFFECT_ELEMENT_POLYMORPHIC
 #define RESOURCEONEFILE_POLYMORPHIC
+/* EffectParticleUSA's destructor is defined here, out of line (see Game/EffectManagerPJS.h). */
+#define EFFECT_PARTICLE_USA_IMPLEMENTATION
 
 #include <string.h>
 
@@ -125,6 +130,10 @@ EffectParticleUSA::EffectParticleUSA(const UnkEffectDesc_801D0AFC *desc, EffectL
     }
 }
 
+/* Defined here, out of line: retail has it between Update and the constructor (written in the
+ * class, GC/2.7 emits it after the unit's last function). */
+EffectParticleUSA::~EffectParticleUSA() {}
+
 void EffectParticleUSA::Update(float dt) {
     EffectParticleRW3::Update(dt);
     if ((m_flags & 1) && !(m_flags & 4) && (m_request & 2)) {
@@ -228,7 +237,7 @@ void EffectParticle3DUSA::Update(float dt) {
                 float scale = 1.0f / 255.0f;
                 /* The alpha byte is read first and converted after the colour (retail's stack
                  * slots: blue, green, red, then alpha from the bottom up). */
-                u32 alpha = (particle->m_color[3] >> 22) & 0xFF;
+                u8 alpha = (particle->m_color[3] >> 22) & 0xFF;
                 UnkClumpFade_80027D5C *fade = &m_fades[i];
                 SetFadeColor(fade, ((particle->m_color[0] >> 22) & 0xFF) * scale,
                              ((particle->m_color[1] >> 22) & 0xFF) * scale,
