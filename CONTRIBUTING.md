@@ -16,9 +16,16 @@ treat every rule here as part of their instructions.
   it, and say so in the commit message.
 - **The build is the judge.** A change is good when `ninja` exits 0 and ends with
   `build/GUPE8P/main.dol: OK`. objdiff at 100% is not enough on its own.
-- **RenderWare source is C++.** RenderWare units must be reconstructed as matching C++ source.
-  `.s` files, inline-asm functions, and one-to-one assembly transcriptions do not count as
-  decompilation and must not be committed as RenderWare progress.
+- **Source language follows the original.** Write each unit in the language its original was most
+  likely written in: the game's own code in C++, libraries that were built from C (RenderWare,
+  the Dolphin SDK, MSL, MetroTRK) in C, built with `-lang=c` where needed. When a unit departs
+  from its neighbours, say why in its header comment.
+- **Real source only.** `.s` files, inline-asm functions, and one-to-one assembly transcriptions do
+  not count as decompilation and must not be committed as RenderWare progress. The one exception is
+  a short `asm` statement inside an otherwise ordinary C function that only reads or writes a
+  special register C cannot reach (a GQR or HID2 `mtspr`, for example), the way the SDK's own
+  headers do it; it carries a comment saying so. Library routines that were hand-written assembly
+  in the original stay unwritten.
 
 ## References
 
