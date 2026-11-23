@@ -7951,6 +7951,7 @@ Game/RwCpp36.cpp:
 
 Game/RwCpp37.cpp:
 	.text       start:0x80473584 end:0x80474FF8
+	.sdata2     start:0x805FB250 end:0x805FB268
 
 Game/RwCpp38.cpp:
 	.text       start:0x80474FF8 end:0x80476ABC

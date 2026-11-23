@@ -1,43 +1,668 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
-#include <dolphin/types.h>
+/* RenderWare 2D toolkit (rt2d), part: the end of the font module (string width, destroy, read
+ * of a .met metrics file) up to fn_80473D38, then the toolkit's device and CTM functions from
+ * fn_80473E8C on (their float constants start a new .sdata2 group at 0x805FB250). Written from
+ * the retail code; the names are descriptions, the fn_ symbols are kept because game code calls
+ * them by address. Built as a C library: -O4,p, no stmw/lmw, automatic inlining. */
+#include "Game/rw/r5.h"
 
-extern u32 lbl_805E1950[];
-
+#ifdef __cplusplus
 extern "C" {
-void fn_80473E8C(u32 value) {
-    lbl_805E1950[0x58] = value;
+#endif
+
+extern const f32 lbl_805FB230; /* 0.0f */
+extern const f32 lbl_805FB234; /* 1.0f */
+extern const f32 lbl_805FB250; /* 1.0f */
+extern const f32 lbl_805FB254; /* 0.0f */
+extern const f32 lbl_805FB258; /* 0.5f */
+
+extern const f32 lbl_805FB25C; /* 2.0f */
+extern const f32 lbl_805FB268; /* 0.0f */
+extern const f32 lbl_805FB26C; /* 1.0f */
+extern char lbl_8056DCE8[];    /* the path module's format strings, then "METRICS1\n" .. "METRICS3\n" */
+extern char lbl_805EDE40[5];    /* ".met" */
+extern char lbl_805EDE48[2];    /* "r" */
+
+RwMatrix *fn_8047F994(void);                                            /* RwMatrixCreate */
+RwBool fn_8047F958(RwMatrix *matrix);                                   /* RwMatrixDestroy */
+RwMatrix *fn_8047EBB8(RwMatrix *dst, const RwMatrix *a, const RwMatrix *b); /* RwMatrixMultiply */
+RwMatrix *fn_8047F398(RwMatrix *matrix, const RwV3d *scale, s32 op);    /* RwMatrixScale */
+RwMatrix *fn_8047F59C(RwMatrix *matrix, const RwV3d *offset, s32 op);   /* RwMatrixTranslate */
+RwMatrix *fn_8047F0B0(RwMatrix *dst, const RwMatrix *src);              /* RwMatrixInvert */
+RwMatrix *RwFrameGetLTM(RwFrame *frame);
+RwV3d *fn_80482504(RwV3d *out, const RwV3d *in, const RwMatrix *matrix); /* RwV3dTransformVector */
+RwV3d *fn_80482458(RwV3d *out, const RwV3d *in, const RwMatrix *matrix); /* RwV3dTransformPoint */
+f32 fn_80482340(f32 x); /* square root */
+f32 fn_80482394(f32 x); /* inverse square root */
+
+void *fn_8047A178(const char *name, const char *mode);  /* opens a file */
+char *fn_8047A518(char *buffer, s32 size, void *file);  /* reads a line */
+s32 fn_8047A388(void *file);                            /* closes a file */
+Rt2dFont *fn_8047149C(Rt2dFont *font, char *buffer, void *file, char *line);
+Rt2dFont *fn_80471A54(Rt2dFont *font, char *buffer, void *file, char *line);
+Rt2dFont *fn_804724AC(Rt2dFont *font, char *buffer, void *file, char *line);
+void fn_80470C54(void);
+
+void fn_804772C4(void);
+void fn_80476A58(void);
+void fn_804704D4(void);
+void fn_80473260(void);
+void fn_8047721C(void);
+void fn_804771E0(void);
+void fn_80473118(void);
+void fn_80470474(void);
+void fn_80476A0C(void);
+void fn_8047726C(void);
+Rt2dPath *fn_80476490(void);          /* Rt2dPathCreate */
+Rt2dPath *fn_80476510(Rt2dPath *path); /* Rt2dPathLock */
+
+RwMatrix *fn_804749CC(void);
+RwBool fn_80474498(void);
+
+/* Width of a string in the font, scaled by `height`. */
+f32 fn_80473584(Rt2dFont *font, const u8 *string, f32 height) {
+    f32 width = lbl_805FB230;
+    Rt2dGlyph *glyphs = (Rt2dGlyph *)fn_8047DFAC(font->glyphs);
+    const u8 *p;
+    s32 step;
+    s32 wide;
+    s32 next;
+    s32 shiftHigh;
+    s32 shiftLow;
+    u8 mask;
+    s32 c;
+    s32 glyph;
+
+    if (font->flag & 2) {
+        step = 2;
+        mask = 0xFF;
+        next = 1;
+        shiftHigh = 8;
+        shiftLow = 0;
+    } else {
+        step = 1;
+        mask = 0;
+        next = 0;
+        shiftHigh = 0;
+        shiftLow = 0;
+    }
+
+    c = (string[0] << shiftHigh) | ((mask & string[next]) << shiftLow);
+    p = string;
+    while (c > 0) {
+        if (c >= 0x80) {
+            wide = c - font->wideBase;
+            if (wide >= 0 && wide < font->wideCount) {
+                glyph = font->wideMap[wide];
+            } else {
+                glyph = -1;
+            }
+        } else {
+            glyph = font->map[c];
+        }
+        p += step;
+        if (glyph >= 0) {
+            {
+            Rt2dGlyph *g = &glyphs[glyph];
+            width += g->width + font->intergap;
+            }
+        }
+        c = (p[0] << shiftHigh) | ((mask & p[next]) << shiftLow);
+    }
+    return width * height;
 }
 
-void fn_80473D10(u32 *object) {
-    ((void (*)(void))object[0x4E])();
-}
+/* Destroys a font: its glyph paths, its glyph list, the wide map and the textures. */
+RwBool fn_804736CC(Rt2dFont *font) {
+    if (font != 0) {
+        u32 i;
 
-extern float lbl_805FB254;
-
-struct RtCharset;
-
-RtCharset *fn_80473CE0(const char *path) {
-    return ((RtCharset *(*)(const char *))lbl_805E1950[0x210])(path);
-}
-
-void fn_80473E9C(u32 *object) {
-    ((void (*)(u32 *))lbl_805E1950[0xE6])(object);
-}
-
-u32 fn_80474228(float value) {
-    if (value > lbl_805FB254) {
-        ((float *)lbl_805E1950)[0xC8] = value;
-        lbl_805E1950[0xC6] = 0;
+        if (font->glyphs != 0) {
+            Rt2dGlyph *glyph = (Rt2dGlyph *)fn_8047DFAC(font->glyphs);
+            for (i = 0; i < font->glyphCount; i++) {
+                if (glyph[i].path != 0) {
+                    fn_80475E2C(glyph[i].path);
+                    glyph[i].path = 0;
+                }
+            }
+            fn_8047DFC8(font->glyphs);
+        }
+        font->glyphs = 0;
+        if (font->wideMap != 0) {
+            RWSRCGLOBAL(rwfree)(font->wideMap);
+        }
+        font->wideMap = 0;
+        for (i = 0; i < 4; i++) {
+            if (font->texture[i] != 0) {
+                fn_8048CD8C(font->texture[i]);
+            }
+            font->texture[i] = 0;
+        }
+        RWSRCGLOBAL(memoryFree)(lbl_805E1950.fontFreeList, font);
         return 1;
     }
     return 0;
 }
 
-void fn_804748C8(void) {
-    if (lbl_805E1950[0x91] != 0) {
-        lbl_805E1950[0x91]--;
-        lbl_805E1950[0xC6] = 0;
-        lbl_805E1950[0xCB] = 0;
+/* A new, empty font. */
+static Rt2dFont *FontCreate(void) {
+    Rt2dFont *font = (Rt2dFont *)RWSRCGLOBAL(memoryAlloc)(lbl_805E1950.fontFreeList, 0x30199);
+    u32 i;
+
+    if (font == 0) {
+        return 0;
+    }
+    font->isOutline = 1;
+    font->height = lbl_805FB234;
+    font->baseline = lbl_805FB230;
+    font->intergap = lbl_805FB230;
+    font->flag = 0;
+    for (i = 0; i < 4; i++) {
+        font->texture[i] = 0;
+    }
+    font->wideCount = 0;
+    font->glyphCount = 0;
+    font->wideBase = 0;
+    font->wideMap = 0;
+    font->glyphs = fn_8047DC90(sizeof(Rt2dGlyph), 0x30190);
+    font->show = (void *)fn_80470C54;
+    font->field_0x13C = 0;
+    font->field_0x140 = 0;
+    for (i = 0; i < 128; i++) {
+        font->map[i] = -1;
+    }
+    return font;
+}
+
+/* Reads the font `name`: looks for name.met along the font path and hands the file to the reader
+ * of its metrics format.
+ * NonMatching (94%): same instructions, but retail keeps the file in r28, the path cursor in r27
+ * (the register that held the statics' address), the path in r26 and the name in r25, where this
+ * source gets the file in the statics' register and the cursor in r25. Eight declaration orders
+ * and six orders of the three initialisations before the loop gave the same allocation. */
+Rt2dFont *fn_804737E4(const char *name) {
+    char *strings = lbl_8056DCE8;
+    Rt2dFont *font = FontCreate();
+    char line[0x100];
+    char buffer[0x80];
+    const char *p;
+    void *file;
+    s32 i;
+    s32 c;
+    Rt2dFont *result;
+    char *path;
+    s32 length;
+
+    if (font == 0) {
+        return 0;
+    }
+    length = RWSRCGLOBAL(vecStrlen)(lbl_805E1950.fontPath);
+    i = RWSRCGLOBAL(vecStrlen)(name) + 5;
+    path = (char *)RWSRCGLOBAL(rwmalloc)(length + i, 0x10190);
+    if (path != 0) {
+        i = 0;
+        p = lbl_805E1950.fontPath;
+        file = 0;
+        do {
+            c = *(const u8 *)p;
+            if (c == ';' || (char)c == 0) {
+                path[i] = 0;
+                RWSRCGLOBAL(vecStrcat)(path, name);
+                RWSRCGLOBAL(vecStrcat)(path, lbl_805EDE40);
+                file = fn_8047A178(path, lbl_805EDE48);
+                i = 0;
+            } else {
+                path[i] = c;
+                i++;
+            }
+            p++;
+        } while ((char)c != 0 && file == 0);
+
+        result = 0;
+        if (file != 0) {
+            fn_8047A518(line, sizeof(line), file);
+            if (RWSRCGLOBAL(vecStrcmp)(line, strings + 0x58) == 0) {
+                result = fn_8047149C(font, buffer, file, line);
+            } else if (RWSRCGLOBAL(vecStrcmp)(line, strings + 0x64) == 0) {
+                result = fn_80471A54(font, buffer, file, line);
+            } else if (RWSRCGLOBAL(vecStrcmp)(line, strings + 0x70) == 0) {
+                result = fn_804724AC(font, buffer, file, line);
+            }
+            fn_8047A388(file);
+        }
+        RWSRCGLOBAL(rwfree)(path);
+        if (result != font) {
+            fn_804736CC(font);
+            font = 0;
+        }
+    } else {
+        fn_804736CC(font);
+        font = 0;
+    }
+    return font;
+}
+
+/* Reads a font through the toolkit's reader hook. */
+Rt2dFont *fn_80473CE0(const char *name) {
+    return lbl_805E1950.fontRead(name);
+}
+
+/* Shows a string through the font's own show function. */
+void *fn_80473D10(Rt2dFont *font) {
+    return ((void *(*)(Rt2dFont *))font->show)(font);
+}
+
+/* Lists the characters the font has a glyph for; returns their count. */
+s32 fn_80473D38(Rt2dFont *font, s32 *chars) {
+    s32 i;
+    s32 count = 0;
+
+    for (i = 0; i < 128; i++) {
+        if (font->map[i] >= 0) {
+            chars[count] = i;
+            count++;
+        }
+    }
+    for (i = 0; (u32)i < (u32)font->wideCount; i++) {
+        if (font->wideMap[i] >= 0) {
+            chars[count] = i + font->wideBase;
+            count++;
+        }
+    }
+    return count;
+}
+
+void fn_80473E8C(u32 value) {
+    lbl_805E1950.field_0x160 = value;
+}
+
+void *fn_80473E9C(void *camera) {
+    return lbl_805E1950.cameraBeginUpdate(camera);
+}
+
+#define CTM() (lbl_805E1950.ctm[lbl_805E1950.ctmTop])
+
+/* Makes the current transformation matrix the identity. */
+RwBool fn_80473ECC(void) {
+    CTM()->at.z = 1.0f;
+    CTM()->up.y = 1.0f;
+    CTM()->right.x = 1.0f;
+    CTM()->up.x = 0.0f;
+    CTM()->right.z = 0.0f;
+    CTM()->right.y = 0.0f;
+    CTM()->at.y = 0.0f;
+    CTM()->at.x = 0.0f;
+    CTM()->up.z = 0.0f;
+    CTM()->pos.z = 0.0f;
+    CTM()->pos.y = 0.0f;
+    CTM()->pos.x = 0.0f;
+    CTM()->flags |= 0x20003;
+    lbl_805E1950.deviceValid = 0;
+    lbl_805E1950.flatValid = 0;
+    return 1;
+}
+
+RwMatrix *fn_804749CC(void);
+
+/* The device's step vectors and origin in the current coordinate system. */
+RwBool fn_80473FD0(RwV2d *xstep, RwV2d *ystep, RwV2d *origin) {
+    RwV3d v;
+    RwV2d view;
+    RwV2d raster;
+    f32 depth;
+    RwMatrix *matrix;
+
+    if (lbl_805E1950.camera->projection == 2) {
+        depth = 1.0f;
+    } else {
+        depth = lbl_805E1950.layerDepth;
+    }
+    view = lbl_805E1950.viewSize;
+    raster = lbl_805E1950.rasterSize;
+    fn_804749CC();
+    matrix = &lbl_805E1950.deviceMatrix;
+
+    v.x = -depth * (view.x / raster.x);
+    v.y = 0.0f;
+    v.z = 0.0f;
+    fn_80482504(&v, &v, matrix);
+    xstep->x = v.x;
+    xstep->y = v.y;
+
+    v.x = 0.0f;
+    v.y = depth * (view.y / raster.y);
+    v.z = 0.0f;
+    fn_80482504(&v, &v, matrix);
+    ystep->x = v.x;
+    ystep->y = v.y;
+
+    v.x = 0.5f * view.x * depth;
+    v.y = 0.5f * -view.y * depth;
+    v.z = 0.0f;
+    fn_80482458(&v, &v, matrix);
+    origin->x = v.x;
+    origin->y = v.y;
+    return 1;
+}
+
+/* The squared length of the flatness tolerance in the current coordinate system. */
+f32 fn_80474168(void) {
+    if (!lbl_805E1950.flatValid) {
+        RwV3d v;
+
+        fn_804749CC();
+        v.x = lbl_805E1950.flatness *
+              (lbl_805E1950.layerDepth * (lbl_805E1950.viewSize.x / lbl_805E1950.rasterSize.x));
+        v.y = 0.0f;
+        v.z = 0.0f;
+        fn_80482504(&v, &v, &lbl_805E1950.deviceMatrix);
+        lbl_805E1950.flatValid = 1;
+        lbl_805E1950.flatDepth = v.x * v.x + v.y * v.y + v.z * v.z;
+    }
+    return lbl_805E1950.flatDepth;
+}
+
+/* Sets the depth the 2D layer is drawn at. */
+RwBool fn_80474228(f32 depth) {
+    if (depth > 0.0f) {
+        lbl_805E1950.layerDepth = depth;
+        lbl_805E1950.deviceValid = 0;
+        return 1;
+    }
+    return 0;
+}
+
+/* Sets the origin and the aspect of the device's metric. The parameters are in this order
+ * because the call below loads the width before the height. */
+static void SetMetric(f32 h, f32 w, f32 y, f32 x) {
+    lbl_805E1950.field_0x338 = x;
+    lbl_805E1950.field_0x33C = y;
+    if (w > h) {
+        lbl_805E1950.field_0x340 = w / h;
+        lbl_805E1950.field_0x344 = 1.0f;
+    } else {
+        lbl_805E1950.field_0x340 = 1.0f;
+        lbl_805E1950.field_0x344 = h / w;
     }
 }
+
+/* Attaches the toolkit to a camera: opens the modules, takes the raster and view window sizes
+ * and hooks the camera's end-of-update function. */
+void fn_80474258(RwCamera *camera) {
+    lbl_805E1950.field_0x31C = 0;
+    fn_804772C4();
+    fn_80476A58();
+    fn_804704D4();
+    fn_80473260();
+    fn_8047721C();
+    fn_80474498();
+    if (camera != 0) {
+        RwRaster *raster = camera->frameBuffer;
+
+        if (raster != 0) {
+            {
+                s32 height = raster->height;
+                s32 width = raster->width;
+
+                lbl_805E1950.rasterSize.x = (f32)width;
+                lbl_805E1950.rasterSize.y = (f32)height;
+            }
+            lbl_805E1950.viewSize.x = 2.0f * camera->viewWindow.x;
+            lbl_805E1950.viewSize.y = 2.0f * camera->viewWindow.y;
+            if (camera->endUpdate != fn_80473E9C && lbl_805E1950.camera != camera) {
+                lbl_805E1950.cameraBeginUpdate = camera->endUpdate;
+                camera->endUpdate = fn_80473E9C;
+            }
+            lbl_805E1950.camera = camera;
+            lbl_805E1950.deviceValid = 0;
+            SetMetric(lbl_805E1950.viewSize.y, lbl_805E1950.viewSize.x, 0.0f, 0.0f);
+        }
+    } else {
+        lbl_805E1950.camera = camera;
+    }
 }
+
+void fn_804743F0(void);
+
+/* Closes the toolkit's modules and forgets the camera. */
+void fn_804743AC(void) {
+    fn_804743F0();
+    fn_804771E0();
+    fn_80473118();
+    fn_80470474();
+    fn_80476A0C();
+    fn_8047726C();
+    lbl_805E1950.camera = 0;
+}
+
+/* Destroys the matrix stack. */
+void fn_804743F0(void) {
+    s32 i;
+
+    for (i = 0; i < 32; i++) {
+        if (lbl_805E1950.ctm[i] != 0) {
+            fn_8047F958(lbl_805E1950.ctm[i]);
+            lbl_805E1950.ctm[i] = 0;
+        }
+    }
+    lbl_805E1950.ctmTop = 0;
+    if (lbl_805E1950.field_0x944 != 0) {
+        RWSRCGLOBAL(rwfree)(lbl_805E1950.field_0x944);
+        lbl_805E1950.field_0x944 = 0;
+        lbl_805E1950.field_0x948 = 0;
+    }
+}
+
+/* Creates the matrix stack and resets the device state. */
+RwBool fn_80474498(void) {
+    u32 i;
+
+
+    lbl_805E1950.ctmTop = 0;
+    lbl_805E1950.ctm[0] = fn_8047F994();
+    fn_80473ECC();
+    lbl_805E1950.flatness = 0.5f;
+    lbl_805E1950.flatValid = 0;
+    lbl_805E1950.layerDepth = 1.0f;
+    lbl_805E1950.deviceValid = 0;
+    lbl_805E1950.field_0x330 = 7;
+    lbl_805E1950.viewMatrix.at.z = 1.0f;
+    lbl_805E1950.viewMatrix.up.y = 1.0f;
+    lbl_805E1950.viewMatrix.right.x = 1.0f;
+    lbl_805E1950.viewMatrix.up.x = 0.0f;
+    lbl_805E1950.viewMatrix.right.z = 0.0f;
+    lbl_805E1950.viewMatrix.right.y = 0.0f;
+    lbl_805E1950.viewMatrix.at.y = 0.0f;
+    lbl_805E1950.viewMatrix.at.x = 0.0f;
+    lbl_805E1950.viewMatrix.up.z = 0.0f;
+    lbl_805E1950.viewMatrix.pos.z = 0.0f;
+    lbl_805E1950.viewMatrix.pos.y = 0.0f;
+    lbl_805E1950.viewMatrix.pos.x = 0.0f;
+    lbl_805E1950.viewMatrix.flags |= 0x20003;
+    for (i = 0; i < 64; i++) {
+        lbl_805E1950.index[i] = i;
+    }
+    for (i = 1; (s32)i < 32; i++) {
+        lbl_805E1950.ctm[i] = 0;
+    }
+    lbl_805E1950.camera = 0;
+    lbl_805E1950.field_0x338 = 0.0f;
+    lbl_805E1950.field_0x33C = 0.0f;
+    lbl_805E1950.field_0x340 = 1.0f;
+    lbl_805E1950.field_0x344 = 1.0f;
+    lbl_805E1950.field_0x944 = 0;
+    lbl_805E1950.field_0x948 = 0;
+    return 1;
+}
+
+/* Pushes a copy of the current transformation matrix. */
+RwBool fn_804747A0(void) {
+    RwBool ok = lbl_805E1950.ctmTop < 31;
+    if (ok) {
+        lbl_805E1950.ctmTop++;
+        if (CTM() == 0) {
+            CTM() = fn_8047F994();
+        }
+        *CTM() = *lbl_805E1950.ctm[lbl_805E1950.ctmTop - 1];
+    }
+    return ok;
+}
+
+/* Pops the current transformation matrix. */
+RwBool fn_804748C8(void) {
+    RwBool ok = 0 < lbl_805E1950.ctmTop;
+    if (ok) {
+        lbl_805E1950.ctmTop--;
+        lbl_805E1950.deviceValid = 0;
+        lbl_805E1950.flatValid = 0;
+    }
+    return ok;
+}
+
+/* Scales the current transformation matrix. */
+RwBool fn_804748FC(f32 x, f32 y) {
+    RwV3d scale;
+
+    scale.x = x;
+    scale.y = y;
+    scale.z = 1.0f;
+    fn_8047F398(CTM(), &scale, 1);
+    lbl_805E1950.deviceValid = 0;
+    lbl_805E1950.flatValid = 0;
+    return 1;
+}
+
+/* Translates the current transformation matrix. */
+RwBool fn_80474964(f32 x, f32 y) {
+    RwV3d offset;
+
+    offset.x = x;
+    offset.y = y;
+    offset.z = 0.0f;
+    fn_8047F59C(CTM(), &offset, 1);
+    lbl_805E1950.deviceValid = 0;
+    lbl_805E1950.flatValid = 0;
+    return 1;
+}
+
+/* The matrix from the current coordinate system to the world; rebuilds the device matrices when
+ * the CTM, the camera or the layer depth changed. */
+RwMatrix *fn_804749CC(void) {
+    if (!lbl_805E1950.deviceValid) {
+        RwMatrix matrix;
+        RwV3d scale;
+        RwV3d offset;
+        RwV2d view;
+        f32 depth;
+        f32 size;
+
+        if (lbl_805E1950.camera->projection == 2) {
+            depth = 1.0f;
+        } else {
+            depth = lbl_805E1950.layerDepth;
+        }
+        fn_8047EBB8(&matrix, CTM(), &lbl_805E1950.viewMatrix);
+        scale.x = depth;
+        view = lbl_805E1950.viewSize;
+        scale.y = depth;
+        scale.z = 1.0f;
+        fn_8047F398(&matrix, &scale, 2);
+        size = (view.x < view.y) ? view.x : view.y;
+        scale.y = size;
+        scale.x = -size;
+        scale.z = 1.0f;
+        fn_8047F398(&matrix, &scale, 2);
+        offset.x = 0.5f * view.x * depth;
+        offset.y = -(0.5f * view.y * depth);
+        offset.z = 0.0f;
+        fn_8047F59C(&matrix, &offset, 2);
+        lbl_805E1950.toDevice = matrix;
+        fn_8047F0B0(&lbl_805E1950.deviceMatrix, &matrix);
+        lbl_805E1950.deviceValid = 1;
+    }
+    fn_8047EBB8(&lbl_805E1950.toWorld, &lbl_805E1950.toDevice, RwFrameGetLTM(lbl_805E1950.camera->frame));
+    return &lbl_805E1950.toWorld;
+}
+
+/* The path module follows (its constants start a new .sdata2 group at 0x805FB268). */
+
+/* Frees one sub-path and returns the one after it. */
+Rt2dPath *fn_80474BEC(Rt2dPath *path) {
+    Rt2dPath *next = path->next;
+
+    if (path->segments != 0) {
+        if (path->numSegment == -1) {
+            fn_8047DFC8(path->segments);
+        } else {
+            RWSRCGLOBAL(rwfree)(path->segments);
+        }
+    }
+    path->segments = 0;
+    RWSRCGLOBAL(memoryFree)(lbl_805E1950.pathFreeList, path);
+    return next;
+}
+
+/* Starts a sub-path at (x, y): in the current sub-path if it is empty, else in a new one.
+ * Retail inlines the recursion three times; GC/2.7 does that at depth 3, and one level more at
+ * its default depth for this (probably shorter) source. */
+#pragma inline_depth(3)
+Rt2dPath *fn_80474C7C(Rt2dPath *path, f32 x, f32 y) {
+    if (fn_8047E03C(path->curr->segments) == 0) {
+        Rt2dPathNode *node = (Rt2dPathNode *)fn_8047DDBC(path->curr->segments, 0x30190);
+
+        node->type = 0;
+        node->pos.x = x;
+        node->pos.y = y;
+        node->normal.x = lbl_805FB268;
+        node->normal.y = lbl_805FB268;
+        node->dist = lbl_805FB268;
+    } else {
+        path->curr->next = fn_80476490();
+        fn_80476510(path->curr->next);
+        path->curr = path->curr->next;
+        fn_80474C7C(path, x, y);
+    }
+    return path;
+}
+
+#pragma inline_depth(8)
+
+/* Adds a line to (x, y) and gives the corner before it the bisecting normal. */
+Rt2dPath *fn_80474EA0(Rt2dPath *path, f32 x, f32 y) {
+    s32 count = fn_8047E03C(path->curr->segments);
+    Rt2dPathNode *node = (Rt2dPathNode *)fn_8047DDBC(path->curr->segments, 0x30190);
+    f32 length;
+    f32 dy;
+    f32 dx;
+    f32 squared;
+    f32 inverse;
+
+    node->type = 1;
+    node->pos.x = x;
+    node->pos.y = y;
+    dy = y - node[-1].pos.y;
+    dx = node[-1].pos.x - x;
+    squared = dy * dy + dx * dx;
+    length = fn_80482340(squared);
+    inverse = fn_80482394(squared);
+    node->normal.x = dy * inverse;
+    node->normal.y = dx * inverse;
+    node->dist = node[-1].dist + length;
+    if (count > 1) {
+        f32 sumX;
+        f32 sumY;
+        f32 scale;
+
+        sumY = node[-1].normal.y + node->normal.y;
+        sumX = node[-1].normal.x + node->normal.x;
+        scale = lbl_805FB26C / (node[-1].normal.x * sumX + node[-1].normal.y * sumY);
+        node[-1].normal.x = sumX * scale;
+        node[-1].normal.y = sumY * scale;
+    } else {
+        node[-1].normal = node->normal;
+    }
+    return path;
+}
+
+#ifdef __cplusplus
+}
+#endif
