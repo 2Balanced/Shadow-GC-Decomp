@@ -1,42 +1,27 @@
-/* RenderWare quantization driver, palette conversion, and render-state helpers, 0x8048F5D0..0x80490E2F.
- * Names are inferred from behavior; definitions remain in retail address order. */
+/* RenderWare 0x8048F5D0..0x80490E2F: the end of the palette quantiser (an octree over the image's
+ * colours: fn_8048F5D0 resolves the palette, fn_8048FAB0 maps an image's pixels to it,
+ * fn_8048FED8/fn_804903F8 set the tree up and free it) and, from 0x8049043C, the start of the
+ * GameCube driver's immediate-mode 2D file (GX set-up and restore, RwIm2DRenderTriangle and
+ * RwIm2DRenderLine). Names are inferred from behaviour; definitions are in retail address order.
+ *
+ * Still first drafts (far from retail): fn_8048F5D0 and fn_8048FAB0. The rest match; the
+ * quantiser's recursive node free is inlined into itself eight levels deep because it is
+ * declared inline (the driver units are built with -inline noauto). */
 #include <string.h>
 #include <dolphin/types.h>
+#include <dolphin/gx.h>
+#include <dolphin/gx/GXPrivate.h>
+#include "Game/rw/r7.h"
 
 extern "C" {
-extern u8 *lbl_805F15B4;
 extern u8 *lbl_805F15B0;
 extern s32 lbl_805EDF20;
 extern u32 lbl_805E2D58[];
 extern u32 lbl_805FB560;
-extern u32 *lbl_805F1664;
-extern u8 *lbl_805F164C;
-extern s32 lbl_805F15F0;
-extern s32 lbl_805EDF28;
-extern s32 lbl_805F1648;
-extern u32 lbl_805E3158[];
-extern u32 lbl_8056E07C[];
-extern u32 lbl_8056E098[];
 extern f32 lbl_805FB368;
-extern f32 lbl_805FB378;
-extern f32 lbl_805FB388;
-extern f32 lbl_805FB38C;
-extern f32 lbl_805FB390;
-extern f64 lbl_805FB398;
-extern f64 lbl_805FB3A0;
-extern f32 lbl_805FB450;
-extern f32 lbl_805FB454;
-extern f32 lbl_805FB470;
-extern f32 lbl_805FB474;
-extern f32 lbl_805FB478;
-extern f32 lbl_805FB47C;
-extern f32 lbl_805FB468;
-extern f32 lbl_805FB46C;
 
-u32 fn_8047DC28(u32, ...);
-void fn_8047DB84(void *);
-void *fn_8047FBD8(u32, u32, u32, u32);
-void fn_8047FCDC(void *);
+void *fn_8047FBD8(u32 size, u32 entries, u32 align, u32 hint); /* RwFreeListCreate */
+void fn_8047FCDC(void *freeList); /* RwFreeListDestroy */
 void fn_8048EB24(f32 *, const u8 *, s32);
 u32 fn_8048EEFC(u32 *, s32);
 u32 fn_8048F1E4(f32 *, u8 *, u32, s32);
@@ -45,43 +30,9 @@ void fn_8048E47C(f32 *, u32 *, u32, u32 *, f32 *);
 f32 fn_8048E748(f32 *, u32 *, u32, u32 *, f32 *);
 u32 fn_8048E988(f32 *, f32 *, u32 *, u32 *);
 u32 fn_8048F4B4(u32 *, u32, s32);
-void fn_80396B54(u32, void *);
-void fn_80396A6C(u32, void *);
-void fn_80396C3C(u32);
-void fn_80396C78(u32, u32, u32, u32, u32, u32, u32);
-void fn_803989A0(u32);
-void fn_803951BC(u32);
-void fn_80398804(u32, u32, u32, u32);
-void fn_803982A8(u32, u32);
-void fn_80394F3C(u32, u32, u32, u32, u32, u32);
-void fn_80399000(u32, u32);
-void fn_803992BC(void *, u32, u32);
-void fn_8039494C(void);
-void fn_80394500(u32, u32);
-void fn_80394984(u32, u32, u32, u32, u32);
-void fn_80497804(void);
-void fn_80399458(void);
-u32 fn_8037F1BC(void);
-void fn_80399400(u32);
-void fn_803991A0(void *);
-void fn_80399114(void *);
-void fn_803991E8(void *, u32);
-void fn_80399288(u32);
-void fn_803994A0(u32, u32, u32, ...);
-void fn_80399518(u32, u32);
-void fn_80395B28(u32, u32, u32);
-void fn_80399288(u32);
-void fn_80499C38(void *, u32);
-void fn_80497778(u32);
+extern RwDlGlobals *lbl_805F15B4;     /* RwEngineInstance */
 
-#define RW_API(type, offset) ((type)*(u32 *)(lbl_805F15B4 + (offset)))
-#define RW_ERROR(value)                                                                          \
-    do {                                                                                         \
-        u32 error[2];                                                                            \
-        error[0] = 1;                                                                            \
-        error[1] = fn_8047DC28(value);                                                           \
-        fn_8047DB84(error);                                                                      \
-    } while (0)
+#define RW_API(type, offset) ((type)*(u32 *)((u8 *)lbl_805F15B4 + (offset)))
 
 u32 fn_8048F5D0(u8 *dest, u32 count, u8 *work) {
     fn_8048EB24(*(f32 **)(work + 0x4000), (const u8 *)&lbl_805FB560, lbl_805EDF20);
@@ -161,161 +112,204 @@ void fn_8048FAB0(u8 *dest, u32 destStride, u32 kind, u32 pack, u8 *work, u32 *so
     }
 }
 
-u32 fn_8048FED8(u8 *work) {
-    u32 depth = lbl_805EDF20;
-    u32 *table = lbl_805E2D58;
-    for (u32 i = 0; i < (1u << depth); i++) {
-        u32 value = 0;
-        for (u32 bit = 0; bit < depth; bit++) {
-            if ((i & (1 << bit)) != 0) value |= 1 << ((depth - bit - 1) * 4);
+/* Sets the quantiser up: the table that spreads the bits of a colour channel one per nibble
+ * (lbl_805E2D58, used to build tree paths), the node free list and an empty root. */
+s32 fn_8048FED8(RwDlPalQuant *pq) {
+    u32 i;
+    u32 bit;
+    u32 count;
+    u32 spread;
+    RwDlPalNode *root;
+    count = 1 << lbl_805EDF20;
+    for (i = 0; i < count; i++) {
+        spread = 0;
+        for (bit = 0; bit < lbl_805EDF20; bit++) {
+            spread |= (i & (1 << bit)) ? (1 << ((lbl_805EDF20 - 1 - bit) * 4)) : 0;
         }
-        table[i] = value;
+        lbl_805E2D58[i] = spread;
     }
-    *(void **)(work + 0x4004) = fn_8047FBD8(0x5C, 0x400, 4, 0x30411);
-    *(u32 **)(work + 0x4000) = (u32 *)RW_API(void *(*)(void *, u32), 0x118)(
-        *(void **)(work + 0x4004), 0x30411);
-    u32 *root = *(u32 **)(work + 0x4000);
-    if (root == NULL) return 0;
-    for (u32 i = 7; i < 0x17; i++) root[i] = 0;
+    pq->nodeFreeList = fn_8047FBD8(sizeof(RwDlPalNode), 0x400, 4, 0x30411);
+    pq->root = (RwDlPalNode *)lbl_805F15B4->freeListAlloc(pq->nodeFreeList, 0x30411);
+    root = pq->root;
+    for (i = 0; i < 16; i++) root->child[i] = NULL;
     return 1;
 }
 
-void fn_804900D4(u8 *work, u32 *node, s32 depth) {
-    if (node == NULL) return;
-    if (depth > 0) {
-        for (u32 i = 0; i < 0x10; i++) fn_804900D4(work, (u32 *)node[i + 7], depth - 1);
+/* Frees a subtree of the colour tree. */
+static inline void fn_804900D4(RwDlPalQuant *pq, RwDlPalNode *node, RwInt32 level) {
+    if (node != NULL) {
+        if (level > 0) {
+            RwInt32 i;
+            for (i = 0; i < 16; i++) fn_804900D4(pq, node->child[i], level - 1);
+        }
+        lbl_805F15B4->freeListFree(pq->nodeFreeList, node);
     }
-    RW_API(void (*)(void *, void *), 0x11C)(*(void **)(work + 0x4004), node);
 }
 
-void fn_804903F8(u8 *work) {
-    fn_804900D4(work, *(u32 **)(work + 0x4000), lbl_805EDF20);
-    *(u32 *)(work + 0x4000) = 0;
-    fn_8047FCDC(*(void **)(work + 0x4004));
+/* Frees the colour tree and its free list. */
+void fn_804903F8(RwDlPalQuant *pq) {
+    fn_804900D4(pq, pq->root, lbl_805EDF20);
+    pq->root = NULL;
+    fn_8047FCDC(pq->nodeFreeList);
 }
 
-static void rwSetupProjection(u8 *object) {
-    fn_8039494C();
-    fn_80394500(9, 1);
-    fn_80394984(0, 9, 1, 4, 0);
-    fn_80394500(0xB, 1);
-    fn_80394984(0, 0xB, 1, 5, 0);
-    fn_803989A0(1);
-    fn_80396C3C(1);
-    fn_80396C78(4, 0, 0, 1, 0, 0, 2);
-    fn_80396C78(5, 0, 0, 0, 0, 0, 2);
-    if (*lbl_805F1664 == 0) {
-        fn_803951BC(0);
-        fn_80398804(0, 0xFF, 0xFF, 4);
-        fn_803982A8(0, 4);
-    } else {
-        fn_80394500(0xD, 1);
-        fn_80394984(0, 0xD, 1, 4, 0);
-        fn_803982A8(0, 0);
-        fn_803951BC(1);
-        fn_80394F3C(0, 1, 4, 0x3C, 0, 0x7D);
-        fn_80398804(0, 0, 0, 4);
-        fn_80497804();
-    }
-    if (lbl_805F164C[0x18] == 0) fn_80399458();
-    else fn_80399400(fn_8037F1BC() ^ 1);
-    u32 *viewport = *(u32 **)(*(u32 **)lbl_805F15B4 + 0x60);
-    *(f32 *)(lbl_8056E07C + 1) = lbl_805FB388 / (f32)*(u16 *)(lbl_805F164C + 4);
-    *(f32 *)(lbl_8056E07C + 3) = lbl_805FB38C / (f32)*(u16 *)(lbl_805F164C + 8);
-    fn_803991A0(lbl_805E3158);
-    fn_80399114(lbl_8056E07C);
-    *(f32 *)(lbl_8056E098 + 3) = lbl_805FB390 + (f32)*(s16 *)(viewport + 7);
-    *(f32 *)(lbl_8056E098 + 7) = lbl_805FB390 + (f32)*(s16 *)((u8 *)viewport + 0x1E);
-    fn_803991E8(lbl_8056E098, 0);
-    fn_80399288(0);
-}
+/* ---- 0x8049043C: start of the driver's immediate-mode 2D file (its .sdata2 constants start at
+ * 0x805FB380 and its .data, the GX primitive table, at 0x8056E060). ---- */
+extern RwDlRenderMode *lbl_805F164C;  /* render mode in use */
+extern u32 *lbl_805F1664;             /* -> nonzero while Im2D draws with a texture */
+extern s32 lbl_805F15F0;              /* nonzero: the frame is drawn in two halves */
+extern s32 lbl_805EDF28;              /* nonzero while the top half is drawn */
+extern s32 lbl_805F1648;              /* the line where the two halves meet */
+extern f32 lbl_8056E07C[7];           /* GXSetProjectionv array: pixel-space orthographic */
+extern Mtx lbl_8056E098;        /* position matrix: the camera raster's offset */
+extern f32 lbl_805E3158[7];           /* the 3D projection, saved while Im2D draws */
 
+u32 fn_8037F1BC(void); /* VIGetNextField */
+void fn_80497804(void);
+
+/* Sets GX up for 2D drawing: position and colour (and texture coordinates while a texture is
+ * set) in vertex format 0, the vertex colour as the only channel, a viewport over the whole frame
+ * buffer, a pixel-space orthographic projection (the 3D one is saved) and the camera raster's
+ * offset as the position matrix. */
 void fn_8049043C(void) {
-    rwSetupProjection(lbl_805F164C);
+    RwDlRenderMode *mode;
+    RwDlRaster *raster;
+    GXClearVtxDesc();
+    GXSetVtxDesc(9, 1);
+    GXSetVtxAttrFmt(0, 9, 1, 4, 0);
+    GXSetVtxDesc(0xB, 1);
+    GXSetVtxAttrFmt(0, 0xB, 1, 5, 0);
+    GXSetNumTevStages(1);
+    GXSetNumChans(1);
+    GXSetChanCtrl(4, 0, 0, 1, 0, 0, 2);
+    GXSetChanCtrl(5, 0, 0, 0, 0, 0, 2);
+    if (*lbl_805F1664 != 0) {
+        GXSetVtxDesc(0xD, 1);
+        GXSetVtxAttrFmt(0, 0xD, 1, 4, 0);
+        GXSetTevOp(0, 0);
+        GXSetNumTexGens(1);
+        GXSetTexCoordGen2(0, 1, 4, 0x3C, 0, 0x7D);
+        GXSetTevOrder(0, 0, 0, 4);
+        fn_80497804();
+    } else {
+        GXSetNumTexGens(0);
+        GXSetTevOrder(0, 0xFF, 0xFF, 4);
+        GXSetTevOp(0, 4);
+    }
+    mode = lbl_805F164C;
+    if (mode->gx.field_rendering != 0) {
+        GXSetViewportJitter(0.0f, 0.0f, mode->gx.fbWidth, mode->gx.xfbHeight, 0.0f, 1.0f, fn_8037F1BC() ^ 1);
+    } else {
+        GXSetViewport(0.0f, 0.0f, mode->gx.fbWidth, mode->gx.xfbHeight, 0.0f, 1.0f);
+    }
+    raster = lbl_805F15B4->curCamera->frameBuffer;
+    lbl_8056E07C[1] = 2.0f / lbl_805F164C->gx.fbWidth;
+    lbl_8056E07C[3] = -2.0f / lbl_805F164C->gx.xfbHeight;
+    GXGetProjectionv(lbl_805E3158);
+    GXSetProjectionv(lbl_8056E07C);
+    lbl_8056E098[0][3] = 0.5f + raster->nOffsetX;
+    lbl_8056E098[1][3] = 0.5f + raster->nOffsetY;
+    GXLoadPosMtxImm(lbl_8056E098, 0);
+    GXSetCurrentMtx(0);
 }
 
-static void rwSetViewport(void) {
-    u32 *viewport = *(u32 **)(*(u32 **)lbl_805F15B4 + 0x60);
-    if (viewport != (u32 *)*viewport) {
+/* Puts the camera's viewport, scissor box and 3D projection back after 2D drawing. */
+void fn_80490724(void) {
+    RwDlRaster *raster = lbl_805F15B4->curCamera->frameBuffer;
+    if (raster != raster->parent) {
         if (lbl_805F15F0 == 0) {
-            if (lbl_805F164C[0x18] == 0) fn_80399458();
-            else fn_80399400(fn_8037F1BC() ^ 1);
-            fn_803994A0((s32)*(s16 *)(viewport + 7), (s32)*(s16 *)((u8 *)viewport + 0x1E),
-                        viewport[3], viewport[4]);
-        } else {
-            if (lbl_805F164C[0x18] == 0) fn_80399458();
-            else fn_80399400(fn_8037F1BC() ^ 1);
-            if (lbl_805EDF28 == 0) {
-                s32 height = (s32)*(s16 *)((u8 *)viewport + 0x1E) << 1;
-                s32 limit = lbl_805F1648 - 2;
-                if (height < limit) {
-                    if (((s32)*(s16 *)((u8 *)viewport + 0x1E) + viewport[4]) * 2 < lbl_805F1648 + 2) {
-                        fn_803994A0(0, limit, *(u16 *)(lbl_805F164C + 4));
-                    } else {
-                        fn_803994A0((s32)*(s16 *)(viewport + 7), limit,
-                                    *(u16 *)(lbl_805F164C + 4), viewport[4] << 1);
-                    }
-                } else {
-                    fn_803994A0((s32)*(s16 *)(viewport + 7), height,
-                                *(u16 *)(lbl_805F164C + 4), viewport[4] << 1);
-                }
-                fn_80399518(0, lbl_805F1648 - 2);
+            if (lbl_805F164C->gx.field_rendering != 0) {
+                GXSetViewportJitter(raster->nOffsetX, raster->nOffsetY, raster->width, raster->height, 0.0f,
+                            1.0f, fn_8037F1BC() ^ 1);
             } else {
-                s32 height = (s32)*(s16 *)((u8 *)viewport + 0x1E);
-                if (lbl_805F1648 + 2 < (height + viewport[4]) * 2) {
-                    if (lbl_805F1648 + 2 < (height << 1)) fn_803994A0(0, 0, *(u16 *)(lbl_805F164C + 4));
-                    else fn_803994A0((s32)*(s16 *)(viewport + 7), height << 1, *(u16 *)(lbl_805F164C + 4));
+                GXSetViewport(raster->nOffsetX, raster->nOffsetY, raster->width, raster->height, 0.0f,
+                            1.0f);
+            }
+            GXSetScissor(raster->nOffsetX, raster->nOffsetY, raster->width, raster->height);
+        } else {
+            if (lbl_805F164C->gx.field_rendering != 0) {
+                GXSetViewportJitter(raster->nOffsetX, raster->nOffsetY, raster->width, raster->height, 0.0f,
+                            1.0f, fn_8037F1BC() ^ 1);
+            } else {
+                GXSetViewport(raster->nOffsetX, raster->nOffsetY * 2, raster->width,
+                            raster->height * 2, 0.0f, 1.0f);
+            }
+            if (lbl_805EDF28 != 0) {
+                if ((raster->nOffsetY + raster->height) * 2 <= lbl_805F1648 + 2) {
+                    GXSetScissor(raster->nOffsetX, raster->nOffsetY * 2, lbl_805F164C->gx.fbWidth,
+                                raster->height * 2);
+                } else if (raster->nOffsetY * 2 > lbl_805F1648 + 2) {
+                    GXSetScissor(0, 0, lbl_805F164C->gx.fbWidth, lbl_805F1648 + 2);
                 } else {
-                    fn_803994A0((s32)*(s16 *)(viewport + 7), height << 1,
-                                *(u16 *)(lbl_805F164C + 4), viewport[4] << 1);
+                    GXSetScissor(raster->nOffsetX, raster->nOffsetY * 2, lbl_805F164C->gx.fbWidth,
+                                lbl_805F1648 + 2);
                 }
-                fn_80399518(0, 0);
+                GXSetScissorBoxOffset(0, 0);
+            } else {
+                if (raster->nOffsetY * 2 >= lbl_805F1648 - 2) {
+                    GXSetScissor(raster->nOffsetX, raster->nOffsetY * 2, lbl_805F164C->gx.fbWidth,
+                                raster->height * 2);
+                } else if ((raster->nOffsetY + raster->height) * 2 < lbl_805F1648 + 2) {
+                    GXSetScissor(0, lbl_805F1648 - 2, lbl_805F164C->gx.fbWidth, lbl_805F1648 + 2);
+                } else {
+                    GXSetScissor(raster->nOffsetX, lbl_805F1648 - 2, lbl_805F164C->gx.fbWidth,
+                                raster->height * 2);
+                }
+                GXSetScissorBoxOffset(0, lbl_805F1648 - 2);
             }
         }
     }
-    fn_80399114(lbl_805E3158);
+    GXSetProjectionv(lbl_805E3158);
 }
 
-void fn_80490724(void) {
-    rwSetViewport();
-}
-
-static inline void rwWriteTexture(u32 *entry) {
-    if (*lbl_805F1664 == 0) {
-        *(volatile f32 *)0xCC008000 = *(f32 *)(entry + 2);
-        *(volatile f32 *)0xCC008004 = *(f32 *)(entry + 3);
-        *(volatile f32 *)0xCC008008 = *(f32 *)(entry + 4);
-        *(volatile u8 *)0xCC00800C = ((u8 *)(entry + 3))[0];
-        *(volatile u8 *)0xCC00800D = ((u8 *)(entry + 3))[1];
-        *(volatile u8 *)0xCC00800E = ((u8 *)(entry + 3))[2];
-        *(volatile u8 *)0xCC00800F = ((u8 *)(entry + 3))[3];
-        *(volatile f32 *)0xCC008010 = *(f32 *)(entry + 4);
-        *(volatile f32 *)0xCC008014 = *(f32 *)(entry + 5);
-    } else {
-        *(volatile u32 *)0xCC008000 = entry[5];
-    }
-}
-
-u32 fn_80490AB8(u32 *entries, u32 first, u32 second, u32 third, u32 fourth) {
-    u32 *a = entries + first * 6;
-    u32 *b = entries + second * 6;
-    u32 *c = entries + fourth * 6;
+/* RwIm2DRenderTriangle: three vertices of the array as one GX triangle. */
+s32 fn_80490AB8(RwDlIm2DVertex *vertices, s32 numVertices, s32 vert1, s32 vert2, s32 vert3) {
+    RwDlIm2DVertex *a = &vertices[vert1];
+    RwDlIm2DVertex *b = &vertices[vert2];
+    RwDlIm2DVertex *c = &vertices[vert3];
     fn_8049043C();
-    fn_80395B28(0x90, 0, 3);
-    rwWriteTexture(a);
-    rwWriteTexture(b);
-    rwWriteTexture(c);
+    GXBegin(0x90, 0, 3);
+    if (*lbl_805F1664 != 0) {
+        GXPosition3f32(a->x, a->y, a->z);
+        GXColor4u8(a->color.red, a->color.green, a->color.blue, a->color.alpha);
+        GXTexCoord2f32(a->u, a->v);
+        GXPosition3f32(b->x, b->y, b->z);
+        GXColor4u8(b->color.red, b->color.green, b->color.blue, b->color.alpha);
+        GXTexCoord2f32(b->u, b->v);
+        GXPosition3f32(c->x, c->y, c->z);
+        GXColor4u8(c->color.red, c->color.green, c->color.blue, c->color.alpha);
+        GXTexCoord2f32(c->u, c->v);
+    } else {
+        GXPosition3f32(a->x, a->y, a->z);
+        GXColor4u8(a->color.red, a->color.green, a->color.blue, a->color.alpha);
+        GXPosition3f32(b->x, b->y, b->z);
+        GXColor4u8(b->color.red, b->color.green, b->color.blue, b->color.alpha);
+        GXPosition3f32(c->x, c->y, c->z);
+        GXColor4u8(c->color.red, c->color.green, c->color.blue, c->color.alpha);
+    }
     fn_80490724();
     return 1;
 }
 
-u32 fn_80490CBC(u32 *entries, u32 first, u32 second, u32 third) {
-    u32 *a = entries + first * 6;
-    u32 *b = entries + second * 6;
+/* RwIm2DRenderLine: two vertices of the array as one GX line. */
+s32 fn_80490CBC(RwDlIm2DVertex *vertices, s32 numVertices, s32 vert1, s32 vert2) {
+    RwDlIm2DVertex *a = &vertices[vert1];
+    RwDlIm2DVertex *b = &vertices[vert2];
     fn_8049043C();
-    fn_80395B28(0xA8, 0, 2);
-    rwWriteTexture(a);
-    rwWriteTexture(b);
+    GXBegin(0xA8, 0, 2);
+    if (*lbl_805F1664 != 0) {
+        GXPosition3f32(a->x, a->y, a->z);
+        GXColor4u8(a->color.red, a->color.green, a->color.blue, a->color.alpha);
+        GXTexCoord2f32(a->u, a->v);
+        GXPosition3f32(b->x, b->y, b->z);
+        GXColor4u8(b->color.red, b->color.green, b->color.blue, b->color.alpha);
+        GXTexCoord2f32(b->u, b->v);
+    } else {
+        GXPosition3f32(a->x, a->y, a->z);
+        GXColor4u8(a->color.red, a->color.green, a->color.blue, a->color.alpha);
+        GXPosition3f32(b->x, b->y, b->z);
+        GXColor4u8(b->color.red, b->color.green, b->color.blue, b->color.alpha);
+    }
     fn_80490724();
     return 1;
 }

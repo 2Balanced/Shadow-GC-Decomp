@@ -277,6 +277,21 @@ cflags_game_cpp = [
     "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
 ]
 
+# RenderWare's GameCube driver (Game/RwCpp54, RwCpp56..RwCpp62): the library was built on its own,
+# as C, for speed and without stmw/lmw (prologues save with stw or _savegpr_N), with writable pooled
+# strings (its messages sit in .data and are addressed from the file's data base register) and
+# without deferred inlining (functions come out in definition order). That is cflags_base, with
+# automatic inlining off: only functions declared inline are inlined (retail calls fn_80495428 from
+# fn_80495558, which -inline auto would inline; the palette quantiser's recursive node free is
+# inlined eight levels deep because it is declared inline).
+cflags_rw_driver = [
+    *cflags_base,
+    "-inline noauto",
+    "-use_lmw_stmw off",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C/MSL_Common/Include",
+    "-i src/PowerPC_EABI_Support/MSL/MSL_C++/MSL_Common/Include",
+]
+
 cflags_rw_no_lmw = [
     *cflags_game_cpp,
     "-use_lmw_stmw off",
@@ -1209,15 +1224,15 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp51.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
             Object(NonMatching, "Game/RwCpp52.cpp"),
             Object(NonMatching, "Game/RwCpp53.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-inline level=2"]),
-            Object(NonMatching, "Game/RwCpp54.cpp"),
+            Object(NonMatching, "Game/RwCpp54.cpp", cflags=cflags_rw_driver),
             Object(NonMatching, "Game/RwCpp55.cpp"),
-            Object(NonMatching, "Game/RwCpp56.cpp"),
-            Object(NonMatching, "Game/RwCpp57.cpp"),
-            Object(NonMatching, "Game/RwCpp58.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p", "-opt nostrength"]),
-            Object(NonMatching, "Game/RwCpp59.cpp"),
-            Object(NonMatching, "Game/RwCpp60.cpp"),
-            Object(NonMatching, "Game/RwCpp61.cpp"),
-            Object(NonMatching, "Game/RwCpp62.cpp"),
+            Object(NonMatching, "Game/RwCpp56.cpp", cflags=cflags_rw_driver),
+            Object(NonMatching, "Game/RwCpp57.cpp", cflags=cflags_rw_driver),
+            Object(NonMatching, "Game/RwCpp58.cpp", cflags=[*cflags_rw_driver, "-opt nostrength"]),
+            Object(NonMatching, "Game/RwCpp59.cpp", cflags=cflags_rw_driver),
+            Object(NonMatching, "Game/RwCpp60.cpp", cflags=cflags_rw_driver),
+            Object(NonMatching, "Game/RwCpp61.cpp", cflags=cflags_rw_driver),
+            Object(NonMatching, "Game/RwCpp62.cpp", cflags=cflags_rw_driver),
             # RwCpp63..RwCpp69 (wave 40, r8): RenderWare was a C library, so these build as C
             # (-lang=c; the sources wrap their declarations in #ifdef __cplusplus extern "C").
             # -O4,p and -use_lmw_stmw off: retail saves registers with _savegpr_N and unrolls

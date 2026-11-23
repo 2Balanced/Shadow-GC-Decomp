@@ -1,7 +1,15 @@
-/* RenderWare lifecycle, stream state, and packed texture sizing, 0x80493E8C..0x8049572B.
- * Names are inferred from behavior; definitions remain in retail address order. */
+/* RenderWare GameCube driver, 0x80493E8C..0x804959BF: the rest of the device file (its standard
+ * function dispatcher, start/stop, the frame swap, camera clear and the view matrix, the copy of
+ * the frame into a camera texture) and, from 0x804953F0, the start of the raster file (the raster
+ * plugin, texture sizes in GX's tiled layout, mip levels, the tiling copy; its .data starts with
+ * fn_80495428's jump table at 0x8056E4F8). Names are inferred from behaviour; definitions are in
+ * retail address order.
+ *
+ * Still first drafts (far from retail): fn_80493E8C, fn_804946A4 and fn_80494C6C.
+ * NonMatching: fn_8049572C (72 rows, saved registers). The rest match. */
 #include <string.h>
 #include <dolphin/types.h>
+#include "Game/rw/r7.h"
 
 extern "C" {
 extern u8 *lbl_805F15B4;
@@ -21,9 +29,9 @@ extern s32 lbl_805F15F8;
 extern s32 lbl_805F15FC;
 extern s32 lbl_805F1600;
 extern s32 lbl_805F1604;
-extern s32 lbl_805F161C;
-extern s32 lbl_805F1610;
-extern s32 lbl_805F1614;
+extern volatile RwInt32 lbl_805F161C;  /* a frame is ready for the retrace handler */
+extern volatile RwInt32 lbl_805F1610;  /* queue index of the last frame queued */
+extern volatile RwInt32 lbl_805F1614;  /* queue index of the frame to show next */
 extern s32 lbl_805F1608;
 extern s32 lbl_805F160C;
 extern s32 lbl_805F1618;
@@ -41,7 +49,7 @@ extern s32 lbl_805EDF40;
 extern u8 *lbl_805F164C;
 extern u32 lbl_805E3178[];
 extern u16 lbl_805F1638[];
-extern u32 lbl_805E31CC[];
+extern RwDlMatrix lbl_805E31CC; /* the driver's axis flip, times the camera matrix */
 extern u32 lbl_8056E348[];
 extern u32 lbl_8056E34C;
 extern u32 lbl_8056E350;
@@ -100,7 +108,7 @@ void fn_803994A0(u32, u32, ...);
 void fn_80399518(u32, u32);
 void fn_80395DC8(u32, u32, ...);
 void fn_80395EC0(u32, u32);
-void fn_803961E4(u32, u32, u32, u32);
+void fn_803961E4(u8 aa, const u8 (*samplePattern)[2], u8 vf, const u8 *vfilter); /* GXSetCopyFilter */
 void fn_803960A0(void);
 void fn_80398F88(u32, u32);
 void fn_80398E14(u32, u32);
@@ -115,7 +123,7 @@ void fn_80493B98(void);
 void fn_804939DC(void);
 void fn_80497198(void);
 void fn_8049742C(void);
-void fn_80498E08(void *, void *, void *);
+RwBool fn_80498E08(RwDlRaster *raster, RwDlRect *rect, void *color, RwInt32 clearMode);
 void fn_8039616C(void *, u32);
 void fn_803944A4(void);
 void *RwFrameGetLTM(void *);
@@ -125,13 +133,12 @@ void fn_80399114(void *);
 void fn_803991E8(void *, u32);
 void fn_80399238(void *, u32);
 void fn_80399288(u32);
-void fn_803961E4(u32, u32, u32, u32);
-void fn_80395E44(u32, u32, u32, u32);
-void fn_80395EF4(u32, u32, void *, u32);
-void fn_80396568(void *, u32);
-void fn_8039575C(void);
-void fn_80397774(void);
-void fn_80397648(void);
+void fn_80395E44(u16 left, u16 top, u16 wd, u16 ht);        /* GXSetTexCopySrc */
+void fn_80395EF4(u16 wd, u16 ht, int fmt, u8 mipmap);       /* GXSetTexCopyDst */
+void fn_80396568(void *dest, u8 clear);                     /* GXCopyTex */
+void fn_8039575C(void);                                     /* GXPixModeSync */
+void fn_80397774(void);                                     /* GXInvalidateTexAll */
+void fn_80397648(void *region);                             /* GXInvalidateTexRegion */
 u32 fn_8037847C(void *);
 u32 OSDisableInterrupts(void);
 void OSRestoreInterrupts(u32);
@@ -143,18 +150,11 @@ void fn_80396048(u32);
 u32 fn_80489C54(u32, u32, u32, u32, u32);
 void fn_8047EBB8(void *, void *, void *);
 s32 fn_80491AB4(s32);
-u32 fn_80495688(u32 *, u32 *, u32);
-s32 fn_80495428(u32 *, u32);
+RwBool fn_80495688(void *out, void *inOut, RwInt32 num);
+RwInt32 fn_80495428(RwDlRaster *raster, RwUInt8 level);
 
 #define RW_API(type, offset) ((type)*(u32 *)(lbl_805F15B4 + (offset)))
 
-#define RW_ERROR(value)                                                                          \
-    do {                                                                                         \
-        u32 error[2];                                                                            \
-        error[0] = 1;                                                                            \
-        error[1] = fn_8047DC28(value);                                                           \
-        fn_8047DB84(error);                                                                      \
-    } while (0)
 
 u32 fn_80493E8C(u32 command, u32 *params, u32 *out, u32 arg) {
     switch (command) {
@@ -210,7 +210,7 @@ u32 fn_80493E8C(u32 command, u32 *params, u32 *out, u32 arg) {
         fn_80399518(0, 0);
         fn_80395DC8(0, 0, *(u16 *)(lbl_805F164C + 1), *(u16 *)(lbl_805F164C + 3));
         fn_80395EC0(*(u16 *)(lbl_805F164C + 1), *(u16 *)(lbl_805F164C + 2));
-        fn_803961E4(lbl_805F164C[0x19], (u32)(lbl_805F164C + 0x1A), 1, (u32)(lbl_805F164C + 0x32));
+        fn_803961E4(lbl_805F164C[0x19], (const u8 (*)[2])(lbl_805F164C + 0x1A), 1, lbl_805F164C + 0x32);
         fn_803960A0();
         if (lbl_805F164C[0x19] == 0 || *(s16 *)(lbl_805F164C + 2) != *(s16 *)(lbl_805F164C + 4)) {
             lbl_805F15F0 = 0;
@@ -306,22 +306,29 @@ u32 fn_80493E8C(u32 command, u32 *params, u32 *out, u32 arg) {
     }
 }
 
-u32 fn_804945E8(u8 *object, u32 *params, u32 mode) {
+/* Driver standard function: clears the camera's raster (RwCameraClear). Inside a frame it draws
+ * the clear quad over the raster (fn_80498E08); between frames it sets the copy clear colour. */
+RwBool fn_804945E8(void *out, void *inOut, RwInt32 num) {
+    RwDlCamera *camera = (RwDlCamera *)out;
+    RwDlRect rect;
+    RwDlColor color;
     if (lbl_805F15E0 == 0) {
-        u32 *viewport = *(u32 **)(object + 0x60);
-        u32 local[4];
-        local[0] = *(u16 *)(viewport + 7);
-        local[1] = *(u16 *)((u8 *)viewport + 0x1E);
-        local[2] = viewport[3];
-        local[3] = viewport[4];
-        if (lbl_805F15F0 != 0) {
-            local[1] <<= 1;
-            local[3] <<= 1;
+        RwDlRaster *raster = camera->frameBuffer;
+        if (lbl_805F15F0 == 0) {
+            rect.x = raster->nOffsetX;
+            rect.y = raster->nOffsetY;
+            rect.w = raster->width;
+            rect.h = raster->height;
+        } else {
+            rect.x = raster->nOffsetX;
+            rect.y = raster->nOffsetY * 2;
+            rect.w = raster->width;
+            rect.h = raster->height * 2;
         }
-        fn_80498E08(viewport, local, params);
-    } else if ((mode & 1) != 0) {
-        u32 value = params[0];
-        fn_8039616C(&value, 0xFFFFFF);
+        fn_80498E08(raster, &rect, inOut, num);
+    } else if (num & 1) {
+        color = *(RwDlColor *)inOut;
+        fn_8039616C(&color, 0xFFFFFF); /* GXSetCopyClear */
     }
     return 1;
 }
@@ -419,178 +426,303 @@ void *fn_804950A0(void) {
     return lbl_8056E44C;
 }
 
-void fn_804950AC(void *frame, u32 flags) {
-    f32 matrix[16];
-    if (frame == NULL) {
-        memcpy(matrix, lbl_805E31CC, sizeof(matrix));
+/* Loads the view matrix into GX: the camera frame's matrix times the driver's axis flip
+ * (lbl_805E31CC), inverted into GX's conventions (x and z negated), or the flip alone. */
+void fn_804950AC(void *frameMatrix, RwBool normals) {
+    RwDlMatrix view;
+    f32 mtx[3][4];
+    RwDlMatrix *m;
+    if (frameMatrix != NULL) {
+        view.flags = 0x20003;
+        fn_8047EBB8(&view, frameMatrix, &lbl_805E31CC);
+        m = &view;
     } else {
-        fn_8047EBB8(matrix, frame, lbl_805E31CC);
+        m = &lbl_805E31CC;
     }
-    for (u32 i = 0; i < 4; i++) {
-        matrix[i] = -matrix[i];
-        matrix[i + 8] = -matrix[i + 8];
-    }
-    fn_803991E8(matrix, 0);
-    if (flags != 0) fn_80399238(matrix, 0);
+    mtx[0][0] = -m->right.x;
+    mtx[0][1] = -m->up.x;
+    mtx[0][2] = -m->at.x;
+    mtx[0][3] = -m->pos.x;
+    mtx[1][0] = m->right.y;
+    mtx[1][1] = m->up.y;
+    mtx[1][2] = m->at.y;
+    mtx[1][3] = m->pos.y;
+    mtx[2][0] = -m->right.z;
+    mtx[2][1] = -m->up.z;
+    mtx[2][2] = -m->at.z;
+    mtx[2][3] = -m->pos.z;
+    fn_803991E8(mtx, 0);
+    if (normals) fn_80399238(mtx, 0);
     fn_80399288(0);
 }
 
-void fn_804951B8(u32 *object, u32 mode) {
-    u32 *viewport = (u32 *)object[0];
-    fn_803961E4(0, 0, 0, 0);
-    if (mode == 0) {
-        fn_80395E44(*(u16 *)(object + 7), *(u16 *)((u8 *)object + 0x1E), object[3] & 0xFFFF, object[4] & 0xFFFF);
+/* Copies the embedded frame buffer into a camera texture raster: the raster's rectangle (twice
+ * its size, box-filtered down, when the frame is drawn at double size) into the parent texture's
+ * image at the raster's tile offset, then invalidates the texture cache. */
+void fn_804951B8(RwDlRaster *raster, RwBool doubled) {
+    RwDlRaster *parent = raster->parent;
+    RwDlRasterExt *ext = (RwDlRasterExt *)((u8 *)parent + lbl_805F1658);
+    RwInt32 offset;
+    fn_803961E4(0, NULL, 0, NULL);
+    if (doubled) {
+        fn_80395E44(raster->nOffsetX * 2, raster->nOffsetY * 2, raster->width * 2,
+                    raster->height * 2);
     } else {
-        fn_80395E44(((s32)*(s16 *)(object + 7) & 0x7FFF) << 1,
-                    ((s32)*(s16 *)((u8 *)object + 0x1E) & 0x7FFF) << 1,
-                    (object[3] & 0x7FFF) << 1, (object[4] & 0x7FFF) << 1);
+        fn_80395E44(raster->nOffsetX, raster->nOffsetY, raster->width, raster->height);
     }
-    fn_80395EF4(viewport[3] & 0xFFFF, viewport[4] & 0xFFFF, (void *)(viewport[0] + lbl_805F1658 + 0xC), mode & 0xFF);
-    s32 offset;
-    switch (object[5]) {
+    fn_80395EF4(parent->width, parent->height, ext->texFormat, doubled);
+    switch (parent->depth) {
     case 4:
-        offset = (s32)(*(s16 *)(object + 7) * 8 + ((viewport[3] + 7) & 0xFFFFFFF8) * *(s16 *)((u8 *)object + 0x1E)) >> 1;
+        offset = (raster->nOffsetX * 8 + ((parent->width + 7) & ~7) * raster->nOffsetY) >> 1;
         break;
     case 8:
-        offset = *(s16 *)(object + 7) * 4 + ((viewport[3] + 7) & 0xFFFFFFF8) * *(s16 *)((u8 *)object + 0x1E);
+        offset = raster->nOffsetX * 4 + ((parent->width + 7) & ~7) * raster->nOffsetY;
         break;
-    case 0x10:
-        offset = (*(s16 *)(object + 7) * 4 + ((viewport[3] + 3) & 0xFFFFFFFC) * *(s16 *)((u8 *)object + 0x1E)) * 2;
+    case 16:
+        offset = (raster->nOffsetX * 4 + ((parent->width + 3) & ~3) * raster->nOffsetY) << 1;
         break;
-    case 0x20:
-        offset = (*(s16 *)(object + 7) * 4 + ((viewport[3] + 3) & 0xFFFFFFFC) * *(s16 *)((u8 *)object + 0x1E)) * 4;
+    case 32:
+        offset = (raster->nOffsetX * 4 + ((parent->width + 3) & ~3) * raster->nOffsetY) << 2;
         break;
+    case 24:
     default:
         RW_ERROR(0x8000000C);
         return;
     }
-    fn_80396568((void *)(viewport[0] + lbl_805F1658 + 0x1C + offset), lbl_805F15E0 & 0xFF);
+    fn_80396568(ext->pixels + offset, lbl_805F15E0);
     fn_8039575C();
-    fn_803961E4(lbl_805F164C[0x19], (u32)(lbl_805F164C + 0x1A), 1, (u32)(lbl_805F164C + 0x32));
-    if (viewport[0xB] == 0) fn_80397774();
-    else fn_80397648();
+    fn_803961E4(lbl_805F164C[0x19], (const u8 (*)[2])(lbl_805F164C + 0x1A), 1, lbl_805F164C + 0x32);
+    if (ext->region != NULL) {
+        fn_80397648(ext->region);
+    } else {
+        fn_80397774();
+    }
 }
 
-void fn_804953C0(u32 *a, u32 *b) {
-    do {
-        do {
-        } while (lbl_805F161C == 1);
-    } while (lbl_805F1610 != lbl_805F1614);
-    *a = lbl_805F1604;
-    *b = lbl_805F1600;
+/* Waits until no frame is waiting for the retrace and the last queued one is on screen, then
+ * returns the frame buffer shown and the one drawn to. */
+void fn_804953C0(void **displayed, void **drawn) {
+    while (lbl_805F161C == 1 || lbl_805F1610 != lbl_805F1614) {
+    }
+    *displayed = (void *)lbl_805F1604;
+    *drawn = (void *)lbl_805F1600;
 }
 
 void fn_804953F0(void) {
     lbl_805F1658 = fn_80489C54(0x34, 0x40C, 0, 0, 0);
 }
 
-s32 fn_80495428(u32 *object, u32 shift) {
-    u32 *viewport = (u32 *)object[0];
-    u32 width;
-    u32 height;
-    if ((object[0x22] & 6) == 0) {
-        width = viewport[3] >> shift;
-        height = viewport[4] >> shift;
-        if (width == 0) width = 1;
-        if (height == 0) height = 1;
+/* Bytes of one mip level of a texture raster in GX's tiled layout (tiles of 8x8 texels at 4 bits,
+ * 8x4 at 8 bits, 4x4 at 16 and 32 bits), rounded up to 32 bytes. A locked raster is measured
+ * at its full size. */
+RwInt32 fn_80495428(RwDlRaster *raster, RwUInt8 level) {
+    RwDlRaster *parent = raster->parent;
+    RwUInt32 width;
+    RwUInt32 height;
+    RwUInt32 size;
+    if (raster->privateFlags & 6) {
+        width = parent->width;
+        height = parent->height;
     } else {
-        width = viewport[3];
-        height = viewport[4];
+        width = parent->width >> level;
+        height = parent->height >> level;
+        width = width ? width : 1;
+        height = height ? height : 1;
     }
-    switch (object[5]) {
-    case 4: return (s32)(((width + 7) & 0xFFFFFFF8) * ((height + 7) & 0xFFFFFFF8)) >> 1;
-    case 8: return ((width + 7) & 0xFFFFFFF8) * ((height + 3) & 0xFFFFFFFC);
-    case 0x10: return ((width + 3) & 0xFFFFFFFC) * ((height + 3) & 0xFFFFFFFC) * 2;
-    case 0x20: return ((width + 3) & 0xFFFFFFFC) * ((height + 3) & 0xFFFFFFFC) * 4;
+    switch (raster->depth) {
+    case 4:
+        size = (((width + 7) & ~7) * ((height + 7) & ~7)) >> 1;
+        break;
+    case 8:
+        size = ((width + 7) & ~7) * ((height + 3) & ~3);
+        break;
+    case 16:
+        size = (((width + 3) & ~3) * ((height + 3) & ~3)) << 1;
+        break;
+    case 32:
+        size = (((width + 3) & ~3) * ((height + 3) & ~3)) << 2;
+        break;
+    case 24:
+    default:
+        RW_ERROR(0x8000000C);
+        return 0;
+    }
+    return (size + 31) & ~31;
+}
+
+
+/* Bytes of all the mip levels of a texture raster. */
+RwInt32 fn_80495558(RwDlRaster *raster) {
+    RwInt32 numLevels;
+    RwInt32 size = 0;
+    fn_80495688(&numLevels, raster, 0);
+    while (numLevels--) {
+        size += fn_80495428(raster, numLevels);
+    }
+    return size;
+}
+
+/* Bytes of one row of tiles of a mip level of a texture raster. */
+RwInt32 fn_804955CC(RwDlRaster *raster, RwUInt8 level) {
+    RwInt32 w = raster->parent->width >> level;
+    RwInt32 width = w ? w : 1;
+    switch (raster->depth) {
+    case 4:
+        return ((width + 7) & ~7) >> 1;
+    case 8:
+        return (width + 7) & ~7;
+    case 16:
+        return ((width + 3) & ~3) << 1;
+    case 32:
+        return ((width + 3) & ~3) << 2;
+    case 24:
     default:
         RW_ERROR(0x8000000C);
         return 0;
     }
 }
 
-s32 fn_80495558(u32 *object) {
-    u32 info[6];
-    s32 total = 0;
-    fn_80495688(info, object, 0);
-    while (info[0] != 0) {
-        info[0]--;
-        total += fn_80495428(object, info[0] & 0xFF);
-    }
-    return total;
-}
-
-u32 fn_804955CC(u32 *object, u32 shift) {
-    u32 width = object[3] >> shift;
-    if (width == 0) width = 1;
-    switch (object[5]) {
-    case 4: return (width + 7) >> 1;
-    case 8: return width + 7;
-    case 0x10: return (width + 3) * 2;
-    case 0x20: return (width + 3) * 4;
-    default:
-        RW_ERROR(0x8000000C);
-        return 0;
-    }
-}
-
-u32 fn_80495688(u32 *out, u32 *object, u32 unused) {
-    u8 value = *(u8 *)(object[0] + lbl_805F1658 + 0x32);
-    if (value == 0xFF) {
-        if ((object[0x23] & 0x80) == 0) {
-            out[0] = 1;
+/* Driver standard function: the number of mip levels of a raster (RwRasterGetNumLevels): the
+ * count made for it, else down to 1x1 for a mip-mapped format, else 1. */
+RwBool fn_80495688(void *out, void *inOut, RwInt32 num) {
+    RwInt32 *numLevels = (RwInt32 *)out;
+    RwDlRaster *raster = (RwDlRaster *)inOut;
+    RwDlRasterExt *ext = (RwDlRasterExt *)((u8 *)raster->parent + lbl_805F1658);
+    if (ext->mipLevels != 0xFF) {
+        *numLevels = ext->mipLevels + 1;
+    } else {
+        RwUInt8 levels;
+        if (RW_RASTER_FORMAT(raster) & 0x8000) {
+            if (raster->width > raster->height) {
+                levels = (RwUInt8)fn_80491AB4(raster->width) + 1;
+            } else {
+                levels = (RwUInt8)fn_80491AB4(raster->height) + 1;
+            }
         } else {
-            out[0] = (fn_80491AB4(object[4] > object[3] ? object[3] : object[4]) + 1) & 0xFF;
+            levels = 1;
         }
-    } else {
-        out[0] = value + 1;
+        *numLevels = levels;
     }
     return 1;
 }
 
-void fn_8049572C(void *dest, u32 kind, u8 *source, u32 count, u32 stride, u32 rows) {
-    u32 offset = 0;
-    switch (kind - 4) {
-    case 0:
-        for (u32 row = 0; row < rows; row++) {
-            for (u32 x = 0; x < count; x += 8) {
-                memcpy(dest, source + offset, 4);
+/* Converts a linear image into GX's tiled texture layout: 8x8 tiles at 4 bits, 8x4 at 8 bits,
+ * 4x4 at 16 bits, and at 32 bits 4x4 tiles whose alpha/red and green/blue halves are 32 bytes
+ * apart (the source pixels are already in that order).
+ * NonMatching: the code is retail's, the saved registers of the four cases are not (72 rows).
+ * The order in which locals are declared moves them (descending in the first case, ascending
+ * in the others, which reuse its registers); no order tried gives all four cases. */
+void fn_8049572C(u8 *dst, u8 *src, RwInt32 width, RwInt32 height, RwInt32 depth, RwInt32 stride) {
+    switch (depth) {
+    case 4: {
+        RwInt32 offset;
+        RwInt32 tile;
+        RwInt32 srcRow;
+        RwInt32 tilesPerRow;
+        RwInt32 y;
+        u8 *line;
+        RwInt32 rowBase;
+        RwInt32 lineOffset;
+        RwInt32 x;
+        tilesPerRow = ((width + 7) & ~7) >> 3;
+        srcRow = 0;
+        for (y = 0; y < height; y++) {
+            rowBase = tilesPerRow * (y >> 3);
+            line = src + srcRow;
+            offset = 0;
+            tile = 0;
+            lineOffset = (y & 7) << 3;
+            for (x = 0; x < width; x += 8) {
+                memcpy(dst + ((RwUInt32)(((rowBase + tile) << 6) + lineOffset) >> 1), line + offset, 4);
+                offset += 4;
+                tile++;
+            }
+            srcRow += stride;
+        }
+        break;
+    }
+    case 8: {
+        RwInt32 tilesPerRow;
+        RwInt32 y;
+        u8 *line;
+        RwInt32 rowBase;
+        RwInt32 lineOffset;
+        RwInt32 x;
+        RwInt32 tile;
+        RwInt32 srcRow;
+        tilesPerRow = ((width + 7) & ~7) >> 3;
+        srcRow = 0;
+        for (y = 0; y < height; y++) {
+            line = src + srcRow;
+            rowBase = tilesPerRow * (y >> 2);
+            lineOffset = (y & 3) << 3;
+            x = 0;
+            tile = 0;
+            for (; x < width; x += 8) {
+                memcpy(dst + ((rowBase + tile) << 5) + lineOffset, line + x, 8);
+                tile++;
+            }
+            srcRow += stride;
+        }
+        break;
+    }
+    case 16: {
+        RwInt32 tilesPerRow;
+        RwInt32 y;
+        RwInt32 rowBase;
+        RwInt32 lineOffset;
+        RwInt32 x;
+        u8 *line;
+        RwInt32 tile;
+        RwInt32 srcRow;
+        tilesPerRow = ((width + 3) & ~3) >> 2;
+        srcRow = 0;
+        for (y = 0; y < height; y++) {
+            rowBase = tilesPerRow * (y >> 2);
+            lineOffset = (y & 3) << 2;
+            line = src + srcRow;
+            x = 0;
+            tile = 0;
+            for (; x < width; x += 4) {
+                memcpy(dst + ((((rowBase + tile) << 4) + lineOffset) << 1), line, 8);
+                line += 8;
+                tile++;
+            }
+            srcRow += stride;
+        }
+        break;
+    }
+    case 32: {
+        RwInt32 offset;
+        RwInt32 srcRow;
+        RwInt32 tilesPerRow;
+        RwInt32 y;
+        u8 *line;
+        RwInt32 rowBase;
+        RwInt32 lineOffset;
+        RwInt32 x;
+        RwInt32 tileOffset;
+        tilesPerRow = ((width + 3) & ~3) >> 2;
+        srcRow = 0;
+        for (y = 0; y < height; y++) {
+            rowBase = tilesPerRow * (y >> 2);
+            line = src + srcRow;
+            lineOffset = (y & 3) << 2;
+            tileOffset = 0;
+            offset = 0;
+            for (x = 0; x < width; x++) {
+                RwInt32 at;
+                if ((x & 3) == 0) tileOffset = (rowBase + (x >> 2)) << 4;
+                at = (tileOffset << 2) + ((lineOffset + (x & 3)) << 1);
+                *(u16 *)(dst + at) = *(u16 *)(line + offset);
+                *(u16 *)(dst + at + 0x20) = *(u16 *)(line + offset + 2);
                 offset += 4;
             }
-            offset += stride;
+            srcRow += stride;
         }
         break;
-    case 4:
-        for (u32 row = 0; row < rows; row++) {
-            for (u32 x = 0; x < count; x += 8) {
-                memcpy((u8 *)dest + (row & 3) * 8 + ((count + 7 >> 3) * (row >> 2) + x) * 0x20,
-                       source + offset, 8);
-                offset += 8;
-            }
-            offset += stride;
-        }
-        break;
-    case 0xC:
-        for (u32 row = 0; row < rows; row++) {
-            for (u32 x = 0; x < count; x += 4) {
-                memcpy((u8 *)dest + ((row & 3) * 4 + ((count + 3 >> 2) * (row >> 2) + x) * 0x10) * 2,
-                       source + offset, 8);
-                offset += 8;
-            }
-            offset += stride;
-        }
-        break;
-    case 0x1C:
-        for (u32 row = 0; row < rows; row++) {
-            u32 block = 0;
-            for (u32 x = 0; x < count; x++) {
-                if ((x & 3) == 0) block = ((count + 3 >> 2) * (row >> 2) + (x >> 2)) * 0x10;
-                u32 target = block * 4 + (row & 3) * 4 + (x & 3) * 2;
-                *(u16 *)((u8 *)dest + target) = *(u16 *)(source + offset + x * 4);
-                *(u16 *)((u8 *)dest + target + 0x20) = *(u16 *)(source + offset + x * 4 + 2);
-            }
-            offset += stride;
-        }
-        break;
+    }
+    case 24:
     default:
         RW_ERROR(0x8000000C);
         break;
