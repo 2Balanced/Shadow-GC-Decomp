@@ -1,17 +1,20 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior.
- * NonMatching: the interpolation routines below remain scalar C++; retail uses paired-single
- * arithmetic that GC/2.7 does not generate from these C++ forms. No inline assembly is used.
- * fn_80451E6C also retains one merged range branch, and fn_80450938 retains a larger stack frame
- * and register-allocation differences. */
+/* RenderWare: the end of RpSkin's GameCube back end (plugin 0x116), then RpUserData (plugin 0x11F)
+ * from 0x80451F48 (its engine callbacks fn_80451F48/fn_80451F5C and the array stream helpers).
+ * NonMatching: the skinning loops fn_80450D6C-fn_804517C8 are hand-written paired-single assembly
+ * in retail; the scalar C++ below only stands in for them. No inline assembly is used.
+ * fn_80451E6C (RpSkinAtomicSetType) keeps retail's switch lowering only as a merged range branch,
+ * fn_80450938 has a larger stack frame and other registers, and fn_80451BCC (the material effects
+ * render callback, written like fn_8044DE74) still differs in a few saved registers. */
 #include <dolphin/types.h>
 #include <string.h>
+#include "Game/rw/r2.h"
 
 extern u32 lbl_805F1490;
 extern u32 lbl_8056D708[];
+#define SKIN_GLOBALS ((R2SkinGlobals *)lbl_8056D708)
 extern u32 lbl_805F1520;
 extern u16 lbl_805EDF40;
 extern u16 lbl_805F1678;
-extern u8 *lbl_805F15B4;
 extern u32 lbl_805F16B8;
 
 struct RwCpp15Pair {
@@ -40,27 +43,27 @@ u32 fn_8046335C(u32, u32, void *, void *, void *, void *);
 void fn_8049B800(void *);
 s32 fn_80458C90(u32);
 s32 fn_804A2064(void *);
-u32 fn_8044CCAC(u8 *);
+R2Skin *fn_8044CCAC(const R2Geometry *);
 void *fn_8044D924(u32 *, u32 *);
 void *fn_8044DA3C(u32 *, u32 *);
 void *fn_8044DE74(u32 *, u32 *);
 void *fn_80451A6C(u32 *, u32 *);
 void *fn_80451B20(u32 *, u32 *);
-void *fn_80451BCC(u32 *, u32 *);
+R2Atomic *fn_80451BCC(R2Atomic *atomic, R2GxNodeData *node);
 void fn_80463428(void);
 s32 fn_804A8478(void *);
 void fn_80463104(void *, u32);
 s32 fn_80462C28(void);
 void fn_80462C20(u32);
 void fn_804A8120(void *, void *, u32);
-void *RwFrameGetLTM(void *);
-void fn_80462C30(void *, void *);
-void fn_804950AC(void *, u32);
+R2Matrix *RwFrameGetLTM(void *);
+void fn_80462C30(R2VertexDesc *, void *);
+void fn_804950AC(R2Matrix *, s32);
 void fn_80394500(u32, u32);
-u32 fn_804A2F08(u32);
-u32 fn_8044DC4C(const float *, void *, int);
-void fn_8044DD1C(u32 *, u32, int);
-void fn_804A457C(u32 *, u32 *, u32 *, void *, u32 *);
+void fn_804A2F08(void);
+void fn_8044DC4C(R2Matrix *, s32, s32);
+void fn_8044DD1C(R2Skin *, u32, s32);
+void fn_804A457C(R2Mesh *, R2DisplayList *, R2Atomic *, R2Matrix *, R2GxNodeData *);
 u32 fn_8047D868(void *, void *, u32);
 u32 fn_80480D4C(void *, void *, u32);
 u32 fn_8047D784(void *, void *, u32);
@@ -84,7 +87,7 @@ void DCFlushRange(void *, u32);
 void fn_80394F2C(void);
 
 u32 fn_80450938(u32 *object, u32 arg2, u32 *out) {
-    u32 record = fn_8044CCAC((u8 *)arg2);
+    u32 record = (u32)fn_8044CCAC((R2Geometry *)arg2);
     u32 context = fn_80450448(object);
     if (*(u32 *)((u8 *)object + lbl_805F1520) == 0) {
         fn_80462E1C((void *)context);
@@ -122,7 +125,7 @@ u32 fn_80450938(u32 *object, u32 arg2, u32 *out) {
 
     u32 *block;
     if ((object[2] & 0x02000000) != 0) {
-        block = (u32 *)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size + 0x18, 0x30116);
+        block = (u32 *)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(size + 0x18, 0x30116);
         block[0] = 0;
         block[1] = 0;
         block[2] = size;
@@ -189,7 +192,7 @@ u32 fn_80450938(u32 *object, u32 arg2, u32 *out) {
 
         void *acbc = fn_8046ACBC(context);
         fn_8046E594(context, currentData, values, descriptor[5], 0, acbc, 1, stride, 0);
-        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)lookup);
+        ((void (*)(void *))*(u32 *)((u8 *)lbl_805F15B4 + 0x10C))((void *)lookup);
         end += part;
         currentData += 8;
         descriptorOffset += 0xC;
@@ -842,56 +845,59 @@ void *fn_80451B20(u32 *context, u32 *node) {
     if (fn_8044DA3C(context, node) == NULL) return NULL;
     u32 *owner = (u32 *)context[6];
     u8 *format = *(u8 **)((u8 *)owner + lbl_805F1520);
-    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
+    u32 *record = (u32 *)fn_8044CCAC((R2Geometry *)owner);
     if (record[4] > 1 && format != NULL && format[0xD] != 0 && (owner[2] & 0x10) != 0) {
         fn_804A8120(node, format, owner[5]);
     }
     return context;
 }
 
-void *fn_80451BCC(u32 *context, u32 *node) {
-    u32 *nodeData = (u32 *)node[0];
-    u8 *callbackBytes = (u8 *)nodeData + 0x18;
-    callbackBytes += (nodeData[8] - 1) * 8;
-    callbackBytes += 0x14;
-    u32 *callbackPair = (u32 *)callbackBytes;
-    *(u16 *)((u8 *)nodeData + 0x18) = lbl_805EDF40;
-    u32 *owner = (u32 *)context[6];
-    u32 *descriptor = *(u32 **)((u8 *)owner + 0x54);
-    void *frameMatrix = RwFrameGetLTM((void *)context[1]);
-    u32 *format = *(u32 **)((u8 *)owner + lbl_805F1520);
-    fn_80462C30(format, node);
-    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
-    if (record[4] > 1) {
-        fn_804950AC(frameMatrix, (node[2] >> 4) & 1);
+/* Render callback of the skinned atomic pipeline with material effects: as fn_8044DE74, with each
+ * mesh drawn by the material effects' renderer. */
+R2Atomic *fn_80451BCC(R2Atomic *atomic, R2GxNodeData *node) {
+    R2DisplayList *list;
+    R2MeshHeader *meshHeader;
+    R2Skin *skin;
+    R2Matrix *ltm;
+    R2SkinInstance *instance = &node->resEntry->instance;
+
+    node->resEntry->instance.token = lbl_805EDF40;
+    list = (R2DisplayList *)&instance->normals + (instance->numArrays - 1);
+    meshHeader = atomic->geometry->mesh;
+    ltm = RwFrameGetLTM(atomic->object.parent);
+    fn_80462C30(R2_PLUGIN(R2VertexDesc, atomic->geometry, lbl_805F1520), node);
+    skin = fn_8044CCAC(atomic->geometry);
+    if (skin->maxWeights > 1) {
+        fn_804950AC(ltm, (node->flags >> 4) & 1);
     } else {
         fn_80394500(0, 1);
     }
+    if (skin->maxWeights == 1 && skin->split.numMeshes == 0) {
+        u32 i;
+        s32 id = 0;
 
-    u32 last = (u32)record;
-    if (record[4] == 1 && record[13] == 0) {
-        u32 outputIndex = 0;
-        for (u32 i = 0; i < record[1]; i++) {
-            const float *input = (const float *)(lbl_8056D708[3] + ((u8 *)record[2])[i] * 0x40);
-            last = fn_8044DC4C(input, (void *)outputIndex, (node[2] >> 4) & 1);
-            outputIndex += 3;
+        for (i = 0; i < skin->numUsedBones; i++) {
+            fn_8044DC4C((R2Matrix *)SKIN_GLOBALS->matrixCache + skin->usedBones[i], id,
+                        (node->flags >> 4) & 1);
+            id += 3;
         }
     }
-    fn_804A2F08(last);
+    fn_804A2F08();
+    {
+        R2Mesh *mesh = (R2Mesh *)(meshHeader + 1);
+        s32 remaining = meshHeader->numMeshes;
 
-    s32 remaining = *(u16 *)((u8 *)descriptor + 4);
-    u32 *entry = (u32 *)((u8 *)descriptor + 0x10);
-    while (remaining != 0) {
-        if (record[4] == 1 && record[13] != 0) {
-            u32 total = *(u16 *)((u8 *)node[1] + 4);
-            fn_8044DD1C(record, total - (remaining + 1), (node[2] >> 4) & 1);
+        while (remaining-- != 0) {
+            if (skin->maxWeights == 1 && skin->split.numMeshes != 0) {
+                fn_8044DD1C(skin, node->meshHeader->numMeshes - (remaining + 1),
+                            (node->flags >> 4) & 1);
+            }
+            fn_804A457C(mesh, list, atomic, ltm, node);
+            list++;
+            mesh++;
         }
-        fn_804A457C(entry, callbackPair, context, frameMatrix, node);
-        callbackPair += 2;
-        entry += 3;
-        remaining--;
     }
-    return context;
+    return atomic;
 }
 
 u32 fn_80451D60(u32 mode) {
@@ -921,7 +927,7 @@ u32 fn_80451E0C(void) {
 }
 
 u32 *fn_80451E6C(u32 *object, s32 mode) {
-    u32 *record = (u32 *)fn_8044CCAC((u8 *)object[6]);
+    u32 *record = (u32 *)fn_8044CCAC((R2Geometry *)object[6]);
     s32 value;
     if (mode == 1) goto modeOne;
     if (mode >= 1) {
@@ -955,7 +961,7 @@ void *fn_80451F70(u32 *out, void *stream) {
     s32 count;
     if (fn_8047D868(stream, &count, 4) == 0) return NULL;
     if (count > 0) {
-        out[0] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count, 0x3011F);
+        out[0] = (u32)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(count, 0x3011F);
         if (out[0] == 0) return NULL;
         if (fn_80480D4C(stream, (void *)out[0], count) == 0) return NULL;
     }
@@ -964,23 +970,23 @@ void *fn_80451F70(u32 *out, void *stream) {
 
     switch (out[1]) {
     case 1:
-        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
+        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
         if (out[3] == 0) return NULL;
         if (fn_8047D868(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
         break;
     case 2:
-        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
+        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
         if (out[3] == 0) return NULL;
         if (fn_8047D784(stream, (void *)out[3], out[2] * 4) == 0) return NULL;
         break;
     case 3: {
-        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
+        out[3] = (u32)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(out[2] * 4, 0x3011F);
         if (out[3] == 0) return NULL;
         u32 *entries = (u32 *)out[3];
         for (s32 i = 0; i < (s32)out[2]; i++) {
             if (fn_8047D868(stream, &count, 4) == 0) return NULL;
             if (count > 0) {
-                entries[i] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(count, 0x3011F);
+                entries[i] = (u32)((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(count, 0x3011F);
                 if (entries[i] == 0) return NULL;
                 if (fn_80480D4C(stream, (void *)entries[i], count) == 0) return NULL;
             } else {
@@ -996,7 +1002,7 @@ void *fn_80451F70(u32 *out, void *stream) {
 }
 
 void *fn_80452228(u32 *out, void *stream) {
-    s32 size = out[0] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)out[0]) + 1 : 0;
+    s32 size = out[0] != 0 ? ((u32 (*)(void *))*(u32 *)((u8 *)lbl_805F15B4 + 0xF4))((void *)out[0]) + 1 : 0;
     if (fn_8047D458(stream, &size, 4) == 0) return NULL;
     if (size > 0 && fn_80480ED0(stream, (void *)out[0], size) == 0) return NULL;
     if (fn_8047D458(stream, out + 1, 4) == 0) return NULL;
@@ -1012,7 +1018,7 @@ void *fn_80452228(u32 *out, void *stream) {
     case 3: {
         u32 *entries = (u32 *)out[3];
         for (s32 i = 0; i < (s32)out[2]; i++) {
-            size = entries[i] != 0 ? ((u32 (*)(void *))*(u32 *)(lbl_805F15B4 + 0xF4))((void *)entries[i]) + 1 : 0;
+            size = entries[i] != 0 ? ((u32 (*)(void *))*(u32 *)((u8 *)lbl_805F15B4 + 0xF4))((void *)entries[i]) + 1 : 0;
             if (fn_8047D458(stream, &size, 4) == 0) return NULL;
             if (size > 0 && fn_80480ED0(stream, (void *)entries[i], size) == 0) return NULL;
         }

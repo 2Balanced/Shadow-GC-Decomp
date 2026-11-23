@@ -1,6 +1,13 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior. */
+/* RenderWare: RpUserData (plugin 0x11F: lists of named int/real/string arrays on geometries,
+ * world sectors, frames, cameras, lights, materials and textures; fn_80452CDC attaches it), then
+ * RpUVAnim (plugin 0x135) from 0x80453018: its keyframe callbacks and engine callbacks.
+ * Wave 40: the UV keyframe callbacks take their keys through pointers to non-const (each element's
+ * store keeps the next loads behind it) and the float constants are const objects.
+ * Floors: fn_80452744, fn_80452898, fn_8045294C, fn_80452A40, fn_80452B90 and fn_80452C04 start a
+ * loop's byte offset by copying the zeroed counter (docs/research-notes.md). */
 #include <string.h>
 #include <dolphin/types.h>
+#include "Game/rw/r2.h"
 
 extern u32 lbl_805F1458;
 extern u32 lbl_805F1460;
@@ -20,17 +27,16 @@ extern u32 lbl_805F1498;
 extern u32 lbl_805EDD88;
 extern u32 lbl_805EDD90;
 extern u32 lbl_805EDD94;
-extern u32 lbl_8056D77C;
-extern u32 lbl_8056D7AC;
+extern R2AnimInterpInfo lbl_8056D77C;
+extern R2AnimInterpInfo lbl_8056D7AC;
 extern u8 lbl_8056D748[];
-extern u8 *lbl_805F15B4;
-extern float lbl_805FB0D8;
-extern float lbl_805FB0DC;
-extern float lbl_805FB0E0;
-extern float lbl_805FB0E4;
-extern float lbl_805FB0E8;
-extern float lbl_805FB0EC;
-extern float lbl_805FB0F0;
+extern const float lbl_805FB0D8;
+extern const float lbl_805FB0DC;
+extern const float lbl_805FB0E0;
+extern const float lbl_805FB0E4;
+extern const float lbl_805FB0E8;
+extern const float lbl_805FB0EC;
+extern const float lbl_805FB0F0;
 extern float lbl_8051BD28[];
 extern float lbl_8051BD34[];
 extern float lbl_8051BD40[];
@@ -39,19 +45,19 @@ extern float lbl_8051BD4C[];
 /* Engine instance vtable handed to every plugin; allocation and the string
    helpers live in it (see RwCpp06.cpp). */
 static inline void *rwAlloc(u32 size, u32 tag) {
-    return ((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(size, tag);
+    return ((void *(*)(u32, u32))*(u32 *)((u8 *)lbl_805F15B4 + 0x108))(size, tag);
 }
 
 static inline void rwFree(void *pointer) {
-    ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))(pointer);
+    ((void (*)(void *))*(u32 *)((u8 *)lbl_805F15B4 + 0x10C))(pointer);
 }
 
 static inline u32 rwStringLength(const char *string) {
-    return ((u32 (*)(const char *))*(u32 *)(lbl_805F15B4 + 0xF4))(string);
+    return ((u32 (*)(const char *))*(u32 *)((u8 *)lbl_805F15B4 + 0xF4))(string);
 }
 
 static inline void rwStringCopy(char *dest, const char *source) {
-    ((char *(*)(char *, const char *))*(u32 *)(lbl_805F15B4 + 0xCC))(dest, source);
+    ((char *(*)(char *, const char *))*(u32 *)((u8 *)lbl_805F15B4 + 0xCC))(dest, source);
 }
 
 extern "C" {
@@ -113,17 +119,17 @@ float *fn_80453820(float *, const float *);
 
 /* Dictionary stream/interpolation callbacks registered by fn_80452CDC,
  * defined further down in this unit. */
-u32 fn_80453018(u32 *, u32 *, u32, float, u32 *);
+u32 fn_80453018(const R2UVAnimation *, R2UVKeyFrame *, void *, float, const float *);
 u32 fn_804530CC(void *, u32 *);
 u32 fn_804531B0(u32 *, void *);
-void fn_804532E4(float *, const float *);
-void fn_80453350(float *, const float *, const float *, float);
-void fn_804533E0(float *, const float *, const float *, float);
-void fn_8045345C(float *, const float *);
-void fn_80453500(float *, const float *, const float *);
-void fn_804535C8(float *, const float *);
-void fn_804536B4(float *, const float *, const float *, float);
-void fn_80453770(float *, const float *, const float *, float);
+void fn_804532E4(float *, float *);
+void fn_80453350(float *, float *, float *, float);
+void fn_804533E0(float *, float *, float *, float);
+void fn_8045345C(float *, float *);
+void fn_80453500(float *, float *, float *);
+void fn_804535C8(float *, float *);
+void fn_804536B4(float *, float *, float *, float);
+void fn_80453770(float *, float *, float *, float);
 
 /* Node-array handlers and the chunk 0x135 writer registered by fn_80453A78,
  * defined further down in this unit. */
@@ -178,13 +184,14 @@ u32 fn_80452C4C(u8 *object, s32 index) {
     return 0;
 }
 
-void fn_80453594(float *dest, const float *source) {
+float *fn_80453594(float *dest, const float *source) {
     dest[0] = source[0];
     dest[1] = source[1];
     dest[2] = source[4];
     dest[3] = source[5];
     dest[4] = source[0x0C];
     dest[5] = source[0x0D];
+    return dest;
 }
 
 void fn_80452434(u8 *, u8 *);
@@ -520,22 +527,21 @@ u32 fn_80452CDC(void)
 
 /* Build one key record: id, time, then the payload for the object's class. The
    payload pointer is the caller's, so the two classes choose the layout. */
-u32 fn_80453018(u32 *object, u32 *record, u32 id, float time, u32 *source)
+u32 fn_80453018(const R2UVAnimation *anim, R2UVKeyFrame *frame, void *prev, float time,
+                const float *matrix)
 {
-    float *key = (float *)record;
-    record[0] = id;
-    key[1] = time;
-    if (**(u32 **)object == lbl_8056D77C) {
-        fn_80453594(&key[2], (const float *)source);
-        /* Retail branches on this call's leftover r3 here; it is never zero, so
-           the branch is not reachable in practice. */
-    }
-    if (**(u32 **)object == lbl_8056D7AC) {
-        if (fn_80453820(&key[2], (const float *)source) != 0) {
+    frame->prev = prev;
+    frame->time = time;
+    if (anim->interpInfo->typeID == lbl_8056D77C.typeID) {
+        if (fn_80453594(frame->uv, matrix) != NULL) {
             return 0;
         }
     }
-    /* Every path leaves zero; upstream keeps that result for its caller. */
+    if (anim->interpInfo->typeID == lbl_8056D7AC.typeID) {
+        if (fn_80453820(frame->uv, matrix) != NULL) {
+            return 0;
+        }
+    }
     return 0;
 }
 
@@ -551,9 +557,11 @@ u32 fn_804530CC(void *stream, u32 *record)
         return 0;
     }
     record[5] = list;
+    u8 *node;
+    s32 i;
     u8 *base = (u8 *)record[4];
-    u8 *node = base;
-    for (s32 i = 0; i < (s32)record[1]; i++, node += 0x20) {
+    node = base;
+    for (i = 0; i < (s32)record[1]; i++, node += 0x20) {
         if (fn_8047D784(stream, node + 4, 0x1C) == 0) {
             return 0;
         }
@@ -577,10 +585,13 @@ u32 fn_804531B0(u32 *record, void *stream)
     if (fn_8045441C(record[5], stream) == 0) {
         return 0;
     }
+    s32 count;
+    u8 *node;
+    s32 i;
     u8 *base = (u8 *)record[4];
-    u8 *node = base;
-    s32 count = (s32)record[1];
-    for (s32 i = 0; i < count; i++, node += 0x20) {
+    node = base;
+    count = (s32)record[1];
+    for (i = 0; i < count; node += 0x20, i++) {
         if (fn_8047D350(stream, node + 4, 0x1C) == 0) {
             return 0;
         }
@@ -594,7 +605,7 @@ u32 fn_804531B0(u32 *record, void *stream)
 
 /* A key record's six payload floats as a 0x40 byte matrix; the untouched words
    3, 7, 11 and 15 are the flags and padding. */
-void fn_804532E4(float *dest, const float *source)
+void fn_804532E4(float *dest, float *source)
 {
     float zero = lbl_805FB0D8;
     dest[0] = source[2];
@@ -613,28 +624,24 @@ void fn_804532E4(float *dest, const float *source)
 }
 
 /* Linearly blend payload words 2..7 of two records at time. */
-#pragma scheduling off
-void fn_80453350(float *out, const float *from, const float *to, float time)
+void fn_80453350(float *out, float *from, float *to, float time)
 {
     float ratio = (time - from[1]) / (to[1] - from[1]);
     for (u32 i = 2; i < 8; i++) {
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
-#pragma scheduling reset
 
 /* The same blend for a caller that has already worked out the ratio. */
-#pragma scheduling off
-void fn_804533E0(float *out, const float *from, const float *to, float ratio)
+void fn_804533E0(float *out, float *from, float *to, float ratio)
 {
     for (u32 i = 2; i < 8; i++) {
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
-#pragma scheduling reset
 
 /* Undo the 2x2 block of a record on out, then take its translation back off. */
-void fn_8045345C(float *out, const float *from)
+void fn_8045345C(float *out, float *from)
 {
     float determinant = from[2] * from[5] - from[3] * from[4];
     if (determinant != lbl_805FB0D8) {
@@ -658,25 +665,19 @@ void fn_8045345C(float *out, const float *from)
 }
 
 /* Combine two record payloads; out may be one of the inputs. */
-#pragma scheduling off
-void fn_80453500(float *out, const float *from, const float *to)
+void fn_80453500(float *out, float *from, float *to)
 {
-    float first = *(volatile f32 *)(from + 3) * *(volatile f32 *)(to + 4);
-    out[2] = from[2] * to[2] + first;
-    float second = *(volatile f32 *)(from + 3) * *(volatile f32 *)(to + 5);
-    out[3] = from[2] * to[3] + second;
-    float third = *(volatile f32 *)(from + 5) * *(volatile f32 *)(to + 4);
-    out[4] = from[4] * to[2] + third;
-    float fourth = *(volatile f32 *)(from + 5) * *(volatile f32 *)(to + 5);
-    out[5] = from[4] * to[3] + fourth;
+    out[2] = from[2] * to[2] + from[3] * to[4];
+    out[3] = from[2] * to[3] + from[3] * to[5];
+    out[4] = from[4] * to[2] + from[5] * to[4];
+    out[5] = from[4] * to[3] + from[5] * to[5];
     out[6] = from[6] + to[6];
     out[7] = from[7] + to[7];
 }
-#pragma scheduling reset
 
 /* Turn a record payload into a matrix and place it: translate, rotate about the
    fixed axis by the payload angle in degrees, translate again. */
-void fn_804535C8(float *out, const float *key)
+void fn_804535C8(float *out, float *key)
 {
     u32 axis[3];
     axis[0] = *(u32 *)&lbl_8051BD28[0];
@@ -703,13 +704,10 @@ void fn_804535C8(float *out, const float *key)
 }
 
 /* Blend at time, taking the shortest way round for the angle in word 2. */
-#pragma scheduling off
-void fn_804536B4(float *out, const float *from, const float *to, float time)
+void fn_804536B4(float *out, float *from, float *to, float time)
 {
-    float numerator = time - from[1];
-    float denominator = to[1] - from[1];
+    float ratio = (time - from[1]) / (to[1] - from[1]);
     float delta = to[2] - from[2];
-    float ratio = numerator / denominator;
     if (delta < lbl_805FB0EC) {
         delta += lbl_805FB0F0;
     } else if (delta > lbl_805FB0E8) {
@@ -720,11 +718,9 @@ void fn_804536B4(float *out, const float *from, const float *to, float time)
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
-#pragma scheduling reset
 
 /* The wrapped blend for a caller that has already worked out the ratio. */
-#pragma scheduling off
-void fn_80453770(float *out, const float *from, const float *to, float ratio)
+void fn_80453770(float *out, float *from, float *to, float ratio)
 {
     float delta = to[2] - from[2];
     if (delta < lbl_805FB0EC) {
@@ -737,7 +733,6 @@ void fn_80453770(float *out, const float *from, const float *to, float ratio)
         out[i] = ratio * (to[i] - from[i]) + from[i];
     }
 }
-#pragma scheduling reset
 
 /* Recover the angle of a record payload: retail copies the whole record into the
    frame, rotates that copy, and reads the angle and the transformed position. */
@@ -766,15 +761,16 @@ float *fn_80453820(float *out, const float *key)
 /* Chunk 0x135 constructor: build the class record, then the static sub-objects. */
 u32 *fn_80453980(u32 *object)
 {
+    u8 *globals = lbl_8056D748;
     void *created = fn_8047FC04(0x44, (void *)lbl_805EDD90, 4, (void *)lbl_805EDD94,
                                 (void *)lbl_805F1498, 0x40135);
     lbl_805F1498 = (u32)created;
     if (created == 0) {
         object = 0;
     }
-    fn_80479040(lbl_8056D748);
-    fn_80477344(lbl_8056D748 + 0x34);
-    fn_80477344(lbl_8056D748 + 0x64);
+    fn_80479040(globals);
+    fn_80477344(globals + 0x34);
+    fn_80477344(globals + 0x64);
     (&lbl_805EDD88)[1]++;
     return object;
 }
@@ -872,36 +868,33 @@ u32 *fn_80453C04(u32 *dest, u32 *source)
 u32 *fn_80453D08(u32 *object)
 {
     for (u32 slot = 0; slot < 2; slot++) {
-        u32 found = 0;
-        s32 element = 0;
-        s32 index = 0;
+        u32 index = 0;
+        u32 element = 0;
+        s32 found = 0;
         while (index < 8) {
             u32 node = object[2 + index];
-            if (node == 0) {
-                index++;
-                continue;
-            }
-            u32 list = *(u32 *)node;
-            u32 *elements = *(u32 **)((u8 *)list + 0x14);
-            if (*(u32 *)((u8 *)elements + 0x20 + 4 * element) == slot) {
-                found = 1;
-                break;
-            }
-            element++;
-            if (element < (s32)*(u32 *)((u8 *)node + 0x2C)) {
-                continue;
-            }
-            element = 0;
-            index++;
-        }
-        if (found != 0) {
-            if (object[slot] == 0) {
-                object[slot] = (u32)fn_8047F994();
-                if (object[slot] == 0) {
-                    return 0;
+            if (node != 0) {
+                u32 list = *(u32 *)node;
+                u32 *elements = *(u32 **)((u8 *)list + 0x14);
+                if (slot == *(u32 *)((u8 *)elements + 0x20 + 4 * element)) {
+                    found = 1;
+                    break;
                 }
+                element++;
+                if (element >= *(u32 *)((u8 *)node + 0x2C)) {
+                    element = 0;
+                    index++;
+                }
+            } else {
+                index++;
             }
-        } else if (object[slot] != 0) {
+        }
+        if (found && object[slot] == 0) {
+            object[slot] = (u32)fn_8047F994();
+            if (object[slot] == 0) {
+                return 0;
+            }
+        } else if (!found && object[slot] != 0) {
             fn_8047F958((void *)object[slot]);
             object[slot] = 0;
         }

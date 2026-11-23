@@ -282,6 +282,23 @@ cflags_rw_no_lmw = [
     "-use_lmw_stmw off",
 ]
 
+# RenderWare as the C library it is (wave 40, RwCpp10-RwCpp13): the base flags (-O4,p) compiled
+# as C without lmw/stmw, with read-only reused strings. In C++ a struct assignment is a
+# member-wise copy (lfs/stfs for a vector) where retail copies words. Retail inlined static
+# helpers defined earlier in a file, two levels deep, so inlining is neither deferred nor limited
+# to one level as in the game code; it is not automatic here because the units are cut by size
+# and hold functions of several original files, which automatic inlining would merge (the helpers
+# are marked `inline` instead, or wrapped in `#pragma auto_inline on` where retail also emits the
+# helper out of line, as RwCpp13's matrix loads). RwCpp14-RwCpp17 keep their C++ drafts' flags:
+# most of their matched functions were matched under them.
+cflags_rw_c = [
+    *cflags_base,
+    "-use_lmw_stmw off",
+    "-str reuse,readonly",
+    "-lang=c",
+    "-inline noauto",
+]
+
 # The Chao CSD 2D library (src/Game/csd*.cpp; see Game/csdAccess.cpp): game flags without RTTI and
 # small data, with automatic inlining one level deep and no deferred inlining, so functions come out
 # in definition order.
@@ -1115,10 +1132,10 @@ config.libs = [
             Object(NonMatching, "Game/RwCpp07.cpp"),
             Object(NonMatching, "Game/RwCpp08.cpp"),
             Object(NonMatching, "Game/RwCpp09.cpp"),
-            Object(NonMatching, "Game/RwCpp10.cpp"),
-            Object(NonMatching, "Game/RwCpp11.cpp"),
-            Object(NonMatching, "Game/RwCpp12.cpp"),
-            Object(NonMatching, "Game/RwCpp13.cpp"),
+            Object(NonMatching, "Game/RwCpp10.cpp", cflags=cflags_rw_c),
+            Object(NonMatching, "Game/RwCpp11.cpp", cflags=cflags_rw_c),
+            Object(NonMatching, "Game/RwCpp12.cpp", cflags=cflags_rw_c),
+            Object(NonMatching, "Game/RwCpp13.cpp", cflags=cflags_rw_c),
             Object(NonMatching, "Game/RwCpp14.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp15.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),
             Object(NonMatching, "Game/RwCpp16.cpp", cflags=[*cflags_rw_no_lmw, "-O4,p"]),

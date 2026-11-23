@@ -1,614 +1,582 @@
-/* RenderWare vertex conversion routines. The object and stream layouts are inferred from the
- * callers; the functions retain their address names until their interfaces are known. */
+/* RenderWare: RpSkin (plugin 0x116), GameCube back end, continued from RwCpp12.cpp.
+ *
+ * 0x8044D6E8-0x8044EEAC: the skinning of positions and normals, the skinned atomic pipeline's
+ * instance, reinstance and render callbacks, the bone matrix upload, and the native skin data:
+ * weight sorting and packing, its stream size, write and read, and the hand-back of the kept
+ * vertex arrays. Compiled as C.
+ *
+ * Not written: fn_8044D6E8 (positions and normals) sets GQR5-GQR7 in the middle of compiled code,
+ * which needs inline assembly (see fn_8044D554 in RwCpp12.cpp).
+ * Near misses: fn_8044DA3C (retail forms lbl_8056D708's address in r3 after the object's copy;
+ * GC/2.7 schedules it first, into r5), fn_8044DD1C and fn_8044DE74 (retail keeps incrementing the
+ * run's bone counter beside its strength-reduced matrix offset; GC/2.7 drops the dead counter, two
+ * instructions per loop; DE74 also has other saved registers).
+ * Levers found here (probes/Game_RwCpp13*.py): the stream callbacks read the object through a
+ * pointer to const; the pipeline callbacks take `void *object` and make the typed atomic a local
+ * (it then gets its register among the locals); a signed id parameter; the loops' own counters.
+ */
 #include <dolphin/types.h>
-#include <string.h>
+#include "Game/rw/r2.h"
 
-extern u32 lbl_805FB0C0;
-extern u8 lbl_805FB0C4;
-extern u32 lbl_805FB0C8;
-extern u8 lbl_805FB0CC;
-extern u32 lbl_805FB0B8;
-extern u8 lbl_805FB0BC;
-extern u32 lbl_8056D708[];
-extern u32 lbl_805EDDD8;
-extern u32 lbl_805F1520;
-extern u8 *lbl_805F15B4;
-extern u32 lbl_805F1658;
-extern float lbl_805FB0D0;
-extern u16 lbl_805EDF40;
+extern R2SkinGlobals lbl_8056D708;
+extern s32 lbl_805F1520; // offset of the R2VertexDesc pointer in RpGeometry
+extern s32 lbl_805EDDD8; // 1 selects fn_8044F9E4 for geometries flagged 0x02000000
+extern s32 lbl_805F1658; // offset of the GameCube raster extension
+extern volatile u16 lbl_805EDF40; // the draw-sync token of the frame being built
+extern const f32 lbl_805FB0D0; // 128.0f
 
-extern "C" {
-void fn_80482458(void *, const void *, const void *);
-void fn_80482504(void *, const void *, const void *);
-void fn_80451080(void *, void *, void *);
-void fn_804513C4(void *, void *, void *);
-void fn_804517C8(void *, void *, void *);
-void DCFlushRange(void *, u32);
-void fn_80394F2C(void);
-u32 fn_8044CCAC(u8 *);
-void *fn_8044F9E4(void *, void *, void *);
-void *fn_8046C0D4(void *, void *, void *);
-void *fn_80450938(void *, void *, void *);
-void *RwFrameGetLTM(void *);
-u32 fn_8044CF68(u32 *, u32 *, u32 *, u32 **);
-void fn_8044D344(u8 *, u32 *, const void *, u32 *);
-void fn_8044D554(u32 *, u8 *, void *, u8 *, u8 *, u32);
-void fn_80463840(void *, void *);
-u32 fn_803991E8(void *);
-u32 fn_80399238(void *, void *);
-void *fn_8044E408(u32 *, u32);
-u32 fn_8044BDBC(u32 *);
-void fn_8046288C(void);
-u32 fn_8047CEF0(void *, u32, u32, u32, u32);
-u32 fn_8047D458(void *, void *, u32);
-u32 fn_80480ED0(void *, void *, u32);
-u32 fn_8044BB18(void *, void *);
-s32 fn_8047CF50(void *, u32, u32 *, u32 *);
-u32 fn_8047DC28(u32, ...);
-void fn_8047DB84(void *);
-u32 fn_8047D868(void *, void *, u32);
-u32 fn_80480D4C(void *, void *, u32);
-void *fn_8044BBFC(void *, u32 *);
-void *fn_8044CCC0(void *, void *);
-void fn_80462C30(void *, void *);
-void fn_804950AC(void *, u32);
-void fn_80394500(u32, u32);
-void fn_80462E1C(void *);
-u32 fn_804655D4(u32, u32, u32, u32);
-void fn_80499C38(void *, u32);
-void fn_80497778(u32);
-void fn_80399000(void *, void *);
-}
+R2Matrix *RwFrameGetLTM(void *frame);
+void fn_803991E8(f32 mtx[3][4], u32 id);
+void fn_80399238(f32 mtx[3][4], u32 id);
+void fn_80399000(void *list, u32 size);
+R2Skin *fn_8044CCAC(const R2Geometry *geometry);
+void *fn_8044CCC0(R2Geometry *geometry, R2Skin *skin);
+s32 fn_8044CF68(R2Skin *skin, R2Atomic *atomic, R2SkinInstance *instance, R2ResEntry **repEntry);
+void fn_8044D344(R2Matrix *out, R2Skin *skin, R2Matrix *ltm, R2HAnimHierarchy *hierarchy);
+void fn_8044D554(R2Skin *skin, R2Matrix *matrices, void *srcPositions, void *dstPositions,
+                 R2VertexDesc *desc, s32 numVertices);
+void fn_8044D6E8(R2Skin *skin, R2Matrix *matrices, void *srcPositions, void *srcNormals,
+                 void *dstPositions, void *dstNormals, R2VertexDesc *desc, s32 numVertices);
+R2ResEntry *fn_8044F9E4(R2Geometry *geometry, void *owner, R2ResEntry **ownerRef);
+R2ResEntry *fn_8046C0D4(R2Geometry *geometry, void *owner, R2ResEntry **ownerRef);
+R2ResEntry *fn_80450938(R2Geometry *geometry, void *owner, R2ResEntry **ownerRef);
+void fn_80463840(R2Atomic *atomic, R2ResEntry **repEntry);
+void fn_8046288C(R2ResEntry *entry);
+void fn_80462C30(R2VertexDesc *desc, void *node);
+void fn_80462E1C(R2Geometry *geometry);
+void fn_804950AC(R2Matrix *ltm, s32 normals);
+void fn_80394500(u32 a, u32 b);
+void *fn_804655D4(u32 flags, u32 a, u32 b, u32 c);
+void fn_80499C38(void *texture, u32 stage);
+void fn_80497778(s32 enable);
+u32 fn_8044BDBC(R2Skin *skin);
+void *fn_8044BB18(void *stream, R2Skin *skin);
+void *fn_8044BBFC(void *stream, R2Skin *skin);
+s32 fn_8047CF50(void *stream, u32 type, u32 *length, u32 *version);
+u32 fn_8047CEF0(void *stream, u32 type, u32 length, u32 version, u32 buildNum);
+u32 fn_8047D868(void *stream, void *buffer, u32 size);
+u32 fn_8047D458(void *stream, const void *buffer, u32 size);
+u32 fn_80480D4C(void *stream, void *buffer, u32 size);
+u32 fn_80480ED0(void *stream, const void *buffer, u32 size);
+s32 fn_8047DC28(s32 code, ...);
+void fn_8047DB84(void *error);
 
-extern "C" {
-static inline u32 RwCpp13ReadGqr5(void) {
-    register u32 result;
-    asm { mfspr result, 917 }
-    return result;
-}
+#define SKIN_OF(geometry) R2_PLUGIN(R2Skin, geometry, lbl_8056D708.geometryOffset)
+#define SKIN_ATOMIC(object) ((R2SkinAtomic *)((u8 *)(object) + lbl_8056D708.atomicOffset))
+#define VERTEX_DESC(geometry) R2_PLUGIN(R2VertexDesc, geometry, lbl_805F1520)
+#define RASTER_EXT(raster) ((R2RasterExt *)((u8 *)(raster) + lbl_805F1658))
+#define RES_OF(array) (((R2SkinResEntry **)(array))[-1])
+#define SKIN_HINT 0x30116
+#define WEIGHT(skin, vertex, n) (((f32 *)&(skin)->weights[vertex])[n])
 
-static inline void RwCpp13WriteGqr5(register u32 value) {
-    asm { mtspr 917, value }
-}
+#pragma auto_inline on
 
-static inline void RwCpp13WriteGqr6(register u32 value) {
-    asm { mtspr 918, value }
-}
+/* Loads a matrix of the palette into GX position (and normal) matrix memory: transposed to GX's
+ * three rows, with x and z negated. */
+void fn_8044DC4C(R2Matrix *matrix, s32 id, s32 normals) {
+    f32 mtx[3][4];
 
-static inline void RwCpp13WriteGqr7(register u32 value) {
-    asm { mtspr 919, value }
-}
-}
-
-extern "C" void fn_8044D6E8(u32 *object, u8 *matrices, void *arg3, void *arg4, u8 *outA,
-                            u8 *outB, u8 *format, u32 count) {
-    u8 local[0x44];
-    *(u32 *)(local + 0x1C) = (u32)outA;
-    *(u32 *)(local + 0x20) = (u32)outB;
-    *(u32 *)(local + 0x24) = (u32)arg3;
-    *(u32 *)(local + 0x28) = (u32)arg4;
-    *(u32 *)(local + 0x38) = count;
-
-    register u32 gqr6 = 0;
-    register u32 gqr7 = 0;
-    if (format != NULL) {
-        *(u32 *)(local + 0xC) = lbl_805FB0C0;
-        *(u8 *)(local + 0x10) = lbl_805FB0C4;
-        *(u32 *)(local + 0x4) = lbl_805FB0C8;
-        *(u8 *)(local + 0x8) = lbl_805FB0CC;
-        *(u32 *)(local + 0x14) = lbl_805FB0B8;
-        *(u8 *)(local + 0x18) = lbl_805FB0BC;
-
-        u32 indexA = format[0];
-        u32 indexB = format[1];
-        register u32 valueA = format[0xC];
-        register u32 valueB = format[0xD];
-        *(u32 *)(local + 0x2C) = *(u8 *)(local + 0xC + indexA);
-        *(u32 *)(local + 0x30) = *(u8 *)(local + 0xC + indexB);
-
-        gqr6 = *(u8 *)(local + 0x14 + indexA);
-        asm { rlwimi gqr6, valueA, 8, 16, 23 }
-        asm { rlwimi gqr6, gqr6, 16, 0, 15 }
-        gqr7 = *(u8 *)(local + 0x14 + indexB);
-        asm { rlwimi gqr7, valueB, 8, 16, 23 }
-        asm { rlwimi gqr7, gqr7, 16, 0, 15 }
-        *(u32 *)(local + 0x34) = valueB != 0 ? *(u32 *)(local + 0x30) * 6 : 0;
-    } else {
-        *(u32 *)(local + 0x2C) = 4;
-        *(u32 *)(local + 0x30) = 4;
-        *(u32 *)(local + 0x34) = 0;
+    mtx[0][0] = -matrix->right.x;
+    mtx[0][1] = -matrix->up.x;
+    mtx[0][2] = -matrix->at.x;
+    mtx[0][3] = -matrix->pos.x;
+    mtx[1][0] = matrix->right.y;
+    mtx[1][1] = matrix->up.y;
+    mtx[1][2] = matrix->at.y;
+    mtx[1][3] = matrix->pos.y;
+    mtx[2][0] = -matrix->right.z;
+    mtx[2][1] = -matrix->up.z;
+    mtx[2][2] = -matrix->at.z;
+    mtx[2][3] = -matrix->pos.z;
+    fn_803991E8(mtx, id);
+    if (normals) {
+        fn_80399238(mtx, id);
     }
+}
 
-    *(volatile u32 *)local = RwCpp13ReadGqr5();
-    RwCpp13WriteGqr5(0x07040000);
-    RwCpp13WriteGqr6(gqr6);
-    RwCpp13WriteGqr7(gqr7);
+/* Loads the bone matrices one mesh of a split skin uses, run by run. */
+void fn_8044DD1C(R2Skin *skin, u32 meshIndex, s32 normals) {
+    const u8 *counts = (const u8 *)skin->split.meshRLECount;
+    u32 start = counts[meshIndex * 2] & 0x7F;
+    u32 numRuns = counts[meshIndex * 2 + 1];
+    u32 id = 0;
+    u8 i;
 
-    switch (object[4]) {
-    case 1:
-        for (u32 i = 0; i < count; i++) {
-            u32 matrixIndex = *(u32 *)(object[5] + i * 4) & 0xFF;
-            u8 *matrix = matrices + matrixIndex * 0x40;
-            fn_80482458(outA + i * 0xC, (u8 *)arg3 + i * 0xC, matrix);
-            fn_80482504(outB + i * 0xC, (u8 *)arg4 + i * 0xC, matrix);
+    for (i = 0; i < numRuns; i++) {
+        const R2SkinRLE *run = (const R2SkinRLE *)skin->split.meshRLE + i + start;
+        u32 bone = run->start;
+        u32 count = run->length;
+        u32 j;
+
+        for (j = 0; j < count; j++) {
+            fn_8044DC4C((R2Matrix *)lbl_8056D708.matrixCache + bone, id, normals);
+            id += 3;
+            bone++;
         }
-        break;
-    case 2:
-        fn_80451080(matrices, object, local + 0x1C);
-        break;
-    case 3:
-        fn_804513C4(matrices, object, local + 0x1C);
-        break;
-    case 4:
-        fn_804517C8(matrices, object, local + 0x1C);
-        break;
-    default:
-        break;
     }
-
-    RwCpp13WriteGqr5(*(volatile u32 *)local);
-    u32 strideA = *(u32 *)(local + 0x2C);
-    u32 strideB = *(u32 *)(local + 0x30);
-    u32 extra = *(u32 *)(local + 0x34);
-    u32 bytes = ((count * (strideA * 3) + 0x1F) & ~0x1F) + count * (extra + strideB * 3);
-    DCFlushRange(outA, bytes);
-    fn_80394F2C();
 }
 
-extern "C" void *fn_8044D924(u32 *object, u32 *out) {
-    u32 *owner = (u32 *)object[6];
-    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
-    void *arg2;
-    void *arg3;
-    if (owner[6] == 1) {
-        arg2 = owner;
-        arg3 = (u8 *)owner + 0x58;
+#pragma auto_inline reset
+
+/* Instance callback of the skinned atomic pipeline. */
+R2Atomic *fn_8044D924(void *object, R2ResEntry **instance) {
+    R2Atomic *atomic = object;
+    R2Geometry *geometry = atomic->geometry;
+    R2Skin *skin = fn_8044CCAC(geometry);
+    void *owner;
+    R2ResEntry **ownerRef;
+
+    if (geometry->numMorphTargets != 1) {
+        owner = atomic;
+        ownerRef = &atomic->repEntry;
     } else {
-        arg2 = object;
-        arg3 = (u8 *)object + 0x14;
+        owner = geometry;
+        ownerRef = &geometry->repEntry;
     }
-
-    void *result;
-    if (record[4] > 1 || record[11] == 3) {
-        if ((owner[2] & 0x02000000) != 0 && lbl_805EDDD8 == 1) {
-            result = fn_8044F9E4(owner, arg2, arg3);
-        } else {
-            result = fn_8046C0D4(owner, arg2, arg3);
-        }
-    } else if ((owner[2] & 0x02000000) != 0 && lbl_805EDDD8 == 1) {
-        result = fn_8044F9E4(owner, arg2, arg3);
-    } else {
-        result = fn_80450938(owner, arg2, arg3);
-    }
-    *out = (u32)result;
-    *(u16 *)((u8 *)owner + 0xC) = 0;
-    return object;
-}
-
-extern "C" void *fn_8044DA3C(u32 *object, u32 *arg2) {
-    u32 *owner = (u32 *)object[6];
-    u32 *record = *(u32 **)((u8 *)owner + lbl_8056D708[2]);
-    if (record[4] > 1 || record[11] == 3) {
-        u32 *node = (u32 *)*arg2;
-        u32 *data = (u32 *)node[3];
-        u32 *state = (u32 *)((u8 *)node + 0x18);
-        u32 *first;
-        u32 *second;
-        if (((u8 *)data)[0] == 1) {
-            u32 *entry = (u32 *)((u8 *)data + lbl_8056D708[1]);
-            first = entry + 1;
-            second = entry + 2;
-        } else {
-            first = record + 7;
-            second = record + 8;
-        }
-
-        if (*first == 0) {
-            if ((owner[2] & 0x01000000) == 0) fn_80463840(object, arg2);
-            *first = state[3];
-            state[3] = 0;
-            if ((owner[2] & 0x10) != 0) {
-                *second = state[5];
-                state[5] = 0;
-            }
-        } else if ((owner[2] & 0x01000000) == 0) {
-            u32 savedFirst = state[3];
-            state[3] = *first;
-            if ((owner[2] & 0x10) != 0) {
-                u32 savedSecond = state[5];
-                state[5] = *second;
-                fn_80463840(object, arg2);
-                state[5] = savedSecond;
+    if (skin->maxWeights > 1 || skin->unk2C == 3) {
+        if (geometry->flags & 0x02000000) {
+            if (lbl_805EDDD8 == 1) {
+                *instance = fn_8044F9E4(geometry, owner, ownerRef);
             } else {
-                fn_80463840(object, arg2);
+                *instance = fn_8046C0D4(geometry, owner, ownerRef);
             }
-            state[3] = savedFirst;
-        }
-
-        if (fn_8044CF68(record, object, state, (u32 **)arg2) == 0) return NULL;
-        void *frameMatrix = RwFrameGetLTM((void *)object[1]);
-        fn_8044D344((u8 *)lbl_8056D708[3], record, frameMatrix,
-                    *(u32 **)((u8 *)object + lbl_8056D708[1]));
-        if ((owner[2] & 0x10) != 0) {
-            fn_8044D6E8(record, (u8 *)lbl_8056D708[3], (void *)*first, (void *)*second,
-                        (u8 *)state[3], (u8 *)state[5],
-                        *(u8 **)((u8 *)owner + lbl_805F1520), owner[5]);
         } else {
-            fn_8044D554(record, (u8 *)lbl_8056D708[3], (void *)*first, (u8 *)state[3],
-                        *(u8 **)((u8 *)owner + lbl_805F1520), owner[5]);
+            *instance = fn_8046C0D4(geometry, owner, ownerRef);
         }
     } else {
-        void *frameMatrix = RwFrameGetLTM((void *)object[1]);
-        fn_8044D344((u8 *)lbl_8056D708[3], record, frameMatrix,
-                    *(u32 **)((u8 *)object + lbl_8056D708[1]));
-    }
-    return object;
-}
-
-#pragma use_lmw_stmw off
-#pragma scheduling off
-extern "C" u32 fn_8044DC4C(const float *input, void *out, int transform) {
-    float matrix[12];
-    matrix[0] = -input[0];
-    matrix[1] = -input[4];
-    matrix[2] = -input[8];
-    matrix[3] = -input[12];
-    matrix[4] = input[1];
-    matrix[5] = input[5];
-    matrix[6] = input[9];
-    matrix[7] = input[13];
-    matrix[8] = -input[2];
-    matrix[9] = -input[6];
-    matrix[10] = -input[10];
-    matrix[11] = -input[14];
-    u32 result = fn_803991E8(matrix);
-    if (transform != 0) return fn_80399238(matrix, out);
-    return result;
-}
-#pragma scheduling reset
-#pragma use_lmw_stmw on
-
-extern "C" void fn_8044DD1C(u32 *object, u32 index, int transform) {
-    u8 *table = (u8 *)object[0x10];
-    u32 pair = index * 2;
-    u32 first = table[pair];
-    u32 outerCount = table[pair + 1];
-    u32 outputIndex = 0;
-    u32 tableOffset = (first & 0x7F) * 2;
-
-    for (u32 outer = 0; (outer & 0xFF) < outerCount; outer++) {
-        u8 *entry = (u8 *)object[0x11] + (outer & 0xFF) * 2 + tableOffset;
-        u32 matrixIndex = entry[0];
-        u32 innerCount = entry[1];
-        u32 matrixOffset = matrixIndex * 0x40;
-        for (u32 inner = 0; inner < innerCount; inner++) {
-            const float *input = (const float *)(lbl_8056D708[3] + matrixOffset);
-            float matrix[12];
-            matrix[0] = -input[0];
-            matrix[1] = -input[4];
-            matrix[2] = -input[8];
-            matrix[3] = -input[12];
-            matrix[4] = input[1];
-            matrix[5] = input[5];
-            matrix[6] = input[9];
-            matrix[7] = input[13];
-            matrix[8] = -input[2];
-            matrix[9] = -input[6];
-            matrix[10] = -input[10];
-            matrix[11] = -input[14];
-            fn_803991E8(matrix);
-            if (transform != 0) fn_80399238(matrix, (void *)outputIndex);
-            outputIndex += 3;
-            matrixOffset += 0x40;
-        }
-    }
-}
-
-extern "C" void *fn_8044E6BC(u32 *object) {
-    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
-    if (record == NULL) return object;
-    u32 flags = object[2];
-    if ((flags & 0x01000000) != 0) {
-        if ((flags & 0x10) != 0) {
-            *(u16 *)((u8 *)object + 0xC) |= 6;
+        if (geometry->flags & 0x02000000) {
+            if (lbl_805EDDD8 == 1) {
+                *instance = fn_8044F9E4(geometry, owner, ownerRef);
+            } else {
+                *instance = fn_80450938(geometry, owner, ownerRef);
+            }
         } else {
-            *(u16 *)((u8 *)object + 0xC) |= 2;
-        }
-        record[7] = 0;
-        record[8] = 0;
-        return object;
-    }
-    return fn_8044E408(record, object[5]) != NULL ? object : NULL;
-}
-
-extern "C" void *fn_8044E758(u32 *object) {
-    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
-    if (record[9] != 0) {
-        ((void (*)(void *))*(u32 *)(lbl_805F15B4 + 0x10C))((void *)record[9]);
-        record[9] = 0;
-        record[10] = 0;
-    }
-    record[7] = 0;
-    record[8] = 0;
-    return object;
-}
-
-extern "C" u32 fn_8044E7D0(u32 *object) {
-    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
-    u32 result = record[1] + 0x14;
-    if (record[4] > 1) result += object[5] * (record[4] * 2);
-    result += record[0] * 0x40;
-    if (record[7] != 0) {
-        u32 *target = (u32 *)object[0x16];
-        u32 *header = *(u32 **)(target[9] - 4);
-        header[4] = 0;
-        target[9] = record[7];
-        if ((object[2] & 0x10) != 0) target[11] = record[8];
-        target[5] = (u32)fn_8046288C;
-        record[7] = 0;
-        record[8] = 0;
-    }
-    return result + fn_8044BDBC(record);
-}
-
-extern "C" u32 fn_8044EE3C(u32 *object) {
-    u32 *entry = (u32 *)((u8 *)object + lbl_8056D708[1]);
-    if (entry[1] != 0) {
-        u32 *target = (u32 *)object[5];
-        u32 *owner = (u32 *)object[6];
-        u32 *header = *(u32 **)(target[9] - 4);
-        header[4] = 0;
-        target[9] = entry[1];
-        if ((owner[2] & 0x10) != 0) target[11] = entry[2];
-        target[5] = (u32)fn_8046288C;
-        entry[1] = 0;
-        entry[2] = 0;
-    }
-    return 0;
-}
-
-extern "C" void *fn_8044E89C(void *stream, u32 *object) {
-    u32 *record = *(u32 **)((u8 *)object + lbl_8056D708[2]);
-    u32 size = record[1] + 0x14;
-    if (record[4] > 1) size += object[5] * (record[4] * 2);
-    size += record[0] * 0x40;
-    if (record[7] != 0) {
-        u32 *target = (u32 *)object[0x16];
-        u32 *header = *(u32 **)(target[9] - 4);
-        header[4] = 0;
-        target[9] = record[7];
-        if ((object[2] & 0x10) != 0) target[11] = record[8];
-        target[5] = (u32)fn_8046288C;
-        record[7] = 0;
-        record[8] = 0;
-    }
-    size += fn_8044BDBC(record);
-    if (fn_8047CEF0(stream, 1, size - 0xC, 0x37002, 0x37) == 0) return NULL;
-
-    u32 marker = 6;
-    if (fn_8047D458(stream, &marker, 4) == 0) return NULL;
-    u32 header = ((record[1] & 0xFF) << 8) | ((record[4] & 0xFF) << 16) | (record[0] & 0xFF);
-    u32 count = object[5];
-    u32 channels = record[4];
-    if (fn_8047D458(stream, &header, 4) == 0) return NULL;
-    if (fn_80480ED0(stream, (void *)record[2], record[1]) == 0) return NULL;
-    if (channels > 1) {
-        u32 bytes = channels * count;
-        if (fn_80480ED0(stream, (void *)record[10], bytes) == 0) return NULL;
-        if (fn_80480ED0(stream, (void *)record[9], bytes) == 0) return NULL;
-    }
-    if (fn_80480ED0(stream, (void *)record[3], record[0] * 0x40) == 0) return NULL;
-    return fn_8044BB18(stream, record) != 0 ? stream : NULL;
-}
-
-extern "C" void *fn_8044E408(u32 *object, u32 count) {
-    object[7] = 0;
-    object[8] = 0;
-    object[9] = 0;
-    object[10] = 0;
-
-    for (u32 group = 0; group < count; group++) {
-        for (u32 pass = 0; pass < 3; pass++) {
-            for (u32 j = 0; j < 3 - pass; j++) {
-                float *values = (float *)((u8 *)object[6] + group * 0x10 + pass * 4 + j * 4);
-                if (values[1] > values[0]) {
-                    float temporary = values[0];
-                    values[0] = values[1];
-                    values[1] = temporary;
-
-                    u32 *packed = (u32 *)((u8 *)object[5] + group * 4);
-                    u32 shiftA = pass * 8;
-                    u32 shiftB = (pass + j + 1) * 8;
-                    u32 value = *packed;
-                    u32 byteA = (value >> shiftA) & 0xFF;
-                    u32 byteB = (value >> shiftB) & 0xFF;
-                    *packed = (value & ~(0xFF << shiftA) & ~(0xFF << shiftB)) |
-                              (byteA << shiftB) | (byteB << shiftA);
-                }
-            }
+            *instance = fn_80450938(geometry, owner, ownerRef);
         }
     }
-
-    if (object[4] > 1) {
-        u32 channels = object[4];
-        u32 bytes = count * channels * 2;
-        object[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(bytes + 3, 0x30116);
-        u8 *encoded = (u8 *)object[9];
-        for (u32 group = 0; group < count; group++) {
-            u32 sum = 0;
-            for (u32 channel = 0; channel < channels; channel++) {
-                float value = *(float *)((u8 *)object[6] + group * 0x10 + channel * 4);
-                s32 converted = (s32)(lbl_805FB0D0 * value);
-                *encoded++ = (u8)converted;
-                sum += (u8)converted;
-            }
-            if ((sum & 0xFF) < 0x80) {
-                for (u32 channel = 0; channel < channels && (sum & 0xFF) != 0x80; channel++) {
-                    u8 *value = encoded - channels + channel;
-                    sum++;
-                    if ((sum & 0xFF) != 0x80) *value = (u8)(*value + 1);
-                }
-            }
-        }
-
-        object[10] = (u32)(encoded + 3) & ~3;
-        u8 *unpacked = (u8 *)object[10];
-        for (u32 group = 0; group < count; group++) {
-            u32 packed = *(u32 *)((u8 *)object[5] + group * 4);
-            for (u32 channel = 0; channel < channels; channel++) {
-                *unpacked++ = (u8)(packed >> (channel * 8));
-            }
-        }
-    }
-    return object;
+    geometry->lockedSinceLastInst = 0;
+    return atomic;
 }
 
-extern "C" void *fn_8044EAD0(void *stream, u32 *object) {
-    u32 local[8];
-    if (fn_8047CF50(stream, 1, local + 4, local + 5) == 0) return NULL;
-    if (local[5] < 0x35000 || local[5] > 0x37002) {
-        local[6] = 0x116;
-        local[7] = fn_8047DC28(0x80000004, local[5]);
-        fn_8047DB84(local + 6);
-        return NULL;
-    }
-    if (fn_8047D868(stream, local + 2, 4) == 0 || local[2] != 6) return NULL;
+/* Reinstance callback: skins the vertices on the CPU (more than one weight) or uploads the
+ * bone matrices. */
+R2Atomic *fn_8044DA3C(void *object, R2ResEntry **repEntry) {
+    R2SkinInstance *instance;
+    R2Atomic *atomic = object;
+    R2Geometry *geometry;
+    R2Skin *skin;
+    R2Geometry *owner;
+    void **positions;
+    void **normals;
+    void *savedPositions;
+    void *savedNormals;
 
-    u32 *record = (u32 *)((void *(*)(void *, u32, u32))*(u32 *)(lbl_805F15B4 + 0x118))(
-        (void *)lbl_8056D708[6], 0x4C, 0x30116);
-    memset(record, 0, 0x4C);
-    if (fn_8047D868(stream, local + 3, 4) == 0) return NULL;
-    record[0] = local[3] & 0xFF;
-    record[1] = (local[3] >> 16) & 0xFF;
-    record[4] = (local[3] >> 8) & 0xFF;
-    local[4] -= 8;
-    u32 count = object[5];
-    u32 channels = record[4];
+    geometry = atomic->geometry;
+    skin = SKIN_OF(geometry);
+    if (skin->maxWeights > 1 || skin->unk2C == 3) {
+        instance = &((R2SkinResEntry *)*repEntry)->instance;
+        owner = (R2Geometry *)(*repEntry)->owner;
 
-    if (channels > 1) {
-        record[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(local[4] + 5, 0x30116);
-        record[10] = (record[9] + channels * count + 3) & ~3;
-        record[3] = (record[10] + channels * count + 3) & ~3;
-        record[2] = record[3] + record[0] * 0x40;
-        if (fn_80480D4C(stream, (void *)record[2], record[1]) != record[1]) return NULL;
-        u32 bytes = channels * count;
-        if (fn_80480D4C(stream, (void *)record[10], bytes) != bytes) return NULL;
-        if (fn_80480D4C(stream, (void *)record[9], bytes) != bytes) return NULL;
-        if (fn_80480D4C(stream, (void *)record[3], record[0] * 0x40) != record[0] * 0x40) return NULL;
+        if (owner->object.type == 1) {
+            R2SkinAtomic *data = SKIN_ATOMIC(owner);
+            positions = &data->positions;
+            normals = &data->normals;
+        } else {
+            positions = &skin->positions;
+            normals = &skin->normals;
+        }
+        if (*positions == NULL) {
+            if (!(geometry->flags & 0x01000000)) {
+                fn_80463840(atomic, repEntry);
+            }
+            *positions = instance->positions;
+            instance->positions = NULL;
+            if (geometry->flags & 0x10) {
+                *normals = instance->normals;
+                instance->normals = NULL;
+            }
+        } else if (!(geometry->flags & 0x01000000)) {
+            savedPositions = instance->positions;
+            instance->positions = *positions;
+            if (geometry->flags & 0x10) {
+                savedNormals = instance->normals;
+                instance->normals = *normals;
+                fn_80463840(atomic, repEntry);
+                instance->normals = savedNormals;
+            } else {
+                fn_80463840(atomic, repEntry);
+            }
+            instance->positions = savedPositions;
+        }
+        if (!fn_8044CF68(skin, atomic, instance, repEntry)) {
+            return NULL;
+        }
+        fn_8044D344(lbl_8056D708.matrixCache, skin, RwFrameGetLTM(atomic->object.parent),
+                    SKIN_ATOMIC(atomic)->hierarchy);
+        if (geometry->flags & 0x10) {
+            fn_8044D6E8(skin, lbl_8056D708.matrixCache, *positions, *normals, instance->positions,
+                        instance->normals, VERTEX_DESC(geometry), geometry->numVertices);
+        } else {
+            fn_8044D554(skin, lbl_8056D708.matrixCache, *positions, instance->positions,
+                        VERTEX_DESC(geometry), geometry->numVertices);
+        }
     } else {
-        record[9] = (u32)((void *(*)(u32, u32))*(u32 *)(lbl_805F15B4 + 0x108))(local[4] + 3, 0x30116);
-        record[3] = (record[9] + 3) & ~3;
-        record[2] = record[3] + record[0] * 0x40;
-        if (fn_80480D4C(stream, (void *)record[2], record[1]) != record[1]) return NULL;
-        if (fn_80480D4C(stream, (void *)record[3], record[0] * 0x40) != record[0] * 0x40) return NULL;
+        fn_8044D344(lbl_8056D708.matrixCache, skin, RwFrameGetLTM(atomic->object.parent),
+                    SKIN_ATOMIC(atomic)->hierarchy);
     }
-    if (fn_8044BBFC(stream, record) == NULL) return NULL;
-    fn_8044CCC0(object, record);
-    return stream;
+    return atomic;
 }
 
-static inline void RwCpp13TransformMatrix(const float *input, u32 outputIndex, u32 transform) {
-    float matrix[12];
-    matrix[0] = -input[0];
-    matrix[1] = -input[4];
-    matrix[2] = -input[8];
-    matrix[3] = -input[12];
-    matrix[4] = input[1];
-    matrix[5] = input[5];
-    matrix[6] = input[9];
-    matrix[7] = input[13];
-    matrix[8] = -input[2];
-    matrix[9] = -input[6];
-    matrix[10] = -input[10];
-    matrix[11] = -input[14];
-    fn_803991E8(matrix);
-    if (transform != 0) fn_80399238(matrix, (void *)outputIndex);
-}
+/* Render callback: sets up the vertex format and the lighting, then draws the display list of
+ * every mesh, loading the bone matrices of split skins mesh by mesh. */
+R2Atomic *fn_8044DE74(R2Atomic *atomic, R2GxNodeData *node) {
+    R2SkinInstance *instance = &node->resEntry->instance;
+    R2DisplayList *list;
+    R2Matrix *ltm;
+    R2Skin *skin;
+    R2GxLightCallback callback;
+    u32 remaining;
+    R2Mesh *mesh;
 
-static inline void RwCpp13InitialMatrices(u32 *record, u32 *node) {
-    if (record[4] != 1 || record[13] != 0) return;
-    u32 outputIndex = 0;
-    u8 *indices = (u8 *)record[2];
-    for (u32 i = 0; i < record[1]; i++) {
-        const float *input = (const float *)(lbl_8056D708[3] + indices[i] * 0x40);
-        RwCpp13TransformMatrix(input, outputIndex, (node[2] >> 4) & 1);
-        outputIndex += 3;
-    }
-}
-
-static inline void RwCpp13NestedMatrices(u32 *record, u32 *node, u32 remaining) {
-    u32 *descriptor = (u32 *)node[1];
-    u32 total = *(u16 *)((u8 *)descriptor + 4);
-    u32 pair = (total - (remaining + 1)) * 2;
-    u8 *table = (u8 *)record[16] + pair;
-    u32 first = table[0];
-    u32 outerCount = table[1];
-    u32 tableOffset = (first & 0x7F) * 2;
-    u32 outputIndex = 0;
-    u32 transform = (node[2] >> 4) & 1;
-
-    for (u32 outer = 0; (outer & 0xFF) < outerCount; outer++) {
-        u8 *entry = (u8 *)record[17] + (outer & 0xFF) * 2 + tableOffset;
-        u32 matrixOffset = entry[0] * 0x40;
-        u32 innerCount = entry[1];
-        for (u32 inner = 0; inner < innerCount; inner++) {
-            const float *input = (const float *)(lbl_8056D708[3] + matrixOffset);
-            RwCpp13TransformMatrix(input, outputIndex, transform);
-            outputIndex += 3;
-            matrixOffset += 0x40;
-        }
-    }
-}
-
-extern "C" void *fn_8044DE74(u32 *context, u32 *node) {
-    u32 *nodeData = (u32 *)node[0];
-    u32 *callbackPair = (u32 *)((u8 *)nodeData + 0x18 + (nodeData[8] - 1) * 8 + 0x14);
-    *(u16 *)((u8 *)nodeData + 0x18) = lbl_805EDF40;
-    void *frameMatrix = RwFrameGetLTM((void *)context[1]);
-    u32 *owner = (u32 *)context[6];
-    u32 *format = *(u32 **)((u8 *)owner + lbl_805F1520);
-    fn_80462C30(format, node);
-    u32 *record = (u32 *)fn_8044CCAC((u8 *)owner);
-    if (record[4] > 1 || record[11] == 3) {
-        fn_804950AC(frameMatrix, (node[2] >> 4) & 1);
+    node->resEntry->instance.token = lbl_805EDF40;
+    list = (R2DisplayList *)&instance->normals + (instance->numArrays - 1);
+    ltm = RwFrameGetLTM(atomic->object.parent);
+    fn_80462C30(VERTEX_DESC(atomic->geometry), node);
+    skin = fn_8044CCAC(atomic->geometry);
+    if (skin->maxWeights > 1 || skin->unk2C == 3) {
+        fn_804950AC(ltm, (node->flags >> 4) & 1);
     } else {
         fn_80394500(0, 1);
     }
-    if (format == NULL) fn_80462E1C(owner);
+    if (VERTEX_DESC(atomic->geometry) == NULL) {
+        fn_80462E1C(atomic->geometry);
+    }
+    callback = (R2GxLightCallback)fn_804655D4(node->flags, node->unk20, node->unk1C,
+                                              instance->flags & 1);
+    remaining = node->meshHeader->numMeshes;
+    mesh = (R2Mesh *)(node->meshHeader + 1);
+    if (skin->maxWeights == 1 && skin->split.numMeshes == 0) {
+        u32 id = 0;
+        u32 i;
 
-    u32 callback = fn_804655D4(node[2], node[8], node[7], nodeData[7] & 1);
-    u32 *descriptor = (u32 *)node[1];
-    u32 remaining = *(u16 *)((u8 *)descriptor + 4);
-    u32 *entry = (u32 *)((u8 *)descriptor + 0x10);
-    RwCpp13InitialMatrices(record, node);
+        for (i = 0; i < skin->numUsedBones; i++) {
+            fn_8044DC4C((R2Matrix *)lbl_8056D708.matrixCache + skin->usedBones[i], id,
+                        (node->flags >> 4) & 1);
+            id += 3;
+        }
+    }
+    if (node->flags & 0x84) {
+        while (remaining-- != 0) {
+            R2Texture *texture = mesh->material->texture;
 
-    bool lookup = (node[2] & 0x84) != 0;
-    if (!lookup) fn_80497778(1);
-    while (remaining != 0) {
-        if (lookup) {
-            u32 *value = *(u32 **)entry[2];
-            fn_80499C38(value, 0);
-            if (value != NULL && value[0] != 0) {
-                u32 *child = *(u32 **)value[0];
-                u32 flags = *(u32 *)((u8 *)child + lbl_805F1658 + 0x14);
-                fn_80497778((flags & 1) ^ 1);
+            fn_80499C38(texture, 0);
+            if (texture != NULL && texture->raster != NULL) {
+                fn_80497778((RASTER_EXT(texture->raster->parent)->flags & 1) ^ 1);
             } else {
                 fn_80497778(1);
             }
+            if (callback != NULL) {
+                callback(node->lighting, &mesh->material->color,
+                         mesh->material->surfaceProps.ambient);
+            }
+            if (skin->maxWeights == 1 && skin->split.numMeshes != 0) {
+                fn_8044DD1C(skin, node->meshHeader->numMeshes - (remaining + 1),
+                            (node->flags >> 4) & 1);
+            }
+            fn_80399000(list->data, list->size);
+            list++;
+            mesh++;
         }
-
-        if (callback != 0) {
-            u32 *data = (u32 *)entry[2];
-            ((void (*)(void *, void *, float))callback)(node + 3, data + 1,
-                                                         *(float *)((u8 *)data + 0xC));
+    } else {
+        fn_80497778(1);
+        while (remaining-- != 0) {
+            if (callback != NULL) {
+                callback(node->lighting, &mesh->material->color,
+                         mesh->material->surfaceProps.ambient);
+            }
+            if (skin->maxWeights == 1 && skin->split.numMeshes != 0) {
+                fn_8044DD1C(skin, node->meshHeader->numMeshes - (remaining + 1),
+                            (node->flags >> 4) & 1);
+            }
+            fn_80399000(list->data, list->size);
+            list++;
+            mesh++;
         }
-        if (record[4] == 1 && record[13] != 0) {
-            RwCpp13NestedMatrices(record, node, remaining);
-        }
-        fn_80399000((void *)callbackPair[0], (void *)callbackPair[1]);
-        callbackPair += 2;
-        entry += 3;
-        remaining--;
     }
-    return context;
+    return atomic;
+}
+
+/* Sorts every vertex's weights in decreasing order (with its bone indices) and, for more than one
+ * weight per vertex, packs them for the CPU skinning: the weights scaled to 128 so that they sum
+ * to 128, then the indices, a byte each. */
+R2Skin *fn_8044E408(R2Skin *skin, u32 numVertices) {
+    u32 i;
+    u32 j;
+    u32 k;
+    u32 m;
+    u8 *packed;
+    u32 total;
+    u32 n;
+
+    skin->positions = NULL;
+    skin->normals = NULL;
+    skin->packedWeights = NULL;
+    skin->packedIndices = NULL;
+    for (i = 0; i < numVertices; i++) {
+        for (j = 0; j < 3; j++) {
+            for (k = 1; k < 4 - j; k++) {
+                if (((f32 *)skin->weights + i * 4 + j)[k] > ((f32 *)skin->weights + i * 4 + j)[0]) {
+                    f32 swap = ((f32 *)skin->weights + i * 4 + j)[0];
+                    u32 a;
+                    u32 b;
+
+                    ((f32 *)skin->weights + i * 4 + j)[0] = ((f32 *)skin->weights + i * 4 + j)[k];
+                    ((f32 *)skin->weights + i * 4 + j)[k] = swap;
+                    a = (skin->indices[i] >> ((j + k) * 8)) & 0xFF;
+                    b = (skin->indices[i] >> (j * 8)) & 0xFF;
+                    skin->indices[i] &= ~(0xFF << (j * 8));
+                    skin->indices[i] |= a << (j * 8);
+                    skin->indices[i] &= ~(0xFF << ((j + k) * 8));
+                    skin->indices[i] |= b << ((j + k) * 8);
+                }
+            }
+        }
+    }
+    if (skin->maxWeights > 1) {
+        skin->packedWeights =
+            lbl_805F15B4->memAlloc(numVertices * (skin->maxWeights * 2) + 3, SKIN_HINT);
+        packed = skin->packedWeights;
+        for (i = 0; i < numVertices; i++) {
+            total = 0;
+            for (m = 0; m < skin->maxWeights; m++) {
+                *packed = (u8)(lbl_805FB0D0 * ((f32 *)skin->weights + i * 4)[m]);
+                total += *packed++;
+            }
+            if ((u8)total < 0x80) {
+                for (k = 0; k < skin->maxWeights; k++) {
+                    total++;
+                    *(packed - (skin->maxWeights - k)) += 1;
+                    if ((u8)total == 0x80) {
+                        break;
+                    }
+                }
+            }
+        }
+        skin->packedIndices = skin->packedWeights + skin->maxWeights * numVertices;
+        skin->packedIndices = (u8 *)(((u32)skin->packedIndices + 3) & ~3);
+        packed = skin->packedIndices;
+        for (i = 0; i < numVertices; i++) {
+            for (n = 0; n < skin->maxWeights; n++) {
+                *packed++ = skin->indices[i] >> (n * 8);
+            }
+        }
+    }
+    return skin;
+}
+
+/* Native skin data of a geometry being prepared. */
+R2Geometry *fn_8044E6BC(R2Geometry *geometry) {
+    R2Skin *skin = SKIN_OF(geometry);
+
+    if (skin != NULL) {
+        if (geometry->flags & 0x01000000) {
+            if (geometry->flags & 0x10) {
+                geometry->lockedSinceLastInst |= 6;
+            } else {
+                geometry->lockedSinceLastInst |= 2;
+            }
+            skin->positions = NULL;
+            skin->normals = NULL;
+        } else if (fn_8044E408(skin, geometry->numVertices) == NULL) {
+            return NULL;
+        }
+    }
+    return geometry;
+}
+
+/* Frees the packed weights of a geometry's skin. */
+R2Geometry *fn_8044E758(R2Geometry *geometry) {
+    R2Skin *skin = SKIN_OF(geometry);
+
+    if (skin->packedWeights != NULL) {
+        lbl_805F15B4->memFree(skin->packedWeights);
+        skin->packedWeights = NULL;
+        skin->packedIndices = NULL;
+    }
+    skin->positions = NULL;
+    skin->normals = NULL;
+    return geometry;
+}
+
+#pragma auto_inline on
+
+/* Stream size of a geometry's native skin data. The vertex arrays the skin kept are handed back
+ * to the geometry's instance first. */
+s32 fn_8044E7D0(const R2Geometry *geometry) {
+    R2Skin *skin = SKIN_OF(geometry);
+    s32 size = skin->numUsedBones + 0x14;
+
+    if (skin->maxWeights > 1) {
+        size += geometry->numVertices * (skin->maxWeights * 2);
+    }
+    size += skin->numBones * 64;
+    if (skin->positions != NULL) {
+        R2SkinInstance *instance = &((R2SkinResEntry *)geometry->repEntry)->instance;
+
+        RES_OF(instance->positions)->entry.ownerRef = NULL;
+        instance->positions = skin->positions;
+        if (geometry->flags & 0x10) {
+            instance->normals = skin->normals;
+        }
+        geometry->repEntry->destroyNotify = fn_8046288C;
+        skin->positions = NULL;
+        skin->normals = NULL;
+    }
+    size += fn_8044BDBC(skin);
+    return size;
+}
+
+#pragma auto_inline reset
+
+/* Writes a geometry's native skin data. */
+void *fn_8044E89C(void *stream, const R2Geometry *geometry) {
+    s32 numVertices;
+    u32 maxWeights;
+    R2Skin *skin;
+    s32 format = 6;
+    u32 header;
+
+    if (!fn_8047CEF0(stream, 1, fn_8044E7D0(geometry) - 12, 0x37002, 0x37)) {
+        return NULL;
+    }
+    if (!fn_8047D458(stream, &format, sizeof(s32))) {
+        return NULL;
+    }
+    numVertices = geometry->numVertices;
+    skin = SKIN_OF(geometry);
+    maxWeights = skin->maxWeights;
+    header = ((maxWeights & 0xFF) << 16) | ((skin->numUsedBones & 0xFF) << 8) |
+             (skin->numBones & 0xFF);
+    if (!fn_8047D458(stream, &header, sizeof(u32))) {
+        return NULL;
+    }
+    if (!fn_80480ED0(stream, skin->usedBones, skin->numUsedBones)) {
+        return NULL;
+    }
+    if (skin->maxWeights > 1) {
+        u32 size = maxWeights * numVertices;
+
+        if (!fn_80480ED0(stream, skin->packedIndices, size)) {
+            return NULL;
+        }
+        if (!fn_80480ED0(stream, skin->packedWeights, size)) {
+            return NULL;
+        }
+    }
+    if (!fn_80480ED0(stream, skin->matrices, skin->numBones << 6)) {
+        return NULL;
+    }
+    if (!fn_8044BB18(stream, skin)) {
+        return NULL;
+    }
+    return stream;
+}
+
+/* Reads a geometry's native skin data. */
+void *fn_8044EAD0(void *stream, R2Geometry *geometry) {
+    s32 numVertices;
+    R2Skin *skin;
+    R2Error error;
+    u32 version;
+    u32 length;
+    u32 header;
+    s32 format;
+
+    if (!fn_8047CF50(stream, 1, &length, &version)) {
+        return NULL;
+    }
+    if (version < 0x35000 || version > 0x37002) {
+        error.pluginID = 0x116;
+        error.errorCode = fn_8047DC28(0x80000004, version);
+        fn_8047DB84(&error);
+        return NULL;
+    }
+    if (!fn_8047D868(stream, &format, sizeof(s32))) {
+        return NULL;
+    }
+    if (format != 6) {
+        return NULL;
+    }
+    skin = lbl_805F15B4->freeListAlloc(lbl_8056D708.freeList, SKIN_HINT);
+    memset(skin, 0, sizeof(R2Skin));
+    if (!fn_8047D868(stream, &header, sizeof(u32))) {
+        return NULL;
+    }
+    skin->numBones = header & 0xFF;
+    skin->numUsedBones = (header >> 8) & 0xFF;
+    skin->maxWeights = (header >> 16) & 0xFF;
+    numVertices = geometry->numVertices;
+    length -= 8;
+    if (skin->maxWeights > 1) {
+        skin->packedWeights = lbl_805F15B4->memAlloc(length + 5, SKIN_HINT);
+        skin->packedIndices = skin->packedWeights + skin->maxWeights * numVertices;
+        skin->packedIndices = (u8 *)(((u32)skin->packedIndices + 3) & ~3);
+        skin->matrices = (R2Matrix *)(skin->packedIndices + skin->maxWeights * numVertices);
+        skin->matrices = (R2Matrix *)(((u32)skin->matrices + 3) & ~3);
+        skin->usedBones = (u8 *)(skin->matrices + skin->numBones);
+        length = skin->numUsedBones;
+        if (fn_80480D4C(stream, skin->usedBones, length) != length) {
+            return NULL;
+        }
+        length = skin->maxWeights * numVertices;
+        if (fn_80480D4C(stream, skin->packedIndices, length) != length) {
+            return NULL;
+        }
+        length = skin->maxWeights * numVertices;
+        if (fn_80480D4C(stream, skin->packedWeights, length) != length) {
+            return NULL;
+        }
+        length = skin->numBones << 6;
+        if (fn_80480D4C(stream, skin->matrices, length) != length) {
+            return NULL;
+        }
+    } else {
+        skin->packedWeights = lbl_805F15B4->memAlloc(length + 3, SKIN_HINT);
+        skin->matrices = (R2Matrix *)skin->packedWeights;
+        skin->matrices = (R2Matrix *)(((u32)skin->matrices + 3) & ~3);
+        skin->usedBones = (u8 *)(skin->matrices + skin->numBones);
+        length = skin->numUsedBones;
+        if (fn_80480D4C(stream, skin->usedBones, length) != length) {
+            return NULL;
+        }
+        length = skin->numBones << 6;
+        if (fn_80480D4C(stream, skin->matrices, length) != length) {
+            return NULL;
+        }
+    }
+    if (!fn_8044BBFC(stream, skin)) {
+        return NULL;
+    }
+    fn_8044CCC0(geometry, skin);
+    return stream;
+}
+
+/* Stream size of a skinned atomic: nothing is written. The vertex arrays the atomic kept are
+ * handed back to its instance first. */
+s32 fn_8044EE3C(const R2Atomic *atomic) {
+    R2SkinAtomic *data = SKIN_ATOMIC(atomic);
+
+    if (data->positions != NULL) {
+        R2SkinInstance *instance = &((R2SkinResEntry *)atomic->repEntry)->instance;
+
+        RES_OF(instance->positions)->entry.ownerRef = NULL;
+        instance->positions = data->positions;
+        if (atomic->geometry->flags & 0x10) {
+            instance->normals = data->normals;
+        }
+        atomic->repEntry->destroyNotify = fn_8046288C;
+        data->positions = NULL;
+        data->normals = NULL;
+    }
+    return 0;
 }

@@ -1,7 +1,11 @@
-/* RenderWare small callbacks and accessors. Names are inferred from behavior.
- * All unit functions are complete C++ implementations. The large stream parsers preserve their
- * allocation and cleanup behavior; remaining differences are compiler register allocation,
- * branch layout, and induction-variable scheduling rather than missing functionality. */
+/* RenderWare: RpUVAnim (plugin 0x135), continued from RwCpp16.cpp. Names are inferred from
+ * behavior. All unit functions are complete C++ implementations. The large stream parsers preserve
+ * their allocation and cleanup behavior; remaining differences are compiler register allocation,
+ * branch layout, and induction-variable scheduling rather than missing functionality.
+ * Floors: fn_80454294 and fn_804549DC test the eight interpolators in an unrolled loop whose
+ * copies step the pointer (lwz 12(p); addi p,p,4), where GC/2.7 folds every step into the offset;
+ * fn_804552AC sets its status flag and tests it again (li r30,0 / cmpwi r30,0), which GC/2.7
+ * threads away. */
 #include <dolphin/types.h>
 
 extern "C" {
@@ -95,7 +99,7 @@ void *fn_80454AA4(void *stream, s32 type) {
     return stream;
 }
 
-void *fn_80454B20(void *stream, void *entry, u32 *object) {
+void *fn_80454B20(void *stream, s32 length, const u32 *object) {
     u32 *nested = (u32 *)object[27];
     if (fn_8047D458(stream, (u8 *)nested + 44, 4) == 0) {
         return NULL;
@@ -117,7 +121,7 @@ void *fn_80454BC4(void *stream, s32 type) {
     return stream;
 }
 
-void *fn_80454C40(void *stream, void *entry, u32 *object) {
+void *fn_80454C40(void *stream, s32 length, const u32 *object) {
     u32 *nested = (u32 *)object[31];
     if (fn_8047D458(stream, (u8 *)nested + 44, 4) == 0) {
         return NULL;
